@@ -2,13 +2,45 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, type UsageChargeRecord } from '../../api'
 import Pagination from '../ui/Pagination'
 import { pageCountOf } from '../../lib/pagination'
+import { useI18n, type Locale } from '../../i18n'
+
+const BILLING_LABEL_MAP: Record<string, Record<Locale, string>> = {
+  'LLM 对话': { zh: 'LLM 对话', en: 'LLM Chat', vi: 'Đối thoại LLM' },
+  '图片生成': { zh: '图片生成', en: 'Image Generation', vi: 'Tạo hình ảnh' },
+  '视频生成': { zh: '视频生成', en: 'Video Generation', vi: 'Tạo video' },
+  '语音合成': { zh: '语音合成', en: 'Voice Synthesis', vi: 'Tổng hợp giọng nói' },
+  '其他': { zh: '其他', en: 'Other', vi: 'Khác' },
+}
+
+function formatBillingLabel(label: string, locale: Locale): string {
+  return BILLING_LABEL_MAP[label]?.[locale] ?? label
+}
+
+function formatContext(context: string, locale: Locale): string {
+  if (locale === 'zh') return context
+  if (context === '工具创作') {
+    return locale === 'vi' ? 'Sáng tác công cụ' : 'Tool Creation'
+  }
+  if (context.startsWith('漫剧 · ')) {
+    const rest = context.replace(/^漫剧 · /, '')
+    const prefix = locale === 'vi' ? 'Phim ngắn' : 'Drama'
+    return `${prefix} · ${rest.replace(/项目 #/g, locale === 'vi' ? 'Dự án #' : 'Project #')}`
+  }
+  if (context.startsWith('科普 · ')) {
+    const rest = context.replace(/^科普 · /, '')
+    const prefix = locale === 'vi' ? 'Khoa học' : 'Explainer'
+    return `${prefix} · ${rest.replace(/项目 #/g, locale === 'vi' ? 'Dự án #' : 'Project #')}`
+  }
+  return context
+}
 
 /** 格式化相对时间展示 */
-function formatWhen(iso?: string | null) {
+function formatWhen(iso?: string | null, locale: Locale = 'zh') {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('zh-CN', {
+  const locMap: Record<Locale, string> = { zh: 'zh-CN', en: 'en-US', vi: 'vi-VN' }
+  return d.toLocaleString(locMap[locale] || 'zh-CN', {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -30,14 +62,7 @@ type UsageChargeRecordsProps = {
 
 /** 使用扣费记录列表：按次展示 LLM / 生图 / 生视频等计费明细 */
 export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeRecordsProps) {
-  /*
-   * items 当前页记录
-   * page 当前页码
-   * pageSize 每页条数
-   * total 总条数
-   * loading 加载中
-   * error 错误信息
-   */
+  const { t, locale } = useI18n()
   const [items, setItems] = useState<UsageChargeRecord[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
@@ -63,13 +88,13 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
       setPage(nextPage)
       setItems(res.items)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '加载扣费记录失败')
+      setError(e instanceof Error ? e.message : t('billing.usageRecords.loadFailed'))
       setItems([])
       setTotal(0)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void loadPage(page, pageSize)
@@ -83,16 +108,16 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
   return (
     <section className={`pf-usage-records${variant === 'compact' ? ' is-compact' : ''}`}>
       <header className="pf-usage-records-head">
-        <h3>使用扣费记录</h3>
-        <p className="pf-muted">每次 AI 调用的 token 用量与扣费明细</p>
+        <h3>{t('billing.usageRecords.title')}</h3>
+        <p className="pf-muted">{t('billing.usageRecords.subtitle')}</p>
       </header>
 
-      {loading ? <p className="pf-muted">加载中…</p> : null}
+      {loading ? <p className="pf-muted">{t('billing.usageRecords.loading')}</p> : null}
       {error ? <p className="pf-error">{error}</p> : null}
 
       {!loading && !error && items.length === 0 ? (
         <div className="pf-settings-empty">
-          <p>暂无扣费记录</p>
+          <p>{t('billing.usageRecords.empty')}</p>
         </div>
       ) : null}
 
@@ -102,18 +127,18 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
             <li key={item.id}>
               <div className="pf-settings-list-row pf-usage-record-row">
                 <span className="pf-settings-list-main">
-                  <strong>{item.billing_label}</strong>
+                  <strong>{formatBillingLabel(item.billing_label, locale)}</strong>
                   <em className="pf-muted">
-                    {item.context}
+                    {formatContext(item.context, locale)}
                     {item.total_tokens > 0 ? ` · ${formatTokens(item.total_tokens)} tokens` : ''}
-                    {item.estimated ? ' · 估算' : ''}
+                    {item.estimated ? ` · ${t('billing.usageRecords.estimated')}` : ''}
                   </em>
                 </span>
                 <span className="pf-settings-list-meta pf-usage-record-meta">
                   <strong className="pf-usage-record-charge">
                     {item.charge_fen > 0 ? `-¥${item.charge_yuan.toFixed(2)}` : '—'}
                   </strong>
-                  <em className="pf-muted">{formatWhen(item.created_at)}</em>
+                  <em className="pf-muted">{formatWhen(item.created_at, locale)}</em>
                 </span>
               </div>
             </li>
@@ -129,7 +154,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
           onChange={setPage}
-          ariaLabel="扣费记录分页"
+          ariaLabel={t('billing.usageRecords.paginationAria')}
         />
       ) : null}
     </section>

@@ -14,6 +14,22 @@ export const viDrama = {
       deleteProject: 'Xóa dự án',
       renameProject: 'Đổi tên dự án',
     },
+    // Project card context menu
+    cardMenu: {
+      rename: 'Đổi tên',
+      delete: 'Xóa',
+      moreActions: 'Thêm thao tác',
+    },
+    // Project card meta description
+    cardMeta: {
+      freeCanvas: 'Canvas tự do',
+      nodeAssets: '{n} nút tài sản',
+      hasScript: 'Đã có kịch bản',
+      episodes: '{n} tập',
+      assets: '{n} tài sản',
+      draft: 'Bản nháp',
+      pendingScript: 'Chưa viết kịch bản',
+    },
     // Episode edit header controls
     headerControls: {
       styleLabel: 'Phong cách video',

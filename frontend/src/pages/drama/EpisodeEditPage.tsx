@@ -1229,7 +1229,7 @@ function EpisodeEditInner() {
         params: { kind },
       })
       adoptCreatedAsset(created, kind)
-      setStatus(t('drama.episodeEdit.assetCreated').replace('{label}', label).replace('{name}', created.name))
+      setStatus(t('drama.episodeEdit.assetCreated').replace('{label}', label).replace('{name}', created.name || ''))
     } catch (err) {
       setError(err instanceof Error ? err.message : t('drama.episodeEdit.assetCreateFailed').replace('{label}', label))
     } finally {
@@ -1246,7 +1246,7 @@ function EpisodeEditInner() {
       const created = await importGlobalAssetToProject(pid, source)
       adoptCreatedAsset(created, kind)
       setLibraryPickerOpen(false)
-      setStatus(t('drama.episodeEdit.assetImported').replace('{name}', created.name))
+      setStatus(t('drama.episodeEdit.assetImported').replace('{name}', created.name || ''))
     } catch (err) {
       setError(err instanceof Error ? err.message : t('drama.episodeEdit.importFailed'))
       throw err

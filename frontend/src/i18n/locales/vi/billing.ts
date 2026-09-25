@@ -81,6 +81,17 @@ export const viBilling = {
       frozen: 'Đang giữ',
       topup: 'Nạp tiền',
     },
+    // Usage charge records
+    usageRecords: {
+      title: 'Lịch sử trừ phí sử dụng',
+      subtitle: 'Chi tiết lượng token và khấu trừ phí cho mỗi lần gọi AI',
+      loading: 'Đang tải…',
+      loadFailed: 'Tải lịch sử trừ phí thất bại',
+      empty: 'Chưa có lịch sử trừ phí',
+      estimated: 'Ước tính',
+      tokensUnit: 'tokens',
+      paginationAria: 'Phân trang lịch sử trừ phí',
+    },
   },
 
   // API Keys panel

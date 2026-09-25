@@ -67,7 +67,7 @@ export function readAssetVoiceBinding(asset: DramaAsset): VoiceBinding | null {
       const sourceAssetId = typeof data.sourceAssetId === 'number' ? data.sourceAssetId : null
       const url = typeof data.url === 'string' ? data.url : ''
       if (sourceAssetId && url) {
-        return { sourceAssetId, url, label: t('drama.assetsStep.voice') }
+        return { sourceAssetId, url, label: typeof data.label === 'string' ? data.label : 'Voice' }
       }
     }
   }

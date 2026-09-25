@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AppShell from '../components/layout/AppShell'
 import UserAvatar from '../components/UserAvatar'
@@ -13,7 +13,7 @@ import ComingSoon from '../components/ui/ComingSoon'
 import { dramaProjectEntryPath, formatDramaCardMeta } from '../lib/dramaWorkflow'
 import { STATUS_CN } from '../lib/status'
 import SettingsToolRunsPanel from './SettingsToolRunsPanel'
-import { formatDateTime, useI18n } from '../i18n'
+import { formatDateTime, useI18n, type Locale } from '../i18n'
 
 type SettingsTab =
   | 'account'
@@ -61,7 +61,7 @@ function parseTab(raw: string | null): SettingsTab {
 }
 
 // 格式化相对时间展示
-function formatWhen(iso: string | undefined, locale: 'zh' | 'en') {
+function formatWhen(iso: string | undefined, locale: Locale) {
   return formatDateTime(iso, locale)
 }
 
@@ -211,7 +211,7 @@ export default function SettingsPage() {
                       <Link to={dramaProjectEntryPath(item)} className="pf-settings-list-row">
                         <span className="pf-settings-list-main">
                           <strong>{item.title || t('settings.projectFallback', { id: item.id })}</strong>
-                          <em className="pf-muted">{formatDramaCardMeta(item)}</em>
+                          <em className="pf-muted">{formatDramaCardMeta(item, t)}</em>
                         </span>
                         <span className="pf-settings-list-meta pf-muted">
                           {formatWhen(item.updated_at || item.created_at, locale)}

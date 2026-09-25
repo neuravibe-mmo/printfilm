@@ -430,7 +430,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     if (dup) {
       const ok = await dialog.confirm({
         title: t('drama.assetsStep.maybeDuplicate'),
-        message: t('drama.assetsStep.duplicateMessage').replace('{name}', source.name),
+        message: t('drama.assetsStep.duplicateMessage').replace('{name}', source.name || ''),
         confirmText: t('drama.assetsStep.importAnyway'),
       })
       if (!ok) throw new Error('cancelled')

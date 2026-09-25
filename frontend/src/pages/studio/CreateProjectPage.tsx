@@ -8,7 +8,8 @@ import AppShell from '../../components/layout/AppShell'
 import Stepper from '../../components/ui/Stepper'
 import PillTabs from '../../components/ui/PillTabs'
 import { IconChevronLeft, IconRefresh, IconSparkles } from '../../components/ui/Icons'
-import { CATEGORY_ORDER } from '../../lib/categories'
+import { CATEGORY_ORDER, getCategoryLabel } from '../../lib/categories'
+import { getTemplateDescription, getTemplateName } from '../../lib/templates'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
 
 type Inspiration = {
@@ -146,7 +147,7 @@ function deriveTitle(text: string, untitled: string) {
 }
 
 export default function CreateProjectPage() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
 
   const nav = useNavigate()
   const [params] = useSearchParams()
@@ -178,24 +179,34 @@ export default function CreateProjectPage() {
 
   const categories = useMemo(() => {
     const found = new Set<string>()
-    for (const t of templates) {
-      for (const c of t.category || []) {
+    for (const tpl of templates) {
+      for (const c of tpl.category || []) {
         if (CATEGORY_ORDER.includes(c)) found.add(c)
       }
     }
-    return [t('studio.createProject.all'), t('studio.createProject.featured'), ...CATEGORY_ORDER.filter((c) => found.has(c))]
+    return [t('studio.createProject.all'), t('studio.createProject.featured'), ...CATEGORY_ORDER.filter((c) => found.has(c)).map(getCategoryLabel)]
   }, [templates])
 
   const filtered = useMemo(() => {
     let list = templates
     if (category === t('studio.createProject.featured')) list = [...templates].sort((a, b) => a.sort_order - b.sort_order).slice(0, 8)
-    else if (category !== t('studio.createProject.all')) list = list.filter((t) => (t.category || []).includes(category))
+    else if (category !== t('studio.createProject.all')) {
+      // category is a localized label; match by finding the raw key whose label matches
+      const rawKey = CATEGORY_ORDER.find((k) => getCategoryLabel(k) === category)
+      list = rawKey ? list.filter((tpl) => (tpl.category || []).includes(rawKey)) : list
+    }
     if (q.trim()) {
       const s = q.trim().toLowerCase()
-      list = list.filter((t) => t.name.toLowerCase().includes(s))
+      list = list.filter(
+        (tpl) =>
+          tpl.name.toLowerCase().includes(s) ||
+          getTemplateName(tpl, locale).toLowerCase().includes(s) ||
+          (tpl.description || '').toLowerCase().includes(s) ||
+          getTemplateDescription(tpl, locale).toLowerCase().includes(s),
+      )
     }
     return list
-  }, [templates, category, q])
+  }, [templates, category, q, locale])
 
   const selected = templates.find((t) => t.id === templateId)
   const sourceType = inputTab === t('studio.createProject.tabScript') ? 'script' : 'theme'
@@ -303,9 +314,9 @@ export default function CreateProjectPage() {
               >
                 <img src={api.assetUrl(tpl.preview_cover)} alt="" />
                 <div>
-                  <strong>{tpl.name}</strong>
+                  <strong>{getTemplateName(tpl, locale)}</strong>
                   <span>
-                    {tpl.default_ratio} · {(tpl.category || [])[0] || t('studio.createProject.general')}
+                    {tpl.default_ratio} · {getCategoryLabel((tpl.category || [])[0]) || t('studio.createProject.general')}
                   </span>
                 </div>
               </button>
@@ -425,9 +436,9 @@ export default function CreateProjectPage() {
                 alt=""
                 style={{ width: '100%', borderRadius: 12, aspectRatio: '16/9', objectFit: 'cover' }}
               />
-              <strong style={{ display: 'block', marginTop: '0.5rem' }}>{selected.name}</strong>
+              <strong style={{ display: 'block', marginTop: '0.5rem' }}>{getTemplateName(selected, locale)}</strong>
               <p className="pf-muted" style={{ margin: '0.25rem 0 0', fontSize: '0.85rem' }}>
-                {selected.description}
+                {getTemplateDescription(selected, locale)}
               </p>
             </div>
           ) : (

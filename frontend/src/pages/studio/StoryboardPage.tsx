@@ -93,11 +93,12 @@ type PreviewState =
   | { kind: 'final'; url: string; title: string; bust?: string }
   | null
 
-function shotCaption(shot: Shot) {
+function shotCaption(shot: Shot, t?: (k: string) => string) {
   if (shot.overlay_title) {
+    const label = t ? t('studio.storyboard.narrationLabel') : '旁白'
     return `${shot.overlay_title}${
       shot.overlay_subtitle ? ` · ${shot.overlay_subtitle}` : ''
-    }${shot.narration ? `｜${t('studio.storyboard.narrationLabel')}：${shot.narration}` : ''}`
+    }${shot.narration ? `｜${label}：${shot.narration}` : ''}`
   }
   return shot.narration
 }
@@ -1052,7 +1053,7 @@ title={t('studio.storyboard.respliceTip')}
                                   imageUrl: shot.image_url,
                                   videoUrl: shot.video_url,
                                   audioUrl: shot.audio_url,
-                                  caption: shotCaption(shot),
+                                  caption: shotCaption(shot, t),
                                 })
                               }
                             >

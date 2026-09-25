@@ -10,6 +10,8 @@ import { IconChevronLeft, IconPlay } from '../../components/ui/Icons'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import { handleBillingError } from '../../lib/billingError'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
+import { getCategoryLabel } from '../../lib/categories'
+import { getTemplateName } from '../../lib/templates'
 
 // OUTPUT_MODES moved inside component
 
@@ -35,7 +37,7 @@ function isPortraitRatio(ratio: string | undefined | null): boolean {
 }
 
 export default function StyleConfigPage() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const OUTPUT_MODES: { id: PipelineMode; label: string; desc: string; image: string }[] = [
     { id: 'full', label: t('studio.styleConfig.modeFullLabel'), desc: t('studio.styleConfig.modeFullDesc'), image: '/mode-presets/full.jpg' },
     {
@@ -274,10 +276,10 @@ export default function StyleConfigPage() {
               >
                 <img src={api.assetUrl(currentTpl.preview_cover)} alt="" />
               </div>
-              <p style={{ margin: '0.5rem 0 0', fontWeight: 600 }}>{currentTpl.name}</p>
+              <p style={{ margin: '0.5rem 0 0', fontWeight: 600 }}>{getTemplateName(currentTpl, locale)}</p>
               <div className="pf-tags">
                 {currentTpl.category.map((c) => (
-                  <span key={c}>{c}</span>
+                  <span key={c}>{getCategoryLabel(c)}</span>
                 ))}
               </div>
             </div>
@@ -326,7 +328,7 @@ export default function StyleConfigPage() {
                     <span className="pf-style-opt-ratio">{currentTpl.default_ratio}</span>
                   ) : null}
                 </span>
-                <div className="cap">{currentTpl.name}</div>
+                <div className="cap">{getTemplateName(currentTpl, locale)}</div>
                 <div className="cap-sub">{t('studio.styleConfig.templateStyle')}</div>
               </div>
             ) : null}

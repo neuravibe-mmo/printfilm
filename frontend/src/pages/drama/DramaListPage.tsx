@@ -502,7 +502,7 @@ function DramaListInner() {
                         onDelete={() => void handleDeleteOne(item)}
                       />
                     </div>
-                    <p className="pf-drama-card-meta">{formatDramaCardMeta(item)}</p>
+                    <p className="pf-drama-card-meta">{formatDramaCardMeta(item, t)}</p>
                     <p className="pf-drama-card-usage" title={t('drama.list.usageTip')}>
                       {formatDramaUsageBrief(item.usage)}
                     </p>

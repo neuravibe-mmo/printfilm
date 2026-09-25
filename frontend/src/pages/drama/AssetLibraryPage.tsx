@@ -217,13 +217,13 @@ function AssetLibraryInner() {
             </div>
             <div className="pf-drama-list-actions">
               <Button to="/drama" variant="ghost" size="sm">
-                {t('shell.nav.drama')}
+                {t('nav.drama')}
               </Button>
               <Button to="/history" variant="ghost" size="sm">
-                {t('shell.nav.history')}
+                {t('nav.history')}
               </Button>
               <Button to="/settings" variant="ghost" size="sm">
-                {t('shell.nav.settings')}
+                {t('nav.settings')}
               </Button>
             </div>
           </div>

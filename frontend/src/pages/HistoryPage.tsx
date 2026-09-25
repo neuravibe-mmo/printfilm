@@ -28,6 +28,7 @@ import {
 import { hasActiveTasks, isRunning, STATUS_CN, statusTone } from '../lib/status'
 import { pageCountOf } from '../lib/pagination'
 import { formatDateTime, useI18n } from '../i18n'
+import { getTemplateName } from '../lib/templates'
 
 type HistoryItem = Omit<Project, 'shots'> & {
   published?: boolean
@@ -386,7 +387,7 @@ export default function HistoryPage() {
               const badge = statusBadgeClass(p.status)
               const ratio =
                 p.output_ratio || (p.pipeline_mode === 'image_text' ? '9:16' : '16:9')
-              const tplName = templates[p.template_id] || p.template_id
+              const tplName = getTemplateName(p.template_id, locale) || templates[p.template_id] || p.template_id
               return (
                 <article key={p.id} className="pf-project-card">
                   <label className="pf-project-check">

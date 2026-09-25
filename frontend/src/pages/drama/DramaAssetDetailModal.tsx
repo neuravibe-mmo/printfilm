@@ -45,7 +45,7 @@ export function DramaAssetDetailModal({
   asset,
   open,
   busy = false,
-  genLabel = t('drama.assetDetail.genLabel'),
+  genLabel: genLabelProp,
   onClose,
   onUpdated,
   onGenerate,
@@ -54,6 +54,7 @@ export function DramaAssetDetailModal({
   onError,
 }: Props) {
   const { t } = useI18n()
+  const genLabel = genLabelProp || t('drama.assetDetail.genLabel')
 
   /*
    * promptDraft 提示词草稿

@@ -1,4 +1,5 @@
 import type { DramaProject, DramaProjectListItem } from '../api/drama'
+import type { TFunction } from '../i18n'
 
 export type DramaWorkflow = 'script' | 'canvas'
 
@@ -45,13 +46,13 @@ export function dramaProjectEntryPath(
   return `/drama/projects/${id}`
 }
 
-/** 列表卡片 meta 文案 */
-export function formatDramaCardMeta(item: DramaProjectListItem): string {
+/** 列表卡片 meta 文案（需传入 t() 以支持多语言） */
+export function formatDramaCardMeta(item: DramaProjectListItem, t: TFunction): string {
   if (isCanvasWorkflow(item)) {
-    return `自由画布 · ${item.asset_count || 0} 节点资产`
+    return `${t('drama.cardMeta.freeCanvas')} · ${t('drama.cardMeta.nodeAssets').replace('{n}', String(item.asset_count || 0))}`
   }
   if (item.has_script) {
-    return `已写剧本 · ${item.episode_count || 0} 集 · ${item.asset_count || 0} 资产`
+    return `${t('drama.cardMeta.hasScript')} · ${t('drama.cardMeta.episodes').replace('{n}', String(item.episode_count || 0))} · ${t('drama.cardMeta.assets').replace('{n}', String(item.asset_count || 0))}`
   }
-  return `草稿 · 待写剧本 · ${item.asset_count || 0} 资产`
+  return `${t('drama.cardMeta.draft')} · ${t('drama.cardMeta.pendingScript')} · ${t('drama.cardMeta.assets').replace('{n}', String(item.asset_count || 0))}`
 }

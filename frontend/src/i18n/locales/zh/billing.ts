@@ -76,6 +76,16 @@ export const zhBilling = {
       frozen: '冻结中',
       topup: '去充值',
     },
+    usageRecords: {
+      title: '使用扣费记录',
+      subtitle: '每次 AI 调用的 token 用量与扣费明细',
+      loading: '加载中…',
+      loadFailed: '加载扣费记录失败',
+      empty: '暂无扣费记录',
+      estimated: '估算',
+      tokensUnit: 'tokens',
+      paginationAria: '扣费记录分页',
+    },
   },
 
   apiKeys: {
