@@ -1,4 +1,5 @@
 /** 法律与联系页文案：用户协议、隐私政策、联系渠道 */
+import { getActiveLocale } from '../i18n/detect'
 
 export type LegalSection = {
   title: string
@@ -296,9 +297,135 @@ export const LEGAL_DOCS_EN: Record<'terms' | 'privacy', LegalDoc> = {
   },
 }
 
+export const LEGAL_DOCS_VI: Record<'terms' | 'privacy', LegalDoc> = {
+  terms: {
+    slug: 'terms',
+    title: 'Điều khoản dịch vụ',
+    updatedAt: '2026-08-17',
+    intro:
+      'Chào mừng bạn đến với PRINTFILM (sau đây gọi là "Nền tảng"). Vui lòng đọc kỹ điều khoản này trước khi đăng ký hoặc sử dụng dịch vụ. Một khi bạn bắt đầu sử dụng, được coi là đã đọc và đồng ý với các điều khoản dưới đây.',
+    sections: [
+      {
+        title: '1. Dịch vụ',
+        paragraphs: [
+          'PRINTFILM cung cấp các dịch vụ sáng tạo hỗ trợ AI bao gồm: phim hoạt hình/truyện tranh, video giải thích, và công cụ sáng tạo (bao gồm text-to-image, image-to-image, text-to-video, v.v.). Tính năng có thể thay đổi theo quá trình phát triển sản phẩm, chúng tôi sẽ cố gắng thông báo về những thay đổi quan trọng qua website hoặc thông báo trong ứng dụng.',
+          'Tính phí theo lượng sử dụng mô hình upstream thực tế. Số dư đã nạp không hết hạn và không có đăng ký bắt buộc. Giá và ưu đãi theo trang Nạp tiền và màn hình thanh toán.',
+        ],
+      },
+      {
+        title: '2. Tài khoản và bảo mật',
+        bullets: [
+          'Bạn tự chịu trách nhiệm về bảo mật tài khoản. Vui lòng không chia sẻ thông tin đăng nhập.',
+          'Mỗi tài khoản chỉ dành cho một cá nhân. Sử dụng chung, chia sẻ hoặc nhượng lại tài khoản bị nghiêm cấm.',
+          'Nếu phát hiện tài khoản bị truy cập trái phép, vui lòng liên hệ hỗ trợ ngay lập tức.',
+        ],
+      },
+      {
+        title: '3. Nội dung và quyền sở hữu trí tuệ',
+        paragraphs: [
+          'Bạn sở hữu nội dung bạn tải lên. Bằng cách sử dụng dịch vụ, bạn cấp cho Nền tảng quyền cần thiết để cung cấp dịch vụ (ví dụ: lưu trữ, xử lý, hiển thị).',
+          'Đầu ra do AI tạo ra dựa trên nội dung của bạn thuộc về bạn trong phạm vi luật áp dụng cho phép. Bạn chịu trách nhiệm đảm bảo nội dung tuân thủ pháp luật tại khu vực của bạn.',
+          'Không được tải lên hoặc tạo nội dung vi phạm quyền sở hữu trí tuệ của bên thứ ba, hoặc vi phạm pháp luật hay quy định của nền tảng.',
+        ],
+      },
+      {
+        title: '4. Hành vi bị cấm',
+        bullets: [
+          'Sử dụng dịch vụ để tạo nội dung bất hợp pháp, có hại, lừa đảo, xúc phạm, hoặc vi phạm quyền riêng tư.',
+          'Cố gắng tấn công hệ thống, truy cập trái phép, thu thập dữ liệu tự động quy mô lớn.',
+          'Giả mạo cá nhân hay tổ chức khác, hoặc cung cấp thông tin sai lệch về nguồn gốc nội dung.',
+        ],
+      },
+      {
+        title: '5. Giới hạn trách nhiệm',
+        paragraphs: [
+          'Nền tảng cung cấp dịch vụ theo hiện trạng và tính sẵn có. Chúng tôi không đảm bảo dịch vụ không bị gián đoạn hoặc không có lỗi. Trong phạm vi luật cho phép, chúng tôi không chịu trách nhiệm về thiệt hại gián tiếp hoặc hậu quả.',
+          'Tổng trách nhiệm của chúng tôi đối với bạn, với bất kỳ lý do nào, không vượt quá số tiền bạn thực tế đã trả cho dịch vụ trong 3 tháng trước sự kiện phát sinh yêu cầu.',
+        ],
+      },
+      {
+        title: '6. Chấm dứt dịch vụ',
+        paragraphs: [
+          'Bạn có thể yêu cầu xóa tài khoản bất cứ lúc nào. Chúng tôi có thể tạm dừng hoặc chấm dứt tài khoản vi phạm điều khoản này.',
+        ],
+      },
+      {
+        title: '7. Điều khoản khác',
+        paragraphs: [
+          'Điều khoản này được điều chỉnh bởi luật Việt Nam. Chúng tôi có thể cập nhật điều khoản và sẽ thông báo qua website. Tiếp tục sử dụng dịch vụ sau khi thay đổi có hiệu lực được coi là chấp nhận điều khoản mới.',
+        ],
+      },
+    ],
+  },
+  privacy: {
+    slug: 'privacy',
+    title: 'Chính sách bảo mật',
+    updatedAt: '2026-08-17',
+    intro:
+      'Chúng tôi coi trọng quyền riêng tư của bạn. Tài liệu này mô tả những thông tin chúng tôi thu thập, mục đích sử dụng và cách chúng tôi bảo vệ chúng.',
+    sections: [
+      {
+        title: '1. Thông tin chúng tôi thu thập',
+        bullets: [
+          'Thông tin tài khoản: địa chỉ email, mật khẩu mã hóa.',
+          'Thông tin sử dụng: nhật ký thao tác, thời gian truy cập, dữ liệu tạo sinh (bao gồm ảnh, video, tệp âm thanh, văn bản).',
+          'Thông tin thanh toán: chúng tôi không lưu trữ dữ liệu thẻ ngân hàng; thanh toán được xử lý bởi đối tác bên thứ ba.',
+          'Thông tin thiết bị: loại thiết bị, phiên bản trình duyệt, địa chỉ IP để bảo mật và chống lạm dụng.',
+        ],
+      },
+      {
+        title: '2. Mục đích sử dụng',
+        bullets: [
+          'Cung cấp dịch vụ và hỗ trợ khách hàng.',
+          'Xử lý thanh toán và quản lý tài khoản.',
+          'Phát hiện và ngăn chặn gian lận, lạm dụng.',
+          'Cải thiện sản phẩm và trải nghiệm người dùng.',
+          'Liên lạc về cập nhật dịch vụ (bạn có thể hủy đăng ký).',
+        ],
+      },
+      {
+        title: '3. Lưu trữ và bên thứ ba',
+        paragraphs: [
+          'Tệp media và dữ liệu dự án có thể được lưu trữ trên cloud object storage (như Alibaba Cloud OSS) để xem trước và tải xuống.',
+          'Thanh toán được xử lý qua đối tác như Epay; suy diễn mô hình qua nhà cung cấp upstream. Chúng tôi chỉ chia sẻ thông tin cần thiết để hoàn thành dịch vụ.',
+          'Chúng tôi không bán thông tin cá nhân cho bên thứ ba không liên quan, trừ trường hợp pháp luật yêu cầu, được sự đồng ý của bạn, hoặc để bảo vệ Nền tảng và người dùng.',
+        ],
+      },
+      {
+        title: '4. Cookie và lưu trữ cục bộ',
+        paragraphs: [
+          'Chúng tôi có thể sử dụng cookie hoặc lưu trữ cục bộ (như token) để duy trì trạng thái đăng nhập và cài đặt. Xóa chúng có thể yêu cầu đăng nhập lại.',
+        ],
+      },
+      {
+        title: '5. Quyền của bạn',
+        bullets: [
+          'Xem và chỉnh sửa thông tin tài khoản (trong phần Cá nhân).',
+          'Xuất hoặc tải xuống kết quả sáng tạo trong phạm vi tính năng sản phẩm cho phép.',
+          'Yêu cầu xóa tài khoản; sau khi xóa chúng tôi sẽ xóa hoặc ẩn danh hóa thông tin cá nhân theo quy định pháp luật, trừ những gì pháp luật yêu cầu lưu giữ.',
+          'Liên hệ để hỏi hoặc khiếu nại về quyền riêng tư.',
+        ],
+      },
+      {
+        title: '6. Bảo vệ người chưa thành niên',
+        paragraphs: [
+          'Nền tảng chủ yếu dành cho người dùng có đầy đủ năng lực hành vi dân sự. Nếu bạn chưa thành niên, vui lòng đọc chính sách này và sử dụng dịch vụ dưới sự hướng dẫn của người giám hộ.',
+        ],
+      },
+      {
+        title: '7. Cập nhật chính sách',
+        paragraphs: [
+          'Chúng tôi có thể cập nhật chính sách này và công bố phiên bản mới cùng ngày cập nhật trên trang này. Với những thay đổi quan trọng, chúng tôi sẽ cố gắng thông báo qua thông báo trong ứng dụng.',
+        ],
+      },
+    ],
+  },
+}
+
+
 // 按界面语言取用户协议 / 隐私政策
 export function getLegalDoc(slug: 'terms' | 'privacy', locale: string): LegalDoc {
-  const pack = locale === 'en' ? LEGAL_DOCS_EN : LEGAL_DOCS
+  const pack = locale === 'en' ? LEGAL_DOCS_EN : locale === 'vi' ? LEGAL_DOCS_VI : LEGAL_DOCS
   return pack[slug]
 }
 
@@ -309,7 +436,7 @@ export type ContactChannel = {
   actionLabel?: string
 }
 
-export const CONTACT_CHANNELS: ContactChannel[] = [
+const CONTACT_CHANNELS_ZH: ContactChannel[] = [
   {
     title: '邮箱支持',
     desc: '工作日一般 1–2 个工作日内回复；请附上账号邮箱与订单号（如有）。',
@@ -330,11 +457,76 @@ export const CONTACT_CHANNELS: ContactChannel[] = [
   },
 ]
 
-export const CONTACT_TOPICS = [
-  '账号与登录',
-  '充值与到账',
-  '创作任务异常',
-  '下载与素材',
-  '隐私与账号注销',
-  '其他',
-] as const
+const CONTACT_CHANNELS_VI: ContactChannel[] = [
+  {
+    title: 'Hỗ trợ qua email',
+    desc: 'Ngày làm việc thường phản hồi trong 1–2 ngày; vui lòng kèm email tài khoản và mã đơn hàng (nếu có).',
+    href: 'mailto:support@printfilm.com',
+    actionLabel: 'support@printfilm.com',
+  },
+  {
+    title: 'Trung tâm trợ giúp',
+    desc: 'Các câu hỏi thường gặp về nạp tiền, tải xuống, phim hoạt hình và công cụ có thể tự tra cứu tại trung tâm trợ giúp.',
+    href: '/help',
+    actionLabel: 'Đến Trung tâm trợ giúp',
+  },
+  {
+    title: 'Hợp tác doanh nghiệp',
+    desc: 'Nạp tiền hàng loạt doanh nghiệp, hợp tác API hoặc yêu cầu hóa đơn, vui lòng gửi email nêu tên công ty và nhu cầu.',
+    href: 'mailto:support@printfilm.com?subject=PRINTFILM%20Enterprise',
+    actionLabel: 'Gửi email hợp tác',
+  },
+]
+
+const CONTACT_CHANNELS_EN: ContactChannel[] = [
+  {
+    title: 'Email support',
+    desc: 'Replies within 1–2 business days; include your account email and order number.',
+    href: 'mailto:support@printfilm.com',
+    actionLabel: 'support@printfilm.com',
+  },
+  {
+    title: 'Help center',
+    desc: 'Check the help center first for common questions on top-up, downloads, and tools.',
+    href: '/help',
+    actionLabel: 'Go to Help Center',
+  },
+  {
+    title: 'Enterprise / invoicing',
+    desc: 'Bulk top-up, API partnerships, or invoice requests — email us with your company name and need.',
+    href: 'mailto:support@printfilm.com?subject=PRINTFILM%20Enterprise',
+    actionLabel: 'Send enterprise email',
+  },
+]
+
+export function getContactChannels(): ContactChannel[] {
+  const locale = getActiveLocale()
+  if (locale === 'vi') return CONTACT_CHANNELS_VI
+  if (locale === 'en') return CONTACT_CHANNELS_EN
+  return CONTACT_CHANNELS_ZH
+}
+
+/** @deprecated use getContactChannels() */
+export const CONTACT_CHANNELS: ContactChannel[] = new Proxy([] as ContactChannel[], {
+  get(_, prop) {
+    const arr = getContactChannels()
+    if (prop === 'length') return arr.length
+    if (typeof prop === 'string' && !isNaN(Number(prop))) return arr[Number(prop)]
+    return (arr as unknown as Record<string | symbol, unknown>)[prop]
+  },
+})
+
+const CONTACT_TOPICS_ZH = ['账号与登录', '充值与到账', '创作任务异常', '下载与素材', '隐私与账号注销', '其他'] as const
+const CONTACT_TOPICS_VI = ['Tài khoản & Đăng nhập', 'Nạp tiền & Nhận tiền', 'Lỗi tác vụ sáng tạo', 'Tải xuống & Tài nguyên', 'Quyền riêng tư & Xóa tài khoản', 'Khác'] as const
+const CONTACT_TOPICS_EN = ['Account & Login', 'Top-up & Credits', 'Creation task issues', 'Downloads & Assets', 'Privacy & Deletion', 'Other'] as const
+
+export type ContactTopic = (typeof CONTACT_TOPICS_ZH)[number] | (typeof CONTACT_TOPICS_VI)[number] | (typeof CONTACT_TOPICS_EN)[number]
+
+export function getContactTopics(): readonly string[] {
+  const locale = getActiveLocale()
+  if (locale === 'vi') return CONTACT_TOPICS_VI
+  if (locale === 'en') return CONTACT_TOPICS_EN
+  return CONTACT_TOPICS_ZH
+}
+
+export const CONTACT_TOPICS = CONTACT_TOPICS_ZH

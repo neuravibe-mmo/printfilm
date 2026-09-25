@@ -1,5 +1,8 @@
 /** Drama image style options (aligned with manju imageStyles). */
 
+import { getActiveLocale } from '../i18n/detect'
+import { messages } from '../i18n/messages'
+
 export const IMAGE_STYLE_IDS = [
   'retro-sci-fi-atompunk',
   'palace-intrigue-cold',
@@ -54,5 +57,9 @@ export const EPISODE_COUNT_PRESETS = [1, 12, 24, 36, 48] as const
 
 export function getImageStyleLabel(styleId: string | undefined | null): string | null {
   if (!styleId) return null
+  // Try locale-specific label first
+  const m = messages[getActiveLocale()] as unknown as { drama?: { imageStyles?: Record<string, string> } }
+  const localized = m.drama?.imageStyles?.[styleId]
+  if (localized) return localized
   return IMAGE_STYLE_OPTIONS.find((o) => o.id === styleId)?.label ?? null
 }

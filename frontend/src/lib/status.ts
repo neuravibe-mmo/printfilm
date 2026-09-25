@@ -217,6 +217,19 @@ export const KEPU_STEPS = [
   { key: 'compose', label: '合成预览' },
 ]
 
+export function getKepuStepsLocalized() {
+  const m = messages[getActiveLocale()] as unknown as { studio?: { steps?: Record<string, string> } }
+  const steps = m.studio?.steps
+  return [
+    { key: 'topic', label: steps?.topic || '选题' },
+    { key: 'style', label: steps?.style || '风格' },
+    { key: 'confirm', label: steps?.confirm || '确认分镜' },
+    { key: 'assets', label: steps?.assets || '画面与配音' },
+    { key: 'videos', label: steps?.videos || '镜头视频' },
+    { key: 'compose', label: steps?.compose || '合成预览' },
+  ]
+}
+
 export const CREATE_STEPS = KEPU_STEPS
 export const BOARD_STEPS = KEPU_STEPS
 
@@ -293,12 +306,15 @@ export function kepuPhaseHint(project: {
   pipeline_mode?: string | null
   shots?: Array<{ image_url?: string | null; audio_url?: string | null; video_url?: string | null }>
 }): string {
+  const locale = getActiveLocale()
+  const m = messages[locale] as unknown as { studio?: { board?: Record<string, string> } }
+  const board = m.studio?.board
   if (isRunning(effectiveStatus(project))) {
-    return '生成进行中，可在右侧查看各阶段进度。'
+    return board?.inProgress || '生成进行中，可在右侧查看各阶段进度。'
   }
   const phase = kepuBillingPhase(project)
-  if (phase === 'script') return '先在风格页点「生成故事板」，本步只拆分镜脚本（预扣文字模型）。'
-  if (phase === 'assets') return '确认旁白与画面后开始生成：按镜头依次出图（后镜参考上一镜）+ 整片配音。'
-  if (phase === 'videos') return '画面与配音已齐。下一步按镜头依次出视频，后镜参考上一镜尾帧。'
-  return '素材已齐。拼接成片走后期合成（叠旁白字幕与配乐，扣费很少）。'
+  if (phase === 'script') return board?.hintScript || '先在风格页点「生成故事板」，本步只拆分镜脚本（预扣文字模型）。'
+  if (phase === 'assets') return board?.hintAssets || '确认旁白与画面后开始生成：按镜头依次出图（后镜参考上一镜）+ 整片配音。'
+  if (phase === 'videos') return board?.hintVideos || '画面与配音已齐。下一步按镜头依次出视频，后镜参考上一镜尾帧。'
+  return board?.hintCompose || '素材已齐。拼接成片走后期合成（叠旁白字幕与配乐，扣费很少）。'
 }

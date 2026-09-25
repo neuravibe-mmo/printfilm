@@ -1,23 +1,11 @@
 import { useEffect, useState } from 'react'
 import Modal from '../ui/Modal'
 import { api, type BillingOrder } from '../../api'
+import { useI18n } from '../../i18n'
 
 type Props = {
   open: boolean
   onClose: () => void
-}
-
-const SKU_LABELS: Record<string, string> = {
-  topup_10: '体验充值',
-  topup_49: '基础充值',
-  topup_99: '进阶充值',
-  topup_199: '专业充值',
-}
-
-const STATUS_CN: Record<string, string> = {
-  pending: '待支付',
-  paid: '已到账',
-  closed: '已关闭',
 }
 
 function yuan(fen: number) {
@@ -32,16 +20,15 @@ function formatTime(iso?: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 充值记录弹窗：列出近期订单与到账状态（过期待支付由后台自动关闭） */
+/** 充值记录弹窗：列出近期订单与到账状态 */
 export default function TopupHistoryModal({ open, onClose }: Props) {
-  /*
-   * orders 订单列表
-   * loading 加载中
-   * error 错误信息
-   */
+  const { t, m } = useI18n()
   const [orders, setOrders] = useState<BillingOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const skuLabels = m.billing.history.skuNames as Record<string, string>
+  const statusLabels = m.billing.history.status as Record<string, string>
 
   useEffect(() => {
     if (!open) return
@@ -54,7 +41,7 @@ export default function TopupHistoryModal({ open, onClose }: Props) {
         if (!cancelled) setOrders(r.orders || [])
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : '加载失败')
+        if (!cancelled) setError(e instanceof Error ? e.message : t('common.loadFailed'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -65,25 +52,25 @@ export default function TopupHistoryModal({ open, onClose }: Props) {
   }, [open])
 
   return (
-    <Modal open={open} onClose={onClose} title="充值记录" size="lg" className="pf-topup-history-modal">
-      {loading ? <p className="pf-muted">加载中…</p> : null}
+    <Modal open={open} onClose={onClose} title={t('billing.history.title')} size="lg" className="pf-topup-history-modal">
+      {loading ? <p className="pf-muted">{t('common.loading')}</p> : null}
       {error ? <p className="pf-error">{error}</p> : null}
       {!loading && !error && orders.length === 0 ? (
-        <p className="pf-muted">暂无充值记录</p>
+        <p className="pf-muted">{t('billing.history.empty')}</p>
       ) : null}
       {!loading && orders.length > 0 ? (
         <ul className="pf-topup-list">
           {orders.map((o) => (
             <li key={o.out_trade_no} className="pf-topup-item">
               <div className="pf-topup-main">
-                <strong>{SKU_LABELS[o.sku_id] || o.sku_name}</strong>
+                <strong>{skuLabels[o.sku_id] || o.sku_name}</strong>
                 <span className="pf-muted">{formatTime(o.paid_at || o.created_at)}</span>
               </div>
               <div className="pf-topup-meta">
                 <em>¥{yuan(o.amount_fen)}</em>
-                <span className="pf-muted">到账 ¥{yuan(o.credit_fen)}</span>
+                <span className="pf-muted">{t('billing.history.creditLabel').replace('{amount}', yuan(o.credit_fen))}</span>
                 <span className={`pf-topup-status is-${o.status}`}>
-                  {STATUS_CN[o.status] || o.status}
+                  {statusLabels[o.status] || o.status}
                 </span>
               </div>
             </li>

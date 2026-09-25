@@ -393,4 +393,159 @@ const en: MethodLandingCopy = {
   jsonLdHeadline: 'PRINTFILM lead-gen short video: production SOP, GEO companion, distribution, and human review',
 }
 
-export const METHOD_LANDING: Record<'zh' | 'en', MethodLandingCopy> = { zh, en }
+const vi: MethodLandingCopy = {
+  metaTitle: 'Video ngắn thu hút khách · PRINTFILM (SOP · Kết hợp GEO · Đa nền tảng)',
+  metaDescription:
+    'Phương pháp làm video ngắn thu hút khách của PRINTFILM: SOP bốn bước sản xuất nội dung, cách kết hợp với GEO, phân phối đa nền tảng, nhịp xuất phim và kiểm duyệt thủ công. Chỉ là mô tả phương pháp, không cam kết kết quả.',
+  kicker: 'Phương pháp',
+  title: 'Video ngắn thu hút khách',
+  ledeBefore: 'Trang này nói về',
+  ledeEm: ' cách chúng tôi làm video ngắn thu hút khách',
+  ledeAfter:
+    ': nội dung được sản xuất như thế nào, kết hợp GEO ra sao, sắp xếp đa nền tảng thế nào, thành phẩm dùng như thế nào. Đọc xong bạn có thể tự đánh giá quy trình này có phù hợp với ngành của bạn không.',
+  startCta: 'Bắt đầu sử dụng',
+  geoCta: 'Quay lại GEO',
+  brandLine: 'Video ngắn thu hút khách · Xuất phim kết hợp GEO',
+  skip: 'Chuyển đến nội dung chính',
+  noticeTitle: 'Đọc trước khi tiếp tục',
+  noticeBody:
+    'Dưới đây là mô tả phương pháp và năng lực thực thi, không phải chứng thực từ khách hàng, cũng không phải cam kết kết quả. Trang này không hiển thị tên khách hàng, dữ liệu case, số tiền giao dịch hay đánh giá khách hàng. PRINTFILM tính phí theo lượng upstream thực tế, không cam kết thu hút khách, lượt xem, leads hay doanh thu. Chu kỳ và năng suất trong trang là khoảng tham khảo, chờ xác nhận.',
+  toc: [
+    { href: '#sop', label: 'SOP sản xuất nội dung' },
+    { href: '#geo', label: 'Kết hợp GEO như thế nào' },
+    { href: '#dist', label: 'Phân phối đa nền tảng' },
+    { href: '#pace', label: 'Nhịp xuất phim' },
+    { href: '#qc', label: 'Kiểm duyệt thủ công & tuân thủ' },
+    { href: '#bound', label: 'Giới hạn năng lực' },
+  ],
+  sopKicker: '01',
+  sopTitle: '1. SOP sản xuất nội dung',
+  sopLeadBefore: 'Chúng tôi chia video ngắn thu hút khách thành bốn bước, mỗi bước có đầu vào và đầu ra rõ ràng. Tư tưởng cốt lõi là: ',
+  sopLeadEm: 'để AI xử lý phần có thể quy mô hóa, để con người kiểm soát phần phải phán đoán.',
+  sopSteps: [
+    {
+      title: 'Thu thập điểm bán: viết rõ bạn đang bán gì',
+      body: 'Đầu vào là sản phẩm, giá, quy trình dịch vụ, phản đối phổ biến và từ khóa ngành. Đầu ra là danh sách chủ đề có thể quay: điểm đau, so sánh, giải thích quy trình, phân tích giá. Bước này giải quyết vấn đề "quay gì" bằng cảm tính — cần có nhu cầu đã được xác minh trước, rồi mới vào bàn làm việc.',
+      note: 'Số liệu dựa trên tài liệu bạn cung cấp bằng văn bản, mô hình không tự bịa giá và chứng chỉ của bạn.',
+    },
+    {
+      title: 'Phân tích cấu trúc: biến "cảm giác thu hút khách được" thành template',
+      body: 'Chia theo năm chiều: tiêu đề, hook 3 giây đầu, điểm đau, giải pháp, CTA cuối. Phân loại thành các cột có thể tái sử dụng. PRINTFILM dùng phong cách hình ảnh + cấu trúc lời dẫn để tiếp nhận các cột này, cho phép xuất hàng loạt từ cùng một bộ điểm bán, thay vì mỗi video phải viết từ đầu.',
+    },
+    {
+      title: 'Kịch bản và phân cảnh: AI ra bản nháp, người xác nhận rồi mới tiếp',
+      body: 'Sau khi chủ đề hoặc lời dẫn vào bàn làm việc, pipeline phân cảnh sẽ chia cảnh, xuất ảnh, lồng tiếng, ghép phim. AI đảm nhận tốc độ và nhất quán cấu trúc; bạn viết lại giọng điệu, bổ sung chi tiết ngành và xác nhận phân cảnh trước khi tiếp tục tạo — bước này quyết định phim có giống bạn không.',
+    },
+    {
+      title: 'Kiểm duyệt & phát hành: cổng kiểm soát con người không thể bỏ qua',
+      body: 'Trước khi đăng bất kỳ thứ gì ra ngoài: kiểm tra tính xác thực (số liệu, chứng chỉ, giá có khớp thực tế), tuân thủ (quy tắc nền tảng và luật quảng cáo), giọng thương hiệu (có giống bạn nói không). Sau khi qua kiểm duyệt, bạn dùng tài khoản của mình để đăng, chúng tôi không đăng thay.',
+    },
+  ],
+  sopCalloutTitle: 'Tại sao không để AI tự đăng',
+  sopCalloutBody:
+    'Một là từ phía nền tảng: các nền tảng chính có quy tắc kiểm soát rủi ro rõ ràng đối với đăng hàng loạt, đăng tự động, đăng nhập từ thiết bị không phải chủ tài khoản; rủi ro bị khóa và hạn chế tiếp cận cuối cùng thuộc về chủ tài khoản. Hai là từ phía nội dung: AI sẽ tự tin bịa đặt chi tiết, nội dung không qua kiểm duyệt thủ công sớm muộn sẽ có vấn đề. Vì vậy "cổng kiểm soát con người" là bước cứng trong quy trình, không được bỏ dù vì lý do tăng tốc.',
+  geoKicker: '02',
+  geoTitle: '2. Kết hợp GEO như thế nào',
+  geoLead:
+    'GEO (Generative Engine Optimization - Tối ưu hóa công cụ tạo sinh) giải quyết vấn đề: khi người dùng hỏi mô hình lớn, mô hình có muốn trích dẫn bạn, đề cập đến bạn không. Video ngắn thu hút khách giải quyết vấn đề: trên TikTok, Xiaohongshu, Video Account — những nơi người dùng khám phá nội dung — người ta có thấy bạn không. Hai cái này không phải thay thế nhau, mà là hai cách diễn đạt của cùng một bộ thực tế thương hiệu.',
+  geoCards: [
+    {
+      title: 'Cùng một bộ thực tế, hai dạng tải',
+      body: 'Website, FAQ, bảng so sánh cho công cụ tạo sinh trích xuất; video ngắn đổi cùng thông điệp thành hook, lời dẫn và hình ảnh. Khi thông điệp không nhất quán, cả mô hình lẫn nền tảng đều giảm tin tưởng.',
+    },
+    {
+      title: 'Video mở rộng diện có thể được trích dẫn',
+      body: 'Nguồn của công cụ tạo sinh không chỉ giới hạn ở website. Video ngắn công khai, mô tả hình ảnh văn bản đều có thể được đưa vào. Chúng tôi đồng bộ các phát ngôn có thể kiểm chứng, không phải bài viết cảm xúc dài.',
+    },
+    {
+      title: 'GEO chẩn đoán, PRINTFILM xuất phim',
+      body: 'Hồ sơ thương hiệu, kho kiến thức và giám sát trích dẫn thực hiện ở phía GEO; PRINTFILM nhận "phim có thể phát". Khi cần quay lại chẩn đoán và gói dịch vụ, từ trang này quay lại GEO.',
+    },
+    {
+      title: 'Không cam kết được trích dẫn',
+      body: 'GEO thường mất vài tuần để có hiệu quả, và không phải cơ chế xếp hạng tuyến tính có thể kiểm soát. Video ngắn cũng không cam kết lượt xem hay leads. Cả hai đều tính phí theo nội dung dịch vụ, không đặt cược theo kết quả.',
+    },
+  ],
+  geoCalloutTitle: 'GEO vs video ngắn thu hút khách (một câu)',
+  geoCalloutBody:
+    'GEO tối ưu hóa "có được đề cập trong câu trả lời AI không", video ngắn thu hút khách tối ưu hóa "trong bối cảnh khám phá nội dung có được xem hết và hỏi giá không". Cái trước tranh trích dẫn, cái sau tranh tiếp cận. Xem chẩn đoán và gói dịch vụ tại website GEO.',
+  distKicker: '03',
+  distTitle: '3. Chiến lược phân phối đa nền tảng',
+  distLead:
+    'Cùng một bộ điểm bán cốt lõi, cách diễn đạt trên các nền tảng khác nhau là khác nhau. Chúng tôi không làm "một video đăng nguyên vẹn lên tất cả nền tảng", mà điều chỉnh hook, thumbnail và thời lượng theo đặc thù nền tảng, đồng thời để rủi ro tài khoản do chủ tài khoản tự kiểm soát.',
+  distTableCaption: 'Nguyên tắc thích ứng phân phối (tham khảo chung, quy tắc nền tảng cụ thể theo thông báo chính thức mới nhất)',
+  distTableHead: ['Nền tảng', 'Ưu tiên nội dung', 'Điểm thích ứng', 'Chủ đăng'],
+  distRows: [
+    { platform: 'TikTok/Douyin', form: 'Video ngắn / hook mạnh', focus: 'Hook 3 giây đầu, mật độ nhịp, dẫn dắt bình luận', owner: 'Tài khoản của bạn' },
+    { platform: 'Xiaohongshu', form: 'Ảnh & văn bản / video ngắn vừa', focus: 'Từ khóa tiêu đề, lượng thông tin thumbnail, cấu trúc nội dung', owner: 'Tài khoản của bạn' },
+    { platform: 'Video Account', form: 'Video ngắn / clip livestream', focus: 'Mạng lưới người quen, thuộc tính local, thân thiện chia sẻ', owner: 'Tài khoản của bạn' },
+    { platform: 'YouTube / Blog', form: 'Nội dung dài', focus: 'Định nghĩa trước, FAQ, bảng so sánh, kết hợp trích dẫn GEO', owner: 'Tài khoản của bạn' },
+    { platform: 'Facebook / Instagram', form: 'Video vừa-dài', focus: 'Giải thích hệ thống, chia chương, mật độ thông tin', owner: 'Tài khoản của bạn' },
+  ],
+  distCalloutTitle: 'Kỷ luật phân phối',
+  distCalloutBody:
+    'Tất cả nội dung đều do tài khoản của bạn đăng. PRINTFILM chỉ cung cấp thành phẩm và gợi ý cấu trúc; không sử dụng RPA đăng hàng loạt thay, không giữ mật khẩu tài khoản, không dùng bất kỳ công cụ bên thứ ba nào tuyên bố "vượt qua kiểm soát rủi ro nền tảng". Kỷ luật này có ưu tiên cao hơn hiệu quả.',
+  paceKicker: '04',
+  paceTitle: '4. Nhịp xuất phim',
+  paceLead:
+    'Vai trò của bàn làm việc không phải là "báo cáo thành tích", mà là để bạn có thể tiếp tục xuất phim theo cột và giữ các dự án đã hoàn thành trong lịch sử để đối chiếu. Nhịp đăng, chạy quảng cáo và trả lời tin nhắn vẫn do bạn quyết định.',
+  paceIncludeTitle: 'Có thể thấy trong bàn làm việc',
+  paceInclude: [
+    'Danh sách dự án (số lượng, phong cách hình ảnh, chế độ thành phẩm hay ảnh tĩnh)',
+    'Trạng thái tạo (nháp / đang tạo / đã hoàn thành)',
+    'Xác nhận phân cảnh rồi mới tiếp, tránh kịch bản chưa kiểm duyệt tự động xuất phim',
+    'Vẽ lại cảnh đơn, tạo lại video hoặc lồng tiếng lại, không cần làm lại toàn bộ phim',
+    'Sau khi hoàn thành tải xuống hoặc đóng gói, dùng tài khoản của bạn để đăng',
+  ],
+  paceExcludeTitle: 'Không cung cấp ở đây',
+  paceExclude: [
+    'Dự báo hay đảm bảo lượt xem, tăng followers hay số leads thu hút',
+    'Lấy dữ liệu backend nền tảng bên thứ ba mà không được ủy quyền',
+    'Quy kết kết quả của một video cho một nút bấm hay một mô hình cụ thể',
+    'So sánh "trung bình ngành" chưa được xác minh',
+  ],
+  paceCalloutTitle: 'Phân công với báo cáo hàng tháng GEO',
+  paceCalloutBody:
+    'Phía GEO theo dõi thương hiệu có được mô hình đề cập không, diễn đạt có chính xác không; phía PRINTFILM theo dõi tuần này có xuất phim theo cột không. Khi hai bên không khớp, trước tiên sửa thông điệp rồi mới tăng sản lượng, chứ không phải thêm một hook kích động hơn.',
+  qcKicker: '05',
+  qcTitle: '5. Kiểm duyệt thủ công & tuân thủ',
+  qcLead: 'Phần này quyết định nội dung có thể tiếp tục đăng ổn định lâu dài không — đây là khâu ít có thể thay thế bằng AI nhất trong toàn bộ quy trình.',
+  qcCards: [
+    {
+      title: 'Kiểm tra tính xác thực',
+      body: 'Mọi con số và phát ngôn liên quan đến giá, chứng chỉ, phạm vi dịch vụ, chính sách hậu mãi đều dựa trên tài liệu bằng văn bản bạn cung cấp, không chấp nhận nội dung mô hình tự sinh ra.',
+    },
+    {
+      title: 'Kiểm tra luật quảng cáo',
+      body: 'Không dùng các từ tuyệt đối hay hứa hẹn như "tốt nhất", "số 1", "cấp quốc gia", "đảm bảo", "chữa khỏi"; với các ngành giám sát chặt như y tế, tài chính, giáo dục cần thêm một lượt kiểm tra theo quy định tương ứng.',
+    },
+    {
+      title: 'Nhãn AI',
+      body: 'Gắn nhãn nội dung được tạo hoặc hỗ trợ tạo bởi AI theo yêu cầu của từng nền tảng, cách gắn nhãn theo quy tắc mới nhất của từng nền tảng.',
+    },
+    {
+      title: 'Cô lập tài khoản',
+      body: 'Dự án và tài nguyên của mỗi tài khoản được cô lập với nhau. Không sao chép template lời dẫn của khách A trực tiếp sang khách B, tránh lẫn dữ liệu và lẫn nhân vật.',
+    },
+  ],
+  boundKicker: '06',
+  boundTitle: '6. Giới hạn năng lực (nói rõ những trường hợp không phù hợp trước)',
+  boundLead: 'Thay vì giải thích sau, tốt hơn là nói rõ trước. Các trường hợp dưới đây chúng tôi sẽ trực tiếp nói "không khuyến nghị làm" hoặc "cần điều kiện tiên quyết".',
+  boundItems: [
+    'Yêu cầu cam kết số leads, lượt xem hay doanh thu — chúng tôi không làm, và điều này mâu thuẫn với cách tính phí theo lượng.',
+    'Cần giữ mật khẩu tài khoản, sử dụng công cụ đăng hàng loạt — không làm, rủi ro kiểm soát do chủ tài khoản chịu.',
+    'Thuộc ngành giám sát chặt như y tế, tài chính, giáo dục nhưng không cung cấp được chứng chỉ tuân thủ và quy trình kiểm duyệt — cần bổ sung trước.',
+    'Muốn "thấy hiệu quả trong một tuần" — cả nội dung lẫn GEO đều là công việc tích lũy, chu kỳ thấy hiệu quả tính theo tuần.',
+    'Không thể cung cấp bất kỳ tài liệu kinh doanh nào, cũng không có người xác nhận phân cảnh — AI không thể tự bịa chi tiết ngành đáng tin cậy.',
+  ],
+  closeTitle: 'Bắt đầu từ một điểm bán',
+  closeBody: 'Vào bàn làm việc tạo video ngắn thu hút khách; cần chẩn đoán thương hiệu, kho kiến thức và giám sát trích dẫn mô hình, quay lại GEO.',
+  footAbout: 'PRINTFILM cung cấp bàn làm việc video ngắn thu hút khách: chủ đề / lời dẫn → phân cảnh → hình ảnh → thành phẩm. Sử dụng kết hợp với website GEO, không thay thế chẩn đoán và giám sát trích dẫn.',
+  footLegal:
+    'Đây là mô tả phương pháp và năng lực thực thi, không phải chứng thực khách hàng, cũng không cấu thành bất kỳ cam kết kết quả nào. Dịch vụ tính phí theo năng suất nội dung và lượng upstream thực tế, không cam kết leads, lượt xem, leads hay doanh thu. Không dùng từ tuyệt đối, không hiển thị tên khách hàng hay dữ liệu case chưa được ủy quyền.',
+  footCopy: 'PRINTFILM · Video ngắn thu hút khách',
+  jsonLdHeadline: 'PRINTFILM video ngắn thu hút khách: SOP sản xuất nội dung, kết hợp GEO, phân phối đa nền tảng và kiểm duyệt thủ công',
+}
+
+
+export const METHOD_LANDING: Record<'zh' | 'en' | 'vi', MethodLandingCopy> = { zh, en, vi }

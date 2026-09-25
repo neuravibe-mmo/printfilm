@@ -13,22 +13,15 @@ import {
 } from '../api/tools'
 import { getToolDef } from '../lib/toolsCatalog'
 import { pageCountOf } from '../lib/pagination'
+import { useI18n } from '../i18n'
 
 const PAGE_SIZE_DEFAULT = 8
 
-const STATUS_CN: Record<string, string> = {
-  queued: '生成中',
-  running: '生成中',
-  succeeded: '已完成',
-  failed: '失败',
-}
-
-// 格式化记录时间
 function formatWhen(iso?: string) {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString('zh-CN', {
+  return d.toLocaleString(undefined, {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -36,19 +29,16 @@ function formatWhen(iso?: string) {
   })
 }
 
-// 封面：预览图或结果首张
 function coverOf(item: ToolRunRecord): string {
   return resolveToolMediaUrl(item.preview_url || item.urls[0] || '')
 }
 
-// 是否视频类结果
 function isVideoRecord(item: ToolRunRecord, url?: string): boolean {
   if (item.kind === 'video') return true
   const target = url || item.urls[0] || item.preview_url || ''
   return /\.mp4($|\?)/i.test(target)
 }
 
-// 下载文件名：工具名 + 记录 id
 function downloadName(item: ToolRunRecord, url: string): string {
   const tool = getToolDef(item.tool_id)
   const title = (tool?.title || item.tool_id).replace(/\s+/g, '')
@@ -56,20 +46,9 @@ function downloadName(item: ToolRunRecord, url: string): string {
   return `${title}_${item.id}.${ext}`
 }
 
-/** 个人中心「工具创作」列表：服务端分页 + 详情查看/下载 */
+/** 个人中心「工具创作」列表 */
 export default function SettingsToolRunsPanel() {
-  /*
-   * page 页码
-   * pageSize 每页条数
-   * items 当前页记录
-   * total 总数
-   * loading 加载中
-   * error 错误
-   * detail 详情弹窗记录
-   * detailLoading 详情加载中
-   * downloading 正在下载的 url
-   * actionError 下载/详情错误
-   */
+  const { t } = useI18n()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE_DEFAULT)
   const [items, setItems] = useState<ToolRunRecord[]>([])
@@ -80,6 +59,13 @@ export default function SettingsToolRunsPanel() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [downloading, setDownloading] = useState('')
   const [actionError, setActionError] = useState('')
+
+  const statusLabels: Record<string, string> = {
+    queued: t('toolRuns.statusRunning'),
+    running: t('toolRuns.statusRunning'),
+    succeeded: t('toolRuns.statusDone'),
+    failed: t('toolRuns.statusFailed'),
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -92,7 +78,7 @@ export default function SettingsToolRunsPanel() {
         setTotal(res.total)
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : '加载失败')
+        if (!cancelled) setError(err instanceof Error ? err.message : t('common.loadFailed'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -104,7 +90,6 @@ export default function SettingsToolRunsPanel() {
 
   const pageCount = pageCountOf(total, pageSize)
 
-  // 打开详情：再拉一次接口，确保 OSS 地址最新
   async function openDetail(item: ToolRunRecord) {
     setActionError('')
     setDetail(item)
@@ -114,13 +99,12 @@ export default function SettingsToolRunsPanel() {
       setDetail(fresh)
       setItems((prev) => prev.map((row) => (row.id === fresh.id ? fresh : row)))
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : '加载详情失败')
+      setActionError(err instanceof Error ? err.message : t('common.loadFailed'))
     } finally {
       setDetailLoading(false)
     }
   }
 
-  // 从 OSS/公网地址下载结果
   async function downloadUrl(item: ToolRunRecord, url: string) {
     const abs = resolveToolMediaUrl(url)
     if (!abs) return
@@ -130,7 +114,7 @@ export default function SettingsToolRunsPanel() {
       const blob = await fetchMediaBlob(abs)
       triggerBlobDownload(blob, downloadName(item, abs))
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : '下载失败')
+      setActionError(err instanceof Error ? err.message : t('common.downloadFailed'))
     } finally {
       setDownloading('')
     }
@@ -140,23 +124,23 @@ export default function SettingsToolRunsPanel() {
     <section className="pf-settings-card">
       <div className="pf-settings-card-head">
         <div>
-          <h1>工具创作</h1>
-          <p className="pf-muted">文生图、图生图、视频等独立工具的生成记录</p>
+          <h1>{t('toolRuns.title')}</h1>
+          <p className="pf-muted">{t('toolRuns.lead')}</p>
         </div>
         <div className="pf-settings-actions">
           <Link className="pf-btn pf-btn-lime pf-btn-sm" to="/tools">
-            去创作
+            {t('common.goCreate')}
           </Link>
         </div>
       </div>
-      {loading ? <p className="pf-muted">加载中…</p> : null}
+      {loading ? <p className="pf-muted">{t('common.loading')}</p> : null}
       {error ? <BillingErrorNotice message={error} /> : null}
       {actionError ? <BillingErrorNotice message={actionError} /> : null}
       {!loading && !error && items.length === 0 ? (
         <div className="pf-settings-empty">
-          <p>还没有工具创作记录</p>
+          <p>{t('toolRuns.empty')}</p>
           <Link className="pf-btn pf-btn-lime pf-btn-sm" to="/tools">
-            去创作
+            {t('common.goCreate')}
           </Link>
         </div>
       ) : null}
@@ -184,7 +168,7 @@ export default function SettingsToolRunsPanel() {
                     <span className="pf-settings-list-main">
                       <strong>{tool?.title || item.tool_id}</strong>
                       <em className="pf-muted">
-                        {STATUS_CN[item.status] || item.status}
+                        {statusLabels[item.status] || item.status}
                         {item.prompt ? ` · ${item.prompt.slice(0, 36)}` : ''}
                       </em>
                     </span>
@@ -197,7 +181,7 @@ export default function SettingsToolRunsPanel() {
                       onClick={() => void openDetail(item)}
                     >
                       <Eye size={14} aria-hidden />
-                      查看
+                      {t('toolRuns.viewBtn')}
                     </button>
                     <button
                       type="button"
@@ -206,7 +190,7 @@ export default function SettingsToolRunsPanel() {
                       onClick={() => void downloadUrl(item, firstUrl)}
                     >
                       <Download size={14} aria-hidden />
-                      {downloading === resolveToolMediaUrl(firstUrl) ? '下载中…' : '下载'}
+                      {downloading === resolveToolMediaUrl(firstUrl) ? t('common.downloading') : t('toolRuns.downloadBtn')}
                     </button>
                   </span>
                 </div>
@@ -225,20 +209,20 @@ export default function SettingsToolRunsPanel() {
           setPage(1)
         }}
         onChange={setPage}
-        ariaLabel="工具创作分页"
+        ariaLabel={t('toolRuns.title')}
       />
 
       <Modal
         open={Boolean(detail)}
         onClose={() => setDetail(null)}
-        title={detail ? getToolDef(detail.tool_id)?.title || '创作详情' : '创作详情'}
+        title={detail ? getToolDef(detail.tool_id)?.title || t('toolRuns.title') : t('toolRuns.title')}
         size="lg"
         className="pf-tool-run-modal"
         footer={
           detail ? (
             <div className="pf-tool-run-foot">
               <Link className="pf-btn pf-btn-ghost pf-btn-sm" to={`/tools/${detail.tool_id}`} onClick={() => setDetail(null)}>
-                再创作
+                {t('common.goCreate')}
               </Link>
               {detail.urls[0] || detail.preview_url ? (
                 <button
@@ -251,14 +235,14 @@ export default function SettingsToolRunsPanel() {
                   onClick={() => void downloadUrl(detail, detail.urls[0] || detail.preview_url || '')}
                 >
                   <Download size={14} aria-hidden />
-                  下载结果
+                  {t('toolRuns.downloadBtn')}
                 </button>
               ) : null}
             </div>
           ) : null
         }
       >
-        {detailLoading && !detail?.urls.length ? <p className="pf-muted">加载中…</p> : null}
+        {detailLoading && !detail?.urls.length ? <p className="pf-muted">{t('common.loading')}</p> : null}
         {detail ? (
           <div className="pf-tool-run-detail">
             <div className="pf-tool-run-media">
@@ -268,52 +252,52 @@ export default function SettingsToolRunsPanel() {
                 ) : (
                   <img
                     src={resolveToolMediaUrl(detail.urls[0] || detail.preview_url)}
-                    alt="生成结果"
+                    alt={t('toolRuns.statusDone')}
                   />
                 )
               ) : (
                 <p className="pf-muted">
-                  {STATUS_CN[detail.status] || detail.status}
-                  {detail.error ? ` · ${detail.error}` : ' · 结果尚未就绪'}
+                  {statusLabels[detail.status] || detail.status}
+                  {detail.error ? ` · ${detail.error}` : ` · ${t('toolRuns.notReady')}`}
                 </p>
               )}
             </div>
             <dl className="pf-tool-run-meta">
               <div>
-                <dt>状态</dt>
-                <dd>{STATUS_CN[detail.status] || detail.status}</dd>
+                <dt>{t('common.status')}</dt>
+                <dd>{statusLabels[detail.status] || detail.status}</dd>
               </div>
               <div>
-                <dt>时间</dt>
+                <dt>{t('common.time')}</dt>
                 <dd>{formatWhen(detail.created_at)}</dd>
               </div>
               {detail.prompt ? (
                 <div className="is-block">
-                  <dt>提示词</dt>
+                  <dt>{t('toolRuns.promptLabel')}</dt>
                   <dd>{detail.prompt}</dd>
                 </div>
               ) : null}
               {detail.params?.ratio ? (
                 <div>
-                  <dt>画幅</dt>
+                  <dt>{t('common.ratio')}</dt>
                   <dd>{detail.params.ratio}</dd>
                 </div>
               ) : null}
               {detail.params?.mode ? (
                 <div>
-                  <dt>输出类型</dt>
+                  <dt>{t('common.outputType')}</dt>
                   <dd>{detail.params.mode}</dd>
                 </div>
               ) : null}
               {detail.params?.pack ? (
                 <div>
-                  <dt>工具包</dt>
+                  <dt>{t('common.toolPack')}</dt>
                   <dd>{detail.params.pack}</dd>
                 </div>
               ) : null}
               {detail.error ? (
                 <div className="is-block">
-                  <dt>错误</dt>
+                  <dt>{t('common.error')}</dt>
                   <dd className="pf-error">{detail.error}</dd>
                 </div>
               ) : null}
@@ -329,7 +313,7 @@ export default function SettingsToolRunsPanel() {
                     onClick={() => void downloadUrl(detail, url)}
                   >
                     <Download size={14} aria-hidden />
-                    下载文件 {idx + 1}
+                    {t('toolRuns.downloadBtn')} {idx + 1}
                   </button>
                 ))}
               </div>

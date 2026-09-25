@@ -15,7 +15,7 @@ export default function LanguageSwitch() {
           aria-pressed={locale === code}
           onClick={() => setLocale(code)}
         >
-          {code === 'zh' ? t('nav.langZh') : t('nav.langEn')}
+          {code === 'zh' ? t('nav.langZh') : code === 'vi' ? t('nav.langVi') : t('nav.langEn')}
         </button>
       ))}
     </div>

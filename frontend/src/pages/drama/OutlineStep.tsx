@@ -19,6 +19,7 @@ import Modal from '../../components/ui/Modal'
 import { DramaImageStyleModal } from './DramaImageStyleModal'
 import { DramaProjectSettingsModal } from './DramaProjectSettingsModal'
 import { OutlineEpisodePanel } from './OutlineEpisodePanel'
+import { useI18n } from '../../i18n'
 
 type MetaModalKey = 'source' | 'summary' | 'project'
 
@@ -26,12 +27,10 @@ export type OutlineStepProps = {
   projectId: number
   project: DramaProject
   onProjectChange: (p: DramaProject) => void
-  /** 可选：大纲就绪回调（工作区已不再依赖「下一步」） */
   onOutlineReadyChange?: (ready: boolean) => void
   onError: (msg: string) => void
 }
 
-// 渲染剧情大纲步骤
 export function OutlineStep({
   projectId,
   project,
@@ -39,6 +38,7 @@ export function OutlineStep({
   onOutlineReadyChange,
   onError,
 }: OutlineStepProps) {
+  const { t } = useI18n()
   const notifyOutlineReady = (ready: boolean) => onOutlineReadyChange?.(ready)
   const [script, setScript] = useState<DramaScript | null>(project.script || null)
   const [metaModal, setMetaModal] = useState<MetaModalKey | null>(null)
@@ -83,7 +83,6 @@ export function OutlineStep({
     setSummaryEditing(false)
   }
 
-  // 轮询剧本直到条件满足（worker 异步任务）
   async function pollScriptUntil(
     predicate: (s: DramaScript) => boolean,
     runToken?: number,
@@ -105,10 +104,9 @@ export function OutlineStep({
       if (predicate(s)) return s
       await new Promise((r) => setTimeout(r, 2000))
     }
-    throw new Error('等待生成超时，请刷新后重试')
+    throw new Error(t('drama.outline.waitTimeout'))
   }
 
-  // 入队并等待剧本摘要完成
   async function runSummary(runToken?: number) {
     setSummaryGenerating(true)
     setSummaryError('')
@@ -122,7 +120,7 @@ export function OutlineStep({
       if (!finished) return null
       if (getSummaryStatus(finished) === 'failed') {
         const msg =
-          String((finished.params || {}).summary_error || '') || '剧本摘要生成失败'
+          String((finished.params || {}).summary_error || '') || t('drama.outline.summaryFailed')
         setSummaryError(msg)
         onError(msg)
         throw new Error(msg)
@@ -131,7 +129,7 @@ export function OutlineStep({
       onProjectChange(p)
       return finished
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '剧本摘要生成失败'
+      const msg = err instanceof Error ? err.message : t('drama.outline.summaryFailed')
       setSummaryError(msg)
       onError(msg)
       throw err
@@ -140,7 +138,6 @@ export function OutlineStep({
     }
   }
 
-  // 入队并轮询分集剧本直到完成
   async function runEpisodeScripts(runToken?: number, force = false) {
     setEpisodeGenerating(true)
     setEpisodeError('')
@@ -160,7 +157,7 @@ export function OutlineStep({
       if (getEpisodeContentStatus(finished) === 'failed') {
         const msg =
           String((finished.params || {}).episode_content_error || '') ||
-          '分集剧本生成失败'
+          t('drama.outline.episodeFailed')
         setEpisodeError(msg)
         onError(msg)
         notifyOutlineReady(false)
@@ -170,7 +167,7 @@ export function OutlineStep({
       const p = await dramaApi.getProject(projectId)
       onProjectChange(p)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '分集剧本生成失败'
+      const msg = err instanceof Error ? err.message : t('drama.outline.episodeFailed')
       setEpisodeError(msg)
       onError(msg)
       notifyOutlineReady(false)
@@ -179,14 +176,12 @@ export function OutlineStep({
     }
   }
 
-  // 手动强制重写全部分集正文
   async function handleRegenerateEpisodes() {
     if (episodeGenerating) return
     const ok = await dialog.confirm({
-      title: '重新生成分集剧本',
-      message:
-        '将清空当前分集正文并按最新剧本摘要重新生成全部集数，已有编辑将丢失。是否继续？',
-      confirmText: '重新生成',
+      title: t('drama.outline.regenEpisodesTitle'),
+      message: t('drama.outline.regenEpisodesMessage'),
+      confirmText: t('drama.outline.regenBtn'),
       tone: 'danger',
     })
     if (!ok) return
@@ -194,7 +189,6 @@ export function OutlineStep({
     await runEpisodeScripts(undefined, true)
   }
 
-  // 挂载自动流水线：无摘要 → 摘要 → 分集（未满目标集数会续跑；已在 worker 中则只轮询）
   useEffect(() => {
     const token = ++pipelineRef.current
     async function pipeline() {
@@ -211,7 +205,7 @@ export function OutlineStep({
             setSummaryGenerating(false)
             if (!current || getSummaryStatus(current) === 'failed') {
               const msg =
-                String((current?.params || {}).summary_error || '') || '剧本摘要生成失败'
+                String((current?.params || {}).summary_error || '') || t('drama.outline.summaryFailed')
               setSummaryError(msg)
               onError(msg)
               return
@@ -251,7 +245,7 @@ export function OutlineStep({
           if (getEpisodeContentStatus(finished) === 'failed') {
             const msg =
               String((finished.params || {}).episode_content_error || '') ||
-              '分集剧本生成失败'
+              t('drama.outline.episodeFailed')
             setEpisodeError(msg)
             onError(msg)
             notifyOutlineReady(false)
@@ -273,7 +267,6 @@ export function OutlineStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
-  // 更新画面风格
   async function handleStyleChange(styleId: string) {
     try {
       const updated = await dramaApi.updateScript(projectId, {
@@ -283,18 +276,16 @@ export function OutlineStep({
       const p = await dramaApi.getProject(projectId)
       onProjectChange(p)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '风格更新失败')
+      onError(err instanceof Error ? err.message : t('drama.outline.styleFailed'))
     }
   }
 
-  // 进入剧本摘要编辑
   function startSummaryEdit() {
     if (!summary) return
     setSummaryDraft(structuredClone(summary) as Record<string, unknown>)
     setSummaryEditing(true)
   }
 
-  // 保存手动编辑的剧本摘要
   async function saveSummaryEdit() {
     if (!summaryDraft) return
     setSummarySaving(true)
@@ -306,7 +297,7 @@ export function OutlineStep({
       const p = await dramaApi.getProject(projectId)
       onProjectChange(p)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '摘要保存失败')
+      onError(err instanceof Error ? err.message : t('drama.outline.saveSummaryFailed'))
     } finally {
       setSummarySaving(false)
     }
@@ -323,7 +314,7 @@ export function OutlineStep({
       setScript(updated)
       setSourceEditing(false)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '创意保存失败')
+      onError(err instanceof Error ? err.message : t('drama.outline.saveSourceFailed'))
     } finally {
       setSourceSaving(false)
     }
@@ -335,18 +326,18 @@ export function OutlineStep({
         <div className="drama-outline-toolbar-left">
           <DramaImageStyleModal
             variant="field"
-            fieldLabel="项目风格"
-            title="选择项目风格"
-            emptyLabel="未选择"
+            fieldLabel={t('drama.outline.projectStyle')}
+            title={t('drama.outline.selectStyle')}
+            emptyLabel={t('drama.outline.noStyle')}
             value={(imageStyleId as ImageStyleId | '') || ''}
             onChange={(id) => void handleStyleChange(id)}
           />
           <span className="drama-outline-toolbar-meta">
-            {episodeCount ? `共 ${episodeCount} 集` : '集数待定'}
+            {episodeCount ? `${t('drama.outline.totalEpisodes')} ${episodeCount} ${t('drama.outline.eps')}` : t('drama.outline.epsPending')}
             {episodeGenerating || episodeStatus === 'generating'
               ? progress.total > 0
-                ? ` · 生成中 ${progress.done}/${progress.total}`
-                : ' · 分集生成中'
+                ? ` · ${t('drama.outline.generating')} ${progress.done}/${progress.total}`
+                : ` · ${t('drama.outline.episodeGenerating')}`
               : ''}
           </span>
         </div>
@@ -356,25 +347,25 @@ export function OutlineStep({
             className={`drama-outline-chip-btn${metaModal === 'source' ? ' is-on' : ''}`}
             onClick={openSourceModal}
           >
-            整剧创意
+            {t('drama.outline.storyIdea')}
           </button>
           <button
             type="button"
             className={`drama-outline-chip-btn${metaModal === 'project' ? ' is-on' : ''}`}
             onClick={() => setMetaModal('project')}
           >
-            项目设置
+            {t('drama.outline.projectSettings')}
           </button>
           <button
             type="button"
             className={`drama-outline-chip-btn${metaModal === 'summary' ? ' is-on' : ''}`}
             onClick={openSummaryModal}
           >
-            全局设定
+            {t('drama.outline.globalSettings')}
           </button>
           {(episodeError || episodeStatus === 'failed') && (
             <button type="button" className="drama-outline-chip-btn" onClick={() => void handleRegenerateEpisodes()}>
-              重跑全部分集
+              {t('drama.outline.rerunAllEpisodes')}
             </button>
           )}
         </div>
@@ -383,14 +374,14 @@ export function OutlineStep({
       <Modal
         open={metaModal === 'source'}
         onClose={closeMetaModal}
-        title="整剧创意"
+        title={t('drama.outline.storyIdea')}
         size="lg"
         className="drama-outline-meta-modal"
         footer={
           sourceEditing ? (
             <>
               <button type="button" className="drama-btn-ghost" onClick={() => setSourceEditing(false)}>
-                取消编辑
+                {t('drama.outline.cancelEdit')}
               </button>
               <button
                 type="button"
@@ -398,7 +389,7 @@ export function OutlineStep({
                 disabled={sourceSaving}
                 onClick={() => void saveSourceEdit()}
               >
-                {sourceSaving ? '保存中…' : '保存'}
+                {sourceSaving ? t('common.saving') : t('common.save')}
               </button>
             </>
           ) : (
@@ -410,7 +401,7 @@ export function OutlineStep({
                 setSourceEditing(true)
               }}
             >
-              编辑
+              {t('common.edit')}
             </button>
           )
         }
@@ -424,7 +415,7 @@ export function OutlineStep({
               onChange={(e) => setSourceDraft(e.target.value)}
             />
           ) : (
-            <p className="drama-pre">{script?.source?.trim() || '暂无整剧创意'}</p>
+            <p className="drama-pre">{script?.source?.trim() || t('drama.outline.noStoryIdea')}</p>
           )}
         </div>
       </Modal>
@@ -432,14 +423,14 @@ export function OutlineStep({
       <Modal
         open={metaModal === 'summary'}
         onClose={closeMetaModal}
-        title="全局设定"
+        title={t('drama.outline.globalSettings')}
         size="lg"
         className="drama-outline-meta-modal"
         footer={
           summaryEditing ? (
             <>
               <button type="button" className="drama-btn-ghost" onClick={() => setSummaryEditing(false)}>
-                取消编辑
+                {t('drama.outline.cancelEdit')}
               </button>
               <button
                 type="button"
@@ -447,38 +438,38 @@ export function OutlineStep({
                 disabled={summarySaving}
                 onClick={() => void saveSummaryEdit()}
               >
-                {summarySaving ? '保存中…' : '保存'}
+                {summarySaving ? t('common.saving') : t('common.save')}
               </button>
             </>
           ) : summary && summaryStatus === 'completed' ? (
             <button type="button" className="drama-btn-ghost" onClick={() => startSummaryEdit()}>
-              编辑
+              {t('common.edit')}
             </button>
           ) : summaryError || summaryStatus === 'failed' ? (
             <button type="button" className="drama-btn-primary" onClick={() => void runSummary()}>
-              重新生成
+              {t('drama.outline.regen')}
             </button>
           ) : null
         }
       >
         <div className="drama-outline-meta-modal-body">
           {summaryGenerating || summaryStatus === 'generating' ? (
-            <p className="drama-loader">全剧摘要生成中…</p>
+            <p className="drama-loader">{t('drama.outline.summaryGenerating')}</p>
           ) : null}
           {summaryError || summaryStatus === 'failed' ? (
-            <p className="drama-error">{summaryError || '摘要生成失败'}</p>
+            <p className="drama-error">{summaryError || t('drama.outline.summaryFailed')}</p>
           ) : null}
           {summaryEditing && summaryDraft ? (
             <div className="drama-outline-edit">
               <EditableSummaryField
-                label="剧名"
+                label={t('drama.outline.seriesTitle')}
                 value={String(summaryDraft.seriesTitle || '')}
                 onChange={(v) =>
                   setSummaryDraft((prev) => (prev ? { ...prev, seriesTitle: v } : prev))
                 }
               />
               <EditableSummaryField
-                label="自定义集数"
+                label={t('drama.outline.episodeCount')}
                 value={String(summaryDraft.episodeCount ?? '')}
                 onChange={(v) =>
                   setSummaryDraft((prev) =>
@@ -487,12 +478,12 @@ export function OutlineStep({
                 }
               />
               <EditableSummaryField
-                label="故事类型"
+                label={t('drama.outline.storyType')}
                 value={String(summaryDraft.storyType || '')}
                 onChange={(v) => setSummaryDraft((prev) => (prev ? { ...prev, storyType: v } : prev))}
               />
               <EditableSummaryField
-                label="一句话故事"
+                label={t('drama.outline.oneLineStory')}
                 value={String(summaryDraft.oneLineStory || '')}
                 onChange={(v) =>
                   setSummaryDraft((prev) => (prev ? { ...prev, oneLineStory: v } : prev))
@@ -500,7 +491,7 @@ export function OutlineStep({
                 multiline
               />
               <EditableSummaryField
-                label="故事梗概"
+                label={t('drama.outline.synopsis')}
                 value={String(summaryDraft.synopsis || '')}
                 onChange={(v) => setSummaryDraft((prev) => (prev ? { ...prev, synopsis: v } : prev))}
                 multiline
@@ -509,13 +500,13 @@ export function OutlineStep({
           ) : null}
           {!summaryEditing && summary && summaryStatus === 'completed' ? (
             <div className="drama-summary-structured">
-              <SummaryField label="剧名" value={String(summary.seriesTitle || '')} />
-              <SummaryField label="故事类型" value={String(summary.storyType || '')} />
-              <SummaryField label="一句话故事" value={String(summary.oneLineStory || '')} />
-              <SummaryField label="故事梗概" value={String(summary.synopsis || '')} />
+              <SummaryField label={t('drama.outline.seriesTitle')} value={String(summary.seriesTitle || '')} />
+              <SummaryField label={t('drama.outline.storyType')} value={String(summary.storyType || '')} />
+              <SummaryField label={t('drama.outline.oneLineStory')} value={String(summary.oneLineStory || '')} />
+              <SummaryField label={t('drama.outline.synopsis')} value={String(summary.synopsis || '')} />
               {characters.length > 0 ? (
                 <section>
-                  <h4>人物</h4>
+                  <h4>{t('drama.outline.characters')}</h4>
                   <p className="drama-muted">
                     {characters.map((ch) => String(ch.name || '')).filter(Boolean).join('、')}
                   </p>
@@ -524,7 +515,7 @@ export function OutlineStep({
             </div>
           ) : null}
           {!summaryEditing && !summary && summaryStatus !== 'generating' && !summaryError ? (
-            <p className="drama-muted">暂无全局设定，等待摘要生成或点击重新生成。</p>
+            <p className="drama-muted">{t('drama.outline.noSummary')}</p>
           ) : null}
         </div>
       </Modal>

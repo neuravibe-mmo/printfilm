@@ -1,5 +1,6 @@
 /** 大纲「项目设置」：画幅/画风/字幕/人物介绍/尾帧衔接（全局可改；分镜页只读） */
 import { useState } from 'react'
+import { useI18n } from '../../i18n'
 import Modal from '../../components/ui/Modal'
 import { DramaImageStyleModal } from './DramaImageStyleModal'
 import {
@@ -89,6 +90,7 @@ export function DramaProjectSettingsModal({
   onScriptChange,
   onError,
 }: Props) {
+  const { t } = useI18n()
   const [saving, setSaving] = useState(false)
   const projectParams = (project.params || {}) as Record<string, unknown>
   const styleId = (String(script?.params?.image_style_id || projectParams.image_style_id || '') ||
@@ -106,7 +108,7 @@ export function DramaProjectSettingsModal({
       const updated = await dramaApi.updateProject(projectId, { params: nextParams })
       onProjectChange(updated)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '项目设置保存失败')
+      onError(err instanceof Error ? err.message : t('drama.projectSettings.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -122,7 +124,7 @@ export function DramaProjectSettingsModal({
       const p = await dramaApi.getProject(projectId)
       onProjectChange(p)
     } catch (err) {
-      onError(err instanceof Error ? err.message : '风格保存失败')
+      onError(err instanceof Error ? err.message : t('drama.projectSettings.stylesSaveFailed'))
     } finally {
       setSaving(false)
     }
@@ -132,23 +134,23 @@ export function DramaProjectSettingsModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="项目设置"
+      title={t('drama.projectSettings.title')}
       size="md"
       className="drama-project-settings-modal"
       footer={
         <button type="button" className="drama-btn-primary" onClick={onClose} disabled={saving}>
-          完成
+          {t('common.done')}
         </button>
       }
     >
       <div className="drama-project-settings">
         <p className="drama-muted drama-project-settings-lead">
-          全项目统一；分镜页只读展示。修改画幅后请重新生成相关镜头。
+          {t('drama.projectSettings.hint')}
         </p>
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>画幅</h4>
+            <h4>{t('drama.projectSettings.aspect')}</h4>
           </div>
           <SettingsChoiceRow
             value={aspectRatio}
@@ -157,7 +159,7 @@ export function DramaProjectSettingsModal({
             onChange={(ratio) => void patchProjectParams({ aspect_ratio: ratio })}
           />
           <div className="drama-project-settings-head">
-            <h4>清晰度</h4>
+            <h4>{t('drama.projectSettings.resolution')}</h4>
           </div>
           <SettingsChoiceRow
             value={resolution}
@@ -169,13 +171,13 @@ export function DramaProjectSettingsModal({
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>画面风格</h4>
+            <h4>{t('drama.projectSettings.imageStyle')}</h4>
           </div>
           <DramaImageStyleModal
             variant="field"
             fieldLabel=""
-            title="选择项目风格"
-            emptyLabel="选择风格"
+            title={t('drama.projectSettings.selectStyle')}
+            emptyLabel={t('drama.projectSettings.selectStyleEmpty')}
             value={styleId}
             disabled={saving}
             onChange={(id) => void handleStyleChange(id)}
@@ -184,14 +186,14 @@ export function DramaProjectSettingsModal({
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>字幕方式</h4>
+            <h4>{t('drama.projectSettings.subtitleMode')}</h4>
           </div>
           <SettingsChoiceRow
             value={subtitleMode}
             disabled={saving}
             options={[
-              { value: 'post' as DramaSubtitleMode, label: '后期字幕' },
-              { value: 'model' as DramaSubtitleMode, label: '模型字幕' },
+              { value: 'post' as DramaSubtitleMode, label: t('drama.projectSettings.subtitlePost') },
+              { value: 'model' as DramaSubtitleMode, label: t('drama.projectSettings.subtitleModel') },
             ]}
             onChange={(mode) =>
               void patchProjectParams({
@@ -200,19 +202,19 @@ export function DramaProjectSettingsModal({
               })
             }
           />
-          <p className="drama-muted">后期字幕成片后拼接；模型字幕生成时烧录。</p>
+          <p className="drama-muted">{t('drama.projectSettings.subtitleHint')}</p>
         </section>
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>人物介绍叠字</h4>
+            <h4>{t('drama.projectSettings.charIntro')}</h4>
           </div>
           <SettingsChoiceRow
             value={characterIntroMode}
             disabled={saving}
             options={[
-              { value: 'off' as DramaCharacterIntroMode, label: '无介绍叠字' },
-              { value: 'model' as DramaCharacterIntroMode, label: '人物介绍' },
+              { value: 'off' as DramaCharacterIntroMode, label: t('drama.projectSettings.charIntroOff') },
+              { value: 'model' as DramaCharacterIntroMode, label: t('drama.projectSettings.charIntroOn') },
             ]}
             onChange={(mode) =>
               void patchProjectParams({
@@ -225,18 +227,18 @@ export function DramaProjectSettingsModal({
 
         <section className="drama-project-settings-section">
           <div className="drama-project-settings-head">
-            <h4>镜间衔接</h4>
+            <h4>{t('drama.projectSettings.tailFrame')}</h4>
           </div>
           <SettingsChoiceRow
             value={linkLastFrame}
             disabled={saving}
             options={[
-              { value: true, label: '尾帧衔接' },
-              { value: false, label: '并发生成' },
+              { value: true, label: t('drama.projectSettings.tailFrameOn') },
+              { value: false, label: t('drama.projectSettings.tailFrameOff') },
             ]}
             onChange={(enabled) => void patchProjectParams({ linkLastFrame: enabled })}
           />
-          <p className="drama-muted">开启后后一镜会参考前一镜尾帧，风格更连贯。</p>
+          <p className="drama-muted">{t('drama.projectSettings.tailFrameHint')}</p>
         </section>
       </div>
     </Modal>
