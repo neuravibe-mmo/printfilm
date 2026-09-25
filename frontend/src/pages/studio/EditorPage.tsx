@@ -13,6 +13,7 @@ type PanelTab = 'script' | 'image' | 'voice' | 'transition'
 
 export default function EditorPage() {
   const { t } = useI18n()
+  const PANEL_TABS: PanelTab[] = ['script', 'image', 'voice', 'transition']
 
   const { id } = useParams()
   const projectId = Number(id)
@@ -424,8 +425,8 @@ export default function EditorPage() {
           <div style={{ marginTop: '1rem' }}>
             <div className="pf-panel-tabs">
               {[t('studio.editor.assetLib'), t('studio.editor.favorites'), t('studio.editor.aiAssets'), t('studio.editor.myUploads')].map((tabLabel) => (
-                <button key={t} type="button" disabled>
-                  {t}
+                <button key={tabLabel} type="button" disabled>
+                  {tabLabel}
                 </button>
               ))}
             </div>
@@ -437,14 +438,14 @@ export default function EditorPage() {
 
         <aside>
           <div className="pf-panel-tabs">
-            {PANEL_TABS.map((t) => (
+            {PANEL_TABS.map((panelTab) => (
               <button
-                key={t}
+                key={panelTab}
                 type="button"
-                className={tab === t ? 'active' : ''}
-                onClick={() => setTab(t)}
+                className={tab === panelTab ? 'active' : ''}
+                onClick={() => setTab(panelTab)}
               >
-                {t}
+                {panelTab}
               </button>
             ))}
           </div>

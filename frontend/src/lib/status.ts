@@ -235,10 +235,11 @@ export const BOARD_STEPS = KEPU_STEPS
 
 /** 静图成片跳过「镜头视频」步 */
 export function kepuSteps(pipelineMode?: string | null) {
+  const steps = getKepuStepsLocalized()
   if (pipelineMode === 'image_text') {
-    return KEPU_STEPS.filter((s) => s.key !== 'videos')
+    return steps.filter((s) => s.key !== 'videos')
   }
-  return KEPU_STEPS
+  return steps
 }
 
 export type KepuWizardPage = 'create' | 'style' | 'board'

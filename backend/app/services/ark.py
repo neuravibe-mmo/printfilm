@@ -2141,6 +2141,43 @@ class ArkGateway:
   <text x="{int(w*0.08)}" y="{int(h*0.84)}" fill="#d7cfc3" font-family="sans-serif" font-size="18">{safe}</text>
 </svg>"""
         path.write_text(svg, encoding="utf-8")
+        # Convert SVG → JPEG so ffmpeg can process it in compose steps.
+        # ffmpeg cannot decode SVG; we generate a colour-gradient JPEG instead.
+        jpg_path = root / f"image_{digest}.jpg"
+        try:
+            import subprocess, shutil
+            ffmpeg_bin = shutil.which("ffmpeg") or "ffmpeg"
+            # Use lavfi solid colour matching the SVG gradient mid-tone
+            bg_color = f"hsl({hue},25%,30%)"
+            # Convert hsl to hex approximation for ffmpeg
+            import colorsys
+            h_f = hue / 360.0
+            s_f, l_f = 0.25, 0.30
+            # HSL to RGB
+            if s_f == 0:
+                r = g = b = l_f
+            else:
+                def _hue2rgb(p: float, q: float, t: float) -> float:
+                    if t < 0: t += 1
+                    if t > 1: t -= 1
+                    if t < 1/6: return p + (q - p) * 6 * t
+                    if t < 1/2: return q
+                    if t < 2/3: return p + (q - p) * (2/3 - t) * 6
+                    return p
+                q2 = l_f * (1 + s_f) if l_f < 0.5 else l_f + s_f - l_f * s_f
+                p2 = 2 * l_f - q2
+                r, g, b = _hue2rgb(p2, q2, h_f + 1/3), _hue2rgb(p2, q2, h_f), _hue2rgb(p2, q2, h_f - 1/3)
+            hex_color = "0x{:02x}{:02x}{:02x}".format(int(r*255), int(g*255), int(b*255))
+            subprocess.run(
+                [ffmpeg_bin, "-y", "-f", "lavfi",
+                 "-i", f"color=c={hex_color}:size={w}x{h}:rate=1",
+                 "-vframes", "1", "-q:v", "3", str(jpg_path)],
+                capture_output=True, timeout=10,
+            )
+        except Exception:
+            pass  # Fall back to SVG if conversion fails
+        if jpg_path.exists():
+            return f"/static/mock/image_{digest}.jpg"
         return f"/static/mock/image_{digest}.svg"
 
     @staticmethod

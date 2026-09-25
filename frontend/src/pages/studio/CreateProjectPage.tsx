@@ -294,18 +294,18 @@ export default function CreateProjectPage() {
           </div>
           <PillTabs items={categories.slice(0, 6)} value={category} onChange={setCategory} ariaLabel="模板分类" />
           <div className="pf-tpl-list" style={{ marginTop: '0.75rem' }}>
-            {filtered.map((t) => (
+            {filtered.map((tpl) => (
               <button
-                key={t.id}
+                key={tpl.id}
                 type="button"
-                className={templateId === t.id ? 'pf-tpl-mini selected' : 'pf-tpl-mini'}
-                onClick={() => setTemplateId(t.id)}
+                className={templateId === tpl.id ? 'pf-tpl-mini selected' : 'pf-tpl-mini'}
+                onClick={() => setTemplateId(tpl.id)}
               >
-                <img src={api.assetUrl(t.preview_cover)} alt="" />
+                <img src={api.assetUrl(tpl.preview_cover)} alt="" />
                 <div>
-                  <strong>{t.name}</strong>
+                  <strong>{tpl.name}</strong>
                   <span>
-                    {t.default_ratio} · {(t.category || [])[0] || t('studio.createProject.general')}
+                    {tpl.default_ratio} · {(tpl.category || [])[0] || t('studio.createProject.general')}
                   </span>
                 </div>
               </button>
