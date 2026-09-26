@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api, type AdminFinanceDaily } from "@/api/client";
-import { fenToYuan } from "@/lib/utils";
+import { formatCredits } from "@/lib/utils";
 import { useI18n, formatDateTime } from "@/i18n";
 
 type FinanceDays = "7" | "14" | "30" | "90";
@@ -129,14 +129,14 @@ export function FinanceListPage() {
                   {rows.map((row) => (
                     <TableRow key={row.date}>
                       <TableCell className="font-mono text-xs">{row.date}</TableCell>
-                      <TableCell>¥{fenToYuan(row.charge_fen)}</TableCell>
-                      <TableCell>¥{fenToYuan(row.cost_fen)}</TableCell>
+                      <TableCell>{formatCredits(row.charge_fen, locale)}</TableCell>
+                      <TableCell>{formatCredits(row.cost_fen, locale)}</TableCell>
                       <TableCell>{row.tokens.toLocaleString()}</TableCell>
                       <TableCell>
-                        {row.actual_cost_fen > 0 ? `¥${fenToYuan(row.actual_cost_fen)}` : "—"}
+                        {row.actual_cost_fen > 0 ? formatCredits(row.actual_cost_fen, locale) : "—"}
                       </TableCell>
                       <TableCell className={profitClass(row.profit_fen)}>
-                        ¥{fenToYuan(row.profit_fen)}
+                        {formatCredits(row.profit_fen, locale)}
                         {row.profit_pct != null ? ` (${row.profit_pct}%)` : ""}
                       </TableCell>
                     </TableRow>
@@ -144,14 +144,14 @@ export function FinanceListPage() {
                   {totals ? (
                     <TableRow className="bg-[rgba(15,45,32,0.04)] font-medium">
                       <TableCell>{t("finance.totals")}</TableCell>
-                      <TableCell>¥{fenToYuan(totals.charge_fen)}</TableCell>
-                      <TableCell>¥{fenToYuan(totals.cost_fen)}</TableCell>
+                      <TableCell>{formatCredits(totals.charge_fen, locale)}</TableCell>
+                      <TableCell>{formatCredits(totals.cost_fen, locale)}</TableCell>
                       <TableCell>{totals.tokens.toLocaleString()}</TableCell>
                       <TableCell>
-                        {totals.actual_cost_fen > 0 ? `¥${fenToYuan(totals.actual_cost_fen)}` : "—"}
+                        {totals.actual_cost_fen > 0 ? formatCredits(totals.actual_cost_fen, locale) : "—"}
                       </TableCell>
                       <TableCell className={profitClass(totals.profit_fen)}>
-                        ¥{fenToYuan(totals.profit_fen)}
+                        {formatCredits(totals.profit_fen, locale)}
                         {totals.profit_pct != null ? ` (${totals.profit_pct}%)` : ""}
                       </TableCell>
                     </TableRow>

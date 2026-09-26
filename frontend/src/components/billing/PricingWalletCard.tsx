@@ -1,6 +1,8 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import type { UsageSummary, Wallet } from '../../api'
+import { useI18n } from '../../i18n'
+import { formatCredits } from '../../lib/dramaUsage'
 
 type Props = {
   wallet: Wallet | null
@@ -18,21 +20,24 @@ function formatUpdated(d: Date | null) {
 
 /** 定价页深色余额卡片：余额、本月消耗、冻结、充值记录 */
 export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, onHistory }: Props) {
+  const { t, locale } = useI18n()
   const [balanceVisible, setBalanceVisible] = useState(true)
 
   const balanceYuan = wallet?.balance_yuan ?? usage?.balance_yuan ?? 0
   const frozenYuan = wallet?.frozen_yuan ?? usage?.frozen_yuan ?? 0
   const monthCharge = usage?.charge_yuan ?? 0
 
+  const maskedBalance = locale === 'vi' ? '**** Xu' : locale === 'en' ? '**** Credits' : '¥ ****'
+
   return (
     <aside className="pf-pricing-wallet-dark">
       <div className="pf-pricing-wallet-dark-head">
-        <span className="pf-pricing-wallet-dark-label">可用余额</span>
+        <span className="pf-pricing-wallet-dark-label">{t('pricing.walletBalance')}</span>
         <div className="pf-pricing-wallet-dark-actions">
           <button
             type="button"
             className="pf-pricing-wallet-eye"
-            aria-label={balanceVisible ? '隐藏余额' : '显示余额'}
+            aria-label={balanceVisible ? t('pricing.hideBalance') : t('pricing.showBalance')}
             onClick={() => setBalanceVisible((v) => !v)}
           >
             {balanceVisible ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -41,30 +46,32 @@ export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, 
             type="button"
             className="pf-pricing-wallet-history"
             disabled={!loggedIn}
-            title={loggedIn ? '查看充值记录' : '请先登录'}
+            title={loggedIn ? t('pricing.history') : t('pricing.loginFirst')}
             onClick={onHistory}
           >
-            充值记录
+            {t('pricing.history')}
           </button>
         </div>
       </div>
 
       <strong className="pf-pricing-wallet-dark-balance">
-        {balanceVisible ? `¥${balanceYuan.toFixed(2)}` : '¥ ****'}
+        {balanceVisible ? formatCredits(balanceYuan, locale) : maskedBalance}
       </strong>
 
       <dl className="pf-pricing-wallet-dark-meta">
         <div>
-          <dt>本次消耗</dt>
-          <dd>{loggedIn ? `¥${monthCharge.toFixed(2)}` : '—'}</dd>
+          <dt>{t('pricing.monthCharge')}</dt>
+          <dd>{loggedIn ? formatCredits(monthCharge, locale) : '—'}</dd>
         </div>
         <div>
-          <dt>冻结金额</dt>
-          <dd>{loggedIn ? `¥${frozenYuan.toFixed(2)}` : '—'}</dd>
+          <dt>{t('settings.frozen')}</dt>
+          <dd>{loggedIn ? formatCredits(frozenYuan, locale) : '—'}</dd>
         </div>
       </dl>
 
-      <p className="pf-pricing-wallet-dark-updated">更新于 {formatUpdated(updatedAt)}</p>
+      <p className="pf-pricing-wallet-dark-updated">
+        {t('pricing.updatedAt').replace('{time}', formatUpdated(updatedAt))}
+      </p>
     </aside>
   )
 }

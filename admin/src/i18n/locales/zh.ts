@@ -35,6 +35,7 @@ export const zh = {
       templates: "模板管理",
       queues: "任务中心",
       settings: "系统设置",
+      guide: "使用指南",
     },
   },
   titles: {
@@ -50,6 +51,7 @@ export const zh = {
     "/works": "作品审核",
     "/templates": "模板管理",
     "/settings": "系统设置",
+    "/guide": "使用指南",
     "/queues": "任务中心",
     dramaProjectDetail: "漫剧项目详情",
     dramaAssetDetail: "资产详情",

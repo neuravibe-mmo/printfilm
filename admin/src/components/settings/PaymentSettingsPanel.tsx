@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
 import { api } from "@/api/client";
 import { useI18n } from "@/i18n/useI18n";
+import { formatCreditsFromYuan } from "@/lib/utils";
 
 // 易支付与 Token 计费配置
 export function PaymentSettingsPanel() {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();
   const [epayKeyInput, setEpayKeyInput] = useState("");
   const [clearEpayKey, setClearEpayKey] = useState(false);
@@ -365,10 +366,10 @@ export function PaymentSettingsPanel() {
                       </td>
                       <td className="p-2">{row.capability}</td>
                       <td className="p-2">
-                        {row.official_cost_yuan ? `¥${row.official_cost_yuan}` : "—"}
+                        {formatCreditsFromYuan(row.official_cost_yuan, locale)}
                       </td>
                       <td className="p-2">
-                        {row.user_charge_yuan ? `¥${row.user_charge_yuan}` : "—"}
+                        {formatCreditsFromYuan(row.user_charge_yuan, locale)}
                       </td>
                       <td className="p-2">
                         <div>{row.rate_label}</div>

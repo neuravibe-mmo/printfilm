@@ -39,7 +39,7 @@ function formatRemain(sec: number) {
 
 /** 扫码支付弹窗：展示二维码或等待收银台回跳，并轮询订单状态 */
 export default function PaymentModal({ open, checkout, onClose, onPaid }: Props) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [remain, setRemain] = useState(300)
   const [status, setStatus] = useState<'waiting' | 'paid' | 'expired'>('waiting')
@@ -218,7 +218,13 @@ export default function PaymentModal({ open, checkout, onClose, onPaid }: Props)
 
         <div className="pf-pay-amount">
           <span>{t('billing.payment.payAmount')}</span>
-          <em>¥{yuan(checkout.amount_fen)}</em>
+          <em>
+            {locale === 'vi'
+              ? `${yuan(checkout.amount_fen)} Xu`
+              : locale === 'en'
+                ? `${yuan(checkout.amount_fen)} Credits`
+                : `¥${yuan(checkout.amount_fen)}`}
+          </em>
         </div>
 
         <div className="pf-pay-qr-wrap">

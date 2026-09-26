@@ -16,9 +16,12 @@ const API_BASE =
 
 function authHeaders(): HeadersInit {
   const token = localStorage.getItem('token')
-  return token
-    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json' }
+  const locale = localStorage.getItem('printfilm.locale') || 'vi'
+  return {
+    'Content-Type': 'application/json',
+    'Accept-Language': locale,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -38,8 +41,14 @@ export type PipelineMode = 'full' | 'image_text'
 export type Template = {
   id: string
   name: string
+  name_en?: string
+  name_vi?: string
   description: string
+  description_en?: string
+  description_vi?: string
   category: string[]
+  category_en?: string[]
+  category_vi?: string[]
   preview_cover: string
   default_ratio: string
   shot_duration_min: number
@@ -366,8 +375,10 @@ export const api = {
     }
     return res.json() as Promise<User>
   },
-  templates() {
-    return request<Template[]>('/api/templates')
+  templates(locale?: string) {
+    const loc = locale || (typeof window !== 'undefined' ? localStorage.getItem('printfilm.locale') : '') || ''
+    const q = loc ? `?locale=${encodeURIComponent(loc)}` : ''
+    return request<Template[]>(`/api/templates${q}`)
   },
   createProject(body: {
     template_id: string

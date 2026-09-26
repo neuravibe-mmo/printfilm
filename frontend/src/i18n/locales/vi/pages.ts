@@ -344,7 +344,7 @@ export const viPages = {
     unavailable: '{label} sắp ra mắt, vui lòng dùng Alipay hoặc WeChat Pay trước',
     chooseAmount: 'Chọn mức nạp',
     credit: 'Nhận được',
-    bonus: 'Tặng thêm ¥{amount}',
+    bonus: 'Tặng thêm {amount} Xu',
     foreverHint: 'Số dư không hết hạn',
     ordering: 'Đang đặt đơn…',
     payNow: 'Nạp tiền ngay',
@@ -376,7 +376,7 @@ export const viPages = {
     loginFirst: 'Vui lòng đăng nhập trước',
     monthCharge: 'Tiêu thụ lần này',
     currentPlan: 'Gói hiện tại',
-    frozen: 'Đang giữ ¥{amount}',
+    frozen: 'Đang giữ {amount} Xu',
     updatedAt: 'Cập nhật lúc {time}',
   },
   history: {

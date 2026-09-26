@@ -44,7 +44,7 @@ export const viBilling = {
       title: 'Lịch sử nạp tiền',
       loading: 'Đang tải…',
       empty: 'Chưa có lịch sử nạp tiền',
-      creditLabel: 'Nhận được ¥{amount}',
+      creditLabel: 'Nhận được {amount} Xu',
       status: {
         pending: 'Chờ thanh toán',
         paid: 'Đã nhận',

@@ -540,7 +540,7 @@ export const viDrama = {
       noPendingAssets: 'Không có tài sản nào chưa tạo trong phân loại hiện tại',
       batchGenTitle: 'Tạo hình ảnh hàng loạt',
       batchGenMessage: 'Sẽ bắt đầu tạo ảnh cho {n} tài sản chưa có ảnh trong phân loại "{label}"',
-      batchGenBilling: 'Mỗi ảnh tạm trừ khoảng ¥{unit}, lần này tổng khoảng ¥{total} (Số dư hiện tại ¥{balance}',
+      batchGenBilling: 'Mỗi ảnh tạm trừ khoảng {unit} Xu, lần này tổng khoảng {total} Xu (Số dư hiện tại {balance} Xu)',
       startGen: 'Bắt đầu tạo',
       voiceGenFailed: 'Tạo giọng thất bại',
       batchVoiceTitle: 'Tạo giọng hàng loạt',

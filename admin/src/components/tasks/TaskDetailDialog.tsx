@@ -15,7 +15,7 @@ import { AdminModal } from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
 import { billingBasisLabel, taskDomainLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
 import { hasJsonContent, prettyJson } from "@/lib/jsonPreview";
-import { cn, fenToYuan } from "@/lib/utils";
+import { cn, formatCredits } from "@/lib/utils";
 import { useI18n } from "@/i18n/useI18n";
 
 type TaskDetailDialogProps = {
@@ -126,7 +126,7 @@ function payloadSummaryRows(
 
 // 任务详情弹窗：概览 / 步骤 / 事件 / 原始 JSON
 export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: TaskDetailDialogProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [task, setTask] = useState<AdminTaskDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<DetailTab>("overview");
@@ -390,15 +390,15 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                     </div>
                     <div>
                       <dt>{t("queues.billingEst")}</dt>
-                      <dd>¥{fenToYuan(task.billing_estimate_fen ?? 0)}</dd>
+                      <dd>{formatCredits(task.billing_estimate_fen ?? 0, locale)}</dd>
                     </div>
                     <div>
                       <dt>{t("queues.billingCharged")}</dt>
-                      <dd>¥{fenToYuan(task.billing_charged_fen ?? 0)}</dd>
+                      <dd>{formatCredits(task.billing_charged_fen ?? 0, locale)}</dd>
                     </div>
                     <div>
                       <dt>{t("queues.billingRefunded")}</dt>
-                      <dd>¥{fenToYuan(task.billing_refunded_fen ?? 0)}</dd>
+                      <dd>{formatCredits(task.billing_refunded_fen ?? 0, locale)}</dd>
                     </div>
                   </dl>
                 </section>
@@ -434,8 +434,8 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                               <td className="font-mono text-xs">{line.billing_key}</td>
                               <td className="max-w-[120px] truncate text-xs">{line.model || "—"}</td>
                               <td>{line.total_tokens ?? 0}</td>
-                              <td>¥{fenToYuan(line.charge_fen ?? 0)}</td>
-                              <td>¥{fenToYuan(line.cost_fen ?? 0)}</td>
+                              <td>{formatCredits(line.charge_fen ?? 0, locale)}</td>
+                              <td>{formatCredits(line.cost_fen ?? 0, locale)}</td>
                               <td>{billingBasisLabel(line.billing_basis, line.estimated, t)}</td>
                             </tr>
                           ))

@@ -22,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PageHeader } from "@/components/ui/page";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
 import { PROJECT_STATUS_OPTIONS, taskTypeLabel } from "@/lib/statusLabels";
-import { fenToYuan } from "@/lib/utils";
+import { formatCredits } from "@/lib/utils";
 import { useI18n, formatDateTime } from "@/i18n";
 
 type ListRes = { items: AdminProject[]; meta: PageMeta };
@@ -163,7 +163,7 @@ export function ProjectsPage() {
                 </TableCell>
                 <TableCell>{p.progress}%</TableCell>
                 <TableCell>{p.shot_count}</TableCell>
-                <TableCell>¥{fenToYuan(p.charge_fen ?? 0)}</TableCell>
+                <TableCell>{formatCredits(p.charge_fen ?? 0, locale)}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {formatDateTime(p.created_at, locale)}
                 </TableCell>
@@ -255,8 +255,8 @@ export function ProjectsPage() {
             <AdminDetailSection title={t("projects.modal.costSummary")}>
               <AdminDetailStatGrid
                 items={[
-                  { label: t("finance.charge"), value: `¥${fenToYuan(usage?.charge_fen ?? detail.charge_fen ?? 0)}` },
-                  { label: t("finance.cost"), value: `¥${fenToYuan(usage?.cost_fen ?? 0)}` },
+                  { label: t("finance.charge"), value: formatCredits(usage?.charge_fen ?? detail.charge_fen ?? 0, locale) },
+                  { label: t("finance.cost"), value: formatCredits(usage?.cost_fen ?? 0, locale) },
                   { label: "Tokens", value: usage?.tokens ?? 0 },
                   {
                     label: "Image/Video/LLM/TTS",
@@ -330,7 +330,7 @@ export function ProjectsPage() {
                           <td>{taskTypeLabel(item.task_type)}</td>
                           <td>{resolveTaskStatus(item.status)}</td>
                           <td>
-                            ¥{fenToYuan(item.billing_charged_fen)} / ¥{fenToYuan(item.billing_estimate_fen)}
+                            {formatCredits(item.billing_charged_fen, locale)} / {formatCredits(item.billing_estimate_fen, locale)}
                           </td>
                         </tr>
                       ))

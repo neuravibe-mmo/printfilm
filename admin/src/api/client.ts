@@ -707,8 +707,14 @@ export type AdminRoutingSettings = {
 export type AdminTemplate = {
   id: string;
   name: string;
+  name_en?: string;
+  name_vi?: string;
   description: string;
+  description_en?: string;
+  description_vi?: string;
   category: string[];
+  category_en?: string[];
+  category_vi?: string[];
   preview_cover: string;
   style_prefix: string;
   negative_prompt: string;

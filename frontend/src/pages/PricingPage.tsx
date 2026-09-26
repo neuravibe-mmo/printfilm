@@ -34,7 +34,7 @@ function yuanShort(fen: number) {
 /** 定价与充值页 */
 export default function PricingPage() {
   const nav = useNavigate()
-  const { t, m } = useI18n()
+  const { t, m, locale } = useI18n()
   const [params] = useSearchParams()
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [usage, setUsage] = useState<UsageSummary | null>(null)
@@ -263,11 +263,19 @@ export default function PricingPage() {
                     <p className="pf-pricing-sku-tier">{label}</p>
                     <p className="pf-pricing-sku-hint">{tierHint}</p>
                     <div className="pf-pricing-sku-price">
-                      <span className="yen">¥</span>
+                      {locale === 'zh' ? <span className="yen">¥</span> : null}
                       <strong>{(sku.amount_fen / 100).toFixed(0)}</strong>
+                      {locale === 'vi' ? <span className="yen" style={{ marginLeft: 4, fontSize: '1rem', fontWeight: 500 }}>Xu</span> : locale === 'en' ? <span className="yen" style={{ marginLeft: 4, fontSize: '1rem', fontWeight: 500 }}>Credits</span> : null}
                     </div>
                     <p className="pf-pricing-sku-credit">
-                      {t('pricing.credit')} <em>¥{yuan(sku.credit_fen)}</em>
+                      {t('pricing.credit')}{' '}
+                      <em>
+                        {locale === 'vi'
+                          ? `${yuan(sku.credit_fen)} Xu`
+                          : locale === 'en'
+                            ? `${yuan(sku.credit_fen)} Credits`
+                            : `¥${yuan(sku.credit_fen)}`}
+                      </em>
                     </p>
                     {bonus > 0 ? (
                       <p className="pf-pricing-sku-bonus">{t('pricing.bonus', { amount: yuanShort(bonus) })}</p>

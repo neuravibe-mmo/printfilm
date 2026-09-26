@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import type { AdminDailyUsage } from "@/api/client";
-import { fenToYuan } from "@/lib/utils";
+import { formatCredits } from "@/lib/utils";
 import type { DashboardMetric } from "./DashboardFilters";
 import { useI18n } from "@/i18n/useI18n";
 
@@ -24,9 +24,9 @@ function readMetric(row: AdminDailyUsage, metric: DashboardMetric): number {
   return row.charge_fen;
 }
 
-function formatMetric(value: number, metric: DashboardMetric): string {
+function formatMetric(value: number, metric: DashboardMetric, locale?: string): string {
   if (metric === "calls") return String(value);
-  return `¥${fenToYuan(value)}`;
+  return formatCredits(value, locale);
 }
 
 function shortDate(iso: string): string {
@@ -36,7 +36,7 @@ function shortDate(iso: string): string {
 
 /** 用量趋势面积图 */
 export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
 
   const getMetricLabel = useCallback(
     (targetMetric: DashboardMetric): string => {
@@ -79,8 +79,8 @@ export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
             tick={{ fill: "var(--admin-muted)", fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            width={metric === "calls" ? 36 : 52}
-            tickFormatter={(v) => (metric === "calls" ? String(v) : `¥${fenToYuan(Number(v))}`)}
+            width={metric === "calls" ? 36 : 64}
+            tickFormatter={(v) => (metric === "calls" ? String(v) : formatCredits(Number(v), locale))}
           />
           <Tooltip
             contentStyle={{
@@ -93,7 +93,7 @@ export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
               const row = payload?.[0]?.payload as { date?: string } | undefined;
               return row?.date ?? "";
             }}
-            formatter={(value) => [formatMetric(Number(value ?? 0), metric), getMetricLabel(metric)]}
+            formatter={(value) => [formatMetric(Number(value ?? 0), metric, locale), getMetricLabel(metric)]}
           />
           <Area
             type="monotone"

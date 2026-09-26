@@ -15,7 +15,11 @@ import { useI18n } from "@/i18n/useI18n";
 export type TemplateFormState = {
   id: string;
   name: string;
+  name_en: string;
+  name_vi: string;
   description: string;
+  description_en: string;
+  description_vi: string;
   category: string;
   preview_cover: string;
   style_prefix: string;
@@ -164,18 +168,50 @@ export function TemplateEditorDialog({
                     />
                   </AdminField>
                 ) : null}
-                <AdminField label={t("templates.name")} className="template-editor-field--full">
+                <AdminField label={`${t("templates.name")} (Gốc / Tiếng Trung)`} className="template-editor-field--full">
                   <Input
                     className="admin-input h-9"
                     value={form.name}
                     onChange={(e) => onChange({ name: e.target.value })}
                   />
                 </AdminField>
-                <AdminField label={t("templates.description")} className="template-editor-field--full">
+                <AdminField label={`${t("templates.name")} (Tiếng Việt)`} className="template-editor-field--full">
+                  <Input
+                    className="admin-input h-9"
+                    placeholder="Tên hiển thị tiếng Việt..."
+                    value={form.name_vi}
+                    onChange={(e) => onChange({ name_vi: e.target.value })}
+                  />
+                </AdminField>
+                <AdminField label={`${t("templates.name")} (English)`} className="template-editor-field--full">
+                  <Input
+                    className="admin-input h-9"
+                    placeholder="English display name..."
+                    value={form.name_en}
+                    onChange={(e) => onChange({ name_en: e.target.value })}
+                  />
+                </AdminField>
+                <AdminField label={`${t("templates.description")} (Gốc / Tiếng Trung)`} className="template-editor-field--full">
                   <Textarea
                     value={form.description}
                     onChange={(e) => onChange({ description: e.target.value })}
-                    className="min-h-[88px]"
+                    className="min-h-[72px]"
+                  />
+                </AdminField>
+                <AdminField label={`${t("templates.description")} (Tiếng Việt)`} className="template-editor-field--full">
+                  <Textarea
+                    placeholder="Mô tả phong cách tiếng Việt..."
+                    value={form.description_vi}
+                    onChange={(e) => onChange({ description_vi: e.target.value })}
+                    className="min-h-[72px]"
+                  />
+                </AdminField>
+                <AdminField label={`${t("templates.description")} (English)`} className="template-editor-field--full">
+                  <Textarea
+                    placeholder="English description..."
+                    value={form.description_en}
+                    onChange={(e) => onChange({ description_en: e.target.value })}
+                    className="min-h-[72px]"
                   />
                 </AdminField>
                 <AdminField

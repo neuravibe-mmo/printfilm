@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/page";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
-import { fenToYuan } from "@/lib/utils";
+import { formatCredits } from "@/lib/utils";
 import { billingBasisLabel, taskDomainLabel } from "@/lib/statusLabels";
 import { useI18n, formatDateTime } from "@/i18n";
 
@@ -251,8 +251,8 @@ export function OrdersPage() {
                       <AdminEntityLink kind="user" id={o.user_id} label={o.user_email ?? undefined} />
                     </TableCell>
                     <TableCell>{o.sku_id}</TableCell>
-                    <TableCell>¥{fenToYuan(o.amount_fen)}</TableCell>
-                    <TableCell>¥{fenToYuan(o.credit_fen)}</TableCell>
+                    <TableCell>{formatCredits(o.amount_fen, locale)}</TableCell>
+                    <TableCell>{formatCredits(o.credit_fen, locale)}</TableCell>
                     <TableCell>{t(`status.payType.${o.pay_type}`)}</TableCell>
                     <TableCell>
                       <Badge variant={o.status === "paid" ? "success" : "secondary"}>
@@ -328,9 +328,9 @@ export function OrdersPage() {
                     </TableCell>
                     <TableCell className={e.delta_fen >= 0 ? "text-emerald-700" : "text-red-600"}>
                       {e.delta_fen >= 0 ? "+" : ""}
-                      ¥{fenToYuan(e.delta_fen)}
+                      {formatCredits(e.delta_fen, locale)}
                     </TableCell>
-                    <TableCell>¥{fenToYuan(e.balance_after)}</TableCell>
+                    <TableCell>{formatCredits(e.balance_after, locale)}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{t(`status.ledger.${e.kind}`)}</Badge>
                     </TableCell>
@@ -462,8 +462,8 @@ export function OrdersPage() {
                     <TableCell>{row.capability ?? row.billing_key}</TableCell>
                     <TableCell className="max-w-[120px] truncate text-xs">{row.model || "—"}</TableCell>
                     <TableCell>{row.total_tokens ?? 0}</TableCell>
-                    <TableCell>¥{fenToYuan(row.charge_fen ?? 0)}</TableCell>
-                    <TableCell>¥{fenToYuan(row.cost_fen ?? 0)}</TableCell>
+                    <TableCell>{formatCredits(row.charge_fen ?? 0, locale)}</TableCell>
+                    <TableCell>{formatCredits(row.cost_fen ?? 0, locale)}</TableCell>
                     <TableCell>
                       <Badge
                         variant={
@@ -525,8 +525,8 @@ export function OrdersPage() {
                   ),
                 },
                 { label: t("orders.cols.sku"), value: orderDetail.sku_id },
-                { label: t("orders.cols.amountYuan"), value: `¥${fenToYuan(orderDetail.amount_fen)}` },
-                { label: t("orders.cols.creditedYuan"), value: `¥${fenToYuan(orderDetail.credit_fen)}` },
+                { label: t("orders.cols.amountYuan"), value: formatCredits(orderDetail.amount_fen, locale) },
+                { label: t("orders.cols.creditedYuan"), value: formatCredits(orderDetail.credit_fen, locale) },
                 { label: t("orders.cols.payType"), value: t(`status.payType.${orderDetail.pay_type}`) },
                 { label: t("orders.cols.status"), value: t(`status.order.${orderDetail.status}`) },
                 { label: t("orders.cols.channelOrderNo"), value: orderDetail.trade_no || "—" },
@@ -566,8 +566,8 @@ export function OrdersPage() {
                   ),
                 },
                 { label: t("finance.cols.kind"), value: t(`status.ledger.${ledgerDetail.kind}`) },
-                { label: t("orders.cols.delta"), value: `¥${fenToYuan(ledgerDetail.delta_fen)}` },
-                { label: t("orders.cols.balanceAfter"), value: `¥${fenToYuan(ledgerDetail.balance_after)}` },
+                { label: t("orders.cols.delta"), value: formatCredits(ledgerDetail.delta_fen, locale) },
+                { label: t("orders.cols.balanceAfter"), value: formatCredits(ledgerDetail.balance_after, locale) },
                 { label: t("orders.cols.relation"), value: ledgerRefLink(ledgerDetail, t("orders.tabs.orders")) },
                 { label: t("common.note"), value: ledgerDetail.note || "—" },
                 {

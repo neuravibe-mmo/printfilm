@@ -32,8 +32,8 @@ export function TemplateCard({
   const { t } = useI18n();
   const src = coverSrc(template.preview_cover);
   const categories = template.category?.length ? template.category : [t("templates.uncategorized")];
-  const displayName = templateName(template.id, template.name, t);
-  const displayDesc = templateDesc(template.id, template.description, t);
+  const displayName = templateName(template.id, template.name, t, template);
+  const displayDesc = templateDesc(template.id, template.description, t, template);
 
   return (
     <article

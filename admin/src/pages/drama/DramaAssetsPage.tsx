@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page";
 import { DRAMA_GENERATION_STATUSES } from "@/lib/dramaLabels";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { formatDramaAssetName } from "@/lib/statusLabels";
 import { useI18n } from "@/i18n/useI18n";
 
 type ListRes = { items: AdminDramaAsset[]; meta: PageMeta };
@@ -19,7 +20,7 @@ const ASSET_TYPES = ["character", "scene", "prop", "material", "none"] as const;
 
 /** 全站漫剧资产库列表 */
 export function DramaAssetsPage() {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const [searchParams] = useSearchParams();
   const initialProjectId = searchParams.get("project_id");
 
@@ -113,14 +114,14 @@ export function DramaAssetsPage() {
                   {row.cover || row.url ? (
                     <img
                       src={row.cover || row.url || ""}
-                      alt={row.name ?? ""}
+                      alt={formatDramaAssetName(row.name, locale) || ""}
                       className="admin-thumb"
                     />
                   ) : (
                     "—"
                   )}
                 </td>
-                <td className="max-w-[140px] truncate">{row.name || "—"}</td>
+                <td className="max-w-[140px] truncate">{formatDramaAssetName(row.name, locale) || "—"}</td>
                 <td>{m.drama.assetTypes[row.type as keyof typeof m.drama.assetTypes] || row.type}</td>
                 <td>
                   <AdminEntityLink kind="drama" id={row.project_id} label={row.project_title ?? undefined} />

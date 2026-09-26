@@ -12,7 +12,7 @@ import { PageHeader, Toolbar } from "@/components/ui/page";
 import { PaginationBar } from "@/components/PaginationBar";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
 import { compactJsonPreview, hasJsonContent } from "@/lib/jsonPreview";
-import { cn, fenToYuan } from "@/lib/utils";
+import { cn, fenToYuan, formatCredits } from "@/lib/utils";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { taskDomainLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
 import { useI18n } from "@/i18n/useI18n";
@@ -88,7 +88,7 @@ function jsonCell(value: Record<string, unknown> | null | undefined) {
 
 // 统一任务平台监控页
 export function QueuesPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [stats, setStats] = useState<AdminTaskStats | null>(null);
   const [data, setData] = useState<AdminTaskListRes | null>(null);
   const [loading, setLoading] = useState(true);
@@ -471,7 +471,7 @@ export function QueuesPage() {
                         <td className="text-xs">{task.progress_percent}%</td>
                         <td className="text-xs">
                           {task.billing_charged_fen != null && task.billing_charged_fen > 0
-                            ? `¥${fenToYuan(task.billing_charged_fen)}`
+                            ? formatCredits(task.billing_charged_fen, locale)
                             : task.billing_status === "frozen"
                               ? t("queues.costPreauth", { amount: fenToYuan(task.billing_estimate_fen ?? 0) })
                               : "—"}

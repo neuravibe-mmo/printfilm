@@ -53,39 +53,105 @@ export function canvasKindToAssetType(kind: CanvasNodeKind): string {
   return 'image'
 }
 
+import { getActiveLocale } from '../../../i18n/detect'
+
+export const CANVAS_NODE_KIND_LABELS: Record<string, Record<CanvasNodeKind, string>> = {
+  vi: {
+    character: 'Nhân vật',
+    scene: 'Bối cảnh',
+    video: 'Video',
+    image: 'Hình ảnh',
+    text: 'Văn bản',
+    audio: 'Âm thanh',
+  },
+  en: {
+    character: 'Character',
+    scene: 'Scene',
+    video: 'Video',
+    image: 'Image',
+    text: 'Text',
+    audio: 'Audio',
+  },
+  zh: {
+    character: '角色',
+    scene: '场景',
+    video: '视频',
+    image: '图片',
+    text: '文本',
+    audio: '音频',
+  },
+}
+
+export function getNodeKindLabel(kind: CanvasNodeKind, locale?: string): string {
+  const loc = locale || getActiveLocale()
+  return (CANVAS_NODE_KIND_LABELS[loc] || CANVAS_NODE_KIND_LABELS.vi)[kind] || kind
+}
+
 /** 空画布居中快速新建选项（顺序与设计稿一致） */
 export const CANVAS_NODE_OPTIONS: CanvasNodeOption[] = [
-  { id: 'character', label: '角色', icon: UserRound },
-  { id: 'scene', label: '场景', icon: Landmark },
-  { id: 'video', label: '视频', icon: PlaySquare },
-  { id: 'image', label: '图片', icon: ImageIcon },
-  { id: 'text', label: '文本', icon: Text },
-  { id: 'audio', label: '音频', icon: AudioLines },
+  { id: 'character', get label() { return getNodeKindLabel('character') }, icon: UserRound },
+  { id: 'scene', get label() { return getNodeKindLabel('scene') }, icon: Landmark },
+  { id: 'video', get label() { return getNodeKindLabel('video') }, icon: PlaySquare },
+  { id: 'image', get label() { return getNodeKindLabel('image') }, icon: ImageIcon },
+  { id: 'text', get label() { return getNodeKindLabel('text') }, icon: Text },
+  { id: 'audio', get label() { return getNodeKindLabel('audio') }, icon: AudioLines },
 ]
 
 /** 左侧添加面板选项 */
 export const ADD_NODE_OPTIONS: CanvasNodeOption[] = [
-  { id: 'character', label: '角色', icon: UserRound },
-  { id: 'scene', label: '场景', icon: Landmark },
-  { id: 'text', label: '文本', icon: Text },
-  { id: 'image', label: '图片', icon: ImageIcon },
-  { id: 'video', label: '视频', icon: PlaySquare },
-  { id: 'audio', label: '音频', icon: AudioLines },
+  { id: 'character', get label() { return getNodeKindLabel('character') }, icon: UserRound },
+  { id: 'scene', get label() { return getNodeKindLabel('scene') }, icon: Landmark },
+  { id: 'text', get label() { return getNodeKindLabel('text') }, icon: Text },
+  { id: 'image', get label() { return getNodeKindLabel('image') }, icon: ImageIcon },
+  { id: 'video', get label() { return getNodeKindLabel('video') }, icon: PlaySquare },
+  { id: 'audio', get label() { return getNodeKindLabel('audio') }, icon: AudioLines },
 ]
 
 export const CANVAS_NODE_OPTION_BY_KIND = Object.fromEntries(
   CANVAS_NODE_OPTIONS.map((option) => [option.id, option]),
 ) as Record<CanvasNodeKind, CanvasNodeOption>
 
-/** 各类型默认展示名 */
-export const CANVAS_NODE_DEFAULT_LABEL: Record<CanvasNodeKind, string> = {
-  character: '新角色',
-  scene: '新场景',
-  video: '新视频',
-  image: '新图片',
-  text: '文本',
-  audio: '新音频',
+export const CANVAS_NODE_DEFAULT_LABEL_I18N: Record<string, Record<CanvasNodeKind, string>> = {
+  vi: {
+    character: 'Nhân vật mới',
+    scene: 'Bối cảnh mới',
+    video: 'Video mới',
+    image: 'Hình ảnh mới',
+    text: 'Văn bản',
+    audio: 'Âm thanh mới',
+  },
+  en: {
+    character: 'New Character',
+    scene: 'New Scene',
+    video: 'New Video',
+    image: 'New Image',
+    text: 'Text',
+    audio: 'New Audio',
+  },
+  zh: {
+    character: '新角色',
+    scene: '新场景',
+    video: '新视频',
+    image: '新图片',
+    text: '文本',
+    audio: '新音频',
+  },
 }
+
+export function getDefaultNodeLabel(kind: CanvasNodeKind, locale?: string): string {
+  const loc = locale || getActiveLocale()
+  return (CANVAS_NODE_DEFAULT_LABEL_I18N[loc] || CANVAS_NODE_DEFAULT_LABEL_I18N.vi)[kind] || kind
+}
+
+/** Các loại tên hiển thị mặc định: trả về theo ngôn ngữ hiện tại của user */
+export const CANVAS_NODE_DEFAULT_LABEL: Record<CanvasNodeKind, string> = new Proxy(
+  {} as Record<CanvasNodeKind, string>,
+  {
+    get(_target, prop: string) {
+      return getDefaultNodeLabel(prop as CanvasNodeKind)
+    },
+  },
+)
 
 /** 节点卡片尺寸（宽 × 高，用于落点居中） */
 export const CANVAS_NODE_SIZE: Record<CanvasNodeKind, { width: number; height: number }> = {

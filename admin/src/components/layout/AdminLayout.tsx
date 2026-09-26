@@ -14,6 +14,7 @@ import {
   Menu,
   Receipt,
   Settings,
+  BookOpen,
   Shapes,
   Users,
   Wallet,
@@ -69,7 +70,10 @@ const navGroups: NavGroup[] = [
   },
   {
     labelKey: "nav.groups.system",
-    items: [{ to: "/settings", labelKey: "nav.items.settings", icon: Settings }],
+    items: [
+      { to: "/settings", labelKey: "nav.items.settings", icon: Settings },
+      { to: "/guide", labelKey: "nav.items.guide", icon: BookOpen },
+    ],
   },
 ];
 

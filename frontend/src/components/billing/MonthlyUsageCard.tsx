@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type UsageSummary } from '../../api'
 import { useI18n } from '../../i18n'
+import { formatCredits } from '../../lib/dramaUsage'
 
 /** 格式化 token 数量，过大时用 k/M 缩写 */
 function formatTokens(n: number) {
@@ -22,7 +23,7 @@ export default function MonthlyUsageCard({
   variant = 'panel',
   showTopup = true,
 }: MonthlyUsageCardProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [usage, setUsage] = useState<UsageSummary | null>(null)
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function MonthlyUsageCard({
 
       <div className="pf-usage-row">
         <span>{t('billing.monthlyUsage.monthCharge')}</span>
-        <span className="pf-usage-val">¥{(usage?.charge_yuan ?? 0).toFixed(2)}</span>
+        <span className="pf-usage-val">{formatCredits(usage?.charge_yuan, locale)}</span>
       </div>
       <div className="pf-meter">
         <i style={{ width: `${chargePct}%` }} />
@@ -64,12 +65,12 @@ export default function MonthlyUsageCard({
 
       <div className="pf-usage-row">
         <span>{t('billing.monthlyUsage.balance')}</span>
-        <span className="pf-usage-val">¥{(usage?.balance_yuan ?? 0).toFixed(2)}</span>
+        <span className="pf-usage-val">{formatCredits(usage?.balance_yuan, locale)}</span>
       </div>
       {(usage?.frozen_fen ?? 0) > 0 ? (
         <div className="pf-usage-row">
           <span>{t('billing.monthlyUsage.frozen')}</span>
-          <span className="pf-muted">¥{(usage?.frozen_yuan ?? 0).toFixed(2)}</span>
+          <span className="pf-muted">{formatCredits(usage?.frozen_yuan, locale)}</span>
         </div>
       ) : null}
 

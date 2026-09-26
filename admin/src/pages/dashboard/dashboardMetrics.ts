@@ -1,5 +1,5 @@
 import type { AdminDailyUsage, AdminStats, AdminUsageBucket } from "@/api/client";
-import { fenToYuan } from "@/lib/utils";
+import { formatCredits } from "@/lib/utils";
 
 /** 时间窗内日趋势汇总 */
 export function sumDailyUsage(daily: AdminDailyUsage[]) {
@@ -21,9 +21,9 @@ export function readBucketMetric(row: AdminUsageBucket, metric: DashboardMetric)
 }
 
 /** 格式化指标展示值 */
-export function formatDashboardMetric(value: number, metric: DashboardMetric): string {
+export function formatDashboardMetric(value: number, metric: DashboardMetric, locale?: string): string {
   if (metric === "calls") return value.toLocaleString();
-  return `¥${fenToYuan(value)}`;
+  return formatCredits(value, locale);
 }
 
 /** 估算毛利（扣费 - 成本） */

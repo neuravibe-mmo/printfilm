@@ -16,7 +16,7 @@ import {
 import type { AdminStats, AdminUpstreamUsage } from "@/api/client";
 import type { DashboardInsightItem } from "@/pages/dashboard/DashboardInsightGrid";
 import { calcProfitFen, sumDailyUsage, sumProjectStatuses } from "@/pages/dashboard/dashboardMetrics";
-import { fenToYuan } from "@/lib/utils";
+import { fenToYuan, formatCredits } from "@/lib/utils";
 import { projectStatusLabel } from "@/lib/statusLabels";
 
 /** 财务账单 Tab 图标指标 */
@@ -24,6 +24,7 @@ export function buildFinanceInsights(
   stats: AdminStats | null,
   upstream: AdminUpstreamUsage | null,
   t?: (key: string, vars?: Record<string, string | number>) => string,
+  locale?: string,
 ): DashboardInsightItem[] {
   if (!stats) return [];
 
@@ -39,7 +40,7 @@ export function buildFinanceInsights(
     {
       key: "paid-total",
       label: t ? t("dashboard.finance.paidTotal") : "累计充值",
-      value: `¥${fenToYuan(stats.order_paid_total_fen)}`,
+      value: formatCredits(stats.order_paid_total_fen, locale),
       hint: t
         ? t("dashboard.finance.todayAmount", { amount: fenToYuan(stats.order_paid_today_fen) })
         : `今日 ¥${fenToYuan(stats.order_paid_today_fen)}`,
@@ -49,7 +50,7 @@ export function buildFinanceInsights(
     {
       key: "charge-month",
       label: t ? t("dashboard.finance.chargeMonth") : "本月扣费",
-      value: `¥${fenToYuan(monthCharge)}`,
+      value: formatCredits(monthCharge, locale),
       hint: t
         ? t("dashboard.finance.todayAmount", { amount: fenToYuan(stats.usage_charge_today_fen ?? 0) })
         : `今日 ¥${fenToYuan(stats.usage_charge_today_fen ?? 0)}`,
@@ -59,7 +60,7 @@ export function buildFinanceInsights(
     {
       key: "cost-month",
       label: t ? t("dashboard.finance.costMonth") : "本月成本",
-      value: `¥${fenToYuan(monthCost)}`,
+      value: formatCredits(monthCost, locale),
       hint: t
         ? t("dashboard.finance.todayAmount", { amount: fenToYuan(stats.usage_cost_today_fen ?? 0) })
         : `今日 ¥${fenToYuan(stats.usage_cost_today_fen ?? 0)}`,
@@ -69,7 +70,7 @@ export function buildFinanceInsights(
     {
       key: "profit-month",
       label: t ? t("dashboard.finance.profitMonth") : "本月毛利",
-      value: `¥${fenToYuan(profitFen)}`,
+      value: formatCredits(profitFen, locale),
       hint:
         monthCharge > 0
           ? t
@@ -85,7 +86,7 @@ export function buildFinanceInsights(
     items.push({
       key: "upstream-delta",
       label: t ? t("dashboard.finance.recent7Delta") : "近 7 日成本差额",
-      value: `¥${fenToYuan(delta7)}`,
+      value: formatCredits(delta7, locale),
       hint: t
         ? t("dashboard.finance.localVsOfficial", { local: fenToYuan(localCost7), official: fenToYuan(officialCost7) })
         : `本地 ¥${fenToYuan(localCost7)} / 官方 ¥${fenToYuan(officialCost7)}`,
@@ -97,7 +98,7 @@ export function buildFinanceInsights(
   items.push({
     key: "paid-today",
     label: t ? t("dashboard.finance.paidToday") : "今日到账",
-    value: `¥${fenToYuan(stats.order_paid_today_fen)}`,
+    value: formatCredits(stats.order_paid_today_fen, locale),
     hint: t ? t("dashboard.finance.rechargeOrder") : "充值订单",
     icon: CircleDollarSign,
     tone: "teal",

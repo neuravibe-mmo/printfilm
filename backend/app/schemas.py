@@ -68,8 +68,14 @@ class ResetPasswordRequest(BaseModel):
 class TemplateOut(BaseModel):
     id: str
     name: str
+    name_en: str | None = None
+    name_vi: str | None = None
     description: str
+    description_en: str | None = None
+    description_vi: str | None = None
     category: list[str]
+    category_en: list[str] | None = None
+    category_vi: list[str] | None = None
     preview_cover: str
     default_ratio: str
     shot_duration_min: int
@@ -600,8 +606,14 @@ class AdminWorkPatch(BaseModel):
 class AdminTemplateOut(BaseModel):
     id: str
     name: str
+    name_en: str | None = None
+    name_vi: str | None = None
     description: str
+    description_en: str | None = None
+    description_vi: str | None = None
     category: list
+    category_en: list | None = None
+    category_vi: list | None = None
     preview_cover: str
     style_prefix: str
     negative_prompt: str
@@ -628,8 +640,14 @@ class AdminTemplateListOut(BaseModel):
 class AdminTemplateCreate(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=128)
+    name_en: str | None = None
+    name_vi: str | None = None
     description: str = ""
+    description_en: str | None = None
+    description_vi: str | None = None
     category: list[str] = Field(default_factory=list)
+    category_en: list[str] | None = None
+    category_vi: list[str] | None = None
     preview_cover: str = ""
     style_prefix: str = ""
     negative_prompt: str = ""
@@ -648,8 +666,14 @@ class AdminTemplateCreate(BaseModel):
 
 class AdminTemplatePatch(BaseModel):
     name: str | None = None
+    name_en: str | None = None
+    name_vi: str | None = None
     description: str | None = None
+    description_en: str | None = None
+    description_vi: str | None = None
     category: list[str] | None = None
+    category_en: list[str] | None = None
+    category_vi: list[str] | None = None
     preview_cover: str | None = None
     style_prefix: str | None = None
     negative_prompt: str | None = None

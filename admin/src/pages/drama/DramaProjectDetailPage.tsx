@@ -12,8 +12,8 @@ import {
 import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
-import { fenToYuan } from "@/lib/utils";
+import { formatDramaAssetName, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
+import { formatCredits } from "@/lib/utils";
 import { useI18n } from "@/i18n/useI18n";
 
 const TABS = ["overview", "episodes", "assets", "tasks"] as const;
@@ -25,7 +25,7 @@ function isTabKey(value: string | null): value is TabKey {
 
 /** 漫剧项目二级详情：概览 / 分集 / 资产 / 任务 */
 export function DramaProjectDetailPage() {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -135,8 +135,8 @@ export function DramaProjectDetailPage() {
           <AdminDetailSection title={m.drama.costSummary}>
             <AdminDetailStatGrid
               items={[
-                { label: m.drama.charge, value: `¥${fenToYuan(usage?.charge_fen ?? detail.charge_fen ?? 0)}` },
-                { label: m.drama.cost, value: `¥${fenToYuan(usage?.cost_fen ?? 0)}` },
+                { label: m.drama.charge, value: formatCredits(usage?.charge_fen ?? detail.charge_fen ?? 0, locale) },
+                { label: m.drama.cost, value: formatCredits(usage?.cost_fen ?? 0, locale) },
                 { label: m.drama.calls, value: usage?.calls ?? 0 },
                 {
                   label: m.drama.imageVideoLlmTts,
@@ -214,7 +214,7 @@ export function DramaProjectDetailPage() {
                       <tr key={a.id}>
                         <td>{a.id}</td>
                         <td>{m.drama.assetTypes[a.type as keyof typeof m.drama.assetTypes] || a.type}</td>
-                        <td className="max-w-[160px] truncate">{a.name || "—"}</td>
+                        <td className="max-w-[160px] truncate">{formatDramaAssetName(a.name, locale) || "—"}</td>
                         <td>{a.has_cover ? m.drama.hasBaseImage : "—"}</td>
                         <td>{m.drama.statuses[a.generation_status as keyof typeof m.drama.statuses] || a.generation_status || "—"}</td>
                         <td>
@@ -259,7 +259,7 @@ export function DramaProjectDetailPage() {
                         <td>{taskTypeLabel(t.task_type)}</td>
                         <td>{taskStatusLabel(t.status)}</td>
                         <td>
-                          ¥{fenToYuan(t.billing_charged_fen)} / ¥{fenToYuan(t.billing_estimate_fen)}
+                          {formatCredits(t.billing_charged_fen, locale)} / {formatCredits(t.billing_estimate_fen, locale)}
                         </td>
                       </tr>
                     ))

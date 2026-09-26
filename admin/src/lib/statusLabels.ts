@@ -212,6 +212,8 @@ export const PROJECT_STATUS_OPTIONS: { value: string; label: string }[] = [
   ...Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
+import { getActiveLocale } from "@/i18n/detect";
+
 // Resolve template category display text
 export function templateCategoryLabel(category: string, t?: (key: string) => string): string {
   if (t) {
@@ -221,8 +223,19 @@ export function templateCategoryLabel(category: string, t?: (key: string) => str
   return category;
 }
 
-// Resolve template name display text
-export function templateName(id: string, defaultName: string, t?: (key: string) => string): string {
+// Resolve template name display text: prioritize database props (name_vi, name_en)
+export function templateName(
+  id: string,
+  defaultName: string,
+  t?: (key: string) => string,
+  tpl?: { name_vi?: string; name_en?: string; name?: string },
+): string {
+  const locale = getActiveLocale();
+  if (tpl) {
+    if (locale === "vi" && tpl.name_vi) return tpl.name_vi;
+    if (locale === "en" && tpl.name_en) return tpl.name_en;
+    if (locale === "zh" && tpl.name) return tpl.name;
+  }
   if (t) {
     const res = t(`templates.builtIn.${id}.name`);
     if (res !== `templates.builtIn.${id}.name`) return res;
@@ -230,11 +243,45 @@ export function templateName(id: string, defaultName: string, t?: (key: string) 
   return defaultName;
 }
 
-// Resolve template description display text
-export function templateDesc(id: string, defaultDesc: string, t?: (key: string) => string): string {
+// Resolve template description display text: prioritize database props (description_vi, description_en)
+export function templateDesc(
+  id: string,
+  defaultDesc: string,
+  t?: (key: string) => string,
+  tpl?: { description_vi?: string; description_en?: string; description?: string },
+): string {
+  const locale = getActiveLocale();
+  if (tpl) {
+    if (locale === "vi" && tpl.description_vi) return tpl.description_vi;
+    if (locale === "en" && tpl.description_en) return tpl.description_en;
+    if (locale === "zh" && tpl.description) return tpl.description;
+  }
   if (t) {
     const res = t(`templates.builtIn.${id}.description`);
     if (res !== `templates.builtIn.${id}.description`) return res;
   }
   return defaultDesc;
 }
+
+/** Default drama asset names map */
+export const DEFAULT_ASSET_NAME_MAP: Record<string, { vi: string; en: string }> = {
+  新角色: { vi: "Nhân vật mới", en: "New Character" },
+  新视频: { vi: "Video mới", en: "New Video" },
+  新场景: { vi: "Bối cảnh mới", en: "New Scene" },
+  新图片: { vi: "Hình ảnh mới", en: "New Image" },
+  新音频: { vi: "Âm thanh mới", en: "New Audio" },
+  文本: { vi: "Văn bản", en: "Text" },
+};
+
+export function formatDramaAssetName(name: string | null | undefined, locale?: string): string {
+  if (!name) return "";
+  const loc = locale || getActiveLocale();
+  const trimmed = name.trim();
+  const found = DEFAULT_ASSET_NAME_MAP[trimmed];
+  if (found) {
+    if (loc === "vi") return found.vi;
+    if (loc === "en") return found.en;
+  }
+  return name;
+}
+

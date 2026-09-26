@@ -136,7 +136,13 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
                 </span>
                 <span className="pf-settings-list-meta pf-usage-record-meta">
                   <strong className="pf-usage-record-charge">
-                    {item.charge_fen > 0 ? `-¥${item.charge_yuan.toFixed(2)}` : '—'}
+                    {item.charge_fen > 0
+                      ? locale === 'vi'
+                        ? `-${item.charge_yuan.toFixed(2)} Xu`
+                        : locale === 'en'
+                          ? `-${item.charge_yuan.toFixed(2)} Credits`
+                          : `-¥${item.charge_yuan.toFixed(2)}`
+                      : '—'}
                   </strong>
                   <em className="pf-muted">{formatWhen(item.created_at, locale)}</em>
                 </span>

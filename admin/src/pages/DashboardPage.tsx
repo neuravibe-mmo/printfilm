@@ -18,7 +18,7 @@ import { PageSection } from "@/components/admin/PageSection";
 import { PageHeader } from "@/components/ui/page";
 import { api, type AdminOrder, type AdminStats, type AdminUpstreamUsage, type PageMeta } from "@/api/client";
 import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
-import { fenToYuan } from "@/lib/utils";
+import { fenToYuan, formatCredits } from "@/lib/utils";
 import { projectStatusLabel, taskDomainLabel } from "@/lib/statusLabels";
 import { Button } from "@/components/ui/button";
 import { useI18n, type Messages, type TFunction } from "@/i18n";
@@ -152,7 +152,7 @@ export function DashboardPage() {
     (key) => domainChartLabel(key, m, t),
     t,
   );
-  const financeInsights = buildFinanceInsights(stats, upstreamUsage, t);
+  const financeInsights = buildFinanceInsights(stats, upstreamUsage, t, locale);
   const projectInsights = buildProjectInsights(stats, sumDailyUsage(daily), t);
   const metricHint =
     filters.metric === "cost"
@@ -175,14 +175,14 @@ export function DashboardPage() {
         />
         <DashboardKpiCard
           label={m.dashboard.kpi.totalPaid}
-          value={kpiReady ? `¥${fenToYuan(stats!.order_paid_total_fen)}` : kpiPlaceholder}
+          value={kpiReady ? formatCredits(stats!.order_paid_total_fen, locale) : kpiPlaceholder}
           hint={m.dashboard.kpi.totalPaidHint}
           icon={Banknote}
           tone="blue"
         />
         <DashboardKpiCard
           label={m.dashboard.kpi.monthCharge}
-          value={kpiReady ? `¥${fenToYuan(stats!.usage_charge_month_fen ?? 0)}` : kpiPlaceholder}
+          value={kpiReady ? formatCredits(stats!.usage_charge_month_fen ?? 0, locale) : kpiPlaceholder}
           hint={
             kpiReady
               ? t("dashboard.kpi.todayChargeVal", {
@@ -195,7 +195,7 @@ export function DashboardPage() {
         />
         <DashboardKpiCard
           label={m.dashboard.kpi.monthCost}
-          value={kpiReady ? `¥${fenToYuan(stats!.usage_cost_month_fen ?? 0)}` : kpiPlaceholder}
+          value={kpiReady ? formatCredits(stats!.usage_cost_month_fen ?? 0, locale) : kpiPlaceholder}
           hint={
             kpiReady
               ? t("dashboard.kpi.todayCostVal", {
@@ -405,13 +405,13 @@ export function DashboardPage() {
                     [...(upstreamUsage?.series ?? [])].reverse().slice(0, 14).map((row) => (
                       <tr key={row.date}>
                         <td className="font-mono text-xs">{row.date}</td>
-                        <td>¥{fenToYuan(row.local_cost_fen)}</td>
+                        <td>{formatCredits(row.local_cost_fen, locale)}</td>
                         <td>{row.local_tokens.toLocaleString()}</td>
                         <td>{row.official_tokens > 0 ? row.official_tokens.toLocaleString() : "—"}</td>
-                        <td>{row.official_cost_fen > 0 ? `¥${fenToYuan(row.official_cost_fen)}` : "—"}</td>
+                        <td>{row.official_cost_fen > 0 ? formatCredits(row.official_cost_fen, locale) : "—"}</td>
                         <td>
                           {row.official_cost_fen > 0
-                            ? `¥${fenToYuan(row.delta_fen)}${row.delta_pct != null ? ` (${row.delta_pct}%)` : ""}`
+                            ? `${formatCredits(row.delta_fen, locale)}${row.delta_pct != null ? ` (${row.delta_pct}%)` : ""}`
                             : "—"}
                         </td>
                       </tr>
@@ -455,7 +455,7 @@ export function DashboardPage() {
                         <td>
                           <AdminEntityLink kind="user" id={o.user_id} label={o.user_email ?? undefined} />
                         </td>
-                        <td className="font-semibold text-[var(--admin-forest)]">¥{fenToYuan(o.amount_fen)}</td>
+                        <td className="font-semibold text-[var(--admin-forest)]">{formatCredits(o.amount_fen, locale)}</td>
                         <td className="text-xs text-[var(--admin-muted)]">
                           {o.paid_at ? new Date(o.paid_at).toLocaleString(localeCode) : "—"}
                         </td>

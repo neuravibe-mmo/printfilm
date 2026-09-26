@@ -22,7 +22,7 @@ function formatTime(iso?: string | null) {
 
 /** 充值记录弹窗：列出近期订单与到账状态 */
 export default function TopupHistoryModal({ open, onClose }: Props) {
-  const { t, m } = useI18n()
+  const { t, m, locale } = useI18n()
   const [orders, setOrders] = useState<BillingOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -67,7 +67,13 @@ export default function TopupHistoryModal({ open, onClose }: Props) {
                 <span className="pf-muted">{formatTime(o.paid_at || o.created_at)}</span>
               </div>
               <div className="pf-topup-meta">
-                <em>¥{yuan(o.amount_fen)}</em>
+                <em>
+                  {locale === 'vi'
+                    ? `${yuan(o.amount_fen)} Xu`
+                    : locale === 'en'
+                      ? `${yuan(o.amount_fen)} Credits`
+                      : `¥${yuan(o.amount_fen)}`}
+                </em>
                 <span className="pf-muted">{t('billing.history.creditLabel').replace('{amount}', yuan(o.credit_fen))}</span>
                 <span className={`pf-topup-status is-${o.status}`}>
                   {statusLabels[o.status] || o.status}

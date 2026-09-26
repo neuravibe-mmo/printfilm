@@ -50,7 +50,15 @@ async def list_templates(
     count_stmt = select(func.count()).select_from(Template)
     if q and q.strip():
         like = f"%{q.strip()}%"
-        filt = or_(Template.id.ilike(like), Template.name.ilike(like), Template.description.ilike(like))
+        filt = or_(
+            Template.id.ilike(like),
+            Template.name.ilike(like),
+            Template.name_en.ilike(like),
+            Template.name_vi.ilike(like),
+            Template.description.ilike(like),
+            Template.description_en.ilike(like),
+            Template.description_vi.ilike(like),
+        )
         stmt = stmt.where(filt)
         count_stmt = count_stmt.where(filt)
     if is_active is not None:

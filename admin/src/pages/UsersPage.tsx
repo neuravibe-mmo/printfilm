@@ -17,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
 import { formatAccountId } from "@/lib/admin-account";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
-import { fenToYuan } from "@/lib/utils";
+import { fenToYuan, formatCredits } from "@/lib/utils";
 import { useI18n, formatDateTime } from "@/i18n";
 
 type ListRes = { items: AdminUserRow[]; meta: PageMeta };
@@ -183,8 +183,8 @@ export function UsersPage() {
                     {u.role === "admin" ? t("users.roleAdmin") : t("users.roleUser")}
                   </Badge>
                 </TableCell>
-                <TableCell className="tabular-nums">¥{fenToYuan(u.balance_fen)}</TableCell>
-                <TableCell className="tabular-nums">¥{fenToYuan(u.frozen_fen)}</TableCell>
+                <TableCell className="tabular-nums">{formatCredits(u.balance_fen, locale)}</TableCell>
+                <TableCell className="tabular-nums">{formatCredits(u.frozen_fen, locale)}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {formatDateTime(u.created_at, locale)}
                 </TableCell>

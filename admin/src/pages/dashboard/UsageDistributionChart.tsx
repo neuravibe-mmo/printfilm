@@ -10,7 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import type { AdminUsageBucket } from "@/api/client";
-import { fenToYuan } from "@/lib/utils";
+import { formatCredits } from "@/lib/utils";
 import { useI18n } from "@/i18n/useI18n";
 import type { DashboardMetric } from "./DashboardFilters";
 
@@ -38,9 +38,9 @@ function readMetric(row: AdminUsageBucket, metric: DashboardMetric): number {
   return row.charge_fen;
 }
 
-function formatMetric(value: number, metric: DashboardMetric): string {
+function formatMetric(value: number, metric: DashboardMetric, locale?: string): string {
   if (metric === "calls") return String(value);
-  return `¥${fenToYuan(value)}`;
+  return formatCredits(value, locale);
 }
 
 /** 能力 / 领域分布图 */
@@ -52,7 +52,7 @@ export function UsageDistributionChart({
   chartHeight = 220,
   yAxisWidth = 72,
 }: UsageDistributionChartProps) {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const chartData = data
     .map((row) => ({
       key: row.key,
@@ -92,7 +92,7 @@ export function UsageDistributionChart({
               }}
               formatter={(value, _name, item) => {
                 const row = item?.payload as { name?: string } | undefined;
-                return [formatMetric(Number(value ?? 0), metric), row?.name ?? ""];
+                return [formatMetric(Number(value ?? 0), metric, locale), row?.name ?? ""];
               }}
             />
           </PieChart>
@@ -105,7 +105,7 @@ export function UsageDistributionChart({
                 style={{ background: CHART_COLORS[idx % CHART_COLORS.length] }}
               />
               <span className="admin-chart-legend-label">{row.name}</span>
-              <span className="admin-chart-legend-value">{formatMetric(row.value, metric)}</span>
+              <span className="admin-chart-legend-value">{formatMetric(row.value, metric, locale)}</span>
             </div>
           ))}
         </div>
@@ -134,7 +134,7 @@ export function UsageDistributionChart({
               borderRadius: "10px",
               fontSize: "12px",
             }}
-            formatter={(value) => [formatMetric(Number(value ?? 0), metric), m.dashboard.charts.metricValue]}
+            formatter={(value) => [formatMetric(Number(value ?? 0), metric, locale), m.dashboard.charts.metricValue]}
           />
           <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={18}>
             {chartData.map((row, idx) => (

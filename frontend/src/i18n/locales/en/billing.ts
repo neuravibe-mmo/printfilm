@@ -42,7 +42,7 @@ export const enBilling = {
       title: 'Top-up history',
       loading: 'Loading…',
       empty: 'No top-up history',
-      creditLabel: 'Credited ¥{amount}',
+      creditLabel: 'Credited {amount} Credits',
       status: {
         pending: 'Pending',
         paid: 'Credited',

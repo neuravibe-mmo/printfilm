@@ -351,7 +351,7 @@ export const enPages = {
     unavailable: '{label} is coming soon. Please use Alipay or WeChat Pay.',
     chooseAmount: 'Choose an amount',
     credit: 'You receive',
-    bonus: 'Bonus ¥{amount}',
+    bonus: 'Bonus {amount} Credits',
     foreverHint: 'Balance never expires',
     ordering: 'Creating order…',
     payNow: 'Top up',
@@ -383,7 +383,7 @@ export const enPages = {
     loginFirst: 'Sign in first',
     monthCharge: 'This period',
     currentPlan: 'Plan',
-    frozen: 'On hold ¥{amount}',
+    frozen: 'On hold {amount} Credits',
     updatedAt: 'Updated {time}',
   },
   history: {

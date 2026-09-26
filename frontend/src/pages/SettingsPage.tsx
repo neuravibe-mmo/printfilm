@@ -14,6 +14,7 @@ import { dramaProjectEntryPath, formatDramaCardMeta } from '../lib/dramaWorkflow
 import { STATUS_CN } from '../lib/status'
 import SettingsToolRunsPanel from './SettingsToolRunsPanel'
 import { formatDateTime, useI18n, type Locale } from '../i18n'
+import { formatCredits } from '../lib/dramaUsage'
 
 type SettingsTab =
   | 'account'
@@ -297,11 +298,11 @@ export default function SettingsPage() {
               <div className="pf-settings-balance">
                 <div>
                   <span className="pf-muted">{t('settings.balance')}</span>
-                  <strong>¥{(wallet?.balance_yuan ?? 0).toFixed(2)}</strong>
+                  <strong>{formatCredits(wallet?.balance_yuan, locale)}</strong>
                 </div>
                 <div>
                   <span className="pf-muted">{t('settings.frozen')}</span>
-                  <em>¥{(wallet?.frozen_yuan ?? 0).toFixed(2)}</em>
+                  <em>{formatCredits(wallet?.frozen_yuan, locale)}</em>
                 </div>
               </div>
               <MonthlyUsageCard variant="compact" showTopup={false} />

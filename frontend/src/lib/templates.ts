@@ -355,12 +355,17 @@ function resolveKey(target: { id?: string; name?: string } | string): string | u
   return undefined
 }
 
-/** Lấy tên hiển thị theo ngôn ngữ hiện tại */
+/** Lấy tên hiển thị theo ngôn ngữ hiện tại: ưu tiên prop từ database (name_vi, name_en) */
 export function getTemplateName(
-  target: { id?: string; name?: string } | string,
+  target: { id?: string; name?: string; name_en?: string; name_vi?: string } | string,
   explicitLocale?: Locale,
 ): string {
   const locale = explicitLocale || getActiveLocale()
+  if (typeof target === 'object' && target !== null) {
+    if (locale === 'vi' && target.name_vi) return target.name_vi
+    if (locale === 'en' && target.name_en) return target.name_en
+    if (locale === 'zh' && target.name) return target.name
+  }
   const key = resolveKey(target)
   if (key && TEMPLATE_TRANSLATIONS[key]?.name?.[locale]) {
     return TEMPLATE_TRANSLATIONS[key].name[locale]
@@ -369,12 +374,17 @@ export function getTemplateName(
   return target.name || target.id || ''
 }
 
-/** Lấy mô tả hiển thị theo ngôn ngữ hiện tại */
+/** Lấy mô tả hiển thị theo ngôn ngữ hiện tại: ưu tiên prop từ database (description_vi, description_en) */
 export function getTemplateDescription(
-  target: { id?: string; description?: string } | string,
+  target: { id?: string; description?: string; description_en?: string; description_vi?: string } | string,
   explicitLocale?: Locale,
 ): string {
   const locale = explicitLocale || getActiveLocale()
+  if (typeof target === 'object' && target !== null) {
+    if (locale === 'vi' && target.description_vi) return target.description_vi
+    if (locale === 'en' && target.description_en) return target.description_en
+    if (locale === 'zh' && target.description) return target.description
+  }
   const key = resolveKey(target)
   if (key && TEMPLATE_TRANSLATIONS[key]?.description?.[locale]) {
     return TEMPLATE_TRANSLATIONS[key].description[locale]
@@ -382,3 +392,15 @@ export function getTemplateDescription(
   if (typeof target === 'string') return target
   return target.description || ''
 }
+
+/** Lấy danh mục hiển thị theo ngôn ngữ hiện tại: ưu tiên prop từ database (category_vi, category_en) */
+export function getTemplateCategories(
+  target: { category?: string[]; category_en?: string[]; category_vi?: string[] },
+  explicitLocale?: Locale,
+): string[] {
+  const locale = explicitLocale || getActiveLocale()
+  if (locale === 'vi' && target.category_vi?.length) return target.category_vi
+  if (locale === 'en' && target.category_en?.length) return target.category_en
+  return target.category || []
+}
+

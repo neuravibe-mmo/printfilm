@@ -16,6 +16,7 @@ import { DramaFragmentsPage } from "@/pages/drama/DramaFragmentsPage";
 import { DramaProjectDetailPage } from "@/pages/drama/DramaProjectDetailPage";
 import { QueuesPage } from "@/pages/QueuesPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { GuidePage } from "@/pages/GuidePage";
 import { TemplatesPage } from "@/pages/TemplatesPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { WorksPage } from "@/pages/WorksPage";
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="templates" element={<TemplatesPage />} />
           <Route path="queues" element={<QueuesPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="guide" element={<GuidePage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

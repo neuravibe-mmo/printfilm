@@ -6,11 +6,12 @@ import { api, type AdminDramaAsset } from "@/api/client";
 import { AdminDetailMeta, AdminDetailSection } from "@/components/admin/AdminDetailLayout";
 import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { Button } from "@/components/ui/button";
+import { formatDramaAssetName } from "@/lib/statusLabels";
 import { useI18n } from "@/i18n/useI18n";
 
 /** 漫剧资产详情二级页 */
 export function DramaAssetDetailPage() {
-  const { m } = useI18n();
+  const { m, locale } = useI18n();
   const { assetId } = useParams<{ assetId: string }>();
   const navigate = useNavigate();
   const [detail, setDetail] = useState<AdminDramaAsset | null>(null);
@@ -50,7 +51,7 @@ export function DramaAssetDetailPage() {
         </Button>
         <div className="admin-detail-page-heading">
           <h2 className="admin-detail-page-title">
-            {m.drama.assets.assetPrefix} #{detail.id} · {detail.name || m.drama.assets.unnamed}
+            {m.drama.assets.assetPrefix} #{detail.id} · {formatDramaAssetName(detail.name, locale) || m.drama.assets.unnamed}
           </h2>
           <p className="admin-detail-page-sub">
             {(m.drama.assetTypes[detail.type as keyof typeof m.drama.assetTypes] || detail.type)} ·{" "}
