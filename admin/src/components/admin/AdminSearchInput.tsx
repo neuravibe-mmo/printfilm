@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { KeyboardEventHandler } from "react";
+import { useI18n } from "@/i18n/useI18n";
 
 type AdminSearchInputProps = {
   value: string;
@@ -13,10 +14,12 @@ type AdminSearchInputProps = {
 export function AdminSearchInput({
   value,
   onChange,
-  placeholder = "搜索…",
+  placeholder,
   className,
   onKeyDown,
 }: AdminSearchInputProps) {
+  const { m } = useI18n();
+  const effectivePlaceholder = placeholder ?? m.common.searchPlaceholder;
   return (
     <div className={cn("admin-input-search-wrap admin-filter-search", className)}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -29,7 +32,7 @@ export function AdminSearchInput({
       </svg>
       <input
         className="admin-input"
-        placeholder={placeholder}
+        placeholder={effectivePlaceholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}

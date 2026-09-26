@@ -18,11 +18,14 @@ import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
 import { formatAccountId } from "@/lib/admin-account";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { fenToYuan } from "@/lib/utils";
+import { useI18n, formatDateTime } from "@/i18n";
 
 type ListRes = { items: AdminUserRow[]; meta: PageMeta };
 
+
 // 用户管理：搜索、筛选、只读明细与编辑
 export function UsersPage() {
+  const { t, locale } = useI18n();
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -52,7 +55,7 @@ export function UsersPage() {
       const res = await api<ListRes>(`/api/admin/users?${params}`);
       setData(res);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : t("common.failed"));
     } finally {
       setLoading(false);
     }
@@ -68,9 +71,9 @@ export function UsersPage() {
       .then(setStats)
       .catch((err) => {
         setStats(null);
-        toast.error(err instanceof Error ? err.message : "统计加载失败");
+        toast.error(err instanceof Error ? err.message : t("common.failed"));
       });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!userDetail.id || !data?.items) return;
@@ -92,7 +95,7 @@ export function UsersPage() {
     setSaving(true);
     try {
       const balanceFen = Math.round(parseFloat(form.balance_yuan || "0") * 100);
-      if (Number.isNaN(balanceFen)) throw new Error("余额格式无效");
+      if (Number.isNaN(balanceFen)) throw new Error(t("common.failed"));
       await api(`/api/admin/users/${editing.id}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -101,11 +104,11 @@ export function UsersPage() {
           balance_note: form.balance_note || undefined,
         }),
       });
-      toast.success("已保存");
+      toast.success(t("common.success"));
       setEditing(null);
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "保存失败");
+      toast.error(err instanceof Error ? err.message : t("common.failed"));
     } finally {
       setSaving(false);
     }
@@ -118,38 +121,38 @@ export function UsersPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader description="搜索用户，调整角色与余额" />
+      <PageHeader description={t("users.description")} />
 
       <AdminFilterBar>
         <AdminSearchInput
           value={q}
           onChange={setQ}
-          placeholder="搜索邮箱 / 昵称 / 账号 ID"
+          placeholder={t("users.searchPlaceholder")}
           onKeyDown={(e) => {
             if (e.key === "Enter") applyFilters();
           }}
         />
         <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-          <option value="">全部角色</option>
-          <option value="user">user</option>
-          <option value="admin">admin</option>
+          <option value="">{t("users.allRoles")}</option>
+          <option value="user">{t("users.roleUser")}</option>
+          <option value="admin">{t("users.roleAdmin")}</option>
         </Select>
         <Button size="sm" className="admin-filter-action" onClick={applyFilters} disabled={loading}>
-          {loading ? "加载中…" : "搜索"}
+          {loading ? t("common.loading") : t("common.search")}
         </Button>
       </AdminFilterBar>
 
       <AdminListStats
         items={[
-          { label: "总用户数", value: stats?.user_count ?? (loading ? "…" : "—") },
+          { label: t("dashboard.kpi.totalUsers"), value: stats?.user_count ?? (loading ? "…" : "—") },
           {
-            label: "本月调用",
+            label: t("dashboard.sevenDays"),
             value: stats != null ? (stats.usage_calls_month ?? 0) : loading ? "…" : "—",
-            hint: stats ? `今日 ${stats.usage_calls_today ?? 0} 次` : undefined,
+            hint: stats ? `${t("dashboard.today")} ${stats.usage_calls_today ?? 0}` : undefined,
           },
           {
-            label: "累计调用",
-            value: stats != null ? (stats.usage_calls_total ?? 0) : loading ? "…" : "—",
+            label: t("common.total", { count: data?.meta.total ?? 0 }),
+            value: data?.meta.total ?? (loading ? "…" : "—"),
           },
         ]}
       />
@@ -158,31 +161,32 @@ export function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>账号 ID</TableHead>
-              <TableHead>邮箱</TableHead>
-              <TableHead>昵称</TableHead>
-              <TableHead>手机</TableHead>
-              <TableHead>余额</TableHead>
-              <TableHead>冻结</TableHead>
-              <TableHead>角色</TableHead>
-              <TableHead>注册时间</TableHead>
-              <TableHead className="w-[140px]">操作</TableHead>
+              <TableHead>{t("users.cols.id")}</TableHead>
+              <TableHead>{t("users.cols.emailNickname")}</TableHead>
+              <TableHead>{t("users.cols.role")}</TableHead>
+              <TableHead>{t("users.cols.balanceYuan")}</TableHead>
+              <TableHead>{t("users.cols.frozenYuan")}</TableHead>
+              <TableHead>{t("users.cols.registeredAt")}</TableHead>
+              <TableHead className="w-[140px]">{t("users.cols.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {(data?.items ?? []).map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-mono text-xs text-[#909399]">{formatAccountId(u.id)}</TableCell>
-                <TableCell className="font-medium">{u.email}</TableCell>
-                <TableCell>{u.nickname || "—"}</TableCell>
-                <TableCell className="text-xs">{u.phone || "—"}</TableCell>
+                <TableCell className="font-medium">
+                  {u.email}
+                  {u.nickname && <span className="ml-1.5 text-xs text-[#909399]">({u.nickname})</span>}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={u.role === "admin" ? "success" : "secondary"}>
+                    {u.role === "admin" ? t("users.roleAdmin") : t("users.roleUser")}
+                  </Badge>
+                </TableCell>
                 <TableCell className="tabular-nums">¥{fenToYuan(u.balance_fen)}</TableCell>
                 <TableCell className="tabular-nums">¥{fenToYuan(u.frozen_fen)}</TableCell>
-                <TableCell>
-                  <Badge variant={u.role === "admin" ? "success" : "secondary"}>{u.role}</Badge>
-                </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {u.created_at ? new Date(u.created_at).toLocaleString() : "—"}
+                  {formatDateTime(u.created_at, locale)}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
@@ -194,10 +198,10 @@ export function UsersPage() {
                         userDetail.open(u.id);
                       }}
                     >
-                      查看
+                      {t("common.view")}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => openEdit(u)}>
-                      编辑
+                      {t("common.edit")}
                     </Button>
                   </div>
                 </TableCell>
@@ -205,8 +209,8 @@ export function UsersPage() {
             ))}
             {!loading && (data?.items.length ?? 0) === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="p-0">
-                  <EmptyState title="暂无用户" description="试试换个关键词搜索" />
+                <TableCell colSpan={7} className="p-0">
+                  <EmptyState title={t("users.emptyTitle")} description={t("users.emptyDescription")} />
                 </TableCell>
               </TableRow>
             )}
@@ -240,32 +244,32 @@ export function UsersPage() {
         open={!!editing}
         onOpenChange={(open) => !open && setEditing(null)}
         size="md"
-        title="编辑用户"
+        title={t("users.editModal.title")}
         subtitle={editing?.email}
         footer={
           <Button className="w-full sm:w-auto" disabled={saving} onClick={() => void saveEdit()}>
-            {saving ? "保存中…" : "保存修改"}
+            {saving ? t("common.loading") : t("common.save")}
           </Button>
         }
       >
         <div className="admin-form-grid admin-form-grid--2">
-          <AdminField label="角色">
+          <AdminField label={t("users.editModal.role")}>
             <Select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
-              <option value="user">user</option>
-              <option value="admin">admin</option>
+              <option value="user">{t("users.roleUser")}</option>
+              <option value="admin">{t("users.roleAdmin")}</option>
             </Select>
           </AdminField>
-          <AdminField label="余额（元）">
+          <AdminField label={t("users.cols.balanceYuan")}>
             <Input
               value={form.balance_yuan}
               onChange={(e) => setForm((f) => ({ ...f, balance_yuan: e.target.value }))}
             />
           </AdminField>
-          <AdminField label="调账备注" hint="可选">
+          <AdminField label={t("users.editModal.adjustNote")} hint={t("common.cancel")}>
             <Input
               value={form.balance_note}
               onChange={(e) => setForm((f) => ({ ...f, balance_note: e.target.value }))}
-              placeholder="管理员备注"
+              placeholder={t("users.editModal.adjustNotePlaceholder")}
             />
           </AdminField>
         </div>
@@ -273,3 +277,4 @@ export function UsersPage() {
     </div>
   );
 }
+

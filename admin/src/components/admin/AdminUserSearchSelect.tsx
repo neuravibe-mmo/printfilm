@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type AdminUserRow, type PageMeta } from "@/api/client";
 import { formatAccountId, parseAccountIdQuery } from "@/lib/admin-account";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/useI18n";
 
 type ListRes = { items: AdminUserRow[]; meta: PageMeta };
 
@@ -16,9 +17,11 @@ type AdminUserSearchSelectProps = {
 export function AdminUserSearchSelect({
   value,
   onChange,
-  placeholder = "搜索用户邮箱 / 账号 ID",
+  placeholder,
   className,
 }: AdminUserSearchSelectProps) {
+  const { m } = useI18n();
+  const effectivePlaceholder = placeholder ?? m.common.searchUserPlaceholder;
   const [query, setQuery] = useState("");
   const [options, setOptions] = useState<AdminUserRow[]>([]);
   const [open, setOpen] = useState(false);
@@ -73,7 +76,7 @@ export function AdminUserSearchSelect({
     <div className={cn("admin-user-search", className)}>
       <input
         className="admin-input"
-        placeholder={value ? selectedLabel || placeholder : placeholder}
+        placeholder={value ? selectedLabel || effectivePlaceholder : effectivePlaceholder}
         value={open ? query : value ? selectedLabel : query}
         onChange={(e) => {
           setQuery(e.target.value);
@@ -94,16 +97,16 @@ export function AdminUserSearchSelect({
             setQuery("");
             setSelectedLabel("");
           }}
-          aria-label="清除用户"
+          aria-label={m.common.clearUser}
         >
           ×
         </button>
       ) : null}
       {open && (query.trim() || options.length > 0) ? (
         <div className="admin-user-search-dropdown">
-          {loading ? <div className="admin-user-search-empty">搜索中…</div> : null}
+          {loading ? <div className="admin-user-search-empty">{m.common.searching}</div> : null}
           {!loading && options.length === 0 ? (
-            <div className="admin-user-search-empty">无匹配用户</div>
+            <div className="admin-user-search-empty">{m.common.noMatchUser}</div>
           ) : null}
           {options.map((u) => (
             <button

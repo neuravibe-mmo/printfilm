@@ -1,7 +1,9 @@
 import { Crown, ImageOff, Pencil, Trash2 } from "lucide-react";
 import type { AdminTemplate } from "@/api/client";
 import { Switch } from "@/components/ui/switch";
+import { templateCategoryLabel, templateDesc, templateName } from "@/lib/statusLabels";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/useI18n";
 
 type TemplateCardProps = {
   template: AdminTemplate;
@@ -27,8 +29,11 @@ export function TemplateCard({
   onToggleActive,
   onTogglePremium,
 }: TemplateCardProps) {
+  const { t } = useI18n();
   const src = coverSrc(template.preview_cover);
-  const categories = template.category?.length ? template.category : ["未分类"];
+  const categories = template.category?.length ? template.category : [t("templates.uncategorized")];
+  const displayName = templateName(template.id, template.name, t);
+  const displayDesc = templateDesc(template.id, template.description, t);
 
   return (
     <article
@@ -41,10 +46,10 @@ export function TemplateCard({
         type="button"
         className="template-card-cover"
         onClick={() => onEdit(template)}
-        aria-label={`编辑模板 ${template.name}`}
+        aria-label={t("templates.editTitle", { name: displayName })}
       >
         {src ? (
-          <img src={src} alt={template.name} loading="lazy" className="template-card-cover-img" />
+          <img src={src} alt={displayName} loading="lazy" className="template-card-cover-img" />
         ) : (
           <div className="template-card-cover-fallback">
             <ImageOff className="h-8 w-8 text-white/70" />
@@ -60,7 +65,7 @@ export function TemplateCard({
             </span>
           ) : null}
           {!template.is_active ? (
-            <span className="template-card-badge template-card-badge--off">已下架</span>
+            <span className="template-card-badge template-card-badge--off">{t("templates.off")}</span>
           ) : null}
         </div>
       </button>
@@ -68,34 +73,34 @@ export function TemplateCard({
       <div className="template-card-body">
         <div className="template-card-head">
           <div className="min-w-0 flex-1">
-            <h3 className="template-card-title">{template.name}</h3>
+            <h3 className="template-card-title">{displayName}</h3>
             <p className="template-card-id">{template.id}</p>
           </div>
           <div className="template-card-actions">
-            <button type="button" className="template-card-icon-btn" onClick={() => onEdit(template)} title="编辑">
+            <button type="button" className="template-card-icon-btn" onClick={() => onEdit(template)} title={t("common.edit")}>
               <Pencil className="h-4 w-4" />
             </button>
             <button
               type="button"
               className="template-card-icon-btn template-card-icon-btn--danger"
               onClick={() => onDelete(template.id)}
-              title="删除"
+              title={t("common.delete")}
             >
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {template.description ? (
-          <p className="template-card-desc">{template.description}</p>
+        {displayDesc ? (
+          <p className="template-card-desc">{displayDesc}</p>
         ) : (
-          <p className="template-card-desc template-card-desc--empty">暂无描述</p>
+          <p className="template-card-desc template-card-desc--empty">{t("templates.noDescription")}</p>
         )}
 
         <div className="template-card-tags">
           {categories.slice(0, 3).map((tag) => (
             <span key={tag} className="template-card-tag">
-              {tag}
+              {templateCategoryLabel(tag, t)}
             </span>
           ))}
           <span className="template-card-tag template-card-tag--muted">{template.default_ratio}</span>
@@ -103,14 +108,14 @@ export function TemplateCard({
 
         <div className="template-card-foot">
           <label className="template-card-toggle">
-            <span>上架</span>
+            <span>{t("templates.active")}</span>
             <Switch
               checked={template.is_active}
               onCheckedChange={(v) => onToggleActive(template.id, v)}
             />
           </label>
           <label className="template-card-toggle">
-            <span>Premium</span>
+            <span>{t("templates.premium")}</span>
             <Switch
               checked={template.is_premium}
               onCheckedChange={(v) => onTogglePremium(template.id, v)}

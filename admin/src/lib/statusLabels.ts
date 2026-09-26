@@ -103,48 +103,107 @@ export const TASK_TYPE_LABELS: Record<string, string> = {
 };
 
 // Resolve project status display text
-export function projectStatusLabel(status: string): string {
+export function projectStatusLabel(status: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`status.project.${status}`);
+    if (res !== `status.project.${status}`) return res;
+  }
   return PROJECT_STATUS_LABELS[status] ?? status;
 }
 
 // Resolve order status display text
-export function orderStatusLabel(status: string): string {
+export function orderStatusLabel(status: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`status.order.${status}`);
+    if (res !== `status.order.${status}`) return res;
+  }
   return ORDER_STATUS_LABELS[status] ?? status;
 }
 
 // Resolve audit status display text
-export function auditStatusLabel(status: string): string {
+export function auditStatusLabel(status: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`status.audit.${status}`);
+    if (res !== `status.audit.${status}`) return res;
+  }
   return AUDIT_STATUS_LABELS[status] ?? status;
 }
 
 // Resolve visibility display text
-export function visibilityLabel(status: string): string {
+export function visibilityLabel(status: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`status.visibility.${status}`);
+    if (res !== `status.visibility.${status}`) return res;
+  }
   return VISIBILITY_LABELS[status] ?? status;
 }
 
 // Resolve ledger kind display text
-export function ledgerKindLabel(kind: string): string {
+export function ledgerKindLabel(kind: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`status.ledger.${kind}`);
+    if (res !== `status.ledger.${kind}`) return res;
+  }
   return LEDGER_KIND_LABELS[kind] ?? kind;
 }
 
 // Resolve pay type display text
-export function payTypeLabel(payType: string): string {
+export function payTypeLabel(payType: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`status.payType.${payType}`);
+    if (res !== `status.payType.${payType}`) return res;
+  }
   return PAY_TYPE_LABELS[payType] ?? payType;
 }
 
 // Resolve task status display text
-export function taskStatusLabel(status: string): string {
+export function taskStatusLabel(status: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`status.task.${status}`);
+    if (res !== `status.task.${status}`) return res;
+  }
   return TASK_STATUS_LABELS[status] ?? status;
 }
 
 // Resolve task domain display text
-export function taskDomainLabel(domain: string): string {
+export function taskDomainLabel(domain: string, t?: (key: string) => string): string {
+  if (t) {
+    const direct = t(`status.taskDomain.${domain}`);
+    if (direct !== `status.taskDomain.${domain}`) return direct;
+    const filterRes = t(`dashboard.filters.${domain}`);
+    if (filterRes !== `dashboard.filters.${domain}`) return filterRes;
+  }
   return TASK_DOMAIN_LABELS[domain] ?? domain;
 }
 
 // Resolve task type display text
-export function taskTypeLabel(taskType: string): string {
+export function taskTypeLabel(taskType: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`status.taskType.${taskType}`);
+    if (res !== `status.taskType.${taskType}`) return res;
+  }
   return TASK_TYPE_LABELS[taskType] ?? taskType;
+}
+
+// Resolve billing basis display text
+export function billingBasisLabel(
+  basis?: string,
+  estimated?: boolean,
+  t?: (key: string) => string,
+): string {
+  const b = basis || (estimated ? "estimate" : "");
+  if (t) {
+    if (b === "estimate" || estimated) return t("status.billingBasis.estimate");
+    if (b === "upstream_usage") return t("status.billingBasis.upstream_usage");
+    if (b === "upstream_cost") return t("status.billingBasis.upstream_cost");
+    if (b === "unknown") return t("status.billingBasis.unknown");
+    return t("status.billingBasis.estimate");
+  }
+  if (b === "estimate" || estimated) return "估算";
+  if (b === "upstream_usage") return "实测(token)";
+  if (b === "upstream_cost") return "实测(费用)";
+  if (b === "unknown") return "实测(未分类)";
+  return "估算";
 }
 
 /** Filter options for project status select (value stays English for API) */
@@ -152,3 +211,30 @@ export const PROJECT_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "全部状态" },
   ...Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ];
+
+// Resolve template category display text
+export function templateCategoryLabel(category: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`templates.categories.${category}`);
+    if (res !== `templates.categories.${category}`) return res;
+  }
+  return category;
+}
+
+// Resolve template name display text
+export function templateName(id: string, defaultName: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`templates.builtIn.${id}.name`);
+    if (res !== `templates.builtIn.${id}.name`) return res;
+  }
+  return defaultName;
+}
+
+// Resolve template description display text
+export function templateDesc(id: string, defaultDesc: string, t?: (key: string) => string): string {
+  if (t) {
+    const res = t(`templates.builtIn.${id}.description`);
+    if (res !== `templates.builtIn.${id}.description`) return res;
+  }
+  return defaultDesc;
+}

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { formatAccountId } from "@/lib/admin-account";
+import { useI18n } from "@/i18n/useI18n";
 
 type EntityKind = "user" | "project" | "drama" | "drama_asset" | "task" | "order";
 
@@ -30,20 +31,24 @@ function buildHref(kind: EntityKind, id: number): string {
   }
 }
 
-function defaultLabel(kind: EntityKind, id: number): string {
+function defaultLabel(
+  kind: EntityKind,
+  id: number,
+  t?: (key: string, vars?: Record<string, string | number>) => string,
+): string {
   switch (kind) {
     case "user":
-      return `ID：${formatAccountId(id)}`;
+      return t ? t("common.entity.user", { id: formatAccountId(id) }) : `ID：${formatAccountId(id)}`;
     case "project":
-      return `科普#${id}`;
+      return t ? t("common.entity.project", { id }) : `科普#${id}`;
     case "drama":
-      return `漫剧#${id}`;
+      return t ? t("common.entity.drama", { id }) : `漫剧#${id}`;
     case "drama_asset":
-      return `资产#${id}`;
+      return t ? t("common.entity.dramaAsset", { id }) : `资产#${id}`;
     case "task":
-      return `任务#${id}`;
+      return t ? t("common.entity.task", { id }) : `任务#${id}`;
     case "order":
-      return `订单#${id}`;
+      return t ? t("common.entity.order", { id }) : `订单#${id}`;
     default:
       return String(id);
   }
@@ -51,10 +56,12 @@ function defaultLabel(kind: EntityKind, id: number): string {
 
 /** 跨页实体跳转链接 */
 export function AdminEntityLink({ kind, id, label, className }: AdminEntityLinkProps) {
+  const { t } = useI18n();
   if (!id) return <span className="text-[var(--admin-muted)]">—</span>;
   return (
     <Link to={buildHref(kind, id)} className={cn("admin-link font-medium", className)}>
-      {label ?? defaultLabel(kind, id)}
+      {label ?? defaultLabel(kind, id, t)}
     </Link>
   );
 }
+

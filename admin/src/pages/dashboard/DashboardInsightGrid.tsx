@@ -13,6 +13,8 @@ export type DashboardInsightItem = {
   tone?: DashboardInsightTone;
 };
 
+import { useI18n } from "@/i18n/useI18n";
+
 type DashboardInsightGridProps = {
   items: DashboardInsightItem[];
   columns?: 2 | 3 | 4 | 6;
@@ -21,8 +23,9 @@ type DashboardInsightGridProps = {
 
 /** 仪表盘图标洞察格：能力/领域/周期指标 */
 export function DashboardInsightGrid({ items, columns = 4, className }: DashboardInsightGridProps) {
+  const { m } = useI18n();
   if (items.length === 0) {
-    return <div className="admin-chart-empty !min-h-[88px]">暂无数据</div>;
+    return <div className="admin-chart-empty !min-h-[88px]">{m.common.nodata}</div>;
   }
 
   return (

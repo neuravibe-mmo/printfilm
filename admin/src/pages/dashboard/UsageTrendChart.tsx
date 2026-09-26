@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   Area,
   AreaChart,
@@ -10,17 +11,12 @@ import {
 import type { AdminDailyUsage } from "@/api/client";
 import { fenToYuan } from "@/lib/utils";
 import type { DashboardMetric } from "./DashboardFilters";
+import { useI18n } from "@/i18n/useI18n";
 
 type UsageTrendChartProps = {
   data: AdminDailyUsage[];
   metric: DashboardMetric;
 };
-
-function metricLabel(metric: DashboardMetric): string {
-  if (metric === "cost") return "上游成本";
-  if (metric === "calls") return "调用次数";
-  return "扣费金额";
-}
 
 function readMetric(row: AdminDailyUsage, metric: DashboardMetric): number {
   if (metric === "cost") return row.cost_fen ?? 0;
@@ -40,6 +36,17 @@ function shortDate(iso: string): string {
 
 /** 用量趋势面积图 */
 export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
+  const { m } = useI18n();
+
+  const getMetricLabel = useCallback(
+    (targetMetric: DashboardMetric): string => {
+      if (targetMetric === "cost") return m.dashboard.filters.upstreamCost;
+      if (targetMetric === "calls") return m.dashboard.filters.callCount;
+      return m.dashboard.filters.chargeAmount;
+    },
+    [m],
+  );
+
   const chartData = data.map((row) => ({
     date: row.date,
     label: shortDate(row.date),
@@ -47,7 +54,7 @@ export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
   }));
 
   if (chartData.length === 0) {
-    return <div className="admin-chart-empty">暂无趋势数据</div>;
+    return <div className="admin-chart-empty">{m.dashboard.charts.noTrendData}</div>;
   }
 
   return (
@@ -86,7 +93,7 @@ export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
               const row = payload?.[0]?.payload as { date?: string } | undefined;
               return row?.date ?? "";
             }}
-            formatter={(value) => [formatMetric(Number(value ?? 0), metric), metricLabel(metric)]}
+            formatter={(value) => [formatMetric(Number(value ?? 0), metric), getMetricLabel(metric)]}
           />
           <Area
             type="monotone"

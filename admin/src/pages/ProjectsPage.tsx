@@ -21,8 +21,9 @@ import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/page";
 import { useAdminDetailQuery } from "@/hooks/useAdminDetailQuery";
-import { PROJECT_STATUS_OPTIONS, projectStatusLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
+import { PROJECT_STATUS_OPTIONS, taskTypeLabel } from "@/lib/statusLabels";
 import { fenToYuan } from "@/lib/utils";
+import { useI18n, formatDateTime } from "@/i18n";
 
 type ListRes = { items: AdminProject[]; meta: PageMeta };
 
@@ -43,6 +44,7 @@ function mediaSrc(url: string | null | undefined): string {
 
 // 科普项目列表与详情（镜头 / 任务 / 费用 / 媒体预览）
 export function ProjectsPage() {
+  const { t, locale } = useI18n();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [userId, setUserId] = useState<number | null>(null);
@@ -60,7 +62,7 @@ export function ProjectsPage() {
       if (userId) params.set("user_id", String(userId));
       setData(await api<ListRes>(`/api/admin/projects?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : t("common.failed"));
     }
   }
 
@@ -75,7 +77,7 @@ export function ProjectsPage() {
     try {
       setDetail(await api<AdminProject>(`/api/admin/projects/${id}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载详情失败");
+      toast.error(err instanceof Error ? err.message : t("common.failed"));
       projectDetail.close();
     } finally {
       setDetailLoading(false);
@@ -94,18 +96,27 @@ export function ProjectsPage() {
 
   const usage = detail?.usage;
 
+  function resolveProjectStatus(st: string): string {
+    return t(`status.project.${st}`);
+  }
+
+  function resolveTaskStatus(st: string): string {
+    return t(`status.task.${st}`);
+  }
+
   return (
     <div className="admin-list-page">
-      <PageHeader description="科普管线项目：状态、镜头、关联任务与费用" />
+      <PageHeader description={t("projects.description")} />
       <AdminFilterBar>
         <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-          {PROJECT_STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value || "all"} value={opt.value}>
-              {opt.label}
+          <option value="">{t("projects.allStatus")}</option>
+          {PROJECT_STATUS_OPTIONS.filter((opt) => opt.value).map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {resolveProjectStatus(opt.value)}
             </option>
           ))}
         </Select>
-        <Input placeholder="标题 / 错误信息" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input placeholder={t("projects.searchPlaceholder")} value={q} onChange={(e) => setQ(e.target.value)} />
         <AdminUserSearchSelect value={userId} onChange={(id) => setUserId(id)} />
         <Button
           size="sm"
@@ -116,7 +127,7 @@ export function ProjectsPage() {
             void load(1);
           }}
         >
-          筛选
+          {t("common.filter")}
         </Button>
       </AdminFilterBar>
       <div className="rounded-lg border bg-background">
@@ -124,16 +135,16 @@ export function ProjectsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>标题</TableHead>
-              <TableHead>用户</TableHead>
-              <TableHead>模板</TableHead>
-              <TableHead>管线</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead>进度</TableHead>
-              <TableHead>镜头</TableHead>
-              <TableHead>费用</TableHead>
-              <TableHead>创建</TableHead>
-              <TableHead>更新</TableHead>
+              <TableHead>{t("projects.cols.title")}</TableHead>
+              <TableHead>{t("projects.cols.user")}</TableHead>
+              <TableHead>{t("projects.cols.template")}</TableHead>
+              <TableHead>{t("projects.cols.pipeline")}</TableHead>
+              <TableHead>{t("common.status")}</TableHead>
+              <TableHead>{t("projects.cols.progress")}</TableHead>
+              <TableHead>{t("projects.cols.shots")}</TableHead>
+              <TableHead>{t("projects.cols.charge")}</TableHead>
+              <TableHead>{t("projects.cols.created")}</TableHead>
+              <TableHead>{t("projects.cols.updated")}</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -148,20 +159,20 @@ export function ProjectsPage() {
                 <TableCell className="font-mono text-xs">{p.template_id}</TableCell>
                 <TableCell className="text-xs">{p.pipeline_mode}</TableCell>
                 <TableCell>
-                  <Badge variant={statusBadgeVariant(p.status)}>{projectStatusLabel(p.status)}</Badge>
+                  <Badge variant={statusBadgeVariant(p.status)}>{resolveProjectStatus(p.status)}</Badge>
                 </TableCell>
                 <TableCell>{p.progress}%</TableCell>
                 <TableCell>{p.shot_count}</TableCell>
                 <TableCell>¥{fenToYuan(p.charge_fen ?? 0)}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {new Date(p.created_at).toLocaleString()}
+                  {formatDateTime(p.created_at, locale)}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {new Date(p.updated_at).toLocaleString()}
+                  {formatDateTime(p.updated_at, locale)}
                 </TableCell>
                 <TableCell>
                   <Button size="sm" variant="outline" onClick={() => void openDetail(p.id)}>
-                    详情
+                    {t("common.detail")}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -187,20 +198,20 @@ export function ProjectsPage() {
           }
         }}
         size="full"
-        title={detail ? `科普项目 #${detail.id} · ${detail.title}` : "科普项目详情"}
-        subtitle={detail ? projectStatusLabel(detail.status) : detailLoading ? "加载中…" : undefined}
+        title={detail ? `${t("projects.modal.project")} #${detail.id} · ${detail.title}` : t("projects.modal.title")}
+        subtitle={detail ? resolveProjectStatus(detail.status) : detailLoading ? t("common.loading") : undefined}
         bodyClassName="space-y-3"
       >
         {detailLoading && !detail ? (
-          <div className="py-10 text-center text-sm text-[var(--admin-muted)]">加载中…</div>
+          <div className="py-10 text-center text-sm text-[var(--admin-muted)]">{t("common.loading")}</div>
         ) : null}
         {detail ? (
           <>
-            <AdminDetailSection title="基本信息">
+            <AdminDetailSection title={t("projects.modal.baseInfo")}>
               <AdminDetailMeta
                 items={[
                   {
-                    label: "用户",
+                    label: t("projects.cols.user"),
                     value: (
                       <AdminEntityLink
                         kind="user"
@@ -210,29 +221,29 @@ export function ProjectsPage() {
                     ),
                   },
                   {
-                    label: "状态 / 进度",
-                    value: `${projectStatusLabel(detail.status)} · ${detail.progress}% · 镜头 ${detail.shot_count}`,
+                    label: t("projects.modal.statusProgress"),
+                    value: `${resolveProjectStatus(detail.status)} · ${detail.progress}% · ${t("projects.cols.shots")} ${detail.shot_count}`,
                   },
-                  { label: "模板", value: detail.template_id },
-                  { label: "管线", value: detail.pipeline_mode },
-                  { label: "来源", value: detail.source_type || "—" },
+                  { label: t("projects.cols.template"), value: detail.template_id },
+                  { label: t("projects.cols.pipeline"), value: detail.pipeline_mode },
+                  { label: t("projects.modal.source"), value: detail.source_type || "—" },
                   {
-                    label: "分辨率 / 比例",
+                    label: t("projects.modal.resolutionRatio"),
                     value: `${detail.resolution_mode || "—"} · ${detail.output_ratio || "—"}`,
                   },
-                  { label: "配音", value: detail.voice_id || "—", full: true },
+                  { label: t("projects.modal.dubbing"), value: detail.voice_id || "—", full: true },
                 ]}
               />
               <AdminDetailNote empty={!detail.error_msg} className="mt-3">
-                {detail.error_msg || "无错误信息"}
+                {detail.error_msg || t("projects.modal.noError")}
               </AdminDetailNote>
             </AdminDetailSection>
 
             {(detail.cover_url || detail.final_video_url) ? (
-              <AdminDetailSection title="媒体预览">
+              <AdminDetailSection title={t("projects.modal.mediaPreview")}>
                 <div className="admin-detail-media">
                   {detail.cover_url ? (
-                    <img src={mediaSrc(detail.cover_url)} alt="封面" />
+                    <img src={mediaSrc(detail.cover_url)} alt={t("projects.modal.image")} />
                   ) : null}
                   {detail.final_video_url ? (
                     <video src={mediaSrc(detail.final_video_url)} controls className="max-w-full" />
@@ -241,38 +252,38 @@ export function ProjectsPage() {
               </AdminDetailSection>
             ) : null}
 
-            <AdminDetailSection title="费用汇总">
+            <AdminDetailSection title={t("projects.modal.costSummary")}>
               <AdminDetailStatGrid
                 items={[
-                  { label: "扣费", value: `¥${fenToYuan(usage?.charge_fen ?? detail.charge_fen ?? 0)}` },
-                  { label: "成本", value: `¥${fenToYuan(usage?.cost_fen ?? 0)}` },
+                  { label: t("finance.charge"), value: `¥${fenToYuan(usage?.charge_fen ?? detail.charge_fen ?? 0)}` },
+                  { label: t("finance.cost"), value: `¥${fenToYuan(usage?.cost_fen ?? 0)}` },
                   { label: "Tokens", value: usage?.tokens ?? 0 },
                   {
-                    label: "图/视/LLM/TTS",
+                    label: "Image/Video/LLM/TTS",
                     value: `${usage?.image_gens ?? 0}/${usage?.video_gens ?? 0}/${usage?.llm_calls ?? 0}/${usage?.tts_gens ?? 0}`,
                   },
                 ]}
               />
             </AdminDetailSection>
 
-            <AdminDetailSection title={`镜头（${(detail.shots ?? []).length}）`}>
+            <AdminDetailSection title={`${t("projects.modal.shots")} (${(detail.shots ?? []).length})`}>
               <AdminDetailTableWrap>
                 <table>
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>状态</th>
-                      <th>时长</th>
-                      <th>图</th>
-                      <th>视频</th>
-                      <th>音频</th>
+                      <th>{t("common.status")}</th>
+                      <th>{t("projects.modal.duration")}</th>
+                      <th>{t("projects.modal.image")}</th>
+                      <th>{t("projects.modal.video")}</th>
+                      <th>{t("projects.modal.audio")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(detail.shots ?? []).length === 0 ? (
                       <tr>
                         <td colSpan={6} className="!text-center text-[var(--admin-muted)]">
-                          暂无镜头
+                          {t("projects.modal.noShots")}
                         </td>
                       </tr>
                     ) : (
@@ -281,9 +292,9 @@ export function ProjectsPage() {
                           <td>{s.shot_no}</td>
                           <td>{s.status}</td>
                           <td>{s.duration}s</td>
-                          <td>{s.has_image ? "有" : "—"}</td>
-                          <td>{s.has_video ? "有" : "—"}</td>
-                          <td>{s.has_audio ? "有" : "—"}</td>
+                          <td>{s.has_image ? t("projects.modal.has") : "—"}</td>
+                          <td>{s.has_video ? t("projects.modal.has") : "—"}</td>
+                          <td>{s.has_audio ? t("projects.modal.has") : "—"}</td>
                         </tr>
                       ))
                     )}
@@ -292,34 +303,34 @@ export function ProjectsPage() {
               </AdminDetailTableWrap>
             </AdminDetailSection>
 
-            <AdminDetailSection title={`关联任务（最近 ${(detail.recent_tasks ?? []).length}）`}>
+            <AdminDetailSection title={`${t("projects.modal.relatedTasks")} (${(detail.recent_tasks ?? []).length})`}>
               <AdminDetailTableWrap className="max-h-[200px]">
                 <table>
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>类型</th>
-                      <th>状态</th>
-                      <th>已扣 / 预估</th>
+                      <th>{t("finance.cols.kind")}</th>
+                      <th>{t("common.status")}</th>
+                      <th>{t("projects.modal.chargedEst")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(detail.recent_tasks ?? []).length === 0 ? (
                       <tr>
                         <td colSpan={4} className="!text-center text-[var(--admin-muted)]">
-                          暂无任务
+                          {t("projects.modal.noTasks")}
                         </td>
                       </tr>
                     ) : (
-                      (detail.recent_tasks ?? []).map((t) => (
-                        <tr key={t.id}>
+                      (detail.recent_tasks ?? []).map((item) => (
+                        <tr key={item.id}>
                           <td>
-                            <AdminEntityLink kind="task" id={t.id} />
+                            <AdminEntityLink kind="task" id={item.id} />
                           </td>
-                          <td>{taskTypeLabel(t.task_type)}</td>
-                          <td>{taskStatusLabel(t.status)}</td>
+                          <td>{taskTypeLabel(item.task_type)}</td>
+                          <td>{resolveTaskStatus(item.status)}</td>
                           <td>
-                            ¥{fenToYuan(t.billing_charged_fen)} / ¥{fenToYuan(t.billing_estimate_fen)}
+                            ¥{fenToYuan(item.billing_charged_fen)} / ¥{fenToYuan(item.billing_estimate_fen)}
                           </td>
                         </tr>
                       ))
@@ -330,7 +341,7 @@ export function ProjectsPage() {
             </AdminDetailSection>
 
             {detail.source_text ? (
-              <AdminDetailSection title="源文本">
+              <AdminDetailSection title={t("projects.modal.sourceText")}>
                 <AdminDetailNote>{detail.source_text}</AdminDetailNote>
               </AdminDetailSection>
             ) : null}

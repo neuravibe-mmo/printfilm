@@ -9,9 +9,11 @@ import {
 import { SecretField } from "@/components/settings/SecretField";
 import { Switch } from "@/components/ui/switch";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
+import { useI18n } from "@/i18n/useI18n";
 
 // 阿里云 OSS 存储配置
 export function OssSettingsPanel() {
+  const { t } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();
   const [ossKeyIdInput, setOssKeyIdInput] = useState("");
   const [ossKeySecretInput, setOssKeySecretInput] = useState("");
@@ -44,7 +46,7 @@ export function OssSettingsPanel() {
         clear_oss_access_key_id: clearOssId,
         clear_oss_access_key_secret: clearOssSecret,
       },
-      "存储配置已保存",
+      t("settings.oss.savedSuccess"),
     );
     setOssKeyIdInput("");
     setOssKeySecretInput("");
@@ -59,26 +61,27 @@ export function OssSettingsPanel() {
   return (
     <SettingsTabShell onSave={() => void handleSave()} saving={saving}>
       <SettingsStatusBar
-        title="存储就绪状态"
+        title={t("settings.oss.statusBarTitle")}
         items={[
           {
             id: "oss",
-            label: "阿里云 OSS",
+            label: t("settings.oss.aliyunOss"),
             ready: ossReady,
-            readyText: "已就绪",
-            pendingText: form.oss_enabled ? "凭证不完整" : "未启用",
+            readyText: t("settings.ready"),
+            pendingText: form.oss_enabled ? t("settings.oss.incompleteCreds") : t("settings.oss.notEnabled"),
           },
           {
             id: "async",
-            label: "异步上传",
+            label: t("settings.oss.asyncUpload"),
             ready: form.oss_upload_async,
-            readyText: "已开启",
-            pendingText: "已关闭",
+            readyText: t("settings.oss.enabled"),
+            pendingText: t("settings.oss.disabled"),
           },
         ]}
         extra={
           <span className="settings-status-extra">
-            配置来源：{form.source === "db" ? "管理端" : "环境变量"}
+            {t("settings.oss.sourcePrefix")}
+            {form.source === "db" ? t("settings.oss.sourceAdmin") : t("settings.oss.sourceEnv")}
           </span>
         }
       />
@@ -86,18 +89,18 @@ export function OssSettingsPanel() {
       <div className="settings-routing-grid">
         <SettingsPanel
           className="settings-panel--compact"
-          title="1. 阿里云 OSS"
-          description="生成文件先落本地，再异步上传 OSS"
+          title={t("settings.oss.sectionOss")}
+          description={t("settings.oss.sectionOssDesc")}
         >
           <div className="settings-toggle-row">
             <div>
-              <strong>启用 OSS</strong>
-              <span>关闭后仅使用本地静态目录</span>
+              <strong>{t("settings.oss.enableOss")}</strong>
+              <span>{t("settings.oss.enableOssHint")}</span>
             </div>
             <Switch checked={form.oss_enabled} onCheckedChange={(v) => patchField("oss_enabled", v)} />
           </div>
           <div className="settings-field-grid mt-3">
-            <LabeledControl label="Endpoint">
+            <LabeledControl label={t("settings.oss.endpoint")}>
               <input
                 className="settings-input"
                 placeholder="oss-cn-beijing.aliyuncs.com"
@@ -105,7 +108,7 @@ export function OssSettingsPanel() {
                 onChange={(e) => patchField("oss_endpoint", e.target.value)}
               />
             </LabeledControl>
-            <LabeledControl label="Region">
+            <LabeledControl label={t("settings.oss.region")}>
               <input
                 className="settings-input"
                 placeholder="cn-hangzhou"
@@ -113,14 +116,14 @@ export function OssSettingsPanel() {
                 onChange={(e) => patchField("oss_region", e.target.value)}
               />
             </LabeledControl>
-            <LabeledControl label="Bucket">
+            <LabeledControl label={t("settings.oss.bucket")}>
               <input
                 className="settings-input"
                 value={form.oss_bucket}
                 onChange={(e) => patchField("oss_bucket", e.target.value)}
               />
             </LabeledControl>
-            <LabeledControl label="目录前缀">
+            <LabeledControl label={t("settings.oss.folderPrefix")}>
               <input
                 className="settings-input"
                 placeholder="kepu"
@@ -129,8 +132,8 @@ export function OssSettingsPanel() {
               />
             </LabeledControl>
             <LabeledControl
-              label="公网访问基址"
-              hint="留空则自动拼 https://{bucket}.{endpoint}"
+              label={t("settings.oss.publicAccessBase")}
+              hint={t("settings.oss.publicAccessBaseHint")}
               className="settings-field-span-full"
             >
               <input
@@ -140,7 +143,7 @@ export function OssSettingsPanel() {
                 onChange={(e) => patchField("oss_public_base", e.target.value)}
               />
             </LabeledControl>
-            <LabeledControl label="上传队列名">
+            <LabeledControl label={t("settings.oss.uploadQueueName")}>
               <input
                 className="settings-input"
                 value={form.oss_upload_queue}
@@ -148,7 +151,7 @@ export function OssSettingsPanel() {
               />
             </LabeledControl>
             <SecretField
-              label="AccessKey ID"
+              label={t("settings.oss.accessKeyId")}
               value={ossKeyIdInput}
               configured={form.has_oss_access_key_id && !clearOssId}
               onChange={setOssKeyIdInput}
@@ -158,7 +161,7 @@ export function OssSettingsPanel() {
               }}
             />
             <SecretField
-              label="AccessKey Secret"
+              label={t("settings.oss.accessKeySecret")}
               value={ossKeySecretInput}
               configured={form.has_oss_access_key_secret && !clearOssSecret}
               onChange={setOssKeySecretInput}
@@ -170,8 +173,8 @@ export function OssSettingsPanel() {
           </div>
           <div className="settings-toggle-row mt-3">
             <div>
-              <strong>异步上传</strong>
-              <span>先返回本地 URL，后台队列上传 OSS</span>
+              <strong>{t("settings.oss.asyncUploadTitle")}</strong>
+              <span>{t("settings.oss.asyncUploadHint")}</span>
             </div>
             <Switch checked={form.oss_upload_async} onCheckedChange={(v) => patchField("oss_upload_async", v)} />
           </div>

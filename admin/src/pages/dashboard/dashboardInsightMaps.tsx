@@ -37,6 +37,7 @@ function buildInsightItems(
   metric: DashboardMetric,
   metaMap: Record<string, { label: string; icon: LucideIcon; tone: DashboardInsightTone }>,
   labelForKey?: (key: string) => string,
+  t?: (key: string, vars?: Record<string, string | number>) => string,
 ): DashboardInsightItem[] {
   const prepared = [...rows]
     .map((row) => ({
@@ -51,12 +52,19 @@ function buildInsightItems(
     .map(({ row, value }) => {
       const meta = metaMap[row.key] ?? metaMap.unknown;
       const sharePct = total > 0 ? ((value / total) * 100).toFixed(1) : null;
-      const shareHint = sharePct ? `占比 ${sharePct}%` : undefined;
+      const shareHint = sharePct
+        ? t
+          ? t("dashboard.charts.sharePct", { pct: sharePct })
+          : `占比 ${sharePct}%`
+        : undefined;
+      const callsHint = t
+        ? t("dashboard.charts.callsCount", { count: row.calls.toLocaleString() })
+        : `${row.calls.toLocaleString()} 次调用`;
       return {
         key: row.key,
         label: labelForKey?.(row.key) ?? meta.label,
         value: formatDashboardMetric(value, metric),
-        hint: [shareHint, `${row.calls.toLocaleString()} 次调用`].filter(Boolean).join(" · "),
+        hint: [shareHint, callsHint].filter(Boolean).join(" · "),
         icon: meta.icon,
         tone: meta.tone,
       };
@@ -67,8 +75,9 @@ function buildInsightItems(
 export function buildCapabilityInsights(
   rows: AdminUsageBucket[],
   metric: DashboardMetric,
+  t?: (key: string, vars?: Record<string, string | number>) => string,
 ): DashboardInsightItem[] {
-  return buildInsightItems(rows, metric, CAPABILITY_META);
+  return buildInsightItems(rows, metric, CAPABILITY_META, undefined, t);
 }
 
 /** 领域分布洞察卡片 */
@@ -76,6 +85,7 @@ export function buildDomainInsights(
   rows: AdminUsageBucket[],
   metric: DashboardMetric,
   labelForKey: (key: string) => string,
+  t?: (key: string, vars?: Record<string, string | number>) => string,
 ): DashboardInsightItem[] {
-  return buildInsightItems(rows, metric, DOMAIN_META, labelForKey);
+  return buildInsightItems(rows, metric, DOMAIN_META, labelForKey, t);
 }

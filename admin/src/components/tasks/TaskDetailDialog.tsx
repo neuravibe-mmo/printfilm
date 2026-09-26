@@ -1,6 +1,7 @@
 import {
   Children,
   isValidElement,
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -12,9 +13,10 @@ import { api, type AdminTaskDetail } from "@/api/client";
 import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { Button } from "@/components/ui/button";
-import { taskDomainLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
+import { billingBasisLabel, taskDomainLabel, taskStatusLabel, taskTypeLabel } from "@/lib/statusLabels";
 import { hasJsonContent, prettyJson } from "@/lib/jsonPreview";
 import { cn, fenToYuan } from "@/lib/utils";
+import { useI18n } from "@/i18n/useI18n";
 
 type TaskDetailDialogProps = {
   taskId: number | null;
@@ -124,22 +126,26 @@ function payloadSummaryRows(
 
 // 任务详情弹窗：概览 / 步骤 / 事件 / 原始 JSON
 export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: TaskDetailDialogProps) {
+  const { t } = useI18n();
   const [task, setTask] = useState<AdminTaskDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<DetailTab>("overview");
   const [cancelling, setCancelling] = useState(false);
 
-  async function loadDetail(id: number) {
-    setLoading(true);
-    try {
-      setTask(await api<AdminTaskDetail>(`/api/admin/tasks/${id}`));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载任务详情失败");
-      onOpenChange(false);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const loadDetail = useCallback(
+    async (id: number) => {
+      setLoading(true);
+      try {
+        setTask(await api<AdminTaskDetail>(`/api/admin/tasks/${id}`));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t("queues.loadFailed"));
+        onOpenChange(false);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onOpenChange, t],
+  );
 
   useEffect(() => {
     if (!open || !taskId) {
@@ -148,7 +154,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
       return;
     }
     void loadDetail(taskId);
-  }, [open, taskId]);
+  }, [loadDetail, open, taskId]);
 
   const canCancel = useMemo(() => {
     if (!task) return false;
@@ -164,21 +170,23 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
 
   async function handleCancel() {
     if (!task || !canCancel) return;
-    if (!window.confirm(`确定取消任务 #${task.id}？`)) return;
+    if (!window.confirm(t("queues.confirmCancel", { id: task.id, type: taskTypeLabel(task.task_type, t) }))) return;
     setCancelling(true);
     try {
       const updated = await api<AdminTaskDetail>(`/api/admin/tasks/${task.id}/cancel`, { method: "POST" });
       setTask(updated);
-      toast.success("已提交取消请求");
+      toast.success(t("queues.cancelSubmitted"));
       onCancelled?.();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "取消失败");
+      toast.error(err instanceof Error ? err.message : t("queues.cancelFailed"));
     } finally {
       setCancelling(false);
     }
   }
 
-  const title = task ? `任务 #${task.id} · ${taskDomainLabel(task.domain)}` : "任务详情";
+  const title = task
+    ? t("queues.dialogTitle", { id: task.id, domain: taskDomainLabel(task.domain, t) })
+    : t("queues.dialogDefaultTitle");
 
   return (
     <AdminModal
@@ -191,7 +199,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
       subtitle={
         task ? (
           <span className="font-mono text-xs">
-            {taskTypeLabel(task.task_type)}
+            {taskTypeLabel(task.task_type, t)}
             {task.user_email ? ` · ${task.user_email}` : ""}
           </span>
         ) : undefined
@@ -199,18 +207,18 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
       footer={
         <>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            关闭
+            {t("common.close")}
           </Button>
           {taskId ? (
             <Button variant="outline" disabled={loading} onClick={() => void loadDetail(taskId)}>
               <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
-              刷新
+              {t("common.refresh")}
             </Button>
           ) : null}
           {canCancel ? (
             <Button variant="destructive" disabled={cancelling} onClick={() => void handleCancel()}>
               {cancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Ban className="mr-2 h-4 w-4" />}
-              取消任务
+              {t("queues.cancelTask")}
             </Button>
           ) : null}
         </>
@@ -219,18 +227,18 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
       {loading && !task ? (
         <div className="task-detail-loading">
           <Loader2 className="h-6 w-6 animate-spin text-[#67c23a]" />
-          <span>加载任务详情…</span>
+          <span>{t("queues.loadingDetail")}</span>
         </div>
       ) : task ? (
         <div className="task-detail-body">
           <div className="task-detail-tabs" role="tablist">
             {(
               [
-                ["overview", "概览"],
-                ["billing", `计费 (${task.usage_lines?.length ?? 0})`],
-                ["steps", `步骤 (${task.steps?.length ?? 0})`],
-                ["events", `事件 (${task.events?.length ?? 0})`],
-                ["json", "原始 JSON"],
+                ["overview", t("queues.tabOverview")],
+                ["billing", t("queues.tabBilling", { count: task.usage_lines?.length ?? 0 })],
+                ["steps", t("queues.tabSteps", { count: task.steps?.length ?? 0 })],
+                ["events", t("queues.tabEvents", { count: task.events?.length ?? 0 })],
+                ["json", t("queues.tabJson")],
               ] as const
             ).map(([key, label]) => (
               <button
@@ -249,19 +257,19 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
             {tab === "overview" ? (
               <div className="task-detail-grid">
                 <section className="task-detail-section">
-                  <h4>状态</h4>
+                  <h4>{t("common.status")}</h4>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`admin-status-pill ${statusClass(task.status)}`}>
-                      {taskStatusLabel(task.status)}
+                      {taskStatusLabel(task.status, t)}
                     </span>
-                    <span className="text-sm text-[#606266]">进度 {task.progress_percent}%</span>
+                    <span className="text-sm text-[#606266]">{t("queues.progressPercent", { percent: task.progress_percent })}</span>
                     {waitingChain ? (
-                      <span className="admin-status-pill is-warn">等待前置（序列批次）</span>
+                      <span className="admin-status-pill is-warn">{t("queues.waitingBatch")}</span>
                     ) : null}
                   </div>
                   {task.current_step_key ? (
                     <p className="task-detail-meta">
-                      当前步骤 {task.current_step_key}
+                      {t("queues.currentStep", { step: task.current_step_key })}
                       {task.current_step_status ? ` · ${task.current_step_status}` : ""}
                     </p>
                   ) : null}
@@ -272,11 +280,11 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                   ) : null}
                 </section>
 
-                <DetailSection title="调度">
-                  <DlRow label="优先级">{task.priority}</DlRow>
+                <DetailSection title={t("queues.sectionSchedule")}>
+                  <DlRow label={t("queues.priority")}>{task.priority}</DlRow>
                   <DlRow label="scheduled_at">{task.scheduled_at ? fmtTime(task.scheduled_at) : null}</DlRow>
                   <DlRow label="next_action_at">{task.next_action_at ? fmtTime(task.next_action_at) : null}</DlRow>
-                  <DlRow label="租约到期">{task.lease_until ? fmtTime(task.lease_until) : null}</DlRow>
+                  <DlRow label={t("queues.leaseUntil")}>{task.lease_until ? fmtTime(task.lease_until) : null}</DlRow>
                   <DlRow label="provider_task_id">
                     {task.provider_task_id ? (
                       <span className="font-mono text-xs break-all">{task.provider_task_id}</span>
@@ -284,26 +292,26 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                   </DlRow>
                 </DetailSection>
 
-                <DetailSection title="关联实体">
-                  <DlRow label="用户">
+                <DetailSection title={t("queues.sectionEntities")}>
+                  <DlRow label={t("queues.entityUser")}>
                     <AdminEntityLink kind="user" id={task.requested_by} label={task.user_email ?? undefined} />
                   </DlRow>
-                  <DlRow label="漫剧项目">
+                  <DlRow label={t("queues.entityDrama")}>
                     {task.drama_project_id ? <AdminEntityLink kind="drama" id={task.drama_project_id} /> : null}
                   </DlRow>
-                  <DlRow label="资产">
+                  <DlRow label={t("queues.entityAsset")}>
                     {task.asset_id ? <AdminEntityLink kind="drama_asset" id={task.asset_id} /> : null}
                   </DlRow>
-                  <DlRow label="剧本">{task.script_id ? `#${task.script_id}` : null}</DlRow>
-                  <DlRow label="分集">{task.episode_id ? `#${task.episode_id}` : null}</DlRow>
-                  <DlRow label="分镜">{task.fragment_id ? `#${task.fragment_id}` : null}</DlRow>
-                  <DlRow label="科普项目">
+                  <DlRow label={t("queues.entityScript")}>{task.script_id ? `#${task.script_id}` : null}</DlRow>
+                  <DlRow label={t("queues.entityEpisode")}>{task.episode_id ? `#${task.episode_id}` : null}</DlRow>
+                  <DlRow label={t("queues.entityFragment")}>{task.fragment_id ? `#${task.fragment_id}` : null}</DlRow>
+                  <DlRow label={t("queues.entityProject")}>
                     {task.project_id ? <AdminEntityLink kind="project" id={task.project_id} /> : null}
                   </DlRow>
-                  <DlRow label="镜头">{task.shot_id ? `#${task.shot_id}` : null}</DlRow>
+                  <DlRow label={t("queues.entityShot")}>{task.shot_id ? `#${task.shot_id}` : null}</DlRow>
                 </DetailSection>
 
-                <DetailSection title="标识">
+                <DetailSection title={t("queues.sectionIdentifiers")}>
                   <DlRow label="dedupe_key">
                     {task.dedupe_key ? <span className="font-mono text-xs break-all">{task.dedupe_key}</span> : null}
                   </DlRow>
@@ -318,29 +326,29 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                 </DetailSection>
 
                 <section className="task-detail-section task-detail-section--full">
-                  <h4>时间线</h4>
+                  <h4>{t("queues.sectionTimeline")}</h4>
                   <dl className="task-detail-dl task-detail-dl--inline">
                     <div>
-                      <dt>创建</dt>
+                      <dt>{t("queues.timelineCreated")}</dt>
                       <dd>{fmtTime(task.created_at)}</dd>
                     </div>
                     <div>
-                      <dt>开始</dt>
+                      <dt>{t("queues.timelineStarted")}</dt>
                       <dd>{fmtTime(task.started_at)}</dd>
                     </div>
                     <div>
-                      <dt>结束</dt>
+                      <dt>{t("queues.timelineFinished")}</dt>
                       <dd>{fmtTime(task.finished_at)}</dd>
                     </div>
                     <div>
-                      <dt>更新</dt>
+                      <dt>{t("queues.timelineUpdated")}</dt>
                       <dd>{fmtTime(task.updated_at)}</dd>
                     </div>
                   </dl>
                 </section>
 
                 <section className="task-detail-section task-detail-section--full">
-                  <h4>提交参数</h4>
+                  <h4>{t("queues.sectionPayload")}</h4>
                   {payloadRows.length > 0 ? (
                     <dl className="task-detail-dl task-detail-dl--payload mb-3">
                       {payloadRows.map((row) => (
@@ -356,16 +364,16 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                   {hasJsonContent(task.payload) ? (
                     <pre className="task-detail-json">{fmtJson(task.payload)}</pre>
                   ) : (
-                    <p className="task-detail-meta">无提交参数</p>
+                    <p className="task-detail-meta">{t("queues.noPayload")}</p>
                   )}
                 </section>
 
                 <section className="task-detail-section task-detail-section--full">
-                  <h4>结果</h4>
+                  <h4>{t("queues.sectionResult")}</h4>
                   {hasJsonContent(task.result_payload) ? (
                     <pre className="task-detail-json">{fmtJson(task.result_payload)}</pre>
                   ) : (
-                    <p className="task-detail-meta">暂无结果（未完成或未回写 result_payload）</p>
+                    <p className="task-detail-meta">{t("queues.noResult")}</p>
                   )}
                 </section>
               </div>
@@ -374,48 +382,48 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
             {tab === "billing" ? (
               <div className="task-detail-grid">
                 <section className="task-detail-section">
-                  <h4>结算摘要</h4>
+                  <h4>{t("queues.billingSummary")}</h4>
                   <dl className="task-detail-dl">
                     <div>
-                      <dt>计费状态</dt>
+                      <dt>{t("queues.billingStatus")}</dt>
                       <dd>{task.billing_status ?? "none"}</dd>
                     </div>
                     <div>
-                      <dt>预扣估算</dt>
+                      <dt>{t("queues.billingEst")}</dt>
                       <dd>¥{fenToYuan(task.billing_estimate_fen ?? 0)}</dd>
                     </div>
                     <div>
-                      <dt>实扣</dt>
+                      <dt>{t("queues.billingCharged")}</dt>
                       <dd>¥{fenToYuan(task.billing_charged_fen ?? 0)}</dd>
                     </div>
                     <div>
-                      <dt>退回</dt>
+                      <dt>{t("queues.billingRefunded")}</dt>
                       <dd>¥{fenToYuan(task.billing_refunded_fen ?? 0)}</dd>
                     </div>
                   </dl>
                 </section>
 
                 <section className="task-detail-section task-detail-section--full">
-                  <h4>用量明细</h4>
+                  <h4>{t("queues.usageDetails")}</h4>
                   <div className="admin-table-wrap">
                     <table>
                       <thead>
                         <tr>
-                          <th>时间</th>
-                          <th>能力</th>
+                          <th>{t("common.date")}</th>
+                          <th>{t("common.capability")}</th>
                           <th>billing_key</th>
-                          <th>模型</th>
+                          <th>{t("queues.colModel")}</th>
                           <th>Tokens</th>
-                          <th>扣费</th>
-                          <th>上游成本</th>
-                          <th>计费依据</th>
+                          <th>{t("queues.colCharge")}</th>
+                          <th>{t("queues.colCost")}</th>
+                          <th>{t("queues.colBasis")}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {(task.usage_lines?.length ?? 0) === 0 ? (
                           <tr>
                             <td colSpan={8} className="text-center text-sm text-[#909399]">
-                              暂无用量记录
+                              {t("queues.noUsage")}
                             </td>
                           </tr>
                         ) : (
@@ -428,7 +436,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                               <td>{line.total_tokens ?? 0}</td>
                               <td>¥{fenToYuan(line.charge_fen ?? 0)}</td>
                               <td>¥{fenToYuan(line.cost_fen ?? 0)}</td>
-                              <td>{line.billing_basis_label ?? (line.estimated ? "估算" : "实测")}</td>
+                              <td>{billingBasisLabel(line.billing_basis, line.estimated, t)}</td>
                             </tr>
                           ))
                         )}
@@ -444,19 +452,19 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                 <table>
                   <thead>
                     <tr>
-                      <th>步骤</th>
-                      <th>状态</th>
-                      <th>尝试</th>
+                      <th>{t("queues.stepCol")}</th>
+                      <th>{t("common.status")}</th>
+                      <th>{t("queues.attemptCol")}</th>
                       <th>Provider</th>
-                      <th>错误</th>
-                      <th>时间</th>
+                      <th>{t("queues.errorCol")}</th>
+                      <th>{t("common.date")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(task.steps?.length ?? 0) === 0 ? (
                       <tr>
                         <td colSpan={6} className="text-center text-sm text-[#909399]">
-                          暂无步骤记录
+                          {t("queues.noSteps")}
                         </td>
                       </tr>
                     ) : (
@@ -468,7 +476,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                           </td>
                           <td>
                             <span className={`admin-status-pill ${statusClass(step.status)}`}>
-                              {taskStatusLabel(step.status)}
+                              {taskStatusLabel(step.status, t)}
                             </span>
                           </td>
                           <td className="text-xs">{step.attempt_count}</td>
@@ -480,8 +488,8 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
                             {step.error_message ?? "—"}
                           </td>
                           <td className="text-[11px] text-[#909399]">
-                            <div>始 {fmtTime(step.started_at)}</div>
-                            <div>终 {fmtTime(step.finished_at)}</div>
+                            <div>{t("queues.timeStart", { time: fmtTime(step.started_at) })}</div>
+                            <div>{t("queues.timeEnd", { time: fmtTime(step.finished_at) })}</div>
                           </td>
                         </tr>
                       ))
@@ -494,7 +502,7 @@ export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: Ta
             {tab === "events" ? (
               <div className="task-detail-events">
                 {(task.events?.length ?? 0) === 0 ? (
-                  <p className="text-sm text-[#909399]">暂无事件日志</p>
+                  <p className="text-sm text-[#909399]">{t("queues.noEvents")}</p>
                 ) : (
                   [...(task.events ?? [])]
                     .sort((a, b) => (a.id ?? 0) - (b.id ?? 0))

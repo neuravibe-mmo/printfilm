@@ -1,69 +1,22 @@
+import { useMemo } from "react";
 import { AdminChipFilter } from "@/components/admin/AdminChipFilter";
 import { AdminFilterBar } from "@/components/admin/AdminFilterBar";
+import { useI18n } from "@/i18n/useI18n";
+import type {
+  DashboardDays,
+  DashboardDomain,
+  DashboardCapability,
+  DashboardMetric,
+  DashboardFilterState,
+} from "./dashboardMetrics";
 
-/** 仪表盘筛选维度 */
-export type DashboardDays = "1" | "7" | "14" | "30";
-export type DashboardDomain = "all" | "drama" | "kepu" | "api" | "tools" | "studio";
-export type DashboardCapability = "all" | "llm" | "image" | "video" | "tts";
-export type DashboardMetric = "charge" | "cost" | "calls";
-
-export type DashboardFilterState = {
-  days: DashboardDays;
-  domain: DashboardDomain;
-  capability: DashboardCapability;
-  metric: DashboardMetric;
+export type {
+  DashboardDays,
+  DashboardDomain,
+  DashboardCapability,
+  DashboardMetric,
+  DashboardFilterState,
 };
-
-export const DEFAULT_DASHBOARD_FILTERS: DashboardFilterState = {
-  days: "7",
-  domain: "all",
-  capability: "all",
-  metric: "charge",
-};
-
-/** 运维 Tab 固定全量 30 日，不受隐藏筛选影响 */
-export const PROJECTS_DASHBOARD_FILTERS: DashboardFilterState = {
-  days: "30",
-  domain: "all",
-  capability: "all",
-  metric: "charge",
-};
-
-const DAY_OPTIONS = [
-  { value: "1", label: "今日" },
-  { value: "7", label: "近 7 日" },
-  { value: "14", label: "近 14 日" },
-  { value: "30", label: "近 30 日" },
-];
-
-/** 图表 / 区块标题用的时间范围文案 */
-export function dashboardRangeLabel(days: DashboardDays): string {
-  if (days === "1") return "今日";
-  return `近 ${days} 日`;
-}
-
-const DOMAIN_OPTIONS = [
-  { value: "all", label: "全部领域" },
-  { value: "drama", label: "漫剧" },
-  { value: "kepu", label: "AI短视频" },
-  { value: "api", label: "开放 API" },
-  { value: "tools", label: "工具" },
-  { value: "studio", label: "工作室" },
-];
-
-const CAPABILITY_OPTIONS = [
-  { value: "all", label: "全部能力" },
-  { value: "llm", label: "LLM" },
-  { value: "image", label: "生图" },
-  { value: "video", label: "视频" },
-  { value: "tts", label: "配音" },
-];
-
-const METRIC_OPTIONS = [
-  { value: "charge", label: "扣费" },
-  { value: "cost", label: "成本" },
-  { value: "calls", label: "调用" },
-];
 
 type DashboardFiltersProps = {
   value: DashboardFilterState;
@@ -72,49 +25,81 @@ type DashboardFiltersProps = {
 
 /** 仪表盘用量筛选条（两行紧凑布局） */
 export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
+  const { m } = useI18n();
   const patch = (partial: Partial<DashboardFilterState>) => onChange({ ...value, ...partial });
+
+  const dayOptions = useMemo(
+    () => [
+      { value: "1", label: m.dashboard.today },
+      { value: "7", label: m.dashboard.sevenDays },
+      { value: "14", label: m.dashboard.fourteenDays },
+      { value: "30", label: m.dashboard.thirtyDays },
+    ],
+    [m],
+  );
+
+  const domainOptions = useMemo(
+    () => [
+      { value: "all", label: m.dashboard.filters.allDomains },
+      { value: "drama", label: m.dashboard.filters.drama },
+      { value: "kepu", label: m.dashboard.filters.kepu },
+      { value: "api", label: m.dashboard.filters.api },
+      { value: "tools", label: m.dashboard.filters.tools },
+      { value: "studio", label: m.dashboard.filters.studio },
+    ],
+    [m],
+  );
+
+  const capabilityOptions = useMemo(
+    () => [
+      { value: "all", label: m.dashboard.filters.allCapabilities },
+      { value: "llm", label: m.dashboard.filters.llm },
+      { value: "image", label: m.dashboard.filters.image },
+      { value: "video", label: m.dashboard.filters.video },
+      { value: "tts", label: m.dashboard.filters.tts },
+    ],
+    [m],
+  );
+
+  const metricOptions = useMemo(
+    () => [
+      { value: "charge", label: m.dashboard.filters.charge },
+      { value: "cost", label: m.dashboard.filters.cost },
+      { value: "calls", label: m.dashboard.filters.calls },
+    ],
+    [m],
+  );
 
   return (
     <AdminFilterBar className="admin-dashboard-filters">
       <AdminChipFilter
-        label="时间维度"
+        label={m.dashboard.filters.timeDimension}
         value={value.days}
-        options={DAY_OPTIONS}
+        options={dayOptions}
         onChange={(days) => patch({ days: days as DashboardDays })}
         className="admin-chip-filter--segment"
       />
       <AdminChipFilter
-        label="业务领域"
+        label={m.dashboard.filters.businessDomain}
         value={value.domain}
-        options={DOMAIN_OPTIONS}
+        options={domainOptions}
         onChange={(domain) => patch({ domain: domain as DashboardDomain })}
         className="admin-chip-filter--segment"
       />
       <AdminChipFilter
-        label="能力类型"
+        label={m.dashboard.filters.capabilityType}
         value={value.capability}
-        options={CAPABILITY_OPTIONS}
+        options={capabilityOptions}
         onChange={(capability) => patch({ capability: capability as DashboardCapability })}
         className="admin-chip-filter--segment"
       />
       <AdminChipFilter
-        label="统计指标"
+        label={m.dashboard.filters.statMetric}
         value={value.metric}
-        options={METRIC_OPTIONS}
+        options={metricOptions}
         onChange={(metric) => patch({ metric: metric as DashboardMetric })}
         className="admin-chip-filter--segment"
       />
     </AdminFilterBar>
   );
-}
-
-/** 拼接 stats API 查询串 */
-export function buildStatsQuery(filters: DashboardFilterState): string {
-  const params = new URLSearchParams({
-    days: filters.days,
-    domain: filters.domain,
-    capability: filters.capability,
-    top_metric: filters.metric,
-  });
-  return `/api/admin/stats?${params.toString()}`;
 }

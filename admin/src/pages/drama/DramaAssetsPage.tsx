@@ -9,12 +9,9 @@ import { PaginationBar } from "@/components/PaginationBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page";
-import {
-  DRAMA_GENERATION_STATUSES,
-  dramaAssetTypeLabel,
-  formatDramaGenerationStatus,
-} from "@/lib/dramaLabels";
+import { DRAMA_GENERATION_STATUSES } from "@/lib/dramaLabels";
 import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useI18n } from "@/i18n/useI18n";
 
 type ListRes = { items: AdminDramaAsset[]; meta: PageMeta };
 
@@ -22,6 +19,7 @@ const ASSET_TYPES = ["character", "scene", "prop", "material", "none"] as const;
 
 /** 全站漫剧资产库列表 */
 export function DramaAssetsPage() {
+  const { m } = useI18n();
   const [searchParams] = useSearchParams();
   const initialProjectId = searchParams.get("project_id");
 
@@ -43,7 +41,7 @@ export function DramaAssetsPage() {
       if (generationStatus.trim()) params.set("generation_status", generationStatus.trim());
       setData(await api<ListRes>(`/api/admin/drama-assets?${params}`));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "加载失败");
+      toast.error(err instanceof Error ? err.message : m.drama.loadFailed);
     }
   }
 
@@ -54,16 +52,16 @@ export function DramaAssetsPage() {
 
   return (
     <div className="admin-list-page">
-      <PageHeader description="全站漫剧资产：角色、场景、道具等，可按项目与用户筛选" />
+      <PageHeader description={m.drama.assets.pageDesc} />
       <AdminFilterBar>
-        <Input placeholder="名称 / derive_id" value={q} onChange={(e) => setQ(e.target.value)} />
+        <Input placeholder={m.drama.assets.filterNameDerive} value={q} onChange={(e) => setQ(e.target.value)} />
         <AdminUserSearchSelect value={userId} onChange={setUserId} />
-        <Input placeholder="项目 ID" value={projectId} onChange={(e) => setProjectId(e.target.value)} />
+        <Input placeholder={m.drama.assets.filterProjectId} value={projectId} onChange={(e) => setProjectId(e.target.value)} />
         <select className="admin-native-select" value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="">全部类型</option>
+          <option value="">{m.drama.allTypes}</option>
           {ASSET_TYPES.map((t) => (
             <option key={t} value={t}>
-              {dramaAssetTypeLabel(t)}
+              {m.drama.assetTypes[t as keyof typeof m.drama.assetTypes] || t}
             </option>
           ))}
         </select>
@@ -72,10 +70,10 @@ export function DramaAssetsPage() {
           value={generationStatus}
           onChange={(e) => setGenerationStatus(e.target.value)}
         >
-          <option value="">全部生成状态</option>
+          <option value="">{m.drama.allGenerationStatuses}</option>
           {DRAMA_GENERATION_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {formatDramaGenerationStatus(s)}
+              {m.drama.statuses[s as keyof typeof m.drama.statuses] || s}
             </option>
           ))}
         </select>
@@ -88,7 +86,7 @@ export function DramaAssetsPage() {
             void load(1);
           }}
         >
-          筛选
+          {m.drama.filter}
         </Button>
       </AdminFilterBar>
 
@@ -96,14 +94,14 @@ export function DramaAssetsPage() {
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>预览</th>
-              <th>名称</th>
-              <th>类型</th>
-              <th>项目</th>
-              <th>用户</th>
-              <th>生成</th>
-              <th>更新时间</th>
+              <th>{m.drama.assets.colId}</th>
+              <th>{m.drama.assets.colPreview}</th>
+              <th>{m.drama.assets.colName}</th>
+              <th>{m.drama.assets.colType}</th>
+              <th>{m.drama.assets.colProject}</th>
+              <th>{m.drama.assets.colUser}</th>
+              <th>{m.drama.assets.colGeneration}</th>
+              <th>{m.drama.assets.colUpdatedAt}</th>
               <th></th>
             </tr>
           </thead>
@@ -123,7 +121,7 @@ export function DramaAssetsPage() {
                   )}
                 </td>
                 <td className="max-w-[140px] truncate">{row.name || "—"}</td>
-                <td>{dramaAssetTypeLabel(row.type)}</td>
+                <td>{m.drama.assetTypes[row.type as keyof typeof m.drama.assetTypes] || row.type}</td>
                 <td>
                   <AdminEntityLink kind="drama" id={row.project_id} label={row.project_title ?? undefined} />
                 </td>
@@ -135,14 +133,14 @@ export function DramaAssetsPage() {
                   )}
                 </td>
                 <td className="text-xs text-[var(--admin-muted)]">
-                  {formatDramaGenerationStatus(row.generation_status)}
+                  {m.drama.statuses[row.generation_status as keyof typeof m.drama.statuses] || row.generation_status || "—"}
                 </td>
                 <td className="text-xs text-[var(--admin-muted)]">
                   {row.updated_at ? new Date(row.updated_at).toLocaleString() : "—"}
                 </td>
                 <td>
                   <Button size="sm" variant="outline" asChild>
-                    <Link to={`/drama-assets/${row.id}`}>查看</Link>
+                    <Link to={`/drama-assets/${row.id}`}>{m.drama.view}</Link>
                   </Button>
                 </td>
               </tr>
@@ -150,7 +148,7 @@ export function DramaAssetsPage() {
             {(data?.items.length ?? 0) === 0 ? (
               <tr>
                 <td colSpan={9} className="!text-center text-[var(--admin-muted)]">
-                  暂无资产
+                  {m.drama.assets.empty}
                 </td>
               </tr>
             ) : null}
