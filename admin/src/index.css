@@ -336,6 +336,11 @@
   border-right: 1px solid var(--admin-sidebar-border);
   transition: width 0.22s ease;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  max-height: 100vh;
+  z-index: 30;
 }
 
 .admin-brand {
@@ -345,6 +350,7 @@
   height: 64px;
   padding: 0 1rem;
   border-bottom: 1px solid var(--admin-sidebar-border);
+  flex-shrink: 0;
 }
 
 .admin-brand-mark {
@@ -384,7 +390,19 @@
   gap: 2px;
   padding: 14px 10px;
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.admin-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.admin-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
 }
 
 .admin-nav-group {
@@ -450,6 +468,7 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--admin-sidebar-border);
+  flex-shrink: 0;
 }
 
 .admin-avatar {
