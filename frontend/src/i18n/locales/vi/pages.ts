@@ -49,6 +49,129 @@ export const viPages = {
       { title: 'Sản xuất nhóm', desc: 'Dự án, tài nguyên, lịch sử tập trung một nơi — ít phải chuyển giữa các công cụ hơn.' },
     ],
   },
+  guide: {
+    heroBadge: 'Hướng dẫn thực chiến',
+    heroTitle: 'Hướng dẫn làm chủ các tính năng phức tạp',
+    heroLead: 'Bỏ qua các thao tác cơ bản. Dưới đây là hướng dẫn súc tích nhất để làm chủ: Giữ nhân vật không bị đổi mặt, tổ chức phim nhiều tập, và can thiệp linh hoạt từng phân cảnh.',
+    proTipLabel: 'Mẹo thực chiến: ',
+    tabs: {
+      all: 'Tất cả hướng dẫn',
+      consistency: '👤 Nhất quán nhân vật',
+      drama: '🎭 Phim nhiều tập',
+      kepu: '🎬 Video AI Pipeline',
+      canvas: '📐 Canvas & Góc máy',
+      tips: '💡 Mẹo chi phí',
+    },
+    items: [
+      {
+        id: 'character-consistency',
+        category: 'consistency',
+        badge: 'Cốt lõi · Quan trọng nhất',
+        title: 'Giữ nhất quán nhân vật không bị biến đổi khuôn mặt',
+        desc: 'Giải quyết triệt để vấn đề AI vẽ mỗi tập hoặc mỗi cảnh một khuôn mặt khác nhau.',
+        actionText: 'Đến Kho Tài Nguyên',
+        steps: [
+          {
+            title: 'Bước 1: Tạo hồ sơ tại Kho Tài Sản (Asset Library)',
+            detail: 'Vào menu "Tài nguyên" -> Thêm nhân vật. Đặt tên ngắn gọn và mô tả ngoại hình cố định (VD: "Nam thanh niên 25 tuổi, tóc đen ngắn, áo hoodie xám tro, mắt kính gọng tròn").',
+          },
+          {
+            title: 'Bước 2: Tải lên Ảnh Chân Dung Tham Chiếu (Reference Face)',
+            detail: 'Tải 1 ảnh chân dung nhìn rõ mặt (tối thiểu 512x512) để làm khuôn mẫu chuẩn (anchor) cho AI giữ nguyên nét mặt.',
+          },
+          {
+            title: 'Bước 3: Gán nhân vật vào từng Phân Cảnh (Shot)',
+            detail: 'Khi chia cảnh, chọn đích danh nhân vật đã tạo từ danh sách thay vì viết lại prompt mô tả tự do trong từng cảnh.',
+          },
+        ],
+        proTip: 'Tránh thay đổi trang phục quá nhiều giữa các cảnh liên tiếp. Nếu nhân vật thay đồ theo tình huống, hãy tạo một biến thể tài sản mới (Variant) với cùng khuôn mặt tham chiếu.',
+      },
+      {
+        id: 'drama-episodes-workflow',
+        category: 'drama',
+        badge: 'Quy trình nhiều tập',
+        title: 'Quy trình sản xuất Phim Hoạt Hình nhiều tập (Drama Flow)',
+        desc: 'Cách tổ chức kịch bản dài thành các tập và xuất từng đoạn video riêng lẻ.',
+        actionText: 'Vào Bàn Làm Việc Phim',
+        steps: [
+          {
+            title: '1. Phân rã kịch bản tự động',
+            detail: 'Dán cốt truyện hoặc ý tưởng vào dự án mới, AI sẽ tự động phân bổ nhịp cao trào thành các tập 1-3 phút.',
+          },
+          {
+            title: '2. Duyệt phân đoạn (Fragments) trên Canvas',
+            detail: 'Mở tập phim -> chọn "Canvas". Bạn sẽ thấy sơ đồ cây của toàn bộ các shot (phân đoạn) nối tiếp nhau theo thời gian.',
+          },
+          {
+            title: '3. Sinh video độc lập từng cảnh',
+            detail: 'Mỗi cảnh (Fragment) được AI Seedance sinh riêng. Nếu cảnh nào chưa ưng ý, bấm "Tạo lại" riêng cảnh đó mà không phải làm lại cả tập.',
+          },
+        ],
+        proTip: 'Mỗi tập nên giữ từ 8 đến 15 phân cảnh để nhịp phim dồn dập, tránh kéo dài quá 20 cảnh khiến người xem mất tập trung.',
+      },
+      {
+        id: 'kepu-pipeline-repair',
+        category: 'kepu',
+        badge: 'Video AI tự động',
+        title: 'Làm chủ Pipeline Video AI & Cách can thiệp sửa từng shot',
+        desc: 'Hiểu 4 giai đoạn tự động (Kịch bản → Vẽ ảnh → Sinh video → Ghép phim) và cách chỉnh sửa giữa chừng.',
+        actionText: 'Xem Video AI Ngắn',
+        steps: [
+          {
+            title: 'Giai đoạn 1: Soát lời thoại (Scripting)',
+            detail: 'Sau khi AI tách kịch bản, hãy đọc lướt lời thoại (voiceover) và sửa các từ ngữ chuyên ngành nếu cần trước khi bấm tiếp tục.',
+          },
+          {
+            title: 'Giai đoạn 2: Sửa ảnh đơn lẻ (Imaging Redraw)',
+            detail: 'Tại bảng phân cảnh, nếu ảnh nào không đúng bố cục, bấm trực tiếp nút "Vẽ lại" trên thẻ ảnh đó hoặc sửa prompt riêng cho shot đó.',
+          },
+          {
+            title: 'Giai đoạn 3: Ghép phim tự động (FFmpeg Compose)',
+            detail: 'Hệ thống tự động canh chỉnh thời gian chuyển động video, lời thoại và nhạc nền để xuất file MP4 hoàn chỉnh.',
+          },
+        ],
+        proTip: 'Bạn có thể chọn chế độ "Chỉ ảnh + Lời dẫn" (Image-Text) để xuất nhanh video dạng slide ảnh động nếu không muốn tốn thời gian chờ sinh video clip.',
+      },
+      {
+        id: 'canvas-camera-control',
+        category: 'canvas',
+        badge: 'Kỹ thuật đạo diễn',
+        title: 'Điều khiển Góc Máy (Camera Prompt) & Thời lượng Shot trên Canvas',
+        desc: 'Tạo cảm giác điện ảnh chuyên nghiệp thông qua từ khóa góc máy và nhịp độ cảnh.',
+        actionText: 'Mở Canvas',
+        steps: [
+          {
+            title: '1. Sử dụng từ khóa chuyển động máy',
+            detail: 'Thêm vào prompt phân cảnh: "Dolly in" (tiến gần), "Pan right" (lia sang phải), "Close-up" (cận cảnh biểu cảm), "Slow motion" (quay chậm).',
+          },
+          {
+            title: '2. Tùy chỉnh thời lượng từng shot (Duration)',
+            detail: 'Độ dài tối ưu cho mỗi shot là từ 4s đến 6s. Cảnh hành động kịch tính nên để 4s; cảnh thoại dài hoặc phong cảnh để 6s - 8s.',
+          },
+        ],
+        proTip: 'Không nên lặp lại cùng một góc máy ở 2 cảnh kề nhau. Hãy xen kẽ: Toàn cảnh (Wide) -> Trung cảnh (Medium) -> Cận cảnh (Close-up) để tạo chiều sâu.',
+      },
+      {
+        id: 'mock-and-cost-saving',
+        category: 'tips',
+        badge: 'Tiết kiệm chi phí',
+        title: 'Thử nghiệm Miễn Phí (Mock Mode) & Tiết kiệm Ngân sách',
+        desc: 'Cách tinh chỉnh kịch bản và thử nghiệm phân cảnh hoàn toàn 0 đồng trước khi bấm render thật.',
+        actionText: 'Xem Bảng Giá',
+        steps: [
+          {
+            title: 'Bật chế độ Mock khi học cách làm phim',
+            detail: 'Trong file backend/.env có biến ARK_MOCK=true. Khi bật, hệ thống dùng dữ liệu mẫu tức thì, không tốn 1 xu chi phí API.',
+          },
+          {
+            title: 'Cơ chế Tạm giữ & Quyết toán (Freeze - Settle)',
+            detail: 'Khi chạy API thật, hệ thống chỉ tạm giữ số dư ước lượng; chỉ khi shot hoàn thành thành công mới trừ chi phí thực tế. Nếu shot lỗi, tiền hoàn 100%.',
+          },
+        ],
+        proTip: 'Hãy chỉnh thật kỹ kịch bản và ảnh phân cảnh (hình tĩnh) trước khi bấm sinh video chuyển động, vì bước sinh video là bước tốn tài nguyên nhất.',
+      },
+    ],
+  },
   help: {
     title: 'Trung tâm hỗ trợ',
     lead: 'Tìm kiếm vấn đề bạn gặp phải, hoặc nhanh chóng chuyển đến danh mục bên dưới',

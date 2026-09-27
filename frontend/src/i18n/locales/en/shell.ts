@@ -65,6 +65,7 @@ export const enShell = {
     tools: 'Tools',
     assets: 'Assets',
     pricing: 'Pricing',
+    guide: 'Guide',
     help: 'Help',
     helpCenter: 'Help center',
     login: 'Sign in',

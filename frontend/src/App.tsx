@@ -10,6 +10,7 @@ import MethodPage from './pages/MethodPage'
 import ToolsPage from './pages/ToolsPage'
 import ToolDetailPage from './pages/ToolDetailPage'
 import HelpPage from './pages/HelpPage'
+import GuidePage from './pages/GuidePage'
 import { PrivacyPage, TermsPage } from './pages/LegalDocPage'
 import ContactPage from './pages/ContactPage'
 import SettingsPage from './pages/SettingsPage'
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/tools/:toolId" element={<ToolDetailPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
+        <Route path="/guide" element={<GuidePage />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />

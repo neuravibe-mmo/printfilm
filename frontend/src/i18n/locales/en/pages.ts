@@ -49,6 +49,129 @@ export const enPages = {
       { title: 'Small teams', desc: 'Keep projects, assets, and history in one place instead of hopping tools.' },
     ],
   },
+  guide: {
+    heroBadge: 'Hands-on Advanced Guide',
+    heroTitle: 'PRINTFILM Master Guide for Complex Workflows',
+    heroLead: 'Skip the basics. Focus on high-impact techniques: Keeping character faces consistent, structuring multi-episode storylines, and fine-tuning AI video pipeline stages.',
+    proTipLabel: 'Pro Tip: ',
+    tabs: {
+      all: 'All Guides',
+      consistency: '👤 Character Consistency',
+      drama: '🎭 Multi-Episode Drama',
+      kepu: '🎬 AI Video Pipeline',
+      canvas: '📐 Canvas & Camera',
+      tips: '💡 Budget & Debugging',
+    },
+    items: [
+      {
+        id: 'character-consistency',
+        category: 'consistency',
+        badge: 'Core · Must Know',
+        title: 'Maintain Character Face & Style Consistency',
+        desc: 'Prevent AI from generating different faces across scenes and episodes.',
+        actionText: 'Go to Assets',
+        steps: [
+          {
+            title: 'Step 1: Create profile in Asset Library',
+            detail: 'Go to "Assets" -> Add Character. Use fixed descriptive keywords (e.g., "25yo man, short black hair, grey hoodie, round glasses").',
+          },
+          {
+            title: 'Step 2: Upload Reference Face Photo',
+            detail: 'Upload a clear front-facing portrait (at least 512x512) as the facial anchor for AI.',
+          },
+          {
+            title: 'Step 3: Bind character to story shots',
+            detail: 'In episode canvas, attach the character profile rather than re-typing random descriptions.',
+          },
+        ],
+        proTip: 'Keep clothing consistent across adjacent shots. For costume changes, create a character variant with the same face reference.',
+      },
+      {
+        id: 'drama-episodes-workflow',
+        category: 'drama',
+        badge: 'Multi-Episode Flow',
+        title: 'Multi-Episode Drama Production Workflow',
+        desc: 'Structure full-length scripts into episodes and manage shot-by-shot renders.',
+        actionText: 'Open Drama Studio',
+        steps: [
+          {
+            title: '1. Automatic Episode Breakdown',
+            detail: 'Paste your story draft. AI parses climax beats into 1-3 minute bite-sized episodes.',
+          },
+          {
+            title: '2. Review Fragments on Canvas',
+            detail: 'Open episode -> select "Canvas" to view connected nodes of consecutive shots.',
+          },
+          {
+            title: '3. Independent Shot Video Generation',
+            detail: 'Each fragment is rendered separately. Regenerate only unsatisfactory shots without re-rendering the entire episode.',
+          },
+        ],
+        proTip: 'Keep each episode between 8-15 fragments to maintain fast-paced engagement.',
+      },
+      {
+        id: 'kepu-pipeline-repair',
+        category: 'kepu',
+        badge: 'Automated Pipeline',
+        title: 'Mastering AI Video Pipeline & Shot-Level Interventions',
+        desc: 'Understand the 4 stages (Scripting → Imaging → Videoing → Composing) and how to tweak mid-flight.',
+        actionText: 'View AI Videos',
+        steps: [
+          {
+            title: 'Phase 1: Script & Voiceover Review',
+            detail: 'Skim the generated voiceover lines and fix specialized terminology before moving on.',
+          },
+          {
+            title: 'Phase 2: Individual Image Redraw',
+            detail: 'On the storyboard card, click "Redraw" or edit prompt on that specific card instead of recreating the project.',
+          },
+          {
+            title: 'Phase 3: FFmpeg Auto Assembly',
+            detail: 'The system automatically aligns video motion, voiceover pacing, and BGM into the final MP4.',
+          },
+        ],
+        proTip: 'Use "Image-Text" mode for rapid delivery if you prefer animated slides over full motion video.',
+      },
+      {
+        id: 'canvas-camera-control',
+        category: 'canvas',
+        badge: 'Director Controls',
+        title: 'Directing Camera Angles & Shot Timing on Canvas',
+        desc: 'Achieve cinematic pacing using precise camera motion keywords and shot lengths.',
+        actionText: 'Open Canvas',
+        steps: [
+          {
+            title: '1. Camera Motion Keywords',
+            detail: 'Include prompt hints like "Dolly in", "Pan right", "Extreme close-up", or "Slow motion".',
+          },
+          {
+            title: '2. Adjust Shot Duration',
+            detail: 'Optimal duration is 4-6s. Keep action shots punchy (4s); leave dialogue/establishing shots at 6-8s.',
+          },
+        ],
+        proTip: 'Never repeat the same camera angle consecutively. Alternate Wide -> Medium -> Close-up for cinematic depth.',
+      },
+      {
+        id: 'mock-and-cost-saving',
+        category: 'tips',
+        badge: 'Cost Efficiency',
+        title: 'Free Local Testing (Mock Mode) & Budget Control',
+        desc: 'How to refine plots and preview storyboards for $0 before running paid AI models.',
+        actionText: 'View Pricing',
+        steps: [
+          {
+            title: 'Keep Mock Mode Active While Learning',
+            detail: 'Set ARK_MOCK=true in backend/.env to use instant local assets with zero API charge.',
+          },
+          {
+            title: 'Freeze-to-Settle Safeguard',
+            detail: 'Real API calls freeze an estimate first and settle only on success. Failed tasks are refunded immediately.',
+          },
+        ],
+        proTip: 'Perfect your script and static storyboard images first. Video generation is the most resource-intensive phase.',
+      },
+    ],
+  },
   help: {
     title: 'Help center',
     lead: 'Search a problem, or jump in from a category below',

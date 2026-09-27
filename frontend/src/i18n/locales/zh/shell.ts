@@ -67,6 +67,7 @@ export const zhShell = {
     tools: '工具',
     assets: '资产',
     pricing: '定价',
+    guide: '使用指南',
     help: '帮助',
     helpCenter: '帮助中心',
     login: '登录',

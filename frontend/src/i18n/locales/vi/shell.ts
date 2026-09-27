@@ -67,6 +67,7 @@ export const viShell = {
     tools: 'Công cụ',
     assets: 'Tài nguyên',
     pricing: 'Bảng giá',
+    guide: 'Hướng dẫn',
     help: 'Trợ giúp',
     helpCenter: 'Trung tâm hỗ trợ',
     login: 'Đăng nhập',
