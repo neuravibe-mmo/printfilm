@@ -318,8 +318,8 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     const ok = await dialog.confirm({
       title: t('drama.assetsStep.batchGenTitle'),
       message:
-        `${t('drama.assetsStep.batchGenMessage').replace('{label}', ASSET_TABS.find((tab2) => tab2.key === tab)?.label || t('drama.assetsStep.category')).replace('{n}', String(targets.length))}（并行提交，不排队）。\n\n` +
-        `${t('drama.assetsStep.batchGenBilling').replace('{unit}', unitYuan.toFixed(2)).replace('{total}', totalYuan.toFixed(2)).replace('{balance}', balanceYuan.toFixed(2))}；结束后按实际上游用量多退少补）。\n\n是否继续？`,
+        `${t('drama.assetsStep.batchGenMessage').replace('{label}', ASSET_TABS.find((tab2) => tab2.key === tab)?.label || t('drama.assetsStep.category')).replace('{n}', String(targets.length))}${t('drama.assetsStep.batchGenParallel')}\n\n` +
+        `${t('drama.assetsStep.batchGenBilling').replace('{unit}', unitYuan.toFixed(2)).replace('{total}', totalYuan.toFixed(2)).replace('{balance}', balanceYuan.toFixed(2))}${t('drama.assetsStep.batchGenAdjust')}`,
       confirmText: t('drama.assetsStep.startGen'),
     })
     if (!ok) return
@@ -605,7 +605,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
           detail +=
             t('drama.assetsStep.seedNoResult')
         } else if (!failed && llmErrors.length > 0) {
-          detail += '\n\n' + t('drama.assetsStep.llmErrorPrefix') + '\n' + llmErrors.slice(0, 5).join('\n') + (llmErrors.length > 5 ? ('\n…共 ' + llmErrors.length + ' 项') : '')
+          detail += '\n\n' + t('drama.assetsStep.llmErrorPrefix') + '\n' + llmErrors.slice(0, 5).join('\n') + (llmErrors.length > 5 ? ('\n' + t('drama.assetsStep.llmErrorTotal').replace('{n}', String(llmErrors.length))) : '')
         } else if (!failed) {
           detail += t('drama.assetsStep.seedCheckCanvas')
         }
@@ -630,7 +630,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
         detail +=
           t('drama.assetsStep.seedNoResult')
       } else if (llmErrors.length > 0) {
-        detail += '\n\n' + t('drama.assetsStep.llmErrorPrefix') + '\n' + llmErrors.slice(0, 5).join('\n') + (llmErrors.length > 5 ? ('\n…共 ' + llmErrors.length + ' 项') : '')
+        detail += '\n\n' + t('drama.assetsStep.llmErrorPrefix') + '\n' + llmErrors.slice(0, 5).join('\n') + (llmErrors.length > 5 ? ('\n' + t('drama.assetsStep.llmErrorTotal').replace('{n}', String(llmErrors.length))) : '')
       } else {
         detail += t('drama.assetsStep.seedCheckCanvas')
       }

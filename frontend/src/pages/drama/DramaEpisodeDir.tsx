@@ -1,6 +1,7 @@
 /** 漫剧分集左侧目录（大纲 / 分集页 / 分镜页共用） */
 import type { ReactNode } from 'react'
 import type { DramaEpisode } from '../../api/drama'
+import { useI18n, type TFunction } from '../../i18n'
 
 export type DramaEpisodeDirItem = {
   id: number
@@ -19,7 +20,7 @@ type DramaEpisodeDirProps = {
 }
 
 // 从分集列表生成目录项（按集号排序；缺集号不伪装成第 1 集）
-export function buildEpisodeDirItems(episodes: DramaEpisode[]): DramaEpisodeDirItem[] {
+export function buildEpisodeDirItems(episodes: DramaEpisode[], t?: TFunction): DramaEpisodeDirItem[] {
   const sorted = [...episodes].sort((a, b) => {
     const an = Number(a.params?.episodeNumber) || 0
     const bn = Number(b.params?.episodeNumber) || 0
@@ -31,30 +32,34 @@ export function buildEpisodeDirItems(episodes: DramaEpisode[]): DramaEpisodeDirI
     const fragCount = (ep.fragments || []).length
     return {
       id: ep.id,
-      label: epNo >= 1 ? `第 ${epNo} 集` : `未编号 · ${ep.id}`,
-      title: ep.name || `分集 ${ep.id}`,
-      meta: fragCount > 0 ? `${fragCount} 镜` : undefined,
+      label: epNo >= 1 ? (t ? t('drama.episodes.episode', { n: epNo }) : `Tập ${epNo}`) : `ID · ${ep.id}`,
+      title: ep.name || (t ? t('drama.episodes.episodeFallback', { id: ep.id }) : `Tập ${ep.id}`),
+      meta: fragCount > 0 ? `${fragCount} ${t ? t('drama.episodesStep.shots') : 'phân cảnh'}` : undefined,
     }
   })
 }
 
 // 左侧分集目录
 export function DramaEpisodeDir({
-  title = '分集目录',
+  title,
   items,
   activeId,
   onSelect,
   footer,
-  emptyText = '暂无分集',
+  emptyText,
 }: DramaEpisodeDirProps) {
+  const { t } = useI18n()
+  const displayTitle = title ?? t('drama.outlinePanel.directory')
+  const displayEmpty = emptyText ?? t('drama.episodes.noEpisodes')
+
   return (
     <aside className="drama-episode-dir">
       <div className="drama-episode-dir-head">
-        <h3>{title}</h3>
+        <h3>{displayTitle}</h3>
         {footer}
       </div>
       {items.length === 0 ? (
-        <p className="drama-episode-dir-empty">{emptyText}</p>
+        <p className="drama-episode-dir-empty">{displayEmpty}</p>
       ) : (
         <ul>
           {items.map((item) => (

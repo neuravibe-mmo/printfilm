@@ -1461,7 +1461,7 @@ function EpisodeEditInner() {
 
       <div className="drama-ep-body">
         <DramaEpisodeDir
-          items={buildEpisodeDirItems(episodeList.length ? episodeList : episode ? [episode] : [])}
+          items={buildEpisodeDirItems(episodeList.length ? episodeList : episode ? [episode] : [], t)}
           activeId={eid}
           onSelect={handleSelectEpisode}
         />

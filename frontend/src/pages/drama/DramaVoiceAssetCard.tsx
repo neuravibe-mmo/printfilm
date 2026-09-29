@@ -2,6 +2,7 @@
 import { AudioLines, Trash2, Volume2 } from 'lucide-react'
 import { resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
 import { CharacterVoicePreviewButton } from '../../components/drama/CharacterVoicePreviewButton'
+import { useI18n } from '../../i18n'
 
 type Props = {
   asset: DramaAsset
@@ -25,6 +26,7 @@ export function DramaVoiceAssetCard({
   onDelete,
   onError,
 }: Props) {
+  const { t } = useI18n()
   const audioSrc = resolveDramaMediaUrl(asset.url)
   const hasAudio = Boolean(audioSrc)
 
@@ -35,15 +37,15 @@ export function DramaVoiceAssetCard({
           <AudioLines size={18} strokeWidth={1.75} />
         </div>
         <div className="drama-voice-card-title">
-          <h3>{asset.name || '未命名音色'}</h3>
+          <h3>{asset.name || t('drama.voiceBind.unnamedVoice')}</h3>
           <span className={`drama-voice-card-status${hasAudio ? ' is-ready' : ' is-pending'}`}>
-            {hasAudio ? '已合成' : '待合成'}
+            {hasAudio ? t('drama.voiceBind.synthesized') : t('drama.voiceBind.notSynthesized')}
           </span>
         </div>
         <button
           type="button"
           className="drama-voice-card-delete"
-          aria-label={`删除 ${asset.name || '音色'}`}
+          aria-label={`${t('common.delete')} ${asset.name || t('drama.assets.voice')}`}
           disabled={synthBusy}
           onClick={onDelete}
         >
@@ -53,14 +55,14 @@ export function DramaVoiceAssetCard({
 
       <div className="drama-voice-card-body">
         <label className="drama-voice-card-field">
-          <span>音色描述</span>
+          <span>{t('drama.voiceBind.voiceDesc')}</span>
           <textarea
             rows={3}
             value={promptValue}
             disabled={synthBusy}
             onChange={(e) => onPromptChange(e.target.value)}
             onBlur={onPromptBlur}
-            placeholder="描述音色：年龄、性别、语气、语速…"
+            placeholder={t('drama.voiceBind.voicePlaceholder')}
           />
         </label>
 
@@ -79,7 +81,7 @@ export function DramaVoiceAssetCard({
           ) : (
             <>
               <Volume2 size={16} strokeWidth={1.75} aria-hidden />
-              <span>填写描述后合成试听</span>
+              <span>{t('drama.voiceBind.synthPromptHint')}</span>
             </>
           )}
         </div>
@@ -92,7 +94,7 @@ export function DramaVoiceAssetCard({
           disabled={synthBusy || !promptValue.trim()}
           onClick={onSynth}
         >
-          {synthBusy ? '合成中…' : hasAudio ? '重新合成' : '按提示词合成'}
+          {synthBusy ? t('drama.voiceBind.synthesizing') : hasAudio ? t('drama.voiceBind.resynth') : t('drama.voiceBind.synthBtn')}
         </button>
       </footer>
     </article>

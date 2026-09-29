@@ -541,6 +541,8 @@ export const zhDrama = {
       batchGenTitle: '批量生成形象',
       batchGenMessage: '将为当前「{label}」下 {n} 个未出图资产开始生图',
       batchGenBilling: '每张预扣约 ¥{unit}，本次合计约 ¥{total}（当前余额 ¥{balance}',
+      batchGenParallel: '（并行提交，不排队）。',
+      batchGenAdjust: '；结束后按实际上游用量多退少补）。\n\n是否继续？',
       startGen: '开始生成',
       voiceGenFailed: '音色生成失败',
       batchVoiceTitle: '批量生成音色',
@@ -578,6 +580,7 @@ export const zhDrama = {
       seedDonePartial: '抽取完成（部分失败）',
       reseedFailed: '重新抽取失败',
       llmErrorPrefix: '以下资产 AI 刷新失败：',
+      llmErrorTotal: '…共 {n} 项',
       generating: '生成中…',
       queuing: '排队中…',
       queuePos: '排队 #{pos}',
@@ -846,11 +849,15 @@ export const zhDrama = {
       download: '下载',
     },
     styleModal: {
-      title: '选择画风',
+      title: '画面风格',
       searchPlaceholder: '搜索画风…',
       select: '选择',
       cancel: '取消',
       noStyles: '未找到画风',
+      none: '无风格',
+      projectStyle: '项目风格',
+      library: '风格库',
+      hint: '封面图会作为画风参考一并提交。模型只借色调、笔触和光影，不会照抄封面里的人物或构图。',
     },
     outputSettings: {
       title: '输出设置',
@@ -859,8 +866,10 @@ export const zhDrama = {
       save: '保存',
     },
     episodeCount: {
-      label: '集数',
-      confirm: '确认',
+      label: '自定义集数',
+      custom: '自定义集数',
+      confirm: '确定',
+      unit: '{n} 集',
     },
     // Episodes step
     episodesStep: {
