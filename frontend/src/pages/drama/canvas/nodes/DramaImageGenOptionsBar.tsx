@@ -20,6 +20,7 @@ import {
   catalogModelLabel,
   useMediaModelsCatalog,
 } from '../../../../hooks/useMediaModelsCatalog'
+import { useI18n } from '../../../../i18n'
 import './dramaImageGenOptions.css'
 
 type DramaImageGenOptionsBarProps = {
@@ -67,13 +68,17 @@ export function DramaImageGenOptionsBar({
     return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
 
+  const { t, locale } = useI18n()
   const stop = (e: MouseEvent) => {
     e.stopPropagation()
   }
 
-  const styleLabel = getImageStyleLabel(value.image_style_id) || '风格'
-  const modelLabel = catalogModelLabel(value.model_id, imageModels, '图片模型')
-  const outputLabel = formatOutputSettingsLabel(value.aspect_ratio, value.resolution)
+  const fallbackStyle = t('drama.generationOptions.style') || 'Phong cách'
+  const fallbackModel = t('drama.generationOptions.imageModel') || 'Model ảnh'
+  const autoLabel = t('drama.generationOptions.auto') || 'Tự động'
+  const styleLabel = getImageStyleLabel(value.image_style_id, locale) || fallbackStyle
+  const modelLabel = catalogModelLabel(value.model_id, imageModels, fallbackModel)
+  const outputLabel = formatOutputSettingsLabel(value.aspect_ratio, value.resolution, autoLabel)
 
   return (
     <div ref={rootRef} className="fc-gen-opts" onMouseDown={stop} onPointerDown={stop}>
@@ -111,11 +116,12 @@ export function DramaImageGenOptionsBar({
       </div>
 
       {open === 'style' ? (
-        <div className="fc-gen-opt-panel fc-gen-style-panel" role="dialog" aria-label="图片风格">
-          <div className="fc-gen-opt-panel-title">图片风格</div>
+        <div className="fc-gen-opt-panel fc-gen-style-panel" role="dialog" aria-label={t('drama.generationOptions.imageStyle')}>
+          <div className="fc-gen-opt-panel-title">{t('drama.generationOptions.imageStyle')}</div>
           <div className="fc-gen-style-grid">
             {IMAGE_STYLE_OPTIONS.map((opt) => {
               const selected = value.image_style_id === opt.id
+              const localizedLabel = getImageStyleLabel(opt.id, locale) || opt.label
               return (
                 <button
                   key={opt.id}
@@ -127,8 +133,8 @@ export function DramaImageGenOptionsBar({
                     setOpen(null)
                   }}
                 >
-                  <DramaImageStylePreviewImg styleId={opt.id} alt={opt.label} loading="lazy" />
-                  <span>{opt.label}</span>
+                  <DramaImageStylePreviewImg styleId={opt.id} alt={localizedLabel} loading="lazy" />
+                  <span>{localizedLabel}</span>
                 </button>
               )
             })}
@@ -137,11 +143,11 @@ export function DramaImageGenOptionsBar({
       ) : null}
 
       {open === 'model' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="生图模型">
-          <div className="fc-gen-opt-panel-title">模型</div>
+        <div className="fc-gen-opt-panel" role="dialog" aria-label={t('drama.generationOptions.imageModel')}>
+          <div className="fc-gen-opt-panel-title">{t('drama.generationOptions.model')}</div>
           <div className="fc-gen-model-list">
             {imageModels.length === 0 ? (
-              <p className="fc-gen-model-empty">请先在管理后台「模型」勾选图片模型</p>
+              <p className="fc-gen-model-empty">{t('drama.generationOptions.noImageModels')}</p>
             ) : null}
             {imageModels.map((m) => (
               <button
@@ -162,8 +168,8 @@ export function DramaImageGenOptionsBar({
       ) : null}
 
       {open === 'output' ? (
-        <div className="fc-gen-opt-panel" role="dialog" aria-label="输出设置">
-          <div className="fc-gen-opt-panel-title">比例</div>
+        <div className="fc-gen-opt-panel" role="dialog" aria-label={t('drama.generationOptions.outputSettings')}>
+          <div className="fc-gen-opt-panel-title">{t('drama.generationOptions.aspectRatio')}</div>
           <div className="fc-gen-chip-row">
             {GENERATION_ASPECT_RATIO_OPTIONS.map((opt) => (
               <button
@@ -174,12 +180,12 @@ export function DramaImageGenOptionsBar({
                   onChange({ ...value, aspect_ratio: opt.id as GenerationAspectRatioId })
                 }
               >
-                {opt.label}
+                {opt.id === 'auto' ? t('drama.generationOptions.auto') : opt.label}
               </button>
             ))}
           </div>
           <div className="fc-gen-opt-panel-title" style={{ marginTop: 10 }}>
-            清晰度
+            {t('drama.generationOptions.resolution')}
           </div>
           <div className="fc-gen-chip-row">
             {GENERATION_RESOLUTION_OPTIONS.map((res) => (

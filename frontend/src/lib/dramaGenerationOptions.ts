@@ -28,7 +28,7 @@ export const GENERATION_ASPECT_RATIO_OPTIONS: Array<{
   id: GenerationAspectRatioId
   label: string
 }> = [
-  { id: 'auto', label: '自动' },
+  { id: 'auto', label: 'Tự động' },
   { id: '16:9', label: '16:9' },
   { id: '21:9', label: '21:9' },
   { id: '9:16', label: '9:16' },
@@ -64,8 +64,9 @@ export function defaultOptionsForAssetKind(kind: string | undefined | null): Ima
 export function formatOutputSettingsLabel(
   aspectRatio: GenerationAspectRatioId,
   resolution: GenerationResolution,
+  autoLabel = 'Tự động',
 ): string {
-  if (aspectRatio === 'auto') return `自动 · ${resolution}`
+  if (aspectRatio === 'auto') return `${autoLabel} · ${resolution}`
   return `${aspectRatio} · ${resolution}`
 }
 

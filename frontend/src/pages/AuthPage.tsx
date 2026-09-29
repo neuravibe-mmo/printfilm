@@ -37,8 +37,8 @@ export default function AuthPage() {
    * error / loading 提交态
    */
   const [mode, setMode] = useState<AuthMode>(() => modeFromParams(params))
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('hoangkien0705@gmail.com')
+  const [password, setPassword] = useState('123456Aa@')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [nickname, setNickname] = useState('')
   const [error, setError] = useState('')

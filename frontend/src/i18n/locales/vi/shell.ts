@@ -16,6 +16,7 @@ export const viShell = {
     cancel: 'Hủy',
     close: 'Đóng',
     confirm: 'Xác nhận',
+    processing: 'Đang xử lý…',
     delete: 'Xóa',
     download: 'Tải xuống',
     downloading: 'Đang tải…',

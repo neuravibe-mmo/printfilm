@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  Film,
   FolderOpen,
   LayoutGrid,
   Library,
@@ -44,12 +45,6 @@ function formatUpdatedAt(raw?: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-// 封面竖排标题（无预览图时）
-function verticalTitleLabel(name: string, max = 12): string {
-  const clean = (name || '').replace(/\s+/g, '')
-  if (clean.length <= max) return clean
-  return `${clean.slice(0, max - 1)}…`
-}
 
 type ProjectFilter = 'all' | 'running' | 'done' | 'draft'
 
@@ -476,9 +471,23 @@ function DramaListInner() {
                         decoding="async"
                       />
                     ) : (
-                      <span className="pf-drama-card-cover-fallback">{verticalTitleLabel(item.title)}</span>
+                      <div className="pf-drama-card-cover-fallback">
+                        <div className="pf-drama-card-cover-pattern" />
+                        <div className="pf-drama-card-cover-icon-wrap">
+                          {canvas ? (
+                            <LayoutGrid size={22} strokeWidth={1.8} />
+                          ) : (
+                            <Film size={22} strokeWidth={1.8} />
+                          )}
+                        </div>
+                      </div>
                     )}
-                    {canvas ? <span className="pf-drama-card-cover-badge is-canvas">{t('dramaList.canvasBadge')}</span> : null}
+                    {canvas ? (
+                      <span className="pf-drama-card-cover-badge is-canvas">
+                        <LayoutGrid size={11} strokeWidth={2.2} />
+                        {t('dramaList.canvasBadge')}
+                      </span>
+                    ) : null}
                     {!canvas && item.cover_pending ? (
                       <span className="pf-drama-card-cover-badge">{t('dramaList.coverPending')}</span>
                     ) : null}

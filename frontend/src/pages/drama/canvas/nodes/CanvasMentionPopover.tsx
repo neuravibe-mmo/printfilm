@@ -1,7 +1,7 @@
-/** 画布提示词：键入 @ 后选择角色/场景等节点插入（不 portal，避免点选时画布取消选中） */
 import { Landmark, UserRound, Image as ImageIcon, PlaySquare } from 'lucide-react'
 import { resolveDramaMediaUrl } from '../../../../api/drama'
-import type { CanvasNodeKind } from '../canvasTypes'
+import { getNodeKindLabel, type CanvasNodeKind } from '../canvasTypes'
+import { useI18n } from '../../../../i18n'
 
 export type CanvasMentionItem = {
   nodeId: string
@@ -29,22 +29,13 @@ function KindIcon({ kind }: { kind: CanvasNodeKind }) {
   return <ImageIcon size={14} strokeWidth={1.8} />
 }
 
-/** 类型中文标签 */
-function kindLabel(kind: CanvasNodeKind) {
-  if (kind === 'character') return '角色'
-  if (kind === 'scene') return '场景'
-  if (kind === 'video') return '视频'
-  if (kind === 'image') return '图片'
-  return '资产'
-}
-
 /** 按查询过滤可引用节点 */
-export function filterCanvasMentionItems(items: CanvasMentionItem[], query: string) {
+export function filterCanvasMentionItems(items: CanvasMentionItem[], query: string, locale?: string) {
   const q = query.trim().toLowerCase()
   if (!q) return items
   return items.filter((item) => {
     const label = item.label.toLowerCase()
-    const type = kindLabel(item.kind)
+    const type = getNodeKindLabel(item.kind, locale).toLowerCase()
     return label.includes(q) || type.includes(q) || String(item.assetId).includes(q)
   })
 }
@@ -59,15 +50,16 @@ export function CanvasMentionPopover({
   onSelect,
   onClose,
 }: CanvasMentionPopoverProps) {
+  const { t, locale } = useI18n()
   if (!open) return null
 
-  const filtered = filterCanvasMentionItems(items, query)
+  const filtered = filterCanvasMentionItems(items, query, locale)
 
   return (
     <div
       className="fc-mention-popover nodrag nopan nowheel"
       role="listbox"
-      aria-label="引用画布节点"
+      aria-label={t('drama.canvas.mentionNode')}
       onPointerDown={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -78,7 +70,7 @@ export function CanvasMentionPopover({
       }}
     >
       <div className="fc-mention-head">
-        <span>引用节点</span>
+        <span>{t('drama.canvas.referenceNode')}</span>
         <button
           type="button"
           className="fc-mention-close"
@@ -87,13 +79,13 @@ export function CanvasMentionPopover({
             e.stopPropagation()
             onClose()
           }}
-          aria-label="关闭"
+          aria-label={t('common.close')}
         >
           ×
         </button>
       </div>
       {filtered.length === 0 ? (
-        <div className="fc-mention-empty">无匹配节点 · 先创建角色/场景</div>
+        <div className="fc-mention-empty">{t('drama.canvas.noMatchingNodes')}</div>
       ) : (
         <ul className="fc-mention-list">
           {filtered.map((item, index) => {
@@ -116,7 +108,7 @@ export function CanvasMentionPopover({
                   </span>
                   <span className="fc-mention-meta">
                     <strong>{item.label}</strong>
-                    <em>{kindLabel(item.kind)}</em>
+                    <em>{getNodeKindLabel(item.kind, locale)}</em>
                   </span>
                 </button>
               </li>

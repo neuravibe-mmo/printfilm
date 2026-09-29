@@ -55,11 +55,14 @@ export const IMAGE_STYLE_OPTIONS: Array<{ id: ImageStyleId; label: string }> = [
 
 export const EPISODE_COUNT_PRESETS = [1, 12, 24, 36, 48] as const
 
-export function getImageStyleLabel(styleId: string | undefined | null): string | null {
+export function getImageStyleLabel(styleId: string | undefined | null, locale?: string): string | null {
   if (!styleId) return null
-  // Try locale-specific label first
-  const m = messages[getActiveLocale()] as unknown as { drama?: { imageStyles?: Record<string, string> } }
-  const localized = m.drama?.imageStyles?.[styleId]
+  const activeLoc = (locale as 'vi' | 'en' | 'zh') || getActiveLocale()
+  const m = messages[activeLoc] as unknown as { drama?: { imageStyles?: Record<string, string> } }
+  const localized = m?.drama?.imageStyles?.[styleId]
   if (localized) return localized
+  // Fallback to Vietnamese if available, else options label
+  const viLabel = (messages.vi as unknown as { drama?: { imageStyles?: Record<string, string> } })?.drama?.imageStyles?.[styleId]
+  if (viLabel) return viLabel
   return IMAGE_STYLE_OPTIONS.find((o) => o.id === styleId)?.label ?? null
 }

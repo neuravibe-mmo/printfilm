@@ -99,8 +99,48 @@
 .fc-topbar-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
+}
+
+.fc-topbar-right .pf-nav-lang {
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  box-shadow: var(--fc-shadow);
+  padding: 3px;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  box-sizing: border-box;
+}
+
+.fc-topbar-right .pf-nav-lang button {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.fc-topbar-right .pf-nav-lang button:hover:not(.is-active) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.fc-topbar-right .pf-nav-lang button.is-active {
+  background: #0f172a;
+  color: #ffffff;
 }
 
 .fc-topbar-title {

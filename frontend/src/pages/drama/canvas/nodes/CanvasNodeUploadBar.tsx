@@ -11,6 +11,7 @@ import {
   canvasKindToLibraryTypes,
   GlobalAssetPickerModal,
 } from '../../GlobalAssetPickerModal'
+import { useI18n } from '../../../../i18n'
 
 type CanvasNodeUploadBarProps = {
   nodeId: string
@@ -28,6 +29,7 @@ export function CanvasNodeUploadBar({
   voiceLabel,
   voiceUrl,
 }: CanvasNodeUploadBarProps) {
+  const { t } = useI18n()
   /*
    * uploading 本地上传中
    * pickerOpen 资产库弹窗
@@ -61,17 +63,17 @@ export function CanvasNodeUploadBar({
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      setErrorMessage('请选择图片文件')
+      setErrorMessage(t('drama.canvas.selectImageFile'))
       return
     }
     if (file.size > 20 * 1024 * 1024) {
-      setErrorMessage('图片不能超过 20MB')
+      setErrorMessage(t('drama.canvas.imageSizeLimit'))
       return
     }
 
     setUploading(true)
     void uploadNodeMedia(nodeId, file)
-      .catch((err) => setErrorMessage(err instanceof Error ? err.message : '上传失败'))
+      .catch((err) => setErrorMessage(err instanceof Error ? err.message : t('drama.canvas.uploadFailed')))
       .finally(() => setUploading(false))
   }
 
@@ -83,11 +85,11 @@ export function CanvasNodeUploadBar({
       const assetId = await ensureNodeAsset(nodeId)
       const list = await dramaApi.listAssets(projectId)
       const asset = list.find((a) => a.id === assetId)
-      if (!asset) throw new Error('角色资产不存在')
+      if (!asset) throw new Error(t('drama.canvas.charAssetNotFound'))
       const { character } = await generateAndBindCharacterVoice(projectId, asset)
       syncNodeFromAsset(nodeId, character)
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '音色生成失败')
+      setErrorMessage(err instanceof Error ? err.message : t('drama.canvas.voiceGenFailed'))
     } finally {
       setVoiceLoading(false)
     }
@@ -110,7 +112,7 @@ export function CanvasNodeUploadBar({
           onClick={() => fileInputRef.current?.click()}
         >
           {uploading ? <Loader2 size={14} className="fc-spin" /> : <Upload size={14} strokeWidth={1.8} />}
-          {uploading ? '上传中…' : '上传图片'}
+          {uploading ? t('common.uploading') : t('drama.canvas.uploadImage')}
         </button>
         <button
           type="button"
@@ -119,7 +121,7 @@ export function CanvasNodeUploadBar({
           onClick={() => setPickerOpen(true)}
         >
           <FolderOpen size={14} strokeWidth={1.8} />
-          从资产库选择
+          {t('drama.canvas.pickFromLibrary')}
         </button>
         {DRAMA_VOICE_BINDING_ENABLED && isCharacter ? (
           hasVoice && voiceUrl ? (
@@ -136,14 +138,14 @@ export function CanvasNodeUploadBar({
               className="fc-toolbar-chip"
               disabled={uploading || voiceLoading}
               onClick={() => void handleGenerateVoice()}
-              title="按角色设定 AI 生成音色"
+              title={t('drama.canvas.genVoiceTooltip')}
             >
               {voiceLoading ? (
                 <Loader2 size={14} className="fc-spin" />
               ) : (
                 <AudioLines size={14} strokeWidth={1.8} />
               )}
-              {voiceLoading ? '生成中…' : '生成音色'}
+              {voiceLoading ? t('drama.canvas.generating') : t('drama.canvas.genVoice')}
             </button>
           )
         ) : null}
@@ -155,8 +157,8 @@ export function CanvasNodeUploadBar({
         projectId={projectId}
         defaultTab="all"
         allowedTypes={canvasKindToLibraryTypes(kind)}
-        title="从资产库选择"
-        confirmLabel="确认使用"
+        title={t('drama.canvas.pickFromLibrary')}
+        confirmLabel={t('common.confirm')}
         onPick={async (source) => {
           await applyLibraryMediaToNode(nodeId, source)
         }}
