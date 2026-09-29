@@ -1,4 +1,4 @@
-/** Tiếng Việt: Drama (phim hoạt hình) - workspace, assets, episodes, canvas */
+/** Tiếng Việt: Drama (phim ngắn) - workspace, assets, episodes, canvas */
 
 export const viDrama = {
   drama: {

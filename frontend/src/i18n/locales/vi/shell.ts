@@ -3,7 +3,7 @@
 export const viShell = {
   meta: {
     title: 'PRINTFILM · Nền tảng Video AI',
-    description: 'PRINTFILM: Tạo phim hoạt hình AI từ kịch bản đến thành phẩm, video ngắn AI từ ý tưởng đến phân cảnh.',
+    description: 'PRINTFILM: Tạo phim ngắn AI từ kịch bản đến thành phẩm, video ngắn AI từ ý tưởng đến phân cảnh.',
   },
   common: {
     comingSoon: 'Sắp ra mắt',
@@ -63,7 +63,7 @@ export const viShell = {
   },
   nav: {
     workbench: 'Bàn làm việc',
-    drama: 'Phim hoạt hình',
+    drama: 'Phim ngắn',
     kepu: 'Video AI',
     tools: 'Công cụ',
     assets: 'Tài nguyên',
@@ -107,7 +107,7 @@ export const viShell = {
     registerTitle: 'Tạo tài khoản sáng tác viên',
     forgotTitle: 'Lấy lại mật khẩu',
     resetTitle: 'Đặt mật khẩu mới',
-    lede: 'PRINTFILM · Nền tảng sáng tác phim hoạt hình AI & Video ngắn AI',
+    lede: 'PRINTFILM · Nền tảng sáng tác phim ngắn AI & Video ngắn AI',
     nickname: 'Biệt danh',
     email: 'Email',
     password: 'Mật khẩu',
@@ -134,7 +134,7 @@ export const viShell = {
   create: {
     title: 'Bắt đầu sáng tác',
     hint: 'Chọn một dòng sản phẩm để vào quy trình tương ứng',
-    drama: 'Phim hoạt hình AI',
+    drama: 'Phim ngắn AI',
     dramaHint: 'Kịch bản · Tập phim · Thành phẩm',
     kepu: 'Video ngắn AI',
     kepuHint: 'Xuất phim theo dây chuyền phân cảnh',
@@ -177,7 +177,7 @@ export const viShell = {
     language: 'Ngôn ngữ giao diện',
     languageHint: 'Nếu không chọn thủ công, sẽ theo ngôn ngữ trình duyệt. Hiện hỗ trợ Tiếng Việt, 中文 và English.',
     languageAuto: 'Theo trình duyệt',
-    dramaLead: 'Dự án phim hoạt hình AI và tiến độ từng tập',
+    dramaLead: 'Dự án phim ngắn AI và tiến độ từng tập',
     allProjects: 'Tất cả dự án',
     newDrama: 'Tạo phim mới',
     noDrama: 'Chưa có dự án phim nào',

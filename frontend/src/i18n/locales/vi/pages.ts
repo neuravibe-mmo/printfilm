@@ -4,11 +4,11 @@ export const viPages = {
   home: {
     headlineBefore: 'Biến câu chuyện thành',
     headlineEm: 'phim có thể phát',
-    lede: 'Phim hoạt hình AI từ kịch bản đến thành phẩm theo tập, video ngắn AI từ điểm bán đến phân cảnh thành phẩm. Một bàn làm việc, hai cách xuất phim.',
+    lede: 'Phim ngắn AI từ kịch bản đến thành phẩm theo tập, video ngắn AI từ điểm bán đến phân cảnh thành phẩm. Một bàn làm việc, hai cách xuất phim.',
     startCreate: 'Bắt đầu sáng tác',
     browseTools: 'Khám phá công cụ',
     products: 'Sản phẩm chính',
-    dramaTitle: 'Phim hoạt hình AI',
+    dramaTitle: 'Phim ngắn AI',
     dramaFor: 'Dành cho nhà sản xuất phim ngắn',
     dramaDesc: 'Tạo kịch bản từ một câu, xây dựng nhân vật và cảnh quay, rồi phân cảnh thành từng tập.',
     kepuTitle: 'Video ngắn AI',
@@ -25,10 +25,10 @@ export const viPages = {
     whoKicker: 'Đối tượng',
     whoTitle: 'Phù hợp với ai',
     closeTitle: 'Bắt đầu từ một ý tưởng',
-    closeLead: 'Sau khi đăng nhập, chọn phim hoạt hình hoặc video AI để vào bàn làm việc tương ứng.',
+    closeLead: 'Sau khi đăng nhập, chọn phim ngắn hoặc video AI để vào bàn làm việc tương ứng.',
     viewPricing: 'Xem bảng giá',
     methodLink: 'Phương pháp video thu hút khách hàng',
-    footBrand: 'Nền tảng sáng tác phim hoạt hình AI & Video ngắn AI',
+    footBrand: 'Nền tảng sáng tác Phim ngắn AI & Video ngắn AI',
     footNav: 'Điều hướng footer',
     dramaSteps: ['AI tạo kịch bản', 'Nhân vật & Cảnh', 'Phân cảnh theo tập', 'Xuất thành phẩm'],
     kepuSteps: ['Chọn phong cách', 'Viết phân cảnh', 'Lồng tiếng & Thành phẩm', 'Xuất hàng loạt'],
@@ -41,7 +41,7 @@ export const viPages = {
       { title: '19 phong cách thành phẩm', desc: 'Từ sử thi thần thoại đến hiện thực đô thị, ánh đèn neon cyberpunk — chọn một lần, xuyên suốt cả tác phẩm.' },
       { title: 'Tài nguyên có thể tái sử dụng', desc: 'Nhân vật, cảnh, đạo cụ, giọng đọc — tạo một lần, dùng cả phim, tránh vẽ lại từng cảnh.' },
       { title: 'Phân cảnh có thể chỉnh sửa', desc: 'Trong script có thể @ tham chiếu tài nguyên, chèn thời lượng và góc quay — xem rõ cảnh đó trước khi tạo.' },
-      { title: 'Hai con đường xuất phim', desc: 'Phim hoạt hình đi theo hướng kể chuyện theo tập, video AI đi theo dây chuyền phân cảnh — cùng một tài khoản và điểm.' },
+      { title: 'Hai con đường xuất phim', desc: 'Phim ngắn đi theo hướng kể chuyện theo tập, video AI đi theo dây chuyền phân cảnh — cùng một tài khoản và điểm.' },
     ],
     audiences: [
       { title: 'Nhà sản xuất phim ngắn', desc: 'Chia câu chuyện thành các tập có thể quay, tạo tài nguyên rồi xuất phim.' },
@@ -90,7 +90,7 @@ export const viPages = {
         id: 'drama-episodes-workflow',
         category: 'drama',
         badge: 'Quy trình nhiều tập',
-        title: 'Quy trình sản xuất Phim Hoạt Hình nhiều tập (Drama Flow)',
+        title: 'Quy trình sản xuất Phim Ngắn nhiều tập (Drama Flow)',
         desc: 'Cách tổ chức kịch bản dài thành các tập và xuất từng đoạn video riêng lẻ.',
         actionText: 'Vào Bàn Làm Việc Phim',
         steps: [
@@ -196,7 +196,7 @@ export const viPages = {
     noFaq: 'Không tìm thấy câu hỏi phù hợp',
     cats: [
       { id: 'start', title: 'Bắt đầu nhanh', desc: 'Chọn sản phẩm trên bàn làm việc', href: '/' },
-      { id: 'drama', title: 'Tạo phim hoạt hình', desc: 'Kịch bản · Tập phim · Thành phẩm', href: '/drama' },
+      { id: 'drama', title: 'Tạo phim ngắn', desc: 'Kịch bản · Tập phim · Thành phẩm', href: '/drama' },
       { id: 'kepu', title: 'Video ngắn AI', desc: 'Dây chuyền phân cảnh & thành phẩm', href: '/history' },
       { id: 'tools', title: 'Công cụ sáng tác', desc: 'Text-to-Image / Image-to-Image / Video', href: '/tools' },
       { id: 'settings', title: 'Hồ sơ cá nhân', desc: 'Dự án · Lịch sử · Tải xuống', href: '/settings?tab=tools' },
@@ -206,7 +206,7 @@ export const viPages = {
       {
         n: '01',
         title: 'Chọn lối vào sáng tác',
-        body: 'Vào bàn làm việc chọn "Phim hoạt hình AI" hoặc "Video ngắn AI"; các tính năng đơn lẻ cũng có thể truy cập từ "Công cụ" trên thanh trên như text-to-image, image-to-image, text-to-video.',
+        body: 'Vào bàn làm việc chọn "Phim ngắn AI" hoặc "Video ngắn AI"; các tính năng đơn lẻ cũng có thể truy cập từ "Công cụ" trên thanh trên như text-to-image, image-to-image, text-to-video.',
       },
       {
         n: '02',
@@ -227,7 +227,7 @@ export const viPages = {
     faq: [
       {
         q: 'Lần đầu sử dụng bắt đầu từ đâu?',
-        a: 'Mở bàn làm việc, chọn "Phim hoạt hình AI" hoặc "Video ngắn AI". Phim phù hợp với kể chuyện theo tập và tính nhất quán nhân vật; Video AI hướng đến thu hút khách hàng, phù hợp với giải thích điểm bán và dây chuyền phân cảnh. Nếu chỉ cần một ảnh đơn hoặc đoạn video ngắn, có thể vào thẳng "Công cụ".',
+        a: 'Mở bàn làm việc, chọn "Phim ngắn AI" hoặc "Video ngắn AI". Phim phù hợp với kể chuyện theo tập và tính nhất quán nhân vật; Video AI hướng đến thu hút khách hàng, phù hợp với giải thích điểm bán và dây chuyền phân cảnh. Nếu chỉ cần một ảnh đơn hoặc đoạn video ngắn, có thể vào thẳng "Công cụ".',
       },
       {
         q: '"Video AI" và "Video tĩnh hình" khác nhau như thế nào?',
@@ -576,7 +576,7 @@ export const viPages = {
     deleting: 'Đang xóa…',
     storyPlaceholder: 'Nhập nội dung câu chuyện: bối cảnh, nhân vật chính, mạch truyện, kết cục…',
     emptyTitle: 'Chưa có dự án nào',
-    emptyDesc: 'Dùng AI tạo kịch bản hoặc Canvas tự do để tạo phim hoạt hình đầu tiên của bạn',
+    emptyDesc: 'Dùng AI tạo kịch bản hoặc Canvas tự do để tạo phim ngắn đầu tiên của bạn',
     noFilterResult: 'Không có dự án phù hợp với bộ lọc',
     clearFilter: 'Xóa bộ lọc',
     selectedCount: 'Đã chọn {n} dự án',

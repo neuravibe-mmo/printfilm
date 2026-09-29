@@ -308,7 +308,7 @@ export const LEGAL_DOCS_VI: Record<'terms' | 'privacy', LegalDoc> = {
       {
         title: '1. Dịch vụ',
         paragraphs: [
-          'PRINTFILM cung cấp các dịch vụ sáng tạo hỗ trợ AI bao gồm: phim hoạt hình/truyện tranh, video giải thích, và công cụ sáng tạo (bao gồm text-to-image, image-to-image, text-to-video, v.v.). Tính năng có thể thay đổi theo quá trình phát triển sản phẩm, chúng tôi sẽ cố gắng thông báo về những thay đổi quan trọng qua website hoặc thông báo trong ứng dụng.',
+          'PRINTFILM cung cấp các dịch vụ sáng tạo hỗ trợ AI bao gồm: phim ngắn/truyện tranh, video giải thích, và công cụ sáng tạo (bao gồm text-to-image, image-to-image, text-to-video, v.v.). Tính năng có thể thay đổi theo quá trình phát triển sản phẩm, chúng tôi sẽ cố gắng thông báo về những thay đổi quan trọng qua website hoặc thông báo trong ứng dụng.',
           'Tính phí theo lượng sử dụng mô hình upstream thực tế. Số dư đã nạp không hết hạn và không có đăng ký bắt buộc. Giá và ưu đãi theo trang Nạp tiền và màn hình thanh toán.',
         ],
       },
@@ -466,7 +466,7 @@ const CONTACT_CHANNELS_VI: ContactChannel[] = [
   },
   {
     title: 'Trung tâm trợ giúp',
-    desc: 'Các câu hỏi thường gặp về nạp tiền, tải xuống, phim hoạt hình và công cụ có thể tự tra cứu tại trung tâm trợ giúp.',
+    desc: 'Các câu hỏi thường gặp về nạp tiền, tải xuống, phim ngắn và công cụ có thể tự tra cứu tại trung tâm trợ giúp.',
     href: '/help',
     actionLabel: 'Đến Trung tâm trợ giúp',
   },

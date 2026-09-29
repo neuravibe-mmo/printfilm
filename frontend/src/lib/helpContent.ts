@@ -30,7 +30,7 @@ const HELP_CATS_ZH: HelpCatItem[] = [
 
 const HELP_CATS_VI: HelpCatItem[] = [
   { id: 'start', title: 'Bắt đầu nhanh', desc: 'Chọn sản phẩm trong bàn làm việc', href: '/' },
-  { id: 'drama', title: 'Sáng tác phim hoạt hình', desc: 'Kịch bản · Tập phim · Thành phẩm', href: '/drama' },
+  { id: 'drama', title: 'Sáng tác phim ngắn', desc: 'Kịch bản · Tập phim · Thành phẩm', href: '/drama' },
   { id: 'kepu', title: 'Video AI ngắn', desc: 'Pipeline phân cảnh và thành phẩm', href: '/history' },
   { id: 'tools', title: 'Công cụ sáng tác', desc: 'Text-to-Image / Image-to-Image / Video', href: '/tools' },
   { id: 'settings', title: 'Hồ sơ cá nhân', desc: 'Dự án · Lịch sử · Tải xuống', href: '/settings?tab=tools' },
@@ -90,22 +90,22 @@ const HELP_GUIDE_STEPS_VI: HelpGuideStep[] = [
   {
     n: '01',
     title: 'Chọn điểm vào sáng tác',
-    body: 'Vào bàn làm việc chọn "Phim hoạt hình AI" hoặc "Video AI ngắn"; các công cụ đơn lẻ có thể truy cập từ "Công cụ" trên thanh điều hướng: Text-to-Image, Image-to-Image, Video, v.v.',
+    body: 'Vào bàn làm việc chọn "Phim ngắn AI" hoặc "Video AI ngắn"; các công cụ đơn lẻ có thể truy cập từ "Công cụ" trên thanh điều hướng: Text-to-Image, Image-to-Image, Video, v.v.',
   },
   {
     n: '02',
     title: 'Cấu hình và tạo',
-    body: 'Phim hoạt hình: Ý tưởng → Đề cương → Tài sản → Tập phim; Video AI: Chủ đề → Phong cách → Phân cảnh → Thành phẩm; Công cụ: nhập prompt hoặc tải tài nguyên rồi nhấn Tạo.',
+    body: 'Phim ngắn: Ý tưởng → Đề cương → Tài sản → Tập phim; Video AI: Chủ đề → Phong cách → Phân cảnh → Thành phẩm; Công cụ: nhập prompt hoặc tải tài nguyên rồi nhấn Tạo.',
   },
   {
     n: '03',
     title: 'Xem lại và tinh chỉnh',
-    body: 'Phim hoạt hình / Video AI có thể vẽ lại cảnh đơn, tạo lại video hoặc lồng tiếng lại, không cần làm lại toàn bộ phim. Kết quả công cụ có thể xem trước trong bàn làm việc rồi tạo lại.',
+    body: 'Phim ngắn / Video AI có thể vẽ lại cảnh đơn, tạo lại video hoặc lồng tiếng lại, không cần làm lại toàn bộ phim. Kết quả công cụ có thể xem trước trong bàn làm việc rồi tạo lại.',
   },
   {
     n: '04',
     title: 'Lưu và tải xuống',
-    body: 'Kết quả được lưu vào cloud. Video AI ngắn tải xuống tại trang Lịch sử; Phim hoạt hình xem trong bàn làm việc dự án; Sáng tác công cụ xem chi tiết và tải xuống tại Hồ sơ cá nhân.',
+    body: 'Kết quả được lưu vào cloud. Video AI ngắn tải xuống tại trang Lịch sử; Phim ngắn xem trong bàn làm việc dự án; Sáng tác công cụ xem chi tiết và tải xuống tại Hồ sơ cá nhân.',
   },
 ]
 
@@ -195,7 +195,7 @@ const HELP_FAQ_ITEMS_ZH: HelpFaqItem[] = [
 const HELP_FAQ_ITEMS_VI: HelpFaqItem[] = [
   {
     q: 'Lần đầu dùng nên bắt đầu từ đâu?',
-    a: 'Mở bàn làm việc, chọn "Phim hoạt hình AI" hoặc "Video AI ngắn". Phim hoạt hình phù hợp với kể chuyện nhiều tập và nhất quán nhân vật; Video AI ngắn định vị thu hút khách, phù hợp giải thích điểm bán và pipeline phân cảnh. Nếu chỉ cần ảnh đơn hoặc đoạn clip ngắn, có thể vào thẳng "Công cụ".',
+    a: 'Mở bàn làm việc, chọn "Phim ngắn AI" hoặc "Video AI ngắn". Phim ngắn phù hợp với kể chuyện nhiều tập và nhất quán nhân vật; Video AI ngắn định vị thu hút khách, phù hợp giải thích điểm bán và pipeline phân cảnh. Nếu chỉ cần ảnh đơn hoặc đoạn clip ngắn, có thể vào thẳng "Công cụ".',
   },
   {
     q: '"Video AI" và "Ảnh tĩnh thành phim" khác nhau thế nào?',
@@ -203,7 +203,7 @@ const HELP_FAQ_ITEMS_VI: HelpFaqItem[] = [
   },
   {
     q: 'Đang tạo có thể rời trang không?',
-    a: 'Có thể. Tác vụ tiếp tục chạy trên máy chủ. Video AI ngắn có thể quay lại trang Lịch sử để xem tiến độ; Phim hoạt hình quay về bàn làm việc dự án tương ứng; Tác vụ video công cụ nên cố gắng ở lại trang hiện tại chờ hoàn thành, hoặc xem trạng thái sau tại Hồ sơ cá nhân.',
+    a: 'Có thể. Tác vụ tiếp tục chạy trên máy chủ. Video AI ngắn có thể quay lại trang Lịch sử để xem tiến độ; Phim ngắn quay về bàn làm việc dự án tương ứng; Tác vụ video công cụ nên cố gắng ở lại trang hiện tại chờ hoàn thành, hoặc xem trạng thái sau tại Hồ sơ cá nhân.',
   },
   {
     q: 'Trung tâm công cụ có thể làm gì?',
@@ -219,11 +219,11 @@ const HELP_FAQ_ITEMS_VI: HelpFaqItem[] = [
   },
   {
     q: 'Tải thành phẩm hoặc tài nguyên ở đâu?',
-    a: 'Video AI ngắn: trang Lịch sử "Video AI ngắn" trên thanh điều hướng, dự án đã hoàn thành có thể tải xuống hoặc đóng gói. Phim hoạt hình: vào bàn làm việc dự án tương ứng xem phân cảnh và thành phẩm. Tài sản toàn cục: "Tài sản" trên thanh điều hướng quản lý nhân vật, cảnh, đạo cụ và giọng đọc.',
+    a: 'Video AI ngắn: trang Lịch sử "Video AI ngắn" trên thanh điều hướng, dự án đã hoàn thành có thể tải xuống hoặc đóng gói. Phim ngắn: vào bàn làm việc dự án tương ứng xem phân cảnh và thành phẩm. Tài sản toàn cục: "Tài sản" trên thanh điều hướng quản lý nhân vật, cảnh, đạo cụ và giọng đọc.',
   },
   {
     q: 'Hồ sơ cá nhân có những gì?',
-    a: 'Bao gồm thông tin tài khoản, dự án phim hoạt hình, lịch sử Video AI ngắn, lịch sử sáng tác công cụ, điểm vào quản lý tài sản, và đăng ký & số dư. Các tính năng như nhóm, API, tùy chọn thông báo vẫn đang phát triển.',
+    a: 'Bao gồm thông tin tài khoản, dự án phim ngắn, lịch sử Video AI ngắn, lịch sử sáng tác công cụ, điểm vào quản lý tài sản, và đăng ký & số dư. Các tính năng như nhóm, API, tùy chọn thông báo vẫn đang phát triển.',
   },
   {
     q: 'Nạp tiền như thế nào? Số dư trừ như thế nào?',
@@ -231,7 +231,7 @@ const HELP_FAQ_ITEMS_VI: HelpFaqItem[] = [
   },
   {
     q: 'Tạo thất bại hoặc hình ảnh không như mong đợi thì làm gì?',
-    a: 'Có thể điều chỉnh prompt, prompt phủ định hoặc ảnh tham chiếu rồi thử lại; Phim hoạt hình / Video AI ngắn hỗ trợ tạo lại từng cảnh. Nếu liên tục thất bại, kiểm tra mạng và số dư, hoặc thử lại sau. Nội dung nhạy cảm có thể bị chính sách an toàn của mô hình chặn.',
+    a: 'Có thể điều chỉnh prompt, prompt phủ định hoặc ảnh tham chiếu rồi thử lại; Phim ngắn / Video AI ngắn hỗ trợ tạo lại từng cảnh. Nếu liên tục thất bại, kiểm tra mạng và số dư, hoặc thử lại sau. Nội dung nhạy cảm có thể bị chính sách an toàn của mô hình chặn.',
   },
 ]
 
