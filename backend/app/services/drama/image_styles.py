@@ -21,6 +21,7 @@ _BOARD_FAIL_TTL_SEC = 60.0
 
 # IMAGE_STYLE_IDS 内置风格 ID（与前端 dramaImageStyles 对齐）
 IMAGE_STYLE_IDS = (
+    "wartime-epic-film",
     "retro-sci-fi-atompunk",
     "palace-intrigue-cold",
     "domestic-suspense-cold",
@@ -46,6 +47,14 @@ IMAGE_STYLE_IDS = (
 
 # IMAGE_STYLE_PROMPTS 风格 → 提示词片段
 IMAGE_STYLE_PROMPTS: dict[str, str] = {
+    "wartime-epic-film": (
+        "35mm胶片电影质感，悲壮战争史诗风格，低饱和暖沉色调，真实战场硝烟与战火残垣，"
+        "质朴乡村废墟与战时环境，富有情绪张力的自然电影光影，"
+        "饱经战火风霜的写实人物与军装质感，粗粝真实皮肤肌理，忌过度美化、忌磨皮、忌偶像剧滤镜。"
+        "Tông màu film 35mm trầm ấm, khói lửa chiến trường chân thực, làng quê mộc mạc, "
+        "ánh sáng điện ảnh giàu cảm xúc, trang phục lính và thôn quê thời chiến chân thật, "
+        "không làm mịn da hay màu mè bóng bẩy. 35mm film grain, warm muted tones, cinematic wartime realism."
+    ),
     "retro-sci-fi-atompunk": (
         "复古科幻原子朋克风格，1950年代未来主义美学，流线型金属与原子能符号，"
         "霓虹高光，金属质感，高对比色彩，轻微胶片颗粒"
@@ -115,6 +124,7 @@ IMAGE_STYLE_PROMPTS: dict[str, str] = {
 
 # IMAGE_STYLE_LABELS 风格展示名
 IMAGE_STYLE_LABELS: dict[str, str] = {
+    "wartime-epic-film": "悲壮战争史诗电影",
     "retro-sci-fi-atompunk": "复古科幻原子朋克",
     "palace-intrigue-cold": "宫斗权谋冷峻",
     "domestic-suspense-cold": "国产悬疑冷调",

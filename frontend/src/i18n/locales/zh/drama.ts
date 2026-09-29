@@ -83,6 +83,7 @@ export const zhDrama = {
       tailFrameHint: '开启后后一镜会参考前一镜尾帧，风格更连贯。',
     },
     imageStyles: {
+      'wartime-epic-film': '悲壮战争史诗电影',
       'retro-sci-fi-atompunk': '复古科幻原子朋克',
       'palace-intrigue-cold': '宫斗权谋冷峻',
       'domestic-suspense-cold': '国产悬疑冷调',

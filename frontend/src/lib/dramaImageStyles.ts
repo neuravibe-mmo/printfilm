@@ -4,6 +4,7 @@ import { getActiveLocale } from '../i18n/detect'
 import { messages } from '../i18n/messages'
 
 export const IMAGE_STYLE_IDS = [
+  'wartime-epic-film',
   'retro-sci-fi-atompunk',
   'palace-intrigue-cold',
   'domestic-suspense-cold',
@@ -30,6 +31,7 @@ export const IMAGE_STYLE_IDS = [
 export type ImageStyleId = (typeof IMAGE_STYLE_IDS)[number]
 
 export const IMAGE_STYLE_OPTIONS: Array<{ id: ImageStyleId; label: string }> = [
+  { id: 'wartime-epic-film', label: 'Điện ảnh chiến tranh bi tráng' },
   { id: 'retro-sci-fi-atompunk', label: '复古科幻原子朋克' },
   { id: 'palace-intrigue-cold', label: '宫斗权谋冷峻' },
   { id: 'domestic-suspense-cold', label: '国产悬疑冷调' },

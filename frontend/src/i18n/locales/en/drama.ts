@@ -187,6 +187,7 @@ export const enDrama = {
         "setCover": "Đặt làm ảnh đại diện"
     },
     "imageStyles": {
+        "wartime-epic-film": "Epic Wartime Cinema",
         "retro-sci-fi-atompunk": "Retro Sci-Fi Atompunk",
         "palace-intrigue-cold": "Palace Intrigue Somber",
         "domestic-suspense-cold": "Suspense Cool Tone",

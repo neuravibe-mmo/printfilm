@@ -88,6 +88,7 @@ export const viDrama = {
     },
     // Image styles
     imageStyles: {
+      'wartime-epic-film': 'Điện ảnh chiến tranh bi tráng',
       'retro-sci-fi-atompunk': 'Khoa học viễn tưởng retro Atompunk',
       'palace-intrigue-cold': 'Cung đấu âm mưu lạnh lùng',
       'domestic-suspense-cold': 'Phim trinh thám nội địa tông lạnh',

@@ -2431,10 +2431,9 @@
   border-radius: 16px;
   padding: 16px 12px 12px;
   align-self: flex-start;
-  position: sticky;
-  top: 12px;
-  max-height: calc(100vh - 100px);
-  overflow: auto;
+  height: auto;
+  max-height: none;
+  overflow: visible;
   box-sizing: border-box;
 }
 
