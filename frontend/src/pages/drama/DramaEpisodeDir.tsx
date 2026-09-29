@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react'
 import type { DramaEpisode } from '../../api/drama'
 import { useI18n, type TFunction } from '../../i18n'
+import { isDefaultEpisodeTitle } from './dramaWorkspaceUtils'
 
 export type DramaEpisodeDirItem = {
   id: number
@@ -30,10 +31,14 @@ export function buildEpisodeDirItems(episodes: DramaEpisode[], t?: TFunction): D
   return sorted.map((ep) => {
     const epNo = Number(ep.params?.episodeNumber) || 0
     const fragCount = (ep.fragments || []).length
+    const rawName = (ep.name || '').trim()
+    const cleanTitle = isDefaultEpisodeTitle(rawName, epNo)
+      ? (t ? (epNo >= 1 ? t('drama.episodes.episode', { n: epNo }) : t('drama.episodes.episodeFallback', { id: ep.id })) : `Tập ${epNo || ep.id}`)
+      : rawName
     return {
       id: ep.id,
       label: epNo >= 1 ? (t ? t('drama.episodes.episode', { n: epNo }) : `Tập ${epNo}`) : `ID · ${ep.id}`,
-      title: ep.name || (t ? t('drama.episodes.episodeFallback', { id: ep.id }) : `Tập ${ep.id}`),
+      title: cleanTitle,
       meta: fragCount > 0 ? `${fragCount} ${t ? t('drama.episodesStep.shots') : 'phân cảnh'}` : undefined,
     }
   })

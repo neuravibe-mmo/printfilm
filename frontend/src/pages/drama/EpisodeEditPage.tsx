@@ -57,7 +57,7 @@ import { defaultOptionsForAssetKind } from '../../lib/dramaGenerationOptions'
 import { dramaAssetImageGenButtonLabel } from '../../lib/dramaAssetImage'
 import { readVisualPrompt } from '../../lib/dramaVisualPrompt'
 import { generateAndBindCharacterVoice } from '../../lib/characterVoiceGenerate'
-import { getImageStyleId } from './dramaWorkspaceUtils'
+import { getImageStyleId, isDefaultEpisodeTitle } from './dramaWorkspaceUtils'
 import { EpisodeEditAssetPanel } from './EpisodeEditAssetPanel'
 import { EpisodeEditHeaderControls } from './EpisodeEditHeaderControls'
 import { EpisodeEditPromptEditor } from './EpisodeEditPromptEditor'
@@ -237,6 +237,14 @@ function EpisodeEditInner() {
   }, [eid, fragments, episode?.active_tasks])
   // anyFragmentGenerating 本集是否有分镜在排队/生成（不锁编辑，仅锁批量生成）
   const anyFragmentGenerating = generatingIds.size > 0
+  const epNumber = Number(episode?.params?.episodeNumber) || 0
+  const displayEpisodeName =
+    episode?.name && !isDefaultEpisodeTitle(episode.name, epNumber)
+      ? episode.name
+      : epNumber >= 1
+        ? t('drama.episodes.episode', { n: epNumber })
+        : t('drama.episodeEdit.thisEpisode')
+
   // selectedIsGenerating 当前选中镜是否正在生成
   const selectedIsGenerating = Boolean(selected?.id && generatingIds.has(selected.id))
   // selectedHasVideo 当前镜是否已有成片（用于「重新生成」文案）
@@ -1348,7 +1356,7 @@ function EpisodeEditInner() {
       (j) => j.id === videoJobId(frag.id!) || (j.kind === 'video' && j.targetId === frag.id),
     )
     const gen = readFragmentGenerationStatus(frag)
-    const title = `${episode?.name || t('drama.episodeEdit.thisEpisode')} · ${formatFragLabel(index, frag.duration_sec)}`
+    const title = `${displayEpisodeName} · ${formatFragLabel(index, frag.duration_sec)}`
     setFailReasonJob({
       id: fromQueue?.id || videoJobId(frag.id),
       kind: 'video',
@@ -1693,7 +1701,7 @@ function EpisodeEditInner() {
           onPlayingFragmentChange={handlePlayingFragmentChange}
           aspectRatio={aspectRatio}
           episodeId={episode?.id}
-          episodeName={episode?.name || t('drama.episodeEdit.thisEpisode')}
+          episodeName={displayEpisodeName}
           subtitleMode={subtitleMode}
           onOpenStoryboard={openEpisodeStoryboard}
           previewVideoUrl={previewVideoUrl}

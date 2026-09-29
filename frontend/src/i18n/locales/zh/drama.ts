@@ -12,6 +12,11 @@ export const zhDrama = {
       projectSettings: '项目设置',
       deleteProject: '删除项目',
       renameProject: '重命名',
+      enterStoryboardFailed: '无法进入分镜',
+      saveTitleFailed: '标题保存失败',
+      invalidProjectId: '项目 ID 无效',
+      projectNotFound: '项目不存在',
+      usageTooltip: '本剧累计费用与生成次数',
     },
     cardMenu: {
       rename: '重命名',

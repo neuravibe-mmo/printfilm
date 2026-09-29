@@ -11,7 +11,12 @@ export const enDrama = {
         "backToList": "Project List",
         "projectSettings": "Project Settings",
         "deleteProject": "Delete Project",
-        "renameProject": "Rename Project"
+        "renameProject": "Rename Project",
+        "enterStoryboardFailed": "Failed to enter storyboard",
+        "saveTitleFailed": "Failed to save title",
+        "invalidProjectId": "Invalid project ID",
+        "projectNotFound": "Project not found",
+        "usageTooltip": "Total project cost and generation count"
     },
     "cardMenu": {
         "rename": "Rename",

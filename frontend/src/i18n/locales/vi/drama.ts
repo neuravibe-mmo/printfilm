@@ -7,12 +7,17 @@ export const viDrama = {
       outline: 'Đề cương kịch bản',
       storyboard: 'Phân cảnh',
       video: 'Tạo video',
-      assets: 'Kho tài nguyên',
+      assets: 'Kho tài sản',
       episodes: 'Tập phim',
       backToList: 'Danh sách dự án',
       projectSettings: 'Cài đặt dự án',
       deleteProject: 'Xóa dự án',
       renameProject: 'Đổi tên dự án',
+      enterStoryboardFailed: 'Không thể vào phân cảnh',
+      saveTitleFailed: 'Lưu tiêu đề thất bại',
+      invalidProjectId: 'ID dự án không hợp lệ',
+      projectNotFound: 'Dự án không tồn tại',
+      usageTooltip: 'Chi phí tích lũy và số lần tạo của phim',
     },
     // Project card context menu
     cardMenu: {

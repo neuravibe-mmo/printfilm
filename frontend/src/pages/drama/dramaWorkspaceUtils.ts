@@ -69,6 +69,26 @@ export function autoMissingEpisodeCount(bodies: DramaEpisodeBody[], target: numb
   return missing
 }
 
+// 判断是否为占位集标题（如「第 1 集」、「第1集」、「Tập 1」等），避免非中文界面漏出中文字符
+export function isDefaultEpisodeTitle(title?: string | null, epNo?: number): boolean {
+  if (!title) return true
+  const s = title.trim()
+  if (!s) return true
+  if (/^第\s*\d+\s*集$/i.test(s)) return true
+  if (/^第\s*[0-9一二三四五六七八九十百]+\s*集$/i.test(s)) return true
+  if (/^(tập|episode)\s*\d+$/i.test(s)) return true
+  if (
+    epNo !== undefined &&
+    (s === `第${epNo}集` ||
+      s === `第 ${epNo} 集` ||
+      s === `Tập ${epNo}` ||
+      s === `Episode ${epNo}`)
+  ) {
+    return true
+  }
+  return false
+}
+
 // 按目标集数铺满目录
 export function buildOutlineDirectory(
   bodies: DramaEpisodeBody[],
@@ -85,9 +105,11 @@ export function buildOutlineDirectory(
   return Array.from({ length: total }, (_, i) => {
     const episodeNumber = i + 1
     const ep = byNumber.get(episodeNumber)
+    const rawTitle = (ep?.title || '').trim()
+    const cleanTitle = isDefaultEpisodeTitle(rawTitle, episodeNumber) ? '' : rawTitle
     return {
       episodeNumber,
-      title: ep?.title || `第 ${episodeNumber} 集`,
+      title: cleanTitle,
       creative: ep?.creative,
       summary: ep?.summary,
       body: ep?.body,
@@ -104,9 +126,11 @@ export function mergeDirectoryEpisodeBodies(
   const byNumber = new Map(bodies.map((ep, i) => [ep.episodeNumber || i + 1, ep] as const))
   return directory.map((item) => {
     const found = byNumber.get(item.episodeNumber)
+    const rawTitle = (found?.title || item.title || '').trim()
+    const cleanTitle = isDefaultEpisodeTitle(rawTitle, item.episodeNumber) ? '' : rawTitle
     return {
       episodeNumber: item.episodeNumber,
-      title: found?.title || item.title,
+      title: cleanTitle,
       creative: found?.creative || item.creative || '',
       summary: found?.summary || item.summary || '',
       body: found?.body || item.body || '',

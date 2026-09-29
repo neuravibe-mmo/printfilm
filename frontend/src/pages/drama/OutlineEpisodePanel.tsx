@@ -666,7 +666,7 @@ export function OutlineEpisodePanel({
           ) : (
             <h2>
               {t('drama.outlinePanel.epLabel').replace('{no}', String(selected.episodeNumber))}
-              {selected.title ? `：${selected.title}` : ''}
+              {selected.title ? `: ${selected.title}` : ''}
             </h2>
           )}
           {imageStyleLabel ? <span className="drama-outline-style-badge">{imageStyleLabel}</span> : null}

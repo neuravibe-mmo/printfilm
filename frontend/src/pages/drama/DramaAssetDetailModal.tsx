@@ -116,7 +116,7 @@ export function DramaAssetDetailModal({
     if (dirty) {
       const text = promptDraft.trim()
       if (!text) {
-        onError('提示词不能为空')
+        onError(t('drama.assetDetail.promptRequired'))
         return
       }
       setSaving(true)
@@ -127,7 +127,7 @@ export function DramaAssetDetailModal({
         onUpdated(updated)
         onGenerate(updated)
       } catch (err) {
-        onError(err instanceof Error ? err.message : '保存提示词失败')
+        onError(err instanceof Error ? err.message : t('drama.assetDetail.savePromptFailed'))
       } finally {
         setSaving(false)
       }
