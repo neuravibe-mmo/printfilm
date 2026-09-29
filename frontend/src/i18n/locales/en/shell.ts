@@ -50,6 +50,9 @@ export const enShell = {
     toolPack: 'Tool pack',
     error: 'Error',
     notReady: 'Result not ready yet',
+    edit: 'Edit',
+    unnamed: 'Unnamed',
+    playFailed: 'Playback failed',
   },
   dialog: {
     confirmTitle: 'Please confirm',
@@ -80,6 +83,8 @@ export const enShell = {
     langZh: '中',
     langEn: 'EN',
     langVi: 'VI',
+    history: 'History',
+    settings: 'Account',
   },
   footer: {
     terms: 'Terms',

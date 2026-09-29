@@ -44,11 +44,20 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback<TFunction>(
     (path, vars) => {
-      const raw = lookupMessage(m, path)
+      let raw = lookupMessage(m, path)
+      if (!raw && locale !== 'vi') {
+        raw = lookupMessage(messages.vi, path)
+      }
+      if (!raw && locale !== 'zh') {
+        raw = lookupMessage(messages.zh, path)
+      }
+      if (!raw && locale !== 'en') {
+        raw = lookupMessage(messages.en, path)
+      }
       if (!raw) return path
       return interpolate(raw, vars)
     },
-    [m],
+    [locale, m],
   )
 
   const value = useMemo(() => ({ locale, setLocale, t, m }), [locale, setLocale, t, m])

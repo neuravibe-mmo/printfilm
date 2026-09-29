@@ -76,6 +76,16 @@ export const enBilling = {
       frozen: 'On hold',
       topup: 'Add credits',
     },
+    usageRecords: {
+      title: 'Usage & Charges History',
+      subtitle: 'Token consumption and deduction details per AI invocation',
+      loading: 'Loading…',
+      loadFailed: 'Failed to load charge records',
+      empty: 'No charge records yet',
+      estimated: 'Estimated',
+      tokensUnit: 'tokens',
+      paginationAria: 'Charge records pagination',
+    },
   },
 
   apiKeys: {
