@@ -908,7 +908,7 @@ function EpisodeEditInner() {
       return
     }
 
-    const fragLabel = formatFragLabel(selectedIndex, selectedDuration)
+    const fragLabel = formatFragLabel(selectedIndex, selectedDuration, t)
     const isRegen = Boolean(selected.video)
     const ok = await dialog.confirm({
       title: isRegen ? t('drama.episodeEdit.regenVideoTitle') : t('drama.episodeEdit.genVideoTitle'),
@@ -1034,7 +1034,7 @@ function EpisodeEditInner() {
         continue
       }
       const { blocking, warnings } = collectDramaGenerateGateIssues(fragments[i], assets)
-      const label = formatFragLabel(i, fragments[i]?.duration_sec)
+      const label = formatFragLabel(i, fragments[i]?.duration_sec, t)
       for (const issue of blocking) allBlocking.push(`${label}：${issue.message}`)
       for (const issue of warnings) allWarnings.push(`${label}：${issue.message}`)
     }
@@ -1356,7 +1356,7 @@ function EpisodeEditInner() {
       (j) => j.id === videoJobId(frag.id!) || (j.kind === 'video' && j.targetId === frag.id),
     )
     const gen = readFragmentGenerationStatus(frag)
-    const title = `${displayEpisodeName} · ${formatFragLabel(index, frag.duration_sec)}`
+    const title = `${displayEpisodeName} · ${formatFragLabel(index, frag.duration_sec, t)}`
     setFailReasonJob({
       id: fromQueue?.id || videoJobId(frag.id),
       kind: 'video',
@@ -1501,7 +1501,7 @@ function EpisodeEditInner() {
         <section className="drama-ep-editor">
           <div className="drama-ep-editor-head">
             <div>
-              <strong>{formatFragLabel(selectedIndex, selectedDuration)}</strong>
+              <strong>{formatFragLabel(selectedIndex, selectedDuration, t)}</strong>
               <p>
                 {t('drama.episodeEdit.tipAtRef')}{' '}
                 {formatProjectOutputLabel(
@@ -1764,7 +1764,7 @@ function EpisodeEditInner() {
               displayStatus !== 'done' &&
               displayStatus !== 'failed' &&
               displayStatus !== 'cancelled'
-            const badge = fragmentQueueBadgeLabel(displayStatus)
+            const badge = fragmentQueueBadgeLabel(displayStatus, t)
             const clipVideo = frag.video ? resolveDramaMediaUrl(frag.video) : ''
             const clipCover = frag.cover ? resolveDramaMediaUrl(frag.cover) : ''
             const showFailHint = displayStatus === 'failed' && !fragBusy
@@ -1801,7 +1801,7 @@ function EpisodeEditInner() {
                   )}
                   {badge ? <span className="drama-ep-clip-badge">{badge}</span> : null}
                   <em>
-                    {formatFragLabel(index, frag.duration_sec)}
+                    {formatFragLabel(index, frag.duration_sec, t)}
                     <DramaFragmentClipSpec
                       fragmentParams={fragParams}
                       episodeParams={episodeParams}

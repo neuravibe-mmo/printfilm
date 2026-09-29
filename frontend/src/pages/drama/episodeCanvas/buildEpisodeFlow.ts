@@ -5,6 +5,7 @@ import {
   type DramaAsset,
   type DramaFragment,
 } from '../../../api/drama'
+import { getActiveLocale } from '../../../i18n/detect'
 import {
   collectFragmentAssetIds,
   formatFragLabel,
@@ -151,6 +152,7 @@ export function buildEpisodeFragmentFlow(
     const y = Math.max(anchorY - EPISODE_ASSET_NODE_EST_HEIGHT / 2, lastAssetY)
     lastAssetY = y + EPISODE_ASSET_NODE_EST_HEIGHT + EPISODE_ASSET_ROW_GAP
 
+    const loc = getActiveLocale()
     nodes.push({
       id: episodeAssetNodeId(assetId),
       type: 'episodeAsset',
@@ -159,10 +161,14 @@ export function buildEpisodeFragmentFlow(
         assetId,
         linkedFragments: fragmentIds.map((fragmentId) => ({
           fragmentId,
-          label: fragLabels.get(fragmentId) || `镜 ${fragmentId}`,
+          label:
+            fragLabels.get(fragmentId) ||
+            (loc === 'vi' ? `Cảnh ${fragmentId}` : loc === 'en' ? `Shot ${fragmentId}` : `镜 ${fragmentId}`),
         })),
-        name: asset?.name || `资产 ${assetId}`,
-        typeLabel: tab || asset?.type || '资产',
+        name:
+          asset?.name ||
+          (loc === 'vi' ? `Tài sản ${assetId}` : loc === 'en' ? `Asset ${assetId}` : `资产 ${assetId}`),
+        typeLabel: tab || asset?.type || (loc === 'vi' ? 'Tài sản' : loc === 'en' ? 'Asset' : '资产'),
         previewUrl: resolveDramaMediaUrl(asset?.cover || asset?.url) || '',
       },
       draggable: true,

@@ -1,5 +1,5 @@
 /** 剧情大纲：左栏分集目录 + 右栏本集创意/摘要/剧本（对齐截图样式） */
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BookOpen,
@@ -221,6 +221,42 @@ export function OutlineEpisodePanel({
   const [episodeShotStats, setEpisodeShotStats] = useState<
     Record<number, { fragmentCount: number; totalSec: number }>
   >({})
+  const [menuEpNumber, setMenuEpNumber] = useState<number | null>(null)
+  const [renamingEpisodeNumber, setRenamingEpisodeNumber] = useState<number | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (menuEpNumber === null) return
+    function onDoc(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuEpNumber(null)
+      }
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [menuEpNumber])
+
+  async function handleConfirmRename(epNo: number) {
+    const nextTitle = renameDraft.trim()
+    setRenamingEpisodeNumber(null)
+    setSaving(true)
+    try {
+      const next = displayEpisodes.map((ep) =>
+        ep.episodeNumber === epNo ? { ...ep, title: nextTitle } : ep,
+      )
+      if (selected?.episodeNumber === epNo) {
+        setTitleDraft(nextTitle)
+      }
+      await saveBodies(next)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t('drama.outlinePanel.saveFailed')
+      setLocalError(msg)
+      onError(msg)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const episodeBodies = parseEpisodeBodies(script)
   const directoryEpisodes = buildOutlineDirectory(episodeBodies, episodeCount)
@@ -612,12 +648,19 @@ export function OutlineEpisodePanel({
                 : t('drama.outlinePanel.pendingCreative')
           return (
             <li key={ep.episodeNumber}>
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 className={`drama-outline-ep-card${active ? ' is-active' : ''}`}
                 onClick={() => {
                   onOpenEpisodes()
                   setActiveEpisodeNumber(ep.episodeNumber)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onOpenEpisodes()
+                    setActiveEpisodeNumber(ep.episodeNumber)
+                  }
                 }}
               >
                 <span className="drama-outline-ep-thumb" aria-hidden>
@@ -632,15 +675,79 @@ export function OutlineEpisodePanel({
                 </span>
                 <span className="drama-outline-ep-meta">
                   <strong>{t('drama.outlinePanel.epLabel').replace('{no}', String(ep.episodeNumber))}</strong>
-                  <small>{ep.title || t('common.unnamed')}</small>
+                  {renamingEpisodeNumber === ep.episodeNumber ? (
+                    <div className="drama-outline-ep-rename-row" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="text"
+                        className="drama-outline-ep-rename-input"
+                        value={renameDraft}
+                        autoFocus
+                        placeholder={t('drama.outlinePanel.epNamePlaceholder')}
+                        onChange={(e) => setRenameDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            void handleConfirmRename(ep.episodeNumber)
+                          }
+                          if (e.key === 'Escape') {
+                            e.preventDefault()
+                            setRenamingEpisodeNumber(null)
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="drama-outline-ep-rename-btn"
+                        title={t('common.confirm')}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void handleConfirmRename(ep.episodeNumber)
+                        }}
+                      >
+                        <Check size={14} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  ) : (
+                    <small>{ep.title || t('common.unnamed')}</small>
+                  )}
                   <em className={shot && shot.fragmentCount > 0 ? 'is-shot' : undefined}>
                     {statusLabel}
                   </em>
                 </span>
-                <span className="drama-outline-ep-more" aria-hidden>
-                  <MoreHorizontal size={16} />
-                </span>
-              </button>
+                <div
+                  className="drama-outline-ep-more-wrap"
+                  ref={menuEpNumber === ep.episodeNumber ? menuRef : undefined}
+                >
+                  <button
+                    type="button"
+                    className="drama-outline-ep-more"
+                    aria-label={t('common.more')}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMenuEpNumber((prev) => (prev === ep.episodeNumber ? null : ep.episodeNumber))
+                    }}
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+                  {menuEpNumber === ep.episodeNumber ? (
+                    <div className="drama-outline-ep-menu" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="drama-outline-ep-menu-item"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setMenuEpNumber(null)
+                          setRenamingEpisodeNumber(ep.episodeNumber)
+                          setRenameDraft(ep.title || '')
+                        }}
+                      >
+                        <Pencil size={13} strokeWidth={2} />
+                        {t('drama.outlinePanel.renameEp')}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </li>
           )
         })}

@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, RectangleVertical } from 'lucide-react'
+import { useI18n } from '../../i18n'
 import {
   DRAMA_RATIO_OPTIONS,
   DRAMA_RES_OPTIONS,
@@ -38,6 +39,7 @@ export function DramaProjectOutputSettings({
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null)
   const [saving, setSaving] = useState(false)
 
+  const { t } = useI18n()
   const aspectRatio =
     scope === 'episode'
       ? readEpisodeAspectRatio(params, fallbackParams)
@@ -47,12 +49,18 @@ export function DramaProjectOutputSettings({
       ? readEpisodeResolution(params, fallbackParams)
       : readProjectResolution(params)
   const outputLabel = formatProjectOutputLabel(aspectRatio, resolution)
-  const scopeHint = scope === 'episode' ? '本集' : '项目统一'
-  const panelTitle = scope === 'episode' ? '分集画幅' : '项目画幅'
+  const scopeHint =
+    scope === 'episode'
+      ? t('drama.projectOutput.thisEpisode')
+      : t('drama.projectOutput.allEpisodes')
+  const panelTitle =
+    scope === 'episode'
+      ? t('drama.projectOutput.episodeRatio')
+      : t('drama.projectOutput.projectRatio')
   const panelNote =
     scope === 'episode'
-      ? '仅本集分镜使用；未单独设置时继承项目默认。修改后请重新生成各镜视频。'
-      : '全部分集共用同一规格，避免各镜比例/清晰度不一致导致无法拼接。'
+      ? t('drama.projectOutput.episodeNote')
+      : t('drama.projectOutput.projectNote')
 
   useLayoutEffect(() => {
     if (!open || !rootRef.current) {
@@ -131,8 +139,8 @@ export function DramaProjectOutputSettings({
         disabled={disabled || saving}
         title={
           scope === 'episode'
-            ? '本集画幅与清晰度；各镜生成后可直接拼接'
-            : '全项目统一画幅与清晰度，各分镜生成后可直接拼接'
+            ? t('drama.projectOutput.episodeTitle')
+            : t('drama.projectOutput.projectTitle')
         }
         onClick={() => setOpen((c) => !c)}
       >
@@ -148,7 +156,11 @@ export function DramaProjectOutputSettings({
               className="fc-gen-opt-panel drama-ep-opt-panel fc-gen-opt-panel--portal"
               style={panelStyle}
               role="dialog"
-              aria-label={scope === 'episode' ? '分集画幅与清晰度' : '项目画幅与清晰度'}
+              aria-label={
+                scope === 'episode'
+                  ? t('drama.projectOutput.episodeAria')
+                  : t('drama.projectOutput.projectAria')
+              }
             >
               <div className="fc-gen-opt-panel-title">{panelTitle}</div>
               <p className="drama-project-output-note">{panelNote}</p>

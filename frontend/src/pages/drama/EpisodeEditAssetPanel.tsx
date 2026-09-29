@@ -100,7 +100,13 @@ export function EpisodeEditAssetPanel({
             className={tab === item.key ? 'active' : ''}
             onClick={() => onTabChange(tab === item.key ? null : item.key)}
           >
-            {item.label}
+            {item.key === 'character'
+              ? t('drama.assetsStep.character')
+              : item.key === 'scene'
+              ? t('drama.assetsStep.scene')
+              : item.key === 'prop'
+              ? t('drama.assetsStep.prop')
+              : item.label}
           </button>
         ))}
       </div>

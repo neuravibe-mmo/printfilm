@@ -33,11 +33,11 @@ export function buildEpisodeDirItems(episodes: DramaEpisode[], t?: TFunction): D
     const fragCount = (ep.fragments || []).length
     const rawName = (ep.name || '').trim()
     const cleanTitle = isDefaultEpisodeTitle(rawName, epNo)
-      ? (t ? (epNo >= 1 ? t('drama.episodes.episode', { n: epNo }) : t('drama.episodes.episodeFallback', { id: ep.id })) : `Tập ${epNo || ep.id}`)
+      ? (t ? (epNo >= 1 ? t('drama.episodes.episode', { n: epNo, no: epNo }) : t('drama.episodes.episodeFallback', { id: ep.id })) : `Tập ${epNo || ep.id}`)
       : rawName
     return {
       id: ep.id,
-      label: epNo >= 1 ? (t ? t('drama.episodes.episode', { n: epNo }) : `Tập ${epNo}`) : `ID · ${ep.id}`,
+      label: epNo >= 1 ? (t ? t('drama.episodes.episode', { n: epNo, no: epNo }) : `Tập ${epNo}`) : `ID · ${ep.id}`,
       title: cleanTitle,
       meta: fragCount > 0 ? `${fragCount} ${t ? t('drama.episodesStep.shots') : 'phân cảnh'}` : undefined,
     }

@@ -1,5 +1,6 @@
 /** 分集编辑页辅助：资产分类、引用解析、标签文案 */
 import type { DramaAsset, DramaFragment } from '../../api/drama'
+import { getActiveLocale } from '../../i18n/detect'
 import {
   DRAMA_RATIO_OPTIONS,
   DRAMA_RES_OPTIONS,
@@ -11,6 +12,14 @@ import {
 
 export type AssetScope = 'episode' | 'series'
 export type AssetTab = 'character' | 'scene' | 'prop'
+
+export function getAssetTabLabel(key: AssetTab, locale?: string): string {
+  const loc = locale || getActiveLocale()
+  if (key === 'character') return loc === 'vi' ? 'Nhân vật' : loc === 'en' ? 'Characters' : '角色'
+  if (key === 'scene') return loc === 'vi' ? 'Cảnh quay' : loc === 'en' ? 'Scenes' : '场景'
+  if (key === 'prop') return loc === 'vi' ? 'Đạo cụ' : loc === 'en' ? 'Props' : '道具'
+  return key
+}
 
 export const ASSET_TABS: Array<{ key: AssetTab; label: string }> = [
   { key: 'character', label: '角色' },
@@ -69,9 +78,11 @@ export function buildFragmentRefStripItems(
     const preview = asset ? resolveUrl(asset.cover || asset.url) : ''
     const isCharacter = asset ? normalizeAssetTab(asset.type) === 'character' : false
     const voice = asset && readVoice ? readVoice(asset) : null
+    const loc = getActiveLocale()
+    const fallbackName = loc === 'vi' ? `Tài sản ${assetId}` : loc === 'en' ? `Asset ${assetId}` : `资产 ${assetId}`
     return {
       assetId,
-      name: asset?.name || `资产 ${assetId}`,
+      name: asset?.name || fallbackName,
       type: asset?.type || '',
       previewUrl: preview,
       isCharacter,
@@ -178,10 +189,20 @@ export function readFragmentVideoVersions(frag: DramaFragment | null | undefined
 }
 
 // 分镜队列徽标文案
-export function fragmentQueueBadgeLabel(status: string): string {
-  if (status === 'queued' || status === 'pending' || status === 'leased') return '排队'
-  if (status === 'running' || status === 'generating' || status === 'awaiting_poll') return '生成中'
-  if (status === 'failed') return '失败'
+export function fragmentQueueBadgeLabel(
+  status: string,
+  tOrLocale?: ((key: string, params?: any) => string) | string,
+): string {
+  const loc = (typeof tOrLocale === 'string' ? tOrLocale : null) || getActiveLocale()
+  if (status === 'queued' || status === 'pending' || status === 'leased') {
+    return loc === 'vi' ? 'Đang chờ' : loc === 'en' ? 'Queued' : '排队'
+  }
+  if (status === 'running' || status === 'generating' || status === 'awaiting_poll') {
+    return loc === 'vi' ? 'Đang tạo' : loc === 'en' ? 'Generating' : '生成中'
+  }
+  if (status === 'failed') {
+    return loc === 'vi' ? 'Thất bại' : loc === 'en' ? 'Failed' : '失败'
+  }
   return ''
 }
 
@@ -197,10 +218,35 @@ export function resolveFragmentDurationSec(
 }
 
 // 格式化片段标签
-export function formatFragLabel(index: number, durationSec: number | null | undefined) {
+export function formatFragLabel(
+  index: number,
+  durationSec: number | null | undefined,
+  tOrLocale?: ((key: string, params?: any) => string) | string,
+) {
   const n = String(index + 1).padStart(2, '0')
   const sec = durationSec && durationSec > 0 ? durationSec : 8
-  return `片段 ${n} · ${sec}s`
+  if (typeof tOrLocale === 'function') {
+    const prefix = tOrLocale('drama.episodeEdit.fragmentPrefix', 'Phân cảnh')
+    return `${prefix} ${n} · ${sec}s`
+  }
+  const loc = (typeof tOrLocale === 'string' ? tOrLocale : null) || getActiveLocale()
+  const prefix = loc === 'vi' ? 'Phân cảnh' : loc === 'en' ? 'Scene' : '片段'
+  return `${prefix} ${n} · ${sec}s`
+}
+
+// 格式化片段名称（无时长）
+export function formatFragName(
+  index: number,
+  tOrLocale?: ((key: string, params?: any) => string) | string,
+) {
+  const n = String(index + 1).padStart(2, '0')
+  if (typeof tOrLocale === 'function') {
+    const prefix = tOrLocale('drama.episodeEdit.fragmentPrefix', 'Phân cảnh')
+    return `${prefix} ${n}`
+  }
+  const loc = (typeof tOrLocale === 'string' ? tOrLocale : null) || getActiveLocale()
+  const prefix = loc === 'vi' ? 'Phân cảnh' : loc === 'en' ? 'Scene' : '片段'
+  return `${prefix} ${n}`
 }
 
 // 按本集/全集与分类筛选资产

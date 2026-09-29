@@ -24,8 +24,10 @@ import {
   type DramaFragment,
 } from '../../../api/drama'
 import Modal from '../../../components/ui/Modal'
+import { useI18n } from '../../../i18n'
 import {
   collectFragmentAssetIds,
+  getAssetTabLabel,
   normalizeAssetTab,
 } from '../dramaEpisodeEditUtils'
 import RequireAuth from '../RequireAuth'
@@ -70,6 +72,7 @@ export default function EpisodeStoryboardPage() {
 
 // 加载分集并渲染全屏故事板
 function EpisodeStoryboardInner() {
+  const { t, locale } = useI18n()
   const { projectId, episodeId } = useParams()
   const pid = Number(projectId)
   const eid = Number(episodeId)
@@ -143,7 +146,7 @@ function EpisodeStoryboardInner() {
         setAssets(assetList || [])
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : '加载分集失败')
+        if (!cancelled) setError(err instanceof Error ? err.message : t('common.loadFailed'))
       })
       .finally(() => {
         if (!cancelled) setBusy(false)
@@ -183,10 +186,10 @@ function EpisodeStoryboardInner() {
         setEpisode(saved)
         setFragments(saved.fragments || [])
         setDirty(false)
-        setStatus('已保存')
+        setStatus(t('common.saved'))
         window.setTimeout(() => setStatus(''), 1600)
       } catch (err) {
-        setError(err instanceof Error ? err.message : '保存失败')
+        setError(err instanceof Error ? err.message : t('common.saveFailed'))
       } finally {
         setBusy(false)
       }
@@ -306,17 +309,20 @@ function EpisodeStoryboardInner() {
           <button
             type="button"
             className="ep-storyboard-back"
-            aria-label="返回分集"
-            title="返回分集"
+            aria-label={t('drama.canvas.backToEpisode')}
+            title={t('drama.canvas.backToEpisode')}
             onClick={() => navigate(backHref)}
           >
             <ChevronLeft size={20} strokeWidth={1.8} />
           </button>
           <div className="ep-storyboard-title">
-            <strong>{episode?.name || `分集 ${eid}`}</strong>
+            <strong>
+              {episode?.name ||
+                (locale === 'vi' ? `Tập ${eid}` : locale === 'en' ? `Episode ${eid}` : `分集 ${eid}`)}
+            </strong>
             <span>
-              分镜故事板 · {fragments.length} 镜
-              {dirty ? ' · 未保存' : status ? ` · ${status}` : ''}
+              {t('drama.canvas.storyboardTitle')} · {t('drama.canvas.shotCount', { n: fragments.length })}
+              {dirty ? ` · ${t('drama.canvas.unsaved')}` : status ? ` · ${status}` : ''}
             </span>
           </div>
         </div>
@@ -326,7 +332,7 @@ function EpisodeStoryboardInner() {
             className="ep-storyboard-btn ghost"
             onClick={() => navigate(`/drama/projects/${pid}/canvas`)}
           >
-            资产画布
+            {t('drama.canvas.assetCanvas')}
           </button>
           <button
             type="button"
@@ -334,7 +340,7 @@ function EpisodeStoryboardInner() {
             disabled={busy || !dirty}
             onClick={() => void persistFragments(fragments)}
           >
-            {busy ? '保存中…' : '保存'}
+            {busy ? t('common.saving') : t('common.save')}
           </button>
         </div>
       </header>
@@ -342,8 +348,8 @@ function EpisodeStoryboardInner() {
       <div className="ep-storyboard-flow">
         {fragments.length === 0 && !busy ? (
           <div className="ep-storyboard-empty">
-            <strong>暂无分镜</strong>
-            <span>请先回分集编辑页添加分镜</span>
+            <strong>{t('drama.canvas.noShots')}</strong>
+            <span>{t('drama.canvas.noShotsHint')}</span>
           </div>
         ) : null}
         <ReactFlow
@@ -368,23 +374,25 @@ function EpisodeStoryboardInner() {
           </p>
         ) : null}
         {busy && fragments.length === 0 ? (
-          <p className="ep-storyboard-toast">加载中…</p>
+          <p className="ep-storyboard-toast">{t('common.loading')}</p>
         ) : null}
       </div>
 
       <Modal
         open={linkTargetFragId != null}
         onClose={() => setLinkTargetFragId(null)}
-        title="关联出境资产"
+        title={t('drama.canvas.linkAssetTitle')}
         size="lg"
       >
-        <p className="ep-storyboard-picker-hint">选择本镜出场的角色 / 场景 / 道具</p>
+        <p className="ep-storyboard-picker-hint">{t('drama.canvas.pickAssetHint')}</p>
         {pickerAssets.length === 0 ? (
-          <p className="ep-storyboard-picker-empty">暂无可选资产，请先到资产画布生成</p>
+          <p className="ep-storyboard-picker-empty">{t('drama.canvas.noPickerAssets')}</p>
         ) : (
           <div className="ep-storyboard-picker-grid">
             {pickerAssets.map((asset) => {
               const cover = resolveDramaAssetPreviewUrl(asset)
+              const fallbackName =
+                locale === 'vi' ? `Tài sản ${asset.id}` : locale === 'en' ? `Asset ${asset.id}` : `资产 ${asset.id}`
               return (
                 <button
                   key={asset.id}
@@ -395,8 +403,8 @@ function EpisodeStoryboardInner() {
                   <div className="ep-storyboard-picker-thumb">
                     {cover ? <img src={cover} alt="" /> : <span>{(asset.name || '?')[0]}</span>}
                   </div>
-                  <strong>{asset.name || `资产 ${asset.id}`}</strong>
-                  <em>{normalizeAssetTab(asset.type || '') || asset.type || '资产'}</em>
+                  <strong>{asset.name || fallbackName}</strong>
+                  <em>{getAssetTabLabel(normalizeAssetTab(asset.type || '') || 'character', locale)}</em>
                 </button>
               )
             })}
