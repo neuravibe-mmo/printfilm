@@ -3,10 +3,10 @@ import { throwApiError } from './lib/apiError'
 function defaultApiBase() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
     const { protocol, hostname } = window.location
-    // Same host as Vite; API listens on 8000 for LAN + local
-    return `${protocol}//${hostname}:8000`
+    // Same host as Vite; API listens on 8001 for LAN + local
+    return `${protocol}//${hostname}:8001`
   }
-  return 'http://127.0.0.1:8000'
+  return 'http://127.0.0.1:8001'
 }
 
 // Empty string = same-origin (nginx proxies /api). Undefined = LAN default :8000.

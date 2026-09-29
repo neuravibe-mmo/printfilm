@@ -177,6 +177,8 @@ def is_local_static_url(url: str | None) -> bool:
         "kepu.printtfilm.com",
         "127.0.0.1:8000",
         "localhost:8000",
+        "127.0.0.1:8001",
+        "localhost:8001",
     ):
         for scheme in ("https://", "http://"):
             if url.startswith(f"{scheme}{host}/static/"):

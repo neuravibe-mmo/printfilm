@@ -5,9 +5,9 @@ import { throwApiError } from '../lib/apiError'
 function defaultApiBase() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
     const { protocol, hostname } = window.location
-    return `${protocol}//${hostname}:8000`
+    return `${protocol}//${hostname}:8001`
   }
-  return 'http://127.0.0.1:8000'
+  return 'http://127.0.0.1:8001'
 }
 
 const _viteApiBase = import.meta.env.VITE_API_BASE

@@ -154,7 +154,7 @@ class Settings(BaseSettings):
     epay_notify_url: str = ""
     epay_return_url: str = ""
 
-    public_base_url: str = "http://127.0.0.1:8000"
+    public_base_url: str = "http://127.0.0.1:8001"
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"
 
@@ -162,7 +162,7 @@ class Settings(BaseSettings):
     tos_bucket: str = ""
     tos_access_key: str = ""
     tos_secret_key: str = ""
-    cdn_base: str = "http://localhost:8000/static"
+    cdn_base: str = "http://localhost:8001/static"
 
     # Aliyun OSS — 成片/分镜上传；FFmpeg 仍读本地文件
     oss_enabled: bool = False
@@ -179,6 +179,8 @@ class Settings(BaseSettings):
     oss_upload_queue: str = "oss"
 
     cors_origins: str = (
+        "http://localhost:5180,http://127.0.0.1:5180,"
+        "http://localhost:5181,http://127.0.0.1:5181,"
         "http://localhost:5173,http://127.0.0.1:5173,"
         "http://localhost:5174,http://127.0.0.1:5174"
     )

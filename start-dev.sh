@@ -178,7 +178,7 @@ trap cleanup SIGINT SIGTERM EXIT
 (
     cd "$PROJECT_ROOT/backend"
     source .venv/bin/activate
-    exec uvicorn app.main:app --reload --port 8000
+    exec uvicorn app.main:app --reload --port 8001
 ) &
 BACKEND_PID=$!
 
@@ -201,11 +201,11 @@ sleep 3
 echo -e "\n${BOLD}${GREEN}================================================================${NC}"
 echo -e "${BOLD}${GREEN}   PRINTFILM đã khởi chạy thành công tất cả dịch vụ!            ${NC}"
 echo -e "${BOLD}${GREEN}================================================================${NC}"
-echo -e " ${BOLD}User Web:${NC}        ${BLUE}http://localhost:5173${NC}"
-echo -e " ${BOLD}Admin Web:${NC}       ${BLUE}http://localhost:5174${NC}"
-echo -e " ${BOLD}Backend API:${NC}     ${BLUE}http://localhost:8000${NC}"
-echo -e " ${BOLD}Swagger Docs:${NC}    ${BLUE}http://localhost:8000/docs${NC}"
-echo -e " ${BOLD}Health Check:${NC}    ${BLUE}http://localhost:8000/api/health${NC}"
+echo -e " ${BOLD}User Web:${NC}        ${BLUE}http://localhost:5180${NC}"
+echo -e " ${BOLD}Admin Web:${NC}       ${BLUE}http://localhost:5181${NC}"
+echo -e " ${BOLD}Backend API:${NC}     ${BLUE}http://localhost:8001${NC}"
+echo -e " ${BOLD}Swagger Docs:${NC}    ${BLUE}http://localhost:8001/docs${NC}"
+echo -e " ${BOLD}Health Check:${NC}    ${BLUE}http://localhost:8001/api/health${NC}"
 echo -e "${BOLD}${GREEN}================================================================${NC}"
 echo -e "${YELLOW}Nhấn [Ctrl + C] bất kỳ lúc nào để dừng toàn bộ hệ thống.${NC}\n"
 

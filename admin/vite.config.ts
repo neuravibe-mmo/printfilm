@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
-// Vite config: React + Tailwind, admin on 5174 with /api proxy
+// Vite config: React + Tailwind, admin on 5181 with /api proxy
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -15,14 +15,14 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174,
+    port: 5181,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8000",
+        target: "http://127.0.0.1:8001",
         changeOrigin: true,
       },
       "/static": {
-        target: "http://127.0.0.1:8000",
+        target: "http://127.0.0.1:8001",
         changeOrigin: true,
       },
     },
