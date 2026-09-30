@@ -264,6 +264,10 @@ export const zhDrama = {
     episodeEdit: {
       fragmentPrefix: '片段',
       scriptPlaceholder: '输入画面描述、对白、旁白；键入 @ 引用资产或插入时长…',
+      convertCuesToVi: '转换为越南语标签',
+      convertAllCuesToVi: '全集标签转为越南语',
+      convertCuesSuccess: '已转换分镜标签为越南语',
+      convertAllCuesSuccess: '全集分镜标签已成功转为越南语',
       linkAsset: '关联出境资产',
       assetsUnit: '资产',
       noClip: '暂无成片',

@@ -23,9 +23,33 @@ NARRATION_PREFIX = "【旁白·自然语速·同步字幕】"
 LEGACY_NARRATION_PREFIX = "【旁白·慢速清晰·同步字幕】"
 DIALOGUE_PREFIX = "【对白·慢速清晰·同步字幕】"
 VISUAL_PREFIX = "【画面·无配音仅环境音】"
+VISUAL_PREFIX_VI = "【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】"
+VISUAL_PREFIX_EN = "【Visual · Ambient sound only, no voiceover】"
+
+VISUAL_PREFIXES = (
+    VISUAL_PREFIX,
+    VISUAL_PREFIX_VI,
+    VISUAL_PREFIX_EN,
+    "【画面·无配音仅环境音】",
+    "【画面·仅环境音】",
+    "【画面·",
+    "【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】",
+    "【Hình ảnh · Không lồng tiếng chỉ có âm thanh môi trường】",
+    "【Hình ảnh · Chỉ âm thanh môi trường】",
+    "【Hình ảnh ·",
+    "【Visual · Ambient sound only, no voiceover】",
+    "【Visual · Ambient sound only】",
+    "【Visual ·",
+    "【空镜·可仅环境音与 BGM】",
+    "【空镜·",
+    "【Cảnh trống·",
+    "【Empty shot·",
+)
+
 EMPTY_SHOT_PREFIX = "【空镜·可仅环境音与 BGM】"
 SUBTITLE_CUE = "【字幕：后期叠旁白字幕，简体中文逐句同步】"
 DRAMA_SUBTITLE_CUE = "【字幕：底部居中·简体中文·逐句轮换·与口播同步】"
+DRAMA_SUBTITLE_CUE_VI = "【Phụ đề: Căn giữa phía dưới · Tiếng Việt · Luân chuyển từng câu · Đồng bộ lời thoại】"
 # 历史 cue，提交前统一替换为现行文案
 LEGACY_KEPU_SUBTITLE_CUES = (
     "【字幕：全程简体中文字幕，旁白逐句同步烧录】",
@@ -35,18 +59,25 @@ LEGACY_DRAMA_SUBTITLE_CUES = (
     "【字幕：底部居中·简体中文】",
 )
 DEFAULT_BGM_MOOD = "贴合内容的轻量配乐，情绪平稳，不抢旁白"
+DEFAULT_BGM_MOOD_VI = "Nhạc nền nhẹ nhàng phù hợp nội dung, cảm xúc êm đềm, không lấn át lời dẫn"
 SEEDANCE_PRODUCTION_SECTION_HEADER = "【强制约束：音频、字幕与配乐】"
 
-# 空镜/景别冒号标签：正文若以此开头则不得配音、不得烧字幕
+# 空镜/景别冒号标签：正文若以此开头则不得配音、不得烧字幕（支持多语言）
 VISUAL_SHOT_LABEL_RE = re.compile(
     r"^(?:"
     r"空镜|画面|远景|近景|中景|全景|特写|大特写|"
     r"跟拍|俯拍|仰拍|航拍|推镜|拉镜|摇镜|环境|镜头|动作|转场|闪回|"
-    r"建立镜头|气氛镜头"
-    r")\s*[：:]"
+    r"建立镜头|气氛镜头|"
+    r"Cảnh|Cảnh trống|Toàn cảnh|Cận cảnh|Trung cảnh|Đặc tả|Đại đặc tả|"
+    r"Góc quay|Góc rộng|Góc nhìn|Theo dõi|Từ trên xuống|Từ dưới lên|Quay trên không|"
+    r"Đẩy máy|Kéo máy|Lướt máy|Môi trường|Hành động|Chuyển cảnh|Hồi tưởng|Khung hình|"
+    r"Visual|Shot|Wide shot|Close-up|Extreme close-up|Medium shot|Pan|Tilt|Zoom"
+    r")\s*[：:]",
+    re.IGNORECASE,
 )
 VOICE_CUE_PREFIX_RE = re.compile(
-    r"^【(?:对白|旁白|内心独白)[^】]*】\s*"
+    r"^【(?:对白|旁白|内心独白|Thoại|Lời dẫn|Độc thoại nội tâm|Dialogue|Narration|Monologue)[^】]*】\s*",
+    re.IGNORECASE,
 )
 # 角色（vo，低落）。——只有舞台指示、没有台词
 STAGE_ONLY_SPEAKER_RE = re.compile(
@@ -59,19 +90,32 @@ SPEAKER_DIALOGUE_RE = re.compile(
     r"(?P<paren>[（(][^）)]+[）)])?"
     r"\s*[：:]\s*(?P<text>.+)$"
 )
-GENERIC_NARRATOR_NAMES = frozenset({"旁白", "解说", "narrator", "旁白a", "旁白b", "vo", "os"})
+GENERIC_NARRATOR_NAMES = frozenset({
+    "旁白", "解说", "narrator", "旁白a", "旁白b", "vo", "os",
+    "lời dẫn", "người dẫn", "thuyết minh", "voiceover",
+})
 _TIME_OR_DURATION_PREFIX_RE = re.compile(
     r"^(?:@duration:\d+|\d{2}:\d{2}-\d{2}:\d{2})\s*"
 )
 
 PRODUCTION_META_PREFIXES = (
     "【字幕",
+    "【Phụ đề",
+    "【Subtitle",
     "【BGM",
+    "【Nhạc nền",
+    "【Music",
     "【配乐",
     "【人物介绍",
+    "【Giới thiệu nhân vật",
+    "【Character intro",
     "【片头",
+    "【Intro",
     "【背景介绍",
+    "【Background",
     "【强制约束",
+    "【Ràng buộc",
+    "【Constraints",
 )
 
 
@@ -86,14 +130,19 @@ def _strip_voice_cue_prefix(line: str) -> str:
 
 
 def is_visual_description_body(text: str) -> bool:
-    # 判断正文是否为纯画面/空镜描写（不含配音意图）
+    # 判断正文是否为纯画面/空镜描写（不含配音意图，支持多语言标签）
     body = _strip_voice_cue_prefix(text or "").strip()
-    body = re.sub(r"^【(?:画面|空镜)[^】]*】\s*", "", body).strip()
+    body = re.sub(r"^【(?:画面|空镜|Hình ảnh|Cảnh trống|Visual|Shot)[^】]*】\s*", "", body, flags=re.IGNORECASE).strip()
     if not body:
         return False
     if VISUAL_SHOT_LABEL_RE.match(body):
         return True
-    if body.startswith("空镜") or body.startswith("△") or body.startswith("Δ"):
+    if (
+        body.startswith("空镜")
+        or body.startswith("Cảnh trống")
+        or body.startswith("△")
+        or body.startswith("Δ")
+    ):
         return True
     return False
 
@@ -209,12 +258,86 @@ def rewrite_character_vo_voice_lines(content: str) -> str:
     return "\n".join(out)
 
 
+def normalize_cues_for_seedance(content: str) -> str:
+    """将越南语/英语生产 cue 标签规范化为 ByteDance Seedance 识别的标准中文标签，
+    保证 Seedance 2.5 模型精准识别【画面·无配音仅环境音】等指令，不把画面描写当口播念出。
+    """
+    if not content:
+        return content or ""
+    out: list[str] = []
+    for raw in content.replace("\r\n", "\n").split("\n"):
+        line = raw.strip()
+        if not line:
+            out.append(raw)
+            continue
+        # 画面 cue
+        if (
+            line.startswith("【Hình ảnh")
+            or line.startswith("【Visual")
+            or line.startswith("【Cảnh trống")
+        ):
+            cue_body = re.sub(
+                r"^【(?:Hình ảnh|Visual|Cảnh trống)[^】]*】\s*",
+                "",
+                line,
+                flags=re.IGNORECASE,
+            ).strip()
+            out.append(f"{VISUAL_PREFIX}{cue_body}")
+            continue
+        # 对白 cue
+        if line.startswith("【Thoại") or line.startswith("【Dialogue"):
+            cue_body = re.sub(
+                r"^【(?:Thoại|Dialogue)[^】]*】\s*",
+                "",
+                line,
+                flags=re.IGNORECASE,
+            ).strip()
+            out.append(f"{DIALOGUE_PREFIX}{cue_body}")
+            continue
+        # 旁白 cue
+        if line.startswith("【Lời dẫn") or line.startswith("【Narration"):
+            cue_body = re.sub(
+                r"^【(?:Lời dẫn|Narration)[^】]*】\s*",
+                "",
+                line,
+                flags=re.IGNORECASE,
+            ).strip()
+            out.append(f"{NARRATION_PREFIX}{cue_body}")
+            continue
+        # 内心独白 cue
+        if line.startswith("【Độc thoại nội tâm") or line.startswith("【Monologue"):
+            cue_body = re.sub(
+                r"^【(?:Độc thoại nội tâm|Monologue)[^】]*】\s*",
+                "",
+                line,
+                flags=re.IGNORECASE,
+            ).strip()
+            out.append(f"【内心独白·同步字幕】{cue_body}")
+            continue
+        # 字幕 cue
+        if line.startswith("【Phụ đề") or line.startswith("【Subtitle"):
+            out.append(DRAMA_SUBTITLE_CUE)
+            continue
+        # BGM / Nhạc nền cue
+        if line.startswith("【Nhạc nền：") or line.startswith("【Nhạc nền:"):
+            mood = re.sub(r"^【Nhạc nền[：:]\s*", "", line).removesuffix("】").strip()
+            out.append(f"【BGM：{mood}】")
+            continue
+        if line.startswith("【BGM:"):
+            mood = re.sub(r"^【BGM:\s*", "", line).removesuffix("】").strip()
+            out.append(f"【BGM：{mood}】")
+            continue
+        out.append(raw)
+    return "\n".join(out)
+
+
 def rewrite_misclassified_visual_voice_lines(content: str) -> str:
     """
     纠正「空镜：…」等被误打成对白/旁白前缀的行。
     供 Seedance 提交前兜底，使旧分镜也能按画面-only 约束生成。
     """
     text = normalize_character_intro_cue(normalize_drama_subtitle_cue(content))
+    text = normalize_cues_for_seedance(text)
     out: list[str] = []
     for raw in text.replace("\r\n", "\n").split("\n"):
         line = raw.strip()
@@ -240,7 +363,12 @@ def script_has_narration_cue(content: str) -> bool:
             continue
         if is_visual_description_body(line):
             continue
-        if NARRATION_PREFIX in line or line.startswith("【旁白"):
+        if (
+            NARRATION_PREFIX in line
+            or line.startswith("【旁白")
+            or line.startswith("【Lời dẫn")
+            or line.startswith("【Narration")
+        ):
             return True
     return False
 
@@ -253,7 +381,12 @@ def script_has_dialogue_cue(content: str) -> bool:
             continue
         if is_visual_description_body(line):
             continue
-        if DIALOGUE_PREFIX in line or line.startswith("【对白"):
+        if (
+            DIALOGUE_PREFIX in line
+            or line.startswith("【对白")
+            or line.startswith("【Thoại")
+            or line.startswith("【Dialogue")
+        ):
             return True
     return False
 
@@ -265,13 +398,13 @@ def script_is_drama_mixed(segment_script: str) -> bool:
         return True
     if script_has_dialogue_cue(content):
         return True
-    if DRAMA_SUBTITLE_CUE in content:
+    if DRAMA_SUBTITLE_CUE in content or DRAMA_SUBTITLE_CUE_VI in content:
         return True
     if "仅标记段落同步" in content:
         return True
-    if "逐句轮换" in content:
+    if "逐句轮换" in content or "Luân chuyển từng câu" in content:
         return True
-    if "对白旁白同步" in content:
+    if "对白旁白同步" in content or "Đồng bộ lời thoại" in content:
         return True
     return False
 
@@ -281,9 +414,12 @@ def script_has_visual_only_cue(content: str) -> bool:
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
         if (
-            line.startswith(VISUAL_PREFIX)
-            or line.startswith("【画面·")
+            any(line.startswith(pfx) for pfx in VISUAL_PREFIXES)
+            or line.startswith("【画面")
+            or line.startswith("【Hình ảnh")
+            or line.startswith("【Visual")
             or line.startswith("【空镜")
+            or line.startswith("【Cảnh trống")
             or EMPTY_SHOT_PREFIX in line
             or is_visual_description_body(line)
         ):
@@ -384,11 +520,15 @@ def parse_peiyue_mood(line: str) -> str:
 
 
 def script_bgm_mood(segment_script: str) -> str:
-    """从【BGM：】或【配乐】取配乐；没有则从正文推断。"""
+    """从【BGM：】、【Nhạc nền:】或【配乐】取配乐；没有则从正文推断。"""
     for raw in (segment_script or "").replace("\r\n", "\n").split("\n"):
         line = _strip_time_or_duration_prefix(raw)
-        if line.startswith("【BGM："):
-            mood = line.removeprefix("【BGM：").removesuffix("】").strip()
+        if line.startswith("【BGM：") or line.startswith("【BGM:"):
+            mood = re.sub(r"^【BGM[：:]\s*", "", line).removesuffix("】").strip()
+            if mood:
+                return mood
+        if line.startswith("【Nhạc nền：") or line.startswith("【Nhạc nền:"):
+            mood = re.sub(r"^【Nhạc nền[：:]\s*", "", line).removesuffix("】").strip()
             if mood:
                 return mood
         peiyue = parse_peiyue_mood(raw)

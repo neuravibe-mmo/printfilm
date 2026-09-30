@@ -191,16 +191,25 @@ const STRIP_PREFIX_MAP: Array<[string, string]> = [
   ['【旁白·慢速清晰·同步字幕】', '【旁白·慢速清晰】'],
   ['【旁白·自然语速·同步字幕】', '【旁白·自然语速】'],
   ['【内心独白·同步字幕】', '【内心独白】'],
+  ['【Thoại · Chậm rõ · Đồng bộ phụ đề】', '【Thoại · Chậm rõ】'],
+  ['【Lời dẫn · Chậm rõ · Đồng bộ phụ đề】', '【Lời dẫn · Chậm rõ】'],
+  ['【Độc thoại nội tâm · Đồng bộ phụ đề】', '【Độc thoại nội tâm】'],
 ]
 
-// 判断是否为字幕 cue 行（含历史文案）。
+// 判断是否为字幕 cue 行（含历史文案与多语言）。
 function isSubtitleCueLine(line: string): boolean {
   const trimmed = line.trim()
-  if (!trimmed.startsWith('【字幕')) return false
+  if (
+    !trimmed.startsWith('【字幕') &&
+    !trimmed.startsWith('【Phụ đề') &&
+    !trimmed.startsWith('【Subtitle')
+  ) {
+    return false
+  }
   return (
     trimmed === DRAMA_SUBTITLE_CUE ||
     LEGACY_SUBTITLE_CUES.includes(trimmed) ||
-    /同步|烧录|底部居中/.test(trimmed)
+    /同步|烧录|底部居中|Đồng bộ|Phụ đề|Căn giữa/.test(trimmed)
   )
 }
 
@@ -259,7 +268,9 @@ export function applySubtitlePromptsToContent(content: string): string {
     next.push(line)
   }
   if (!hasCue) {
-    const insertAt = next.findIndex((line) => line.trim().startsWith('【BGM'))
+    const insertAt = next.findIndex(
+      (line) => line.trim().startsWith('【BGM') || line.trim().startsWith('【Nhạc nền'),
+    )
     if (insertAt >= 0) next.splice(insertAt, 0, DRAMA_SUBTITLE_CUE)
     else next.unshift(DRAMA_SUBTITLE_CUE)
   }

@@ -452,6 +452,10 @@ export const enDrama = {
     "episodeEdit": {
         "fragmentPrefix": "Scene",
         "scriptPlaceholder": "Enter scene description, dialogue, narration; type @ to reference assets or duration…",
+        "convertCuesToVi": "Localize cues to Vietnamese",
+        "convertAllCuesToVi": "Localize all episode cues",
+        "convertCuesSuccess": "Prompt cues localized to Vietnamese",
+        "convertAllCuesSuccess": "All episode prompt cues localized to Vietnamese",
         "linkAsset": "Link Asset",
         "assetsUnit": "assets",
         "noClip": "No video clip yet",

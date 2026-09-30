@@ -125,7 +125,14 @@ export function parseSegmentScript(script: string | undefined | null): {
     .filter(Boolean)
 
   for (const line of lines) {
-    if (line.startsWith('【字幕') || line.startsWith('【BGM')) {
+    if (
+      line.startsWith('【字幕') ||
+      line.startsWith('【Phụ đề') ||
+      line.startsWith('【Subtitle') ||
+      line.startsWith('【BGM') ||
+      line.startsWith('【Nhạc nền') ||
+      line.startsWith('【Music')
+    ) {
       cues.push(line)
       continue
     }
@@ -145,12 +152,21 @@ export function parseSegmentScript(script: string | undefined | null): {
   return { cues, beats }
 }
 
-const NARRATION_LINE_PREFIX = /^【旁白[^】]*】/
+const NARRATION_LINE_PREFIX = /^【(?:旁白|Lời dẫn|Narration)[^】]*】/i
 
 /** 脚本行是否为旁白口播（字幕 cue 含「旁白」二字但不算） */
 export function isNarrationScriptLine(line: string): boolean {
   const stripped = line.trim()
-  if (stripped.startsWith('【字幕') || stripped.startsWith('【BGM')) return false
+  if (
+    stripped.startsWith('【字幕') ||
+    stripped.startsWith('【Phụ đề') ||
+    stripped.startsWith('【Subtitle') ||
+    stripped.startsWith('【BGM') ||
+    stripped.startsWith('【Nhạc nền') ||
+    stripped.startsWith('【Music')
+  ) {
+    return false
+  }
   return NARRATION_LINE_PREFIX.test(stripped)
 }
 
@@ -179,7 +195,11 @@ export function firstVisualFromScript(script: string | undefined | null): string
       !stripped ||
       stripped.startsWith('@duration:') ||
       stripped.startsWith('【字幕') ||
+      stripped.startsWith('【Phụ đề') ||
+      stripped.startsWith('【Subtitle') ||
       stripped.startsWith('【BGM') ||
+      stripped.startsWith('【Nhạc nền') ||
+      stripped.startsWith('【Music') ||
       isNarrationScriptLine(stripped)
     ) {
       continue
@@ -222,7 +242,15 @@ export function replaceFirstVisualInScript(script: string, visual: string): stri
   let cueEnd = 0
   for (let i = 0; i < lines.length; i += 1) {
     const stripped = lines[i].trim()
-    if (stripped.startsWith('【字幕') || stripped.startsWith('【BGM') || !stripped) {
+    if (
+      stripped.startsWith('【字幕') ||
+      stripped.startsWith('【Phụ đề') ||
+      stripped.startsWith('【Subtitle') ||
+      stripped.startsWith('【BGM') ||
+      stripped.startsWith('【Nhạc nền') ||
+      stripped.startsWith('【Music') ||
+      !stripped
+    ) {
       cueEnd = i + 1
       continue
     }
@@ -235,7 +263,11 @@ export function replaceFirstVisualInScript(script: string, visual: string): stri
       stripped &&
       !stripped.startsWith('@duration:') &&
       !stripped.startsWith('【字幕') &&
+      !stripped.startsWith('【Phụ đề') &&
+      !stripped.startsWith('【Subtitle') &&
       !stripped.startsWith('【BGM') &&
+      !stripped.startsWith('【Nhạc nền') &&
+      !stripped.startsWith('【Music') &&
       !isNarrationScriptLine(stripped)
     ) {
       out.push(text)

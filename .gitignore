@@ -69,6 +69,7 @@ backend/*.db
 backend/.celery_autoscale/
 backend/static/generated/
 backend/static/voice_previews/
+backend/static/mock/
 backend/frontend/
 
 # Frontend build

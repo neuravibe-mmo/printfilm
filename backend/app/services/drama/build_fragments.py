@@ -7,8 +7,10 @@ from typing import Any
 
 from app.services.seedance_segments import (
     DRAMA_SUBTITLE_CUE,
+    DRAMA_SUBTITLE_CUE_VI,
     DIALOGUE_PREFIX,
     VISUAL_PREFIX,
+    VISUAL_PREFIX_VI,
     classify_voice_body,
     is_production_meta_line,
 )
@@ -373,14 +375,31 @@ def _coalesce_timed_blocks_to_budget(
     return packed
 
 
+def is_vietnamese_text(text: str) -> bool:
+    if not text:
+        return False
+    return bool(
+        re.search(
+            r"[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]",
+            text,
+            re.IGNORECASE,
+        )
+    )
+
+
 def _is_visual_description_line(line: str) -> bool:
     # 空镜/景别/纯画面描写：不得配音、不得烧字幕
     trimmed = (line or "").strip()
     if not trimmed:
         return False
-    if trimmed.startswith("【画面") or trimmed.startswith(VISUAL_PREFIX):
+    if (
+        trimmed.startswith("【画面")
+        or trimmed.startswith("【Hình ảnh")
+        or trimmed.startswith(VISUAL_PREFIX)
+        or trimmed.startswith(VISUAL_PREFIX_VI)
+    ):
         return True
-    if trimmed.startswith("【空镜"):
+    if trimmed.startswith("【空镜") or trimmed.startswith("【Cảnh trống"):
         return True
     if trimmed.startswith("△") or trimmed.startswith("Δ"):
         return True
@@ -389,7 +408,7 @@ def _is_visual_description_line(line: str) -> bool:
         return False
     if VISUAL_SHOT_LABEL_RE.match(body):
         return True
-    if body.startswith("空镜") or body.startswith("△"):
+    if body.startswith("空镜") or body.startswith("Cảnh trống") or body.startswith("△"):
         return True
     return False
 
@@ -401,8 +420,8 @@ def _split_dialogue_action_line(line: str) -> list[str]:
         return []
     dialogue_prefix = ""
     body = trimmed
-    if trimmed.startswith("【对白"):
-        match = re.match(r"^(【对白[^】]*】)\s*(.*)$", trimmed)
+    if trimmed.startswith("【对白") or trimmed.startswith("【Thoại"):
+        match = re.match(r"^(【(?:对白|Thoại)[^】]*】)\s*(.*)$", trimmed)
         if match:
             dialogue_prefix = match.group(1)
             body = match.group(2).strip()
@@ -412,7 +431,7 @@ def _split_dialogue_action_line(line: str) -> list[str]:
     speaker = action_match.group("speaker").strip()
     action = action_match.group("action").strip()
     text = action_match.group("text").strip()
-    if speaker == "旁白" or VOICE_TYPE_ACTION_RE.match(action):
+    if speaker == "旁白" or speaker == "Lời dẫn" or VOICE_TYPE_ACTION_RE.match(action):
         return [trimmed]
     visual = f"{speaker}（{action}）。"
     dialogue = f"{speaker}：{text}"
@@ -421,13 +440,13 @@ def _split_dialogue_action_line(line: str) -> list[str]:
     return [visual, dialogue]
 
 
-def _expand_narrative_lines(line: str) -> list[str]:
+def _expand_narrative_lines(line: str, is_vi: bool = False) -> list[str]:
     """叙事行展开：含括号舞台指示的对白拆成多行后再打生产前缀。"""
     return [
         formatted
         for part in _split_dialogue_action_line(line)
         if part.strip()
-        for formatted in [_format_narrative_line(part)]
+        for formatted in [_format_narrative_line(part, is_vi=is_vi)]
         if formatted.strip()
     ]
 
@@ -436,6 +455,7 @@ def rewrite_dialogue_action_lines(content: str) -> str:
     """提交前兜底：纠正对白行内误塞的舞台指示（兼容旧分镜）。"""
     from app.services.seedance_segments import is_production_meta_line
 
+    is_vi = is_vietnamese_text(content or "")
     out: list[str] = []
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
@@ -450,53 +470,65 @@ def rewrite_dialogue_action_lines(content: str) -> str:
             out.append(raw)
             continue
         for part in split:
-            out.append(_format_narrative_line(part))
+            out.append(_format_narrative_line(part, is_vi=is_vi))
     return "\n".join(out)
 
 
-def _format_narrative_line(line: str) -> str:
+def _format_narrative_line(line: str, is_vi: bool = False) -> str:
     # 将场记行标成画面/旁白/对白；空镜类必须走无配音前缀
     trimmed = line.strip()
     if not trimmed:
         return trimmed
-    if trimmed.startswith("【画面") or trimmed.startswith("【旁白") or trimmed.startswith("【对白"):
+    visual_pfx = VISUAL_PREFIX_VI if is_vi else VISUAL_PREFIX
+    dialogue_pfx = "【Thoại · Chậm rõ · Đồng bộ phụ đề】" if is_vi else DIALOGUE_PREFIX
+    inner_pfx = "【Độc thoại nội tâm · Đồng bộ phụ đề】" if is_vi else "【内心独白·同步字幕】"
+    narration_pfx = "【Lời dẫn · Chậm rõ · Đồng bộ phụ đề】" if is_vi else "【旁白·慢速清晰·同步字幕】"
+
+    if (
+        trimmed.startswith("【画面")
+        or trimmed.startswith("【Hình ảnh")
+        or trimmed.startswith("【旁白")
+        or trimmed.startswith("【Lời dẫn")
+        or trimmed.startswith("【对白")
+        or trimmed.startswith("【Thoại")
+    ):
         # 已打标但仍可能是误判的「对白·空镜：…」→ 纠正为画面
         body = _strip_production_prefix(trimmed)
         kind = classify_voice_body(body)
         if kind == "visual" or (
-            (trimmed.startswith("【对白") or trimmed.startswith("【旁白"))
+            (trimmed.startswith("【对白") or trimmed.startswith("【Thoại") or trimmed.startswith("【旁白") or trimmed.startswith("【Lời dẫn"))
             and _is_visual_description_line(trimmed)
         ):
-            return f"{VISUAL_PREFIX}{body}"
-        if kind == "dialogue" and trimmed.startswith("【旁白"):
-            return f"{DIALOGUE_PREFIX}{body}"
-        if kind == "inner" and not trimmed.startswith("【内心独白"):
-            return f"【内心独白·同步字幕】{body}"
+            return f"{visual_pfx}{body}"
+        if kind == "dialogue" and (trimmed.startswith("【旁白") or trimmed.startswith("【Lời dẫn")):
+            return f"{dialogue_pfx}{body}"
+        if kind == "inner" and not (trimmed.startswith("【内心独白") or trimmed.startswith("【Độc thoại nội tâm")):
+            return f"{inner_pfx}{body}"
         return trimmed
-    if trimmed.startswith("【空镜"):
-        return f"【空镜·可仅环境音与 BGM】{trimmed}"
+    if trimmed.startswith("【空镜") or trimmed.startswith("【Cảnh trống"):
+        return f"{visual_pfx}{trimmed}"
     if _is_visual_description_line(trimmed):
         if trimmed.startswith("△") or trimmed.startswith("Δ"):
             body = trimmed.replace("Δ", "△", 1) if trimmed.startswith("Δ") else trimmed
-            return f"{VISUAL_PREFIX}{body}"
-        return f"{VISUAL_PREFIX}{trimmed}"
+            return f"{visual_pfx}{body}"
+        return f"{visual_pfx}{trimmed}"
     kind = classify_voice_body(trimmed)
     if kind == "visual":
-        return f"{VISUAL_PREFIX}{trimmed}"
+        return f"{visual_pfx}{trimmed}"
     if kind == "dialogue":
-        return f"{DIALOGUE_PREFIX}{trimmed}"
+        return f"{dialogue_pfx}{trimmed}"
     if kind == "inner":
-        return f"【内心独白·同步字幕】{trimmed}"
+        return f"{inner_pfx}{trimmed}"
     if kind == "narration":
-        return f"【旁白·慢速清晰·同步字幕】{trimmed}"
+        return f"{narration_pfx}{trimmed}"
     # 角色对白：排除空镜/景别等冒号标签，避免「空镜：…」被当成「角色名：台词」
     if re.match(r"^[^（(:：\n]{1,16}[（(][^）)]*[）)]\s*[：:].+", trimmed):
-        return f"{DIALOGUE_PREFIX}{trimmed}"
+        return f"{dialogue_pfx}{trimmed}"
     colon_speaker = re.match(r"^([^：:\n]{1,16})[：:](.+)$", trimmed)
     if colon_speaker and not VISUAL_SHOT_LABEL_RE.match(trimmed):
-        return f"{DIALOGUE_PREFIX}{trimmed}"
+        return f"{dialogue_pfx}{trimmed}"
     # 纯画面/动作描述：明确禁止配音，避免被全局字幕 cue 误读为旁白
-    return f"{VISUAL_PREFIX}{trimmed}"
+    return f"{visual_pfx}{trimmed}"
 
 
 def _speakable_body(line: str) -> str:
@@ -570,8 +602,36 @@ def _format_location_opener(
     return location_line if location_line.endswith("。") else f"{location_line}。"
 
 
-def _infer_bgm_mood(hints: str) -> str:
+def _infer_bgm_mood(hints: str, is_vi: bool = False) -> str:
     text = hints or ""
+    if is_vi:
+        rules_vi = [
+            (
+                r"chiến|đánh|giết|tử|huyết|bom|đạn|nguy|loạn|khủng hoảng|áp bức",
+                "Trầm lắng căng thẳng, nhịp trống dồn dập, tăng cường cảm giác áp bách và nguy cơ",
+            ),
+            (
+                r"hoàng|triều|vua|cung|điện|thần|sử thi|lễ",
+                "Trang nghiêm sử thi, dàn dây làm nền, khí thế hào hùng nhưng không lấn át",
+            ),
+            (
+                r"đêm|tối|bí ẩn|nguy hiểm|âm u|mật",
+                "Huyền bí kỳ ảo, tần số thấp làm nền, cảm giác khoảng lặng rõ nét",
+            ),
+            (
+                r"nước|sông|biển|mưa|lũ|ngập",
+                "Âm nhạc môi trường uyển chuyển, tiếng nước hòa quyện cùng dàn dây",
+            ),
+            (
+                r"sáng|bình minh|nắng|ấm|hy vọng|xuân",
+                "Dịu dàng khoáng đạt, tràn đầy hy vọng, chủ đạo bởi piano hoặc dàn dây",
+            ),
+        ]
+        for pattern, mood in rules_vi:
+            if re.search(pattern, text, re.IGNORECASE):
+                return mood
+        return "Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện, cảm xúc biến chuyển theo khung hình"
+
     rules = [
         (r"刑|斩|战|杀|怒|崩|劫|乱", "低沉紧张、鼓点渐强，烘托压迫与危机感"),
         (r"殿|宫|朝|帝|神|礼", "庄重史诗、弦乐铺底，气势恢宏但不抢戏"),
@@ -862,12 +922,18 @@ def _build_production_cues(
     character_intro_lines: list[str],
     *,
     include_subtitles: bool = True,
+    is_vi: bool = False,
 ) -> list[str]:
     # 字幕 / BGM / 人物介绍前置提示（字幕 cue 不含「旁白」字样，避免 Seedance 整镜念白）
     hint = " ".join(filter(None, [location_line or "", *narrative_lines[:3]]))
-    lines = [f"【BGM：{_infer_bgm_mood(hint)}；音量低于人声】"]
-    if include_subtitles:
-        lines.insert(0, DRAMA_SUBTITLE_CUE)
+    if is_vi:
+        lines = [f"【BGM: {_infer_bgm_mood(hint, is_vi=True)}；âm lượng nhỏ hơn giọng nói】"]
+        if include_subtitles:
+            lines.insert(0, DRAMA_SUBTITLE_CUE_VI)
+    else:
+        lines = [f"【BGM：{_infer_bgm_mood(hint, is_vi=False)}；音量低于人声】"]
+        if include_subtitles:
+            lines.insert(0, DRAMA_SUBTITLE_CUE)
     lines.extend(character_intro_lines)
     return lines
 
@@ -960,6 +1026,7 @@ def plan_fragments_from_scene(
     """
     # introduced_names 本剧已介绍过的角色
     introduced_names = introduced if introduced is not None else set()
+    is_vi = is_vietnamese_text(body)
     location_line, narrative_lines = _strip_screenplay_meta(body)
     # intro_candidates 本场可介绍的重要角色（须有简短描述）
     intro_candidates = (
@@ -976,6 +1043,7 @@ def plan_fragments_from_scene(
         narrative_lines,
         [],
         include_subtitles=include_subtitles,
+        is_vi=is_vi,
     )
 
     # timed_blocks 待打包的 (时长, 文本行列表)
@@ -999,7 +1067,7 @@ def plan_fragments_from_scene(
     )
     for line in narrative_lines:
         raw = _inject_character_mentions(line, character_bindings)
-        for formatted in _expand_narrative_lines(raw):
+        for formatted in _expand_narrative_lines(raw, is_vi=is_vi):
             if not include_subtitles:
                 formatted = _strip_subtitle_instruction(formatted)
             line_dur = _clamp_duration(_estimate_line_duration(formatted))
@@ -1014,6 +1082,7 @@ def plan_fragments_from_scene(
             narrative_lines,
             _build_character_intro_lines(to_intro),
             include_subtitles=include_subtitles,
+            is_vi=is_vi,
         )
         for b in to_intro:
             introduced_names.add(str(b["name"]))
@@ -1180,7 +1249,8 @@ def repair_fragment_timed_layout(content: str, *, duration_sec: int | None = Non
         stripped = ln.strip()
         if is_production_meta_line(stripped) or is_opening_cue_line(stripped):
             continue
-        formatted = stripped if stripped.startswith("【") else _format_narrative_line(stripped)
+        is_vi = is_vietnamese_text(text)
+        formatted = stripped if stripped.startswith("【") else _format_narrative_line(stripped, is_vi=is_vi)
         line_dur = _clamp_duration(_estimate_line_duration(formatted))
         if line_dur <= 0:
             continue

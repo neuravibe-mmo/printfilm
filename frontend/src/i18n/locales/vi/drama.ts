@@ -251,6 +251,10 @@ export const viDrama = {
     episodeEdit: {
       fragmentPrefix: 'Phân cảnh',
       scriptPlaceholder: 'Nhập mô tả cảnh, lời thoại, lời dẫn; gõ @ để chèn tài nguyên hoặc thời lượng…',
+      convertCuesToVi: 'Chuyển thẻ sang Tiếng Việt',
+      convertAllCuesToVi: 'Chuyển toàn bộ thẻ sang Tiếng Việt',
+      convertCuesSuccess: 'Đã chuyển đổi các thẻ kịch bản sang Tiếng Việt',
+      convertAllCuesSuccess: 'Đã chuyển đổi toàn bộ thẻ phân cảnh sang Tiếng Việt',
       linkAsset: 'Liên kết tài sản',
       assetsUnit: 'tài sản',
       noClip: 'Chưa có video cảnh',

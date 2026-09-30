@@ -34,6 +34,7 @@ import {
   videoJobId,
   type DramaGenJob,
 } from '../../lib/dramaGenQueue'
+import { hasChineseCues, localizeScriptCues } from '../../lib/dramaCueI18n'
 import {
   collectDramaGenerateGateIssues,
   formatDramaGateMessage,
@@ -1446,6 +1447,29 @@ function EpisodeEditInner() {
           >
             {busy && status.includes(t('drama.episodeEdit.shotKeyword')) ? t('drama.episodeEdit.shotting') : t('drama.episodeEdit.aiReplan')}
           </button>
+          {fragments.some((f) => hasChineseCues(f.content || '')) && (
+            <button
+              type="button"
+              className="drama-ep-btn-ghost"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              onClick={async () => {
+                const nextFragments = fragments.map((f) => ({
+                  ...f,
+                  content: localizeScriptCues(f.content || '', 'vi'),
+                }))
+                setFragments(nextFragments)
+                try {
+                  await dramaApi.saveFragments(eid, nextFragments)
+                  setStatus(t('drama.episodeEdit.convertAllCuesSuccess'))
+                } catch {
+                  setStatus(t('drama.episodeEdit.convertAllCuesSuccess'))
+                }
+              }}
+              title={t('drama.episodeEdit.convertAllCuesToVi')}
+            >
+              🌐 {t('drama.episodeEdit.convertAllCuesToVi')}
+            </button>
+          )}
           {/* 一键生成：暂时隐藏，恢复时去掉 false && */}
           {false && (
             <button
@@ -1510,20 +1534,38 @@ function EpisodeEditInner() {
                 )}
               </p>
             </div>
-            <label className="drama-ep-duration">
-              {t('drama.episodeEdit.duration')}
-              <input
-                type="number"
-                min={4}
-                max={15}
-                value={selectedDuration}
-                disabled={!editing && !selected}
-                onChange={(e) =>
-                  updateSelected({ duration_sec: Number(e.target.value) || 8 })
-                }
-              />
-              s
-            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {hasChineseCues(selected?.content || '') && (
+                <button
+                  type="button"
+                  className="drama-ep-btn drama-ep-btn-subtle"
+                  style={{ fontSize: '0.8rem', padding: '4px 10px', height: 'auto', whiteSpace: 'nowrap' }}
+                  onClick={() => {
+                    if (!selected) return
+                    const localized = localizeScriptCues(selected.content || '', 'vi')
+                    updateSelected({ content: localized })
+                    setStatus(t('drama.episodeEdit.convertCuesSuccess'))
+                  }}
+                  title={t('drama.episodeEdit.convertCuesToVi')}
+                >
+                  🌐 {t('drama.episodeEdit.convertCuesToVi')}
+                </button>
+              )}
+              <label className="drama-ep-duration">
+                {t('drama.episodeEdit.duration')}
+                <input
+                  type="number"
+                  min={4}
+                  max={15}
+                  value={selectedDuration}
+                  disabled={!editing && !selected}
+                  onChange={(e) =>
+                    updateSelected({ duration_sec: Number(e.target.value) || 8 })
+                  }
+                />
+                s
+              </label>
+            </div>
           </div>
 
           <EpisodeEditReferenceStrip items={selectedRefItems} onSelect={focusLinkedAsset} />

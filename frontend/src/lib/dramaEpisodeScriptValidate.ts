@@ -15,21 +15,49 @@ import { DRAMA_VOICE_BINDING_ENABLED } from './dramaVoiceBinding'
 
 /** 漫剧字幕 cue（与后端 DRAMA_SUBTITLE_CUE 一致） */
 export const DRAMA_SUBTITLE_CUE = '【字幕：底部居中·简体中文·逐句轮换·与口播同步】'
+export const DRAMA_SUBTITLE_CUE_VI =
+  '【Phụ đề: Căn giữa phía dưới · Tiếng Việt · Luân chuyển từng câu · Đồng bộ lời thoại】'
 
 /** 画面无配音前缀 */
 export const VISUAL_PREFIX = '【画面·无配音仅环境音】'
+export const VISUAL_PREFIX_VI = '【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】'
 
 /** 对白前缀 */
 export const DIALOGUE_PREFIX = '【对白·慢速清晰·同步字幕】'
+export const DIALOGUE_PREFIX_VI = '【Thoại · Chậm rõ · Đồng bộ phụ đề】'
 
 /** 旁白前缀 */
 export const DRAMA_NARRATION_PREFIX = '【旁白·慢速清晰·同步字幕】'
+export const DRAMA_NARRATION_PREFIX_VI = '【Lời dẫn · Chậm rõ · Đồng bộ phụ đề】'
 
-// 空镜 / 景别冒号标签（与后端 VISUAL_SHOT_LABEL_RE 对齐）
-const VISUAL_SHOT_LABEL_RE =
-  /^(?:空镜|画面|远景|近景|中景|全景|特写|大特写|跟拍|俯拍|仰拍|航拍|推镜|拉镜|摇镜|环境|镜头|动作|转场|闪回|建立镜头|气氛镜头)\s*[：:]/
+// 空镜 / 景别冒号标签（与后端 VISUAL_SHOT_LABEL_RE 对齐，支持中越英多语言）
+export const VISUAL_SHOT_LABEL_RE =
+  /^(?:空镜|画面|远景|近景|中景|全景|特写|大特写|跟拍|俯拍|仰拍|航拍|推镜|拉镜|摇镜|环境|镜头|动作|转场|闪回|建立镜头|气氛镜头|Cảnh|Cảnh trống|Toàn cảnh|Cận cảnh|Trung cảnh|Đặc tả|Đại đặc tả|Góc quay|Góc rộng|Góc nhìn|Theo dõi|Từ trên xuống|Từ dưới lên|Quay trên không|Đẩy máy|Kéo máy|Lướt máy|Môi trường|Hành động|Chuyển cảnh|Hồi tưởng|Khung hình|Visual|Shot|Wide shot|Close-up|Medium shot|Extreme close-up|Pan|Tilt|Zoom)\s*[：:]/i
 
-const VOICE_CUE_PREFIX_RE = /^【(?:对白|旁白|内心独白)[^】]*】\s*/
+export const VOICE_CUE_PREFIX_RE =
+  /^【(?:对白|旁白|内心独白|Thoại|Lời dẫn|Độc thoại nội tâm|Dialogue|Narration|Monologue)[^】]*】\s*/i
+
+export function isProductionMetaLine(line: string): boolean {
+  const trimmed = (line || '').trim()
+  return (
+    trimmed.startsWith('【字幕') ||
+    trimmed.startsWith('【Phụ đề') ||
+    trimmed.startsWith('【Subtitle') ||
+    trimmed.startsWith('【BGM') ||
+    trimmed.startsWith('【Nhạc nền') ||
+    trimmed.startsWith('【Music') ||
+    trimmed.startsWith('【人物介绍') ||
+    trimmed.startsWith('【Giới thiệu nhân vật') ||
+    trimmed.startsWith('【Character intro') ||
+    trimmed.startsWith('【片头') ||
+    trimmed.startsWith('【Intro') ||
+    trimmed.startsWith('【背景介绍') ||
+    trimmed.startsWith('【Background') ||
+    trimmed.startsWith('【强制约束') ||
+    trimmed.startsWith('【Ràng buộc') ||
+    trimmed.startsWith('【Constraints')
+  )
+}
 
 export type DramaScriptIssue = {
   level: 'error' | 'warn'
@@ -89,10 +117,17 @@ function listFragmentAssetIds(frag: DramaFragment): number[] {
 // 判断正文是否为纯画面 / 空镜描写
 export function isVisualDescriptionBody(text: string): boolean {
   let body = stripVoiceCuePrefix((text || '').trim())
-  body = body.replace(/^【(?:画面|空镜)[^】]*】\s*/, '').trim()
+  body = body.replace(/^【(?:画面|空镜|Hình ảnh|Cảnh trống|Visual|Shot)[^】]*】\s*/i, '').trim()
   if (!body) return false
   if (VISUAL_SHOT_LABEL_RE.test(body)) return true
-  if (body.startsWith('空镜') || body.startsWith('△') || body.startsWith('Δ')) return true
+  if (
+    body.startsWith('空镜') ||
+    body.startsWith('Cảnh trống') ||
+    body.startsWith('△') ||
+    body.startsWith('Δ')
+  ) {
+    return true
+  }
   return false
 }
 
@@ -101,16 +136,10 @@ function scriptLikelyNeedsVoice(content: string): boolean {
   for (const raw of (content || '').replace(/\r\n/g, '\n').split('\n')) {
     const line = raw.trim()
     if (!line || line.startsWith('@duration:')) continue
-    if (
-      line.startsWith('【字幕') ||
-      line.startsWith('【BGM') ||
-      line.startsWith('【人物介绍') ||
-      line.startsWith('【片头') ||
-      line.startsWith('【背景介绍')
-    ) {
+    if (isProductionMetaLine(line)) {
       continue
     }
-    if (line.startsWith('【对白') || line.startsWith('【旁白') || line.startsWith('【内心独白')) {
+    if (VOICE_CUE_PREFIX_RE.test(line)) {
       if (!isVisualDescriptionBody(line)) return true
       continue
     }
@@ -161,14 +190,14 @@ export function validateDramaFragmentScript(content: string): DramaScriptIssue[]
   for (const raw of (content || '').replace(/\r\n/g, '\n').split('\n')) {
     const line = raw.trim()
     if (!line || line.startsWith('@duration:')) continue
-    if (line.startsWith('【字幕') || line.startsWith('【BGM') || line.startsWith('【人物介绍')) {
+    if (isProductionMetaLine(line)) {
       continue
     }
     if (VOICE_CUE_PREFIX_RE.test(line) && isVisualDescriptionBody(line)) {
       issues.push({
         level: 'error',
         message:
-          '检测到「空镜/景别」被标成对白或旁白（会口播并烧字幕）。请改为「【画面·无配音仅环境音】」或「空镜：…」纯画面行',
+          '检测到「空镜/景别」被标成对白或旁白（会口播并烧字幕）。请改为「【画面·无配音仅环境音】」或「【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】」纯画面行',
       })
       break
     }
