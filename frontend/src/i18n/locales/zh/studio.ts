@@ -252,6 +252,7 @@ export const zhStudio = {
       pageTitle: '创建项目',
       selectTemplate: '选择模板',
       searchPlaceholder: '搜索模板…',
+      templateCategory: '模板分类',
       general: '通用',
       inputContent: '输入内容',
       projectName: '项目名称',

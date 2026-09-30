@@ -52,6 +52,8 @@ export const viShell = {
     edit: 'Chỉnh sửa',
     unnamed: 'Chưa đặt tên',
     playFailed: 'Phát thất bại',
+    recommended: 'Đề xuất',
+    gotIt: 'Đã hiểu',
   },
   dialog: {
     confirmTitle: 'Xác nhận',

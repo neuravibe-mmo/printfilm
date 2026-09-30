@@ -13,6 +13,7 @@ export const enDrama = {
         "deleteProject": "Delete Project",
         "renameProject": "Rename Project",
         "enterStoryboardFailed": "Failed to enter storyboard",
+        "enteringStoryboard": "Entering storyboard…",
         "saveTitleFailed": "Failed to save title",
         "invalidProjectId": "Invalid project ID",
         "projectNotFound": "Project not found",
@@ -144,7 +145,15 @@ export const enDrama = {
         "mentionNode": "Reference Node",
         "noMatchingNodes": "No matching nodes · Create character/scene first",
         "invalidProjectId": "Invalid project ID",
-        "skillOptimizeFailed": "Skill optimization failed"
+        "skillOptimizeFailed": "Skill optimization failed",
+        "loadCanvasFailed": "Failed to load canvas",
+        "createAssetFailed": "Failed to create asset",
+        "nodeNotFound": "Node does not exist",
+        "noAvailableImage": "Selected asset has no available image",
+        "promptRequired": "Please enter a prompt",
+        "videoNodeUseVideoGen": "Please use video generation for video nodes",
+        "imageGenTimeout": "Image generation timed out, please retry",
+        "videoGenTimeout": "Video generation timed out, please retry"
     },
     "skills": {
         "selectAll": "Select All",
@@ -706,7 +715,10 @@ export const enDrama = {
         "back": "Back",
         "shotKeyword": "phân cảnh",
         "shotting": "Đang phân cảnh…",
-        "aiReplan": "AI lập kế hoạch lại phân cảnh",
+        "aiReplan": "AI Re-plan Shots",
+        "startReplan": "Start Planning",
+        "skillUsed": "Skill used this time",
+        "noSkillHint": "No Skills yet, upload a .md file",
         "tipAtRef": "Phần trên hiển thị liên kết cảnh này; gõ @ để tham chiếu tài sản hoặc chèn nhãn thời lượng ·",
         "duration": "Thời lượng",
         "history": "Lịch sử phiên bản",
@@ -929,8 +941,21 @@ export const enDrama = {
             "fragment_video": "Tạo video cảnh",
             "fragment_audio": "Tạo lồng tiếng cảnh",
             "episode_compose": "Ghép tập",
-            "asset_image": "Tạo ảnh tài nguyên"
-        }
+            "asset_image": "Generate asset image"
+        },
+        "hintQueued": "Task queued, waiting for scheduler.",
+        "hintVideo": "Generating shot video. Cover and video will update automatically upon completion.",
+        "hintImage": "Generating image. It will be saved back to assets upon completion.",
+        "failReason": "Failure Reason",
+        "taskProgress": "Task Progress",
+        "taskDetail": "Task Details",
+        "parsingError": "Parsing error…",
+        "suggestionLabel": "Suggestion:",
+        "adminTopupNotice": "Admin needs to top up the TokenFree Seedream account.",
+        "adminTopupNoticeFull": "Admin needs to top up the TokenFree Seedream account; user top-up will not resolve this.",
+        "collapseRawError": "Collapse raw error",
+        "viewRawError": "View raw error",
+        "doneTip": "Video saved to shot. You can preview it on the timeline."
     },
     "assetDetail": {
         "genLabel": "Generate Asset",
@@ -1123,9 +1148,15 @@ export const enDrama = {
         "noAssets": "Phân loại này chưa có tài sản",
         "paginationLabel": "Phân trang thư viện tài sản",
         "importFromLib": "Nhập từ thư viện tài sản",
-        "importToProject": "Nhập vào dự án này",
-        "genVoice": "Tạo giọng",
-        "category": "phân loại"
+        "genVoice": "Generate Voice",
+        "category": "category",
+        "previewImage": "Image preview",
+        "voiceInvalidUrl": "Invalid audio preview URL",
+        "voicePlayFailed": "Audio playback failed",
+        "voiceListen": "Preview voice",
+        "voiceListenTitle": "Preview: {label}",
+        "voiceStop": "Stop",
+        "voiceListenBtn": "Preview"
     },
     "voiceBind": {
         "title": "Voice Binding",

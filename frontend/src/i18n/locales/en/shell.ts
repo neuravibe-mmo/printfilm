@@ -53,6 +53,8 @@ export const enShell = {
     edit: 'Edit',
     unnamed: 'Unnamed',
     playFailed: 'Playback failed',
+    recommended: 'Recommended',
+    gotIt: 'Got it',
   },
   dialog: {
     confirmTitle: 'Please confirm',

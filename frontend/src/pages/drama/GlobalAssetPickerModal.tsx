@@ -5,6 +5,7 @@ import { DRAMA_VOICE_BINDING_ENABLED } from '../../lib/dramaVoiceBinding'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import Modal from '../../components/ui/Modal'
 import { useI18n } from '../../i18n'
+import { getActiveLocale } from '../../i18n/detect'
 import './drama.css'
 
 export type GlobalAssetTabKey = 'character' | 'scene' | 'prop' | 'voice' | 'all'
@@ -231,9 +232,17 @@ export async function importGlobalAssetToProject(
   projectId: number,
   source: DramaAsset,
 ): Promise<DramaAsset> {
+  const loc = getActiveLocale()
   if (!source.url && !source.cover) {
-    throw new Error('所选资产没有可用图片')
+    throw new Error(
+      loc === 'vi'
+        ? 'Tài sản đã chọn không có hình ảnh khả dụng'
+        : loc === 'en'
+          ? 'Selected asset has no available image'
+          : '所选资产没有可用图片',
+    )
   }
+  const fallbackName = loc === 'vi' ? 'Chưa đặt tên' : loc === 'en' ? 'Unnamed' : '未命名'
   const params = {
     ...(source.params || {}),
     importedFromAssetId: source.id,
@@ -243,7 +252,7 @@ export async function importGlobalAssetToProject(
     project_id: projectId,
     type: source.type || 'none',
     asset_type: source.asset_type || 'image',
-    name: source.name || '未命名',
+    name: source.name || fallbackName,
     cover: source.cover || source.url,
     url: source.url || source.cover,
     params,

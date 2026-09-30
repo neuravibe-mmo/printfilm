@@ -1,7 +1,7 @@
-/** 角色音色试听按钮（卡片内联播放，不弹窗） */
 import { useEffect, useRef, useState } from 'react'
 import { Pause, Volume2 } from 'lucide-react'
 import { resolveDramaMediaUrl } from '../../api/drama'
+import { useI18n } from '../../i18n'
 
 type Props = {
   url: string
@@ -25,6 +25,7 @@ export function CharacterVoicePreviewButton({
   variant = 'button',
   onError,
 }: Props) {
+  const { t } = useI18n()
   const [playing, setPlaying] = useState(false)
   const src = resolveDramaMediaUrl(url)
   const stopRef = useRef<() => void>(() => undefined)
@@ -49,7 +50,7 @@ export function CharacterVoicePreviewButton({
 
   function handlePreview() {
     if (!src) {
-      onError?.('试听地址无效')
+      onError?.(t('drama.assetsStep.voiceInvalidUrl'))
       return
     }
     if (playing) {
@@ -67,7 +68,7 @@ export function CharacterVoicePreviewButton({
     setPlaying(true)
     void sharedAudio.play().catch(() => {
       setPlaying(false)
-      onError?.('播放失败')
+      onError?.(t('drama.assetsStep.voicePlayFailed'))
     })
   }
 
@@ -91,10 +92,10 @@ export function CharacterVoicePreviewButton({
         e.stopPropagation()
         handlePreview()
       }}
-      title={label ? `试听：${label}` : '试听音色'}
+      title={label ? t('drama.assetsStep.voiceListenTitle', { label }) : t('drama.assetsStep.voiceListen')}
     >
       {playing ? <Pause size={14} strokeWidth={1.8} aria-hidden /> : <Volume2 size={14} strokeWidth={1.8} aria-hidden />}
-      {playing ? '停止' : '试听'}
+      {playing ? t('drama.assetsStep.voiceStop') : t('drama.assetsStep.voiceListenBtn')}
     </button>
   )
 }

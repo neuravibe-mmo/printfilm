@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { Edge, Node } from '@xyflow/react'
 import { dramaApi } from '../../../api/drama'
+import { getActiveLocale } from '../../../i18n/detect'
 import { CANVAS_AUTO_SAVE_MS, type CanvasAssetNodeData } from './canvasTypes'
 
 type UseCanvasAutoSaveArgs = {
@@ -60,7 +61,9 @@ export function useCanvasAutoSave({
         })
         onSaved()
       } catch (err) {
-        onError(err instanceof Error ? err.message : '自动保存失败')
+        const loc = getActiveLocale()
+        const fallbackMsg = loc === 'vi' ? 'Tự động lưu thất bại' : loc === 'en' ? 'Auto-save failed' : '自动保存失败'
+        onError(err instanceof Error ? err.message : fallbackMsg)
       } finally {
         savingRef.current = false
       }

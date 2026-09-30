@@ -8,6 +8,7 @@ import { dramaApi, resolveDramaMediaUrl, type DramaAsset, type DramaProject } fr
 import Modal from '../../components/ui/Modal'
 import type { VoiceBinding } from './CharacterVoiceBindModal'
 import { useI18n } from '../../i18n'
+import { getActiveLocale } from '../../i18n/detect'
 
 type Props = {
   project: DramaProject
@@ -24,7 +25,9 @@ function readNarrationVoiceBinding(project: DramaProject): VoiceBinding | null {
   const data = raw as Record<string, unknown>
   const sourceAssetId = typeof data.sourceAssetId === 'number' ? data.sourceAssetId : null
   const url = typeof data.url === 'string' ? data.url : ''
-  const label = typeof data.label === 'string' ? data.label : '旁白音色'
+  const fallbackLabel =
+    getActiveLocale() === 'vi' ? 'Giọng lời dẫn' : getActiveLocale() === 'en' ? 'Narrator voice' : '旁白音色'
+  const label = typeof data.label === 'string' ? data.label : fallbackLabel
   if (!sourceAssetId || !url) return null
   return {
     sourceAssetId,

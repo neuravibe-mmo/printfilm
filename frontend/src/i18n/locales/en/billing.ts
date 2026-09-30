@@ -86,6 +86,8 @@ export const enBilling = {
       tokensUnit: 'tokens',
       paginationAria: 'Charge records pagination',
     },
+    consumptionAlert: 'Spending Alert',
+    goToTopup: 'Go to Top-up →',
   },
 
   apiKeys: {

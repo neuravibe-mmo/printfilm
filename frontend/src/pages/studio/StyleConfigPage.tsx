@@ -472,7 +472,7 @@ export default function StyleConfigPage() {
                   >
                     <div className="pf-model-opt-title">
                       <span>{m.label}</span>
-                      {m.recommended ? <span className="pf-model-badge">推荐</span> : null}
+                      {m.recommended ? <span className="pf-model-badge">{t('common.recommended')}</span> : null}
                     </div>
                     <div className="pf-model-opt-desc">{m.description}</div>
                     <div className="pf-model-opt-provider">TokenFree</div>

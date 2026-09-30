@@ -248,6 +248,7 @@ export const viStudio = {
       pageTitle: 'Tạo dự án',
       selectTemplate: 'Chọn template',
       searchPlaceholder: 'Tìm template…',
+      templateCategory: 'Phân loại mẫu',
       general: 'Chung',
       inputContent: 'Nhập nội dung',
       projectName: 'Tên dự án',

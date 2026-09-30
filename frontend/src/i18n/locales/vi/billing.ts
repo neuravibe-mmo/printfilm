@@ -92,6 +92,8 @@ export const viBilling = {
       tokensUnit: 'tokens',
       paginationAria: 'Phân trang lịch sử trừ phí',
     },
+    consumptionAlert: 'Nhắc nhở tiêu dùng',
+    goToTopup: 'Nạp tiền ngay →',
   },
 
   // API Keys panel

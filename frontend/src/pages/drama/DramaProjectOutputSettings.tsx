@@ -179,7 +179,7 @@ export function DramaProjectOutputSettings({
                 ))}
               </div>
               <div className="fc-gen-opt-panel-title" style={{ marginTop: 12 }}>
-                清晰度
+                {t('drama.projectSettings.resolution')}
               </div>
               <div className="fc-gen-chip-row">
                 {DRAMA_RES_OPTIONS.map((r) => (

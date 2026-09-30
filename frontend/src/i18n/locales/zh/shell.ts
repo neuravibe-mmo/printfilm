@@ -52,6 +52,8 @@ export const zhShell = {
     edit: '编辑',
     unnamed: '未命名',
     playFailed: '播放失败',
+    recommended: '推荐',
+    gotIt: '知道了',
   },
   dialog: {
     confirmTitle: '请确认',

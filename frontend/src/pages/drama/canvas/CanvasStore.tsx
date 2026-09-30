@@ -45,6 +45,40 @@ import {
 } from './canvasTypes'
 import { useCanvasAutoSave } from './useCanvasAutoSave'
 import { CanvasStoreContext, useCanvasStore as useCanvasStoreBase } from './canvasStoreContext'
+import { getActiveLocale } from '../../../i18n/detect'
+
+type CanvasErrorKey =
+  | 'loadCanvasFailed'
+  | 'createAssetFailed'
+  | 'nodeNotFound'
+  | 'noAvailableImage'
+  | 'promptRequired'
+  | 'videoNodeUseVideoGen'
+  | 'imageGenTimeout'
+  | 'videoGenTimeout'
+
+function canvasError(key: CanvasErrorKey): string {
+  const loc = getActiveLocale()
+  const map: Record<CanvasErrorKey, Record<string, string>> = {
+    loadCanvasFailed: { vi: 'Tải canvas thất bại', en: 'Failed to load canvas', zh: '加载画布失败' },
+    createAssetFailed: { vi: 'Tạo tài sản thất bại', en: 'Failed to create asset', zh: '创建资产失败' },
+    nodeNotFound: { vi: 'Node không tồn tại', en: 'Node does not exist', zh: '节点不存在' },
+    noAvailableImage: { vi: 'Tài sản đã chọn không có hình ảnh khả dụng', en: 'Selected asset has no available image', zh: '所选资产没有可用图片' },
+    promptRequired: { vi: 'Vui lòng nhập prompt', en: 'Please enter a prompt', zh: '请输入提示词' },
+    videoNodeUseVideoGen: { vi: 'Node video vui lòng sử dụng chức năng tạo video', en: 'Please use video generation for video nodes', zh: '视频节点请使用视频生成' },
+    imageGenTimeout: { vi: 'Tạo hình ảnh quá thời gian, vui lòng thử lại', en: 'Image generation timed out, please retry', zh: '生图超时，请重试' },
+    videoGenTimeout: { vi: 'Tạo video quá thời gian, vui lòng thử lại', en: 'Video generation timed out, please retry', zh: '生视频超时，请重试' },
+  }
+  return (map[key] || {})[loc] || map[key].vi
+}
+
+function getKindLabel(kind: string): string {
+  const loc = getActiveLocale()
+  if (kind === 'character') return loc === 'vi' ? 'Nhân vật' : loc === 'en' ? 'Character' : '角色'
+  if (kind === 'scene') return loc === 'vi' ? 'Bối cảnh' : loc === 'en' ? 'Scene' : '场景'
+  if (kind === 'image') return loc === 'vi' ? 'Hình ảnh' : loc === 'en' ? 'Image' : '图片'
+  return loc === 'vi' ? 'Tài sản' : loc === 'en' ? 'Asset' : '资产'
+}
 
 type CanvasStoreValue = {
   projectId: number
@@ -202,7 +236,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       })
       .catch((err) => {
         if (cancelled) return
-        setErrorMessage(err instanceof Error ? err.message : '加载画布失败')
+        setErrorMessage(err instanceof Error ? err.message : canvasError('loadCanvasFailed'))
         readyRef.current = true
       })
       .finally(() => {
@@ -348,7 +382,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
         })
         assetId = asset.id
       } catch (err) {
-        setErrorMessage(err instanceof Error ? err.message : '创建资产失败')
+        setErrorMessage(err instanceof Error ? err.message : canvasError('createAssetFailed'))
         return
       }
 
@@ -393,7 +427,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const ensureNodeAsset = useCallback(
     async (nodeId: string) => {
       const node = nodesRef.current.find((n) => n.id === nodeId)
-      if (!node) throw new Error('节点不存在')
+      if (!node) throw new Error(canvasError('nodeNotFound'))
       if (typeof node.data.assetId === 'number' && node.data.assetId > 0) {
         return node.data.assetId
       }
@@ -440,11 +474,11 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const applyLibraryMediaToNode = useCallback(
     async (nodeId: string, source: DramaAsset) => {
       if (!source.url && !source.cover) {
-        throw new Error('所选资产没有可用图片')
+        throw new Error(canvasError('noAvailableImage'))
       }
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
-      if (!node) throw new Error('节点不存在')
+      if (!node) throw new Error(canvasError('nodeNotFound'))
       const assetId = await ensureNodeAsset(nodeId)
       const promptHint = readEditableVisualPrompt(source)
       const nextName = (source.name || '').trim() || node.data.label
@@ -534,11 +568,11 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const generateNodeImage = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<ImageGenerationOptions>) => {
       const trimmed = prompt.trim()
-      if (!trimmed) throw new Error('请输入提示词')
+      if (!trimmed) throw new Error(canvasError('promptRequired'))
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
-      if (!node) throw new Error('节点不存在')
-      if (node.data.kind === 'video') throw new Error('视频节点请使用视频生成')
+      if (!node) throw new Error(canvasError('nodeNotFound'))
+      if (node.data.kind === 'video') throw new Error(canvasError('videoNodeUseVideoGen'))
 
       setNodes((current) =>
         current.map((n) =>
@@ -555,14 +589,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           const refId = Number(idStr)
           const ref = nodesRef.current.find((n) => n.data.assetId === refId)
           if (!ref) return token
-          const kindLabel =
-            ref.data.kind === 'character'
-              ? '角色'
-              : ref.data.kind === 'scene'
-                ? '场景'
-                : ref.data.kind === 'image'
-                  ? '图片'
-                  : '资产'
+          const kindLabel = getKindLabel(ref.data.kind)
           return `${kindLabel}「${ref.data.label}」`
         })
         const latest = await enqueueDramaImageGen({
@@ -603,7 +630,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           },
         })
         const mediaUrl = latest.url || latest.cover || ''
-        if (!mediaUrl) throw new Error('生图超时，请重试')
+        if (!mediaUrl) throw new Error(canvasError('imageGenTimeout'))
         setNodes((current) =>
           current.map((n) =>
             n.id === nodeId
@@ -652,10 +679,10 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const generateNodeVideo = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<VideoGenerationOptions>) => {
       const trimmed = prompt.trim()
-      if (!trimmed) throw new Error('请输入提示词')
+      if (!trimmed) throw new Error(canvasError('promptRequired'))
       pushSnapshot()
       const node = nodesRef.current.find((n) => n.id === nodeId)
-      if (!node) throw new Error('节点不存在')
+      if (!node) throw new Error(canvasError('nodeNotFound'))
 
       setNodes((current) =>
         current.map((n) =>
@@ -690,7 +717,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           referenceAssetIds: collectIncomingAssetIds(nodeId),
         })
         const mediaUrl = resolveDramaMediaUrl(latest.url || latest.cover || '')
-        if (!mediaUrl) throw new Error('生视频超时，请重试')
+        if (!mediaUrl) throw new Error(canvasError('videoGenTimeout'))
         setNodes((current) =>
           current.map((n) =>
             n.id === nodeId

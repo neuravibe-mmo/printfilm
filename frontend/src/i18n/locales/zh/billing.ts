@@ -86,6 +86,8 @@ export const zhBilling = {
       tokensUnit: 'tokens',
       paginationAria: '扣费记录分页',
     },
+    consumptionAlert: '消费提醒',
+    goToTopup: '去充值 →',
   },
 
   apiKeys: {

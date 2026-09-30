@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { api } from '../../api'
 import { dialog } from '../../lib/dialog'
+import { useI18n } from '../../i18n'
 
 type BillingAlertItem = {
   id: number
@@ -14,6 +15,7 @@ type BillingAlertItem = {
 
 /** 轮询待展示的用户额度告警并弹窗提示。 */
 export default function BillingAlertHost() {
+  const { t } = useI18n()
   // 在发起 pending 请求前就上锁，避免 focus/interval/StrictMode 并发重入
   const showingRef = useRef(false)
 
@@ -26,9 +28,9 @@ export default function BillingAlertHost() {
       if (!items.length) return
       for (const item of items) {
         await dialog.alert({
-          title: item.title || '消费提醒',
+          title: item.title || t('billing.consumptionAlert'),
           message: item.message,
-          confirmText: '知道了',
+          confirmText: t('common.gotIt'),
         })
         try {
           await api.billingAlertAck(item.id)
@@ -41,7 +43,7 @@ export default function BillingAlertHost() {
     } finally {
       showingRef.current = false
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void checkAlerts()

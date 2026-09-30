@@ -303,7 +303,7 @@ export default function CreateProjectPage() {
           <div className="pf-search">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('studio.createProject.searchPlaceholder')} />
           </div>
-          <PillTabs items={categories.slice(0, 6)} value={category} onChange={setCategory} ariaLabel="模板分类" />
+          <PillTabs items={categories.slice(0, 6)} value={category} onChange={setCategory} ariaLabel={t('studio.createProject.templateCategory')} />
           <div className="pf-tpl-list" style={{ marginTop: '0.75rem' }}>
             {filtered.map((tpl) => (
               <button

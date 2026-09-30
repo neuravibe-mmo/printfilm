@@ -299,7 +299,7 @@ export function OutlineScriptPreview({
   shotStats,
   onSaveScenes,
 }: OutlineScriptPreviewProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const minLabel = t('drama.outlinePanel.min')
   const minSecLabel = t('drama.outlinePanel.minSec')
   const blocks = useMemo(() => parseOutlineSceneBlocks(text), [text])
@@ -394,13 +394,28 @@ export function OutlineScriptPreview({
     )
   }
 
+function formatSceneBlockLabel(label: string, locale: string): string {
+  const m = label.match(/^(?:场|Scene|Cảnh)\s*(.+)$/i)
+  if (m) {
+    if (locale === 'vi') return `Cảnh ${m[1]}`
+    if (locale === 'en') return `Scene ${m[1]}`
+    return `场 ${m[1]}`
+  }
+  if (label === '全文') {
+    if (locale === 'vi') return 'Toàn văn'
+    if (locale === 'en') return 'Full text'
+    return '全文'
+  }
+  return label
+}
+
   return (
     <div className="drama-outline-scenes">
       {summaryBar}
       {blocks.map((block, i) => (
         <article key={`${block.label}-${i}`} className="drama-outline-scene">
           <header className="drama-outline-scene-head">
-            <span className="drama-outline-scene-badge">{block.label}</span>
+            <span className="drama-outline-scene-badge">{formatSceneBlockLabel(block.label, locale)}</span>
             {block.title ? <strong>{block.title}</strong> : null}
               {blockStats[i]?.estimatedSec && !hasShotDuration ? (
                 <span className="drama-outline-scene-duration">

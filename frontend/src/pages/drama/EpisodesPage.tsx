@@ -1,10 +1,10 @@
-/** 旧分集中间页：自动跳到首集分镜编辑 */
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AppShell from '../../components/layout/AppShell'
 import { isCanvasWorkflow } from '../../lib/dramaWorkflow'
 import { resolveStoryboardPath } from '../../lib/dramaStoryboardNav'
 import { dramaApi } from '../../api/drama'
+import { useI18n } from '../../i18n'
 import RequireAuth from './RequireAuth'
 import './drama.css'
 
@@ -18,6 +18,7 @@ export default function EpisodesPage() {
 
 // 加载后跳转首集编辑，不再展示中间页
 function EpisodesRedirect() {
+  const { t } = useI18n()
   const { projectId } = useParams()
   const pid = Number(projectId)
   const navigate = useNavigate()
@@ -37,18 +38,18 @@ function EpisodesRedirect() {
         const path = await resolveStoryboardPath(pid)
         if (!cancelled) navigate(path, { replace: true })
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : '无法进入分镜')
+        if (!cancelled) setError(err instanceof Error ? err.message : t('drama.workspace.enterStoryboardFailed'))
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [pid, navigate])
+  }, [pid, navigate, t])
 
   return (
     <AppShell active="drama" flush>
       <div className="drama-workspace-status">
-        {error || '正在进入分镜…'}
+        {error || t('drama.workspace.enteringStoryboard')}
       </div>
     </AppShell>
   )
