@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 # 画风板只借鉴气质，禁止抄参考图里的人物与构图
 STYLE_BOARD_PROMPT_HINT = (
-    "另附画风参考图：只借鉴其色调、笔触、光影与整体气质，"
-    "禁止复制该图的人物、场景主体与构图。"
+    "Kèm ảnh tham khảo phong cách mỹ thuật: Chỉ mượn tông màu, nét vẽ, ánh sáng và khí chất tổng thể, "
+    "nghiêm cấm sao chép nhân vật, chủ thể bối cảnh và bố cục của ảnh đó."
 )
 
 _STYLE_BOARD_EXTS = (".png", ".jpg", ".jpeg", ".webp")
@@ -56,68 +56,90 @@ IMAGE_STYLE_PROMPTS: dict[str, str] = {
         "không làm mịn da hay màu mè bóng bẩy. 35mm film grain, warm muted tones, cinematic wartime realism."
     ),
     "retro-sci-fi-atompunk": (
-        "复古科幻原子朋克风格，1950年代未来主义美学，流线型金属与原子能符号，"
-        "霓虹高光，金属质感，高对比色彩，轻微胶片颗粒"
+        "Phong cách retro sci-fi atompunk, thẩm mỹ chủ nghĩa vị lai thập niên 1950, kim loại khí động học và biểu tượng năng lượng nguyên tử, "
+        "ánh sáng neon rực rỡ, chất liệu kim loại, màu sắc tương phản cao, hạt phim nhẹ. "
+        "复古科幻原子朋克风格，1950年代未来主义美学，流线型金属与原子能符号，霓虹高光，金属质感，高对比色彩，轻微胶片颗粒"
     ),
     "palace-intrigue-cold": (
-        "中国宫廷权谋题材冷峻风格，低饱和暗调，克制光影，庄重构图，"
-        "华贵但压抑的宫廷氛围，硬朗轮廓，戏剧化侧光"
+        "Phong cách phim mưu quyền cung đình thâm trầm sắc lạnh, tông tối độ bão hòa thấp, ánh sáng kiềm chế, bố cục trang nghiêm, "
+        "không khí cung đình xa hoa nhưng ngột ngạt, đường nét góc cạnh, ánh sáng bên giàu kịch tính. "
+        "中国宫廷权谋题材冷峻风格，低饱和暗调，克制光影，庄重构图，华贵但压抑的宫廷氛围，硬朗轮廓，戏剧化侧光"
     ),
     "domestic-suspense-cold": (
+        "Phong cách phim ly kỳ giật gân tông lạnh, thiên về xám xanh, ánh sáng mờ tối, bóng đổ đậm, chất cảm nhiếp ảnh hiện thực, không khí căng thẳng nghẹt thở, chi tiết phong phú. "
         "国产悬疑影视冷调风格，偏青灰色调，低调光，阴影浓重，写实摄影质感，紧张压抑氛围，细节丰富"
     ),
     "ancient-romance-soft": (
+        "Phong cách phim tình cảm cổ trang duy mỹ ánh sáng mềm, làm mờ mơ màng, vầng sáng voan mỏng ấm áp, trang phục cổ trang tinh xảo, xóa phông hậu cảnh, không khí lãng mạn bay bổng. "
         "中国古代偶像剧唯美柔光风格，梦幻柔焦，暖色薄纱光晕，精致古装妆造，背景虚化，浪漫飘逸氛围"
     ),
     "ancient-chinese-mythology": (
-        "中国古代神话史诗风格，上古洪荒气质，苍茫山河与云雾神光，青铜礼器与粗纻麻衣质感，"
-        "水墨青绿与矿物颜料色调，庄严神圣，史诗大场面，电影级光影，忌现代偶像剧柔光与甜宠滤镜"
+        "Phong cách sử thi thần thoại cổ đại, khí chất hồng hoang thượng cổ, núi sông mờ mịt cùng mây mù thần quang, đồ đồng lễ khí và trang phục vải thô mộc mạc, "
+        "tông màu thủy mặc thanh lục và khoáng chất, trang nghiêm thần thánh, đại cảnh sử thi, ánh sáng điện ảnh. "
+        "中国古代神话史诗风格，上古洪荒气质，苍茫山河与云雾神光，青铜礼器与粗纻麻衣质感，水墨青绿与矿物颜料色调，庄严神圣，史诗大场面，电影级光影"
     ),
     "japanese-youth-film": (
+        "Phong cách nhiếp ảnh phim nhựa thanh xuân Nhật Bản, tông màu Kodak film, ánh nắng tự nhiên, trường ảnh nông, hạt mịn, không khí thường nhật mộc mạc chân thành. "
         "日式青春题材胶片摄影风格，柯达胶片色调，自然阳光，浅景深，细腻颗粒，青涩真挚的日常氛围"
     ),
     "japanese-daily-natural": (
+        "Phong cách tài liệu đời sống ánh sáng tự nhiên Nhật Bản, ánh sáng dịu, độ tương phản thấp, bối cảnh đời thường chân thực, tĩnh lặng chữa lành, chất cảm phim nhẹ. "
         "日式生活纪录片自然光影风格，柔和自然光，低对比，真实日常场景，安静治愈，轻微胶片质感"
     ),
-    "korean-urban-soft": "韩剧都市题材柔光风格，暖色滤镜，通透肤质，都市背景虚化，浪漫温柔灯光氛围",
+    "korean-urban-soft": (
+        "Phong cách phim truyền hình đô thị Hàn Quốc ánh sáng mềm, bộ lọc tông ấm, làn da trong trẻo, hậu cảnh đô thị xóa phông, không khí ánh sáng dịu dàng lãng mạn. "
+        "韩剧都市题材柔光风格，暖色滤镜，通透肤质，都市背景虚化，浪漫温柔灯光氛围"
+    ),
     "chinese-urban-realistic": (
+        "Phong cách nhiếp ảnh hiện thực đô thị đời sống, ánh sáng tự nhiên, bối cảnh chân thực, tông màu trung tính, chi tiết sắc nét, không tô vẽ quá đà. "
         "国产都市现实题材写实摄影风格，自然光，真实生活场景，中性色调，细节锐利，无过度美化"
     ),
     "wuxia-realistic-photo": (
+        "Phong cách nhiếp ảnh hiện thực kiếm hiệp giang hồ, ánh sáng tự nhiên, địa hình và chất cảm trang phục chân thật, bố cục động lực học, không khí giang hồ, trường ảnh điện ảnh. "
         "中国武侠江湖题材写实摄影风格，自然光影，真实地形与服饰质感，动态构图，江湖氛围，电影级景深"
     ),
     "90s-realistic-film": (
+        "Phong cách phim điện ảnh hiện thực thập niên 1990, chất cảm phim nhựa, màu da tự nhiên, trang phục và bối cảnh đậm nét thời đại, tương phản êm dịu, tông màu hoài niệm. "
         "1990年代写实电影风格，胶片质感，自然肤色，时代感服装与环境，柔和对比，怀旧色调"
     ),
     "retro-narrative-film": (
+        "Phong cách phim điện ảnh tự sự cổ điển, bố cục điện ảnh kinh điển, phối màu phim nhựa, dàn cảnh giàu tính kể chuyện, ánh sáng chuẩn điện ảnh. "
         "复古叙事电影风格，经典电影构图，胶片色彩分级，富有故事感的场景调度，电影级布光"
     ),
     "american-retro-hollywood": (
+        "Phong cách thời hoàng kim Hollywood cổ điển Mỹ, ánh sáng tương phản cao, tông ấm rực rỡ hoặc đen trắng kinh điển, thần thái minh tinh, trường ảnh hoa lệ. "
         "美式复古好莱坞黄金年代风格，高对比布光，暖调彩色或经典黑白，明星质感，华丽景深"
     ),
     "neon-cyberpunk-film": (
+        "Phong cách phim điện ảnh cyberpunk neon, ánh đèn neon xanh tím, vệt phản chiếu đêm mưa, độ tương phản cao, đô thị tương lai, khói sương và hiệu ứng ánh sáng hologram. "
         "霓虹赛博朋克电影风格，蓝紫霓虹灯光，雨夜反射，高对比，未来都市，烟雾与全息感光效"
     ),
     "90s-rural-china-film": (
+        "Phong cách phim điện ảnh nông thôn thập niên 1990, ánh sáng tự nhiên, tông màu vàng đất và xanh lá, chất cảm thô mộc chân thực, không khí sinh hoạt thôn quê. "
         "1990年代中国农村题材电影风格，自然光，土黄与绿色调，粗糙真实质感，乡土生活氛围"
     ),
     "cgi-3d-animation": (
-        "电影级三维 CGI 动画风格，皮克斯/梦工厂气质，圆润造型与清晰轮廓，"
-        "柔和体积光与次表面散射，干净材质与饱和配色，浅景深，"
-        "非写实摄影、非日系赛璐璐平面、非剪纸扁平"
+        "Phong cách hoạt hình 3D CGI chuẩn điện ảnh, tinh thần Pixar/DreamWorks, tạo hình bo tròn đường nét rõ ràng, ánh sáng khối mềm mại và tán xạ dưới bề mặt, chất liệu sạch màu sắc bão hòa, trường ảnh nông. "
+        "电影级三维 CGI 动画风格，皮克斯/梦工厂气质，圆润造型与清晰轮廓，柔和体积光与次表面散射，干净材质与饱和配色，浅景深"
     ),
     "ghibli-handdrawn-anime": (
-        "手绘二维动画电影气质，水彩与水粉背景，柔和自然光与金色黄昏，"
-        "写实人体比例与朴素五官（非大眼睛赛璐璐美少女），生活化服饰，"
-        "茂盛草木、风吹草地与流动云层，温暖土黄与青绿，空气透视与电影构图，"
-        "非写实摄影、非3D CGI、非像素风、非剪纸扁平"
+        "Khí chất hoạt hình 2D vẽ tay, hậu cảnh màu nước và bột màu, ánh sáng tự nhiên dịu nhẹ cùng hoàng hôn vàng óng, tỷ lệ cơ thể và ngũ quan mộc mạc, trang phục đời thường, cỏ cây tươi tốt, thảm cỏ lay động trong gió và mây trôi bềnh bồng, tông màu vàng đất ấm áp và xanh lam lục, phối cảnh không khí và bố cục điện ảnh. "
+        "手绘二维动画电影气质，水彩与水粉背景，柔和自然光与金色黄昏，写实人体比例与朴素五官，生活化服饰，茂盛草木、风吹草地与流动云层，温暖土黄与青绿，空气透视与电影构图"
     ),
-    "tezuka-era-cartoon": "手冢治虫时代经典日式卡通画风，简洁线条，复古动画平涂着色，怀旧动画质感",
+    "tezuka-era-cartoon": (
+        "Phong cách hoạt hình Nhật Bản kinh điển thời Osamu Tezuka, nét vẽ tối giản, mảng màu phẳng hoạt hình retro, chất cảm hoạt họa hoài niệm. "
+        "手冢治虫时代经典日式卡通画风，简洁线条，复古动画平涂着色，怀旧动画质感"
+    ),
     "shanghai-animation": (
+        "Phong cách hoạt hình kinh điển Xưởng phim Mỹ thuật Thượng Hải, phong vị hội họa dân tộc, kết hợp màu nước và công bút truyền thống, thi vị duy mỹ, màu sắc cổ phong. "
         "上海美术电影制片厂经典动画画风，中国民族绘画韵味，水彩与工笔结合，诗意唯美，传统色彩"
     ),
-    "pixel-art": "像素艺术风格，清晰像素块，复古游戏美学，有限色板，8-bit 或 16-bit 质感",
+    "pixel-art": (
+        "Phong cách nghệ thuật pixel, khối điểm ảnh rõ ràng, thẩm mỹ game retro, bảng màu giới hạn, chất cảm 8-bit hoặc 16-bit hoài niệm. "
+        "像素艺术风格，清晰像素块，复古游戏美学，有限色板，8-bit 或 16-bit 质感"
+    ),
     "shadow-puppet-illustration": (
+        "Phong cách tranh minh họa múa rối bóng dân gian, đường nét bóng cắt, hoa văn chạm rỗng, ngược sáng ấm áp, tính trang trí nghệ thuật dân gian, hiệu ứng bóng đổ xếp lớp. "
         "中国皮影戏插画画风，剪影轮廓，镂空纹理，暖色背光，民间艺术装饰性，层叠投影效果"
     ),
 }

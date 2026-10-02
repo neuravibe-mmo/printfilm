@@ -1,89 +1,89 @@
-"""单集 LLM 分镜规划：系统提示与用户提示拼装。"""
+"""Lập kế hoạch phân cảnh bằng LLM cho từng tập phim: Hệ thống prompt và ghép nối tham số (Việt hóa chuẩn)."""
 
 from __future__ import annotations
 
 import re
 from typing import Any
 
-FRAGMENT_PLAN_SYSTEM_PROMPT = """你是短剧视频分镜导演，负责把「场记剧本」拆成适合 AI 视频模型（Seedance 2.5）逐条生成的分镜。
+from app.services.drama.build_fragments import EPISODE_FRAGMENT_MAX
 
-## 输出
-只输出一个 JSON 对象（不要 markdown、不要代码围栏）：
+FRAGMENT_PLAN_SYSTEM_PROMPT = """Bạn là đạo diễn phân cảnh phim ngắn AI chuyên nghiệp, có nhiệm vụ chuyển đổi kịch bản tập phim thành các phân cảnh ngắn (storyboard fragments) chuẩn hóa để đưa vào mô hình video AI (Seedance 2.5) tạo video từng cảnh một.
+
+## Định dạng đầu ra
+Chỉ xuất ra DUY NHẤT một đối tượng JSON hợp lệ (không kèm markdown, không bọc ```json, không giải thích thêm):
 {
   "fragments": [
     {
       "duration_sec": 12,
-      "scene_name": "地点名或空字符串",
-      "character_names": ["本镜出镜角色名"],
-      "prop_names": ["本镜出现的道具名"],
+      "scene_name": "Tên địa điểm hoặc chuỗi rỗng",
+      "character_names": ["Tên nhân vật xuất hiện trong cảnh này"],
+      "prop_names": ["Tên đạo cụ xuất hiện trong cảnh này"],
       "is_opening": false,
       "lines": [
-        "空镜：环境建立描写",
-        "角色名：对白内容",
-        "旁白（VO）：旁白内容"
+        "Toàn cảnh: Mô tả bối cảnh và thiết lập không gian",
+        "Tên nhân vật: Lời thoại của nhân vật",
+        "Lời dẫn (VO): Nội dung thuyết minh hoặc lời dẫn"
       ]
     }
   ]
 }
 
-## 开幕镜（强制，fragments[0]）
-每集第一条必须是开幕镜，并设 `"is_opening": true`，用于交代「看什么剧、第几集、本集背景」：
-1. duration_sec 建议 5–10。
-2. lines 须同时包含（顺序建议如下，可用空镜画面表达；开幕尽量少对白）：
-   - 集号与集名信息：明确写出「第N集」+ 本集标题（用户会提供集号与标题，必须用原样，不要改写数字）。
-   - 背景介绍：用 1–3 句交代世界观/时代/地点氛围，或本集开场前观众需知的前情（可参考用户给的一句话故事、类型、梗概，不要编造与摘要冲突的设定）。
-   - 开场画面：建立主场景气氛（风雨、宫殿、战场等），可先不出主角，或仅远景点到；写成「空镜：…」或纯画面描写。
-3. 开幕镜 character_names 通常为空或极少；不要在开幕镜写人物介绍文案（介绍叠字由系统处理）。
-4. 后续剧情镜从 fragments[1] 开始，is_opening 可省略或为 false。
+## Phân cảnh mở màn (Bắt buộc cho fragments[0])
+Phân cảnh đầu tiên của mỗi tập (fragments[0]) luôn là cảnh mở màn, đặt `"is_opening": true`, dùng để giới thiệu phim, số tập và bối cảnh câu chuyện:
+1. duration_sec gợi ý từ 5–10 giây.
+2. lines cần thể hiện rõ (ưu tiên diễn đạt bằng hình ảnh, hạn chế lời thoại trong cảnh mở màn):
+   - Thông tin số tập và tiêu đề: Ghi rõ "Tập N" + Tiêu đề tập (giữ nguyên tiêu đề người dùng cung cấp).
+   - Giới thiệu bối cảnh: 1–3 câu giới thiệu thế giới quan, thời đại, bầu không khí hoặc tiền truyện người xem cần biết trước khi vào phim.
+   - Khung hình mở đầu: Thiết lập không gian bối cảnh chính (mưa gió, cung điện, chiến trường, làng quê...), có thể chưa xuất hiện nhân vật chính hoặc chỉ thấy từ xa; ghi dưới dạng "Cảnh trống: ..." hoặc mô tả hình ảnh thuần túy.
+3. character_names ở cảnh mở màn thường để trống hoặc rất ít; không tự ý viết các thẻ giới thiệu nhân vật (hệ thống sẽ tự xử lý hậu kỳ).
+4. Các phân cảnh tiếp theo tính từ fragments[1] trở đi là cảnh nội dung diễn biến, đặt `"is_opening": false`.
 
-## 何时切新镜（满足任一即新开一条 fragment）
-1. 场景切换（地点 / 日夜 / 内外景）。
-2. 主要角色组合明显变化。
-3. 情绪段落切换（铺垫→冲突→反转→收束）。
-4. 叙事职责不同（开幕 ≠ 对白戏 ≠ 纯空镜）。
-5. 累计将超过约 15 秒（硬上限 15 秒）。
+## Khi nào cần cắt sang phân cảnh mới (thỏa mãn bất kỳ điều kiện nào sau đây):
+1. Chuyển bối cảnh (Địa điểm / Ngày đêm / Nội cảnh - Ngoại cảnh).
+2. Nhóm nhân vật chính trong cảnh thay đổi rõ rệt.
+3. Chuyển đoạn cảm xúc / nhịp phim (Dẫn dắt → Mâu thuẫn → Cao trào → Lắng đọng).
+4. Nhiệm vụ kể chuyện khác nhau (Mở màn ≠ Cảnh đối thoại ≠ Cảnh toàn phong cảnh).
+5. Thời lượng tích lũy của cảnh sẽ vượt quá 15 giây (Giới hạn cứng là 15 giây/cảnh).
 
-## 硬性规则
-1. duration_sec 必须在 4–15 之间，优先 6–15；单镜叙事完整、可单独成片。
-2. 按剧情节奏与场面转换拆镜；**整集 fragments 不得超过 10 条（含开幕镜）**，目标成片 **60–90 秒**。同场景连续对白优先合并为一镜，删去重复反应/过渡空镜，勿一句一对白一镜。
-3. lines 只写画面、动作、对白、旁白；保留角色真实姓名。
-   - 纯画面 / 空镜 / 景别必须写成「空镜：…」「远景：…」「近景：…」「特写：…」「全景：…」等，**禁止**写成旁白或「角色名：台词」。
-   - 只有真正要口播的内容才写「角色名：对白」或「旁白（VO）：…」。
-   - 空镜镜只有画面描写，无对白无旁白。
-4. 禁止输出：### 场标题、出场人物行、【字幕】【BGM】【人物介绍】【片头】【背景介绍】、@asset、@duration。
-    人物介绍叠字、首次出场去重、片头集号等由**系统后处理**写入，模型不要自行编排或猜测「谁该介绍」。
-5. character_names 只列本镜真正出镜、且在 lines 里被点到的**主要**角色名（与资产目录一致）；群演/兵丁/百姓等可省略。
-   **每镜 character_names 最多 3 人**；群戏只点名关键 2–3 人，其余用「众人」画面描写，不要把全场人物都挂进本镜。
-   prop_names 只列本镜真正用到的道具，**最多 2 件**；没有则空数组。
-   每镜视觉资产合计（场景 + 角色 + 道具）**不超过 6**，否则图生视频会因参考图过多失败。
-   不要输出 material_names / 素材。
-   系统会按本剧更早分集 + 本集分镜顺序扫描，仅在角色**本剧第一次出现的那一镜**自动加介绍叠字。
-6. 环境建立空镜可独立成镜；对白密集处按情绪段落合并。
-7. 保留关键冲突与转折；次要铺垫、重复情绪镜可合并或省略，**不得**为凑镜数碎切。
-8. 开幕镜之后不要再重复整集片头；集号只在开幕镜强调一次。
-9. 单镜内 lines 建议约 2–5 行（建立→动作→对白/旁白→反应），10s 左右约 2–3 个镜头变化；避免整镜只有 1 句干瘪摘要，也避免单镜堆过多对白。
+## Các quy tắc cứng (BẮT BUỘC TUÂN THỦ)
+1. Thời lượng mỗi phân cảnh (duration_sec) phải từ 4 đến 15 giây, ưu tiên 5–15 giây; mỗi phân cảnh phải trọn vẹn một hành động/tình huống và có thể đứng độc lập thành 1 video clip.
+2. Nhịp độ và số lượng phân cảnh: **Mỗi tập bắt buộc phải chia thành nhiều phân cảnh (từ 2 đến 3 phân cảnh), và mảng fragments TỐI ĐA KHÔNG QUÁ 3 PHÂN CẢNH (kể cả cảnh mở màn, tối đa 3 cảnh)**. Mục tiêu tổng thời lượng tập phim từ 20–45 giây. Các câu thoại liên tiếp trong cùng một bối cảnh phải gộp chung vào 1 phân cảnh, lược bỏ những biểu cảm thừa hoặc cảnh chuyển tiếp không cần thiết, tuyệt đối không cắt vụn mỗi câu thoại thành một cảnh.
+3. lines chỉ viết: Hình ảnh góc máy, hành động, lời thoại, lời dẫn; giữ nguyên tên thật của nhân vật.
+   - Mô tả góc máy / hình ảnh thuần túy bắt buộc phải bắt đầu bằng: "Cảnh trống: ...", "Toàn cảnh: ...", "Trung cảnh: ...", "Cận cảnh: ...", "Đặc tả: ...", v.v. CẤM viết mô tả hình ảnh thành lời dẫn hoặc "Tên nhân vật: Lời thoại".
+   - Chỉ những nội dung thực sự phát ra tiếng nói mới ghi dạng "Tên nhân vật: Lời thoại" hoặc "Lời dẫn (VO): ...".
+   - Cảnh trống / phong cảnh chỉ có mô tả hình ảnh, không có lời thoại, không có lời dẫn.
+   - **BẮT BUỘC VỀ NGÔN NGỮ**: Phải giữ nguyên 100% ngôn ngữ gốc của kịch bản! Nếu kịch bản là Tiếng Việt, toàn bộ lines, lời thoại, lời dẫn, mô tả hình ảnh và góc máy bắt buộc phải xuất ra bằng tiếng Việt tự nhiên, giữ nguyên tên nhân vật (như LAN, MẸ LAN...), nghiêm cấm dịch sang tiếng Trung hay tiếng Anh!
+4. CẤM tự ý xuất: ### Tiêu đề cảnh, dòng Nhân vật xuất hiện, các thẻ 【Phụ đề】【BGM】【Giới thiệu nhân vật】【Đầu phim】, @asset, @duration. Các thẻ kỹ thuật này do hệ thống tự động chèn ở khâu hậu kỳ.
+5. character_names: Chỉ liệt kê các nhân vật CHÍNH thực sự xuất hiện trong khung hình và được nhắc đến trong lines (phù hợp với danh mục tài sản); nhân vật quần chúng/người qua đường có thể bỏ qua.
+   **Mỗi phân cảnh character_names tối đa 3 người**; cảnh đông người chỉ nêu 2–3 nhân vật then chốt, còn lại dùng từ "mọi người / đoàn người" trong mô tả hình ảnh.
+   prop_names: Chỉ liệt kê đạo cụ thực sự dùng trong cảnh, **tối đa 2 món**; nếu không có thì để mảng rỗng [].
+   Tổng tài sản thị giác mỗi cảnh (bối cảnh + nhân vật + đạo cụ) không vượt quá 6 món để AI sinh video chuẩn xác.
+6. Cảnh trống thiết lập môi trường có thể đứng riêng thành 1 phân cảnh; chỗ đối thoại dày đặc thì gộp theo mạch cảm xúc.
+7. Giữ lại các xung đột và bước ngoặt then chốt; không được cắt vụn cảnh để đối phó số lượng.
+8. Sau cảnh mở màn thì không lặp lại phần giới thiệu đầu phim nữa; số tập chỉ nhắc 1 lần ở cảnh mở màn.
+9. Trong 1 phân cảnh, lines nên có khoảng 2–5 dòng (Thiết lập → Hành động → Lời thoại/Lời dẫn → Phản ứng). Tránh tình trạng cả phân cảnh chỉ có đúng 1 câu tóm tắt cụt ngủn, cũng tránh nhồi nhét quá nhiều thoại vào 1 cảnh.
 
-## 画面描写密度（强制，解决「分镜描述太少」）
-每一条**画面行**（空镜/景别/动作）必须信息完整，按公式写满，禁止一句话糊弄：
-**主体 + 动作/姿态 + 场景环境 + 景别或运镜 + 结束态（本段结束时画面可见状态）**。
-可选补：光影、天气、前后景层次、道具在手中的具体用法。
+## Độ chi tiết của mô tả hình ảnh (BẮT BUỘC)
+Mỗi dòng **mô tả hình ảnh** (góc máy / hành động / cảnh trống) phải đầy đủ thông tin theo công thức:
+**Chủ thể + Hành động/Tư thế + Môi trường bối cảnh + Góc máy/Vận động máy quay + Trạng thái kết thúc của cảnh**.
+Có thể bổ sung: ánh sáng, thời tiết, tiền cảnh/hậu cảnh, cách nhân vật cầm nắm đạo cụ.
 
-### 禁止的瘦写法（不合格）
-- 「禹站在河边。」「众人惊慌。」「空镜：山崩。」
-- 只有对白、几乎没有画面行。
-- 把一整场戏压成一句摘要，不写空间关系与动作过程。
+### Ví dụ KHÔNG ĐẠT (quá sơ sài):
+- "Lan đứng trước nhà." "Mọi người hoảng sợ." "Cảnh trống: Làng quê."
+- Toàn lời thoại, hầu như không có mô tả hình ảnh.
+- Nén cả một đoạn kịch thành một câu tóm tắt, không chỉ rõ không gian và tiến trình hành động.
 
-### 合格示例（学习后应达到的粒度）
-- 「全景：禹立于裂石崖边，右手开山斧贴身、左手定海针斜指岩缝，身后伯益执鞭跟近，应龙半空盘旋碎石飞溅；结束态：针尖已抵入岩缝，浊水自缝中渗出。」
-- 「特写：禹眉峰紧锁，目光盯紧岩缝水纹，定海针缓缓没入；结束态：水纹由细线变为涌动，禹抬眼示意伯益。」
-- 「空镜：黄河浊浪拍击老石，远坡百姓扶老携幼撤离，近岸芦苇被风压平；结束态：高坡人影渐远，河道仍汹涌。」
+### Ví dụ ĐẠT TIÊU CHUẨN:
+- "Toàn cảnh: Lan 12 tuổi ngồi trước hiên nhà tranh vách đất, tay nắn nót viết từng dòng chữ lên lá thư cũ, sau lưng khói sương mờ ảo bao phủ mái rạ; trạng thái kết thúc: ngòi bút dừng lại, em ngước nhìn về phía xa xăm."
+- "Cận cảnh: Gương mặt mẹ Lan thoáng nét bàng hoàng, ánh mắt dừng lại ở chiếc ba lô đã sờn rách đặt nơi góc cửa sổ; trạng thái kết thúc: mẹ thở dài, bước tới khẽ đặt tay lên vai Lan."
+- "Cảnh trống: Con đường đất đỏ vắng lặng trong ánh hoàng hôn, gió thổi cuốn theo bụi mờ qua những tán tre già; trạng thái kết thúc: ánh nắng tắt dần, chỉ còn lại bóng tối bao trùm con đường làng."
 
-### 对白/旁白行
-台词本身保持口语自然；**禁止**写成「角色名（动作）：台词」——括号内是画面动作，不是口播。
-正确写法（两行）：
-- 画面行：「近景：波波头顶亮起绿灯，胸口屏微闪。」
-- 对白行：「波波：很好。记住，月相变化是一个循环……」
-对白镜仍须至少 1 条建立/反应画面行，避免「纯对白白板」。
+### Quy tắc dòng lời thoại / lời dẫn:
+Lời thoại phải giữ văn phong giao tiếp tự nhiên đời thường. **CẤM** viết dạng "Tên nhân vật (hành động): Lời thoại" — phần trong ngoặc là hành động hình ảnh, phải tách riêng thành 1 dòng mô tả hình ảnh.
+Cách viết chuẩn (2 dòng):
+- Dòng hình ảnh: "Cận cảnh: Lan ngẩng đầu lên, khóe mắt rưng rưng ngấn lệ."
+- Dòng lời thoại: "Lan: Nhưng nếu cha về mà không thấy mẹ con mình thì sao hả mẹ?"
+Đoạn đối thoại vẫn cần ít nhất 1 dòng hình ảnh thiết lập/phản ứng, tránh tình trạng toàn chữ đối thoại trống trơn.
 """
 
 
@@ -101,26 +101,26 @@ def build_fragment_plan_user_prompt(
     locked_summaries: list[str] | None = None,
     include_subtitles: bool = True,
 ) -> str:
-    # 拼装用户侧：集号/背景元信息 + 分集正文 + 资产目录
+    # Lắp ráp prompt phía người dùng: Thông tin tập phim + Kịch bản tập + Danh mục tài sản
     ep_no = int(episode_number or 0)
-    ep_label = f"第{ep_no}集" if ep_no > 0 else "本集"
+    ep_label = f"Tập {ep_no}" if ep_no > 0 else "Tập này"
     locked = [str(s).strip() for s in (locked_summaries or []) if str(s).strip()]
     lines = [
-        f"剧名：{(project_title or '').strip() or '未命名短剧'}",
-        f"集号：{ep_label}" + (f"（episodeNumber={ep_no}）" if ep_no > 0 else ""),
-        f"分集标题：{(episode_name or '').strip() or '未命名'}",
-        f"字幕需求：{'需要字幕' if include_subtitles else '不要字幕'}",
+        f"Tên phim: {(project_title or '').strip() or 'Chưa đặt tên'}",
+        f"Tập số: {ep_label}" + (f" (episodeNumber={ep_no})" if ep_no > 0 else ""),
+        f"Tiêu đề tập: {(episode_name or '').strip() or ep_label}",
+        f"Yêu cầu phụ đề: {'Cần phụ đề' if include_subtitles else 'Không phụ đề'}",
         "",
     ]
     if locked:
         lines.extend(
             [
-                f"【续拆｜前 {len(locked)} 条分镜已生成视频，内容锁定】",
-                "- 不要输出开幕镜（is_opening 全部 false）。",
-                "- 不要重复下列已拍内容；只规划尚未覆盖的后续剧情。",
-                "- 覆盖场记正文里尚未被已拍分镜讲完的部分。",
+                f"【Tiếp tục phân cảnh ｜ Đã quay {len(locked)} phân cảnh trước đó, nội dung đã khóa】",
+                "- Không xuất phân cảnh mở màn (đặt is_opening toàn bộ là false).",
+                "- Không lặp lại các nội dung đã quay dưới đây; chỉ lập kế hoạch cho phần kịch bản diễn biến tiếp theo.",
+                "- Bao quát phần kịch bản còn lại chưa được các phân cảnh trước thể hiện.",
                 "",
-                "【已锁定分镜摘要】",
+                "【Tóm tắt các phân cảnh đã khóa】",
             ]
         )
         for i, summary in enumerate(locked, start=1):
@@ -128,86 +128,87 @@ def build_fragment_plan_user_prompt(
             lines.append(f"{i}. {short}")
         lines.append("")
         if (story_type or "").strip() or (one_line_story or "").strip():
-            lines.append("【背景参考｜勿再写开幕】")
+            lines.append("【Bối cảnh tham khảo ｜ Không viết lại mở màn】")
             if (story_type or "").strip():
-                lines.append(f"- 类型：{story_type.strip()}")
+                lines.append(f"- Thể loại: {story_type.strip()}")
             if (one_line_story or "").strip():
-                lines.append(f"- 一句话故事：{one_line_story.strip()}")
+                lines.append(f"- Câu chuyện một câu: {one_line_story.strip()}")
     else:
         lines.extend(
             [
-                "【开幕镜必须使用的标注信息｜请写入 fragments[0].lines】",
-                f"- 集号原文：{ep_label}",
-                f"- 集名原文：{(episode_name or '').strip() or ep_label}",
+                "【Thông tin bắt buộc cho phân cảnh mở màn ｜ Ghi vào fragments[0].lines】",
+                f"- Số tập: {ep_label}",
+                f"- Tên tập: {(episode_name or '').strip() or ep_label}",
             ]
         )
         if (project_title or "").strip():
-            lines.append(f"- 剧名原文：{project_title.strip()}")
+            lines.append(f"- Tên phim: {project_title.strip()}")
         if (story_type or "").strip():
-            lines.append(f"- 类型：{story_type.strip()}")
+            lines.append(f"- Thể loại: {story_type.strip()}")
         if (core_hook or "").strip():
-            lines.append(f"- 钩子：{core_hook.strip()}")
+            lines.append(f"- Điểm thu hút chính (Hook): {core_hook.strip()}")
         if (one_line_story or "").strip():
-            lines.append(f"- 一句话故事：{one_line_story.strip()}")
+            lines.append(f"- Câu chuyện một câu: {one_line_story.strip()}")
         if (synopsis or "").strip():
             syn = synopsis.strip()
             if len(syn) > 420:
                 syn = syn[:419] + "…"
-            lines.append(f"- 故事梗概（背景参考）：{syn}")
+            lines.append(f"- Tóm tắt cốt truyện: {syn}")
 
-    body_text = (episode_body or "").strip() or "（空）"
+    body_text = (episode_body or "").strip() or "(Trống)"
     body_len = len(re.sub(r"\s+", "", body_text))
     lines.extend(
         [
             "",
-            "【篇幅硬约束｜必须遵守】",
-            "- fragments 数组长度 ≤ 10（含开幕镜）；整集成片目标 60–90 秒。",
-            "- 同场景、同角色组的连续对白合并为一镜；跳过纯过渡/重复反应。",
-            "- 镜内 @duration 单段 3–15 秒，整镜合计不得超过 15 秒。",
-            "- 每镜最多 3 个出镜角色、2 件道具；不要把整场出场人物都写进 character_names。",
+            "【RÀNG BUỘC CỨNG VỀ SỐ LƯỢNG PHÂN CẢNH ｜ BẮT BUỘC TUÂN THỦ】",
+            f"- Mảng fragments bắt buộc phải chia thành nhiều phân cảnh (2–3 phân cảnh), và tổng số lượng ≤ {EPISODE_FRAGMENT_MAX} (tối đa 3 phân cảnh, bao gồm cả cảnh mở màn); thời lượng toàn tập 20–45 giây.",
+            "- Các câu thoại liên tiếp trong cùng cảnh/nhân vật phải gộp thành 1 phân cảnh; bỏ qua các phản ứng thừa.",
+            "- Thời lượng mỗi đoạn trong cảnh từ 3–15 giây, tổng thời lượng cả phân cảnh không quá 15 giây.",
+            "- Mỗi phân cảnh tối đa 3 nhân vật xuất hiện, 2 đạo cụ; không ghi toàn bộ danh sách nhân vật vào character_names.",
+            "- NGÔN NGỮ BẮT BUỘC: Giữ nguyên 100% tiếng Việt tự nhiên của kịch bản, giữ đúng tên nhân vật (như LAN, MẸ LAN...), cấm dịch sang tiếng Trung hay tiếng Anh!",
             "",
-            "【分集场记正文】",
+            "【KỊCH BẢN TẬP PHIM】",
             body_text,
             "",
-            "【可用资产目录｜拆镜时 character_names / scene_name / prop_names 尽量使用下列名称】",
+            "【DANH MỤC TÀI SẢN KHẢ DỤNG ｜ Khi phân cảnh hãy ưu tiên dùng đúng tên trong danh mục dưới đây】",
         ]
     )
     if body_len > 550:
         lines.insert(
-            lines.index("【分集场记正文】"),
-            f"【场记偏长（约 {body_len} 字）】规划时请主动压缩：合并场次、删次要动作，仍只输出 ≤10 条 fragments。",
+            lines.index("【KỊCH BẢN TẬP PHIM】"),
+            f"【Kịch bản khá dài (khoảng {body_len} từ)】Khi lập phân cảnh hãy chủ động cô đọng: gộp cảnh, tinh giản hành động phụ, vẫn chỉ xuất tối đa ≤{EPISODE_FRAGMENT_MAX} phân cảnh.",
         )
     if not asset_catalog:
-        lines.append("（暂无资产）")
+        lines.append("(Chưa có tài sản)")
     else:
         for item in asset_catalog:
             kind = str(item.get("type") or "")
             name = str(item.get("name") or "")
             aid = item.get("id")
             role = str(item.get("roleType") or item.get("title") or "").strip()
-            extra = f"｜{role}" if role else ""
+            extra = f" | {role}" if role else ""
             lines.append(f"- [{kind}] id={aid} name={name}{extra}")
     if locked:
         lines.extend(
             [
                 "",
-                "请输出 JSON：{\"fragments\":[...]}；全部为后续剧情镜（不要开幕镜），从已拍内容之后续拆。",
+                "Hãy xuất JSON: {\"fragments\":[...]} chứa toàn bộ các phân cảnh tiếp theo (không tạo cảnh mở màn), nối tiếp từ nội dung đã quay.",
             ]
         )
     else:
         lines.extend(
             [
                 "",
-                "请输出 JSON：{\"fragments\":[...]}；第一条必须是开幕镜（is_opening=true，含集号与背景介绍）。",
+                "Hãy xuất JSON: {\"fragments\":[...]} trong đó phân cảnh đầu tiên bắt buộc là cảnh mở màn (is_opening=true, giới thiệu số tập và bối cảnh), sau đó là các phân cảnh nội dung.",
             ]
         )
     if not include_subtitles:
         lines.extend(
             [
                 "",
-                "【额外要求｜本集不要字幕】",
-                "- 只写画面、动作、对白、旁白本身，不要写任何“字幕 / 叠字 / 同步字幕 / 字卡”等提示。",
-                "- 开幕镜也不要设计集号、剧名、背景介绍的叠字，只用画面与对白/旁白表达。",
+                "【YÊU CẦU BỔ SUNG ｜ TẬP NÀY KHÔNG CẦN PHỤ ĐỀ】",
+                "- Chỉ viết hình ảnh, hành động, lời thoại, lời dẫn, không thêm bất kỳ nhãn phụ đề nào.",
+                "- Cảnh mở màn cũng không thiết kế chữ đè số tập hay tên phim, chỉ thể hiện qua hình ảnh và âm thanh.",
             ]
         )
     return "\n".join(lines)

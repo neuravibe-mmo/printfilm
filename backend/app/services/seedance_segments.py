@@ -60,7 +60,7 @@ LEGACY_DRAMA_SUBTITLE_CUES = (
 )
 DEFAULT_BGM_MOOD = "贴合内容的轻量配乐，情绪平稳，不抢旁白"
 DEFAULT_BGM_MOOD_VI = "Nhạc nền nhẹ nhàng phù hợp nội dung, cảm xúc êm đềm, không lấn át lời dẫn"
-SEEDANCE_PRODUCTION_SECTION_HEADER = "【强制约束：音频、字幕与配乐】"
+SEEDANCE_PRODUCTION_SECTION_HEADER = "【Ràng buộc bắt buộc: Âm thanh, Phụ đề và Nhạc nền / 强制约束：音频、字幕与配乐】"
 
 # 空镜/景别冒号标签：正文若以此开头则不得配音、不得烧字幕（支持多语言）
 VISUAL_SHOT_LABEL_RE = re.compile(
@@ -110,8 +110,10 @@ PRODUCTION_META_PREFIXES = (
     "【Giới thiệu nhân vật",
     "【Character intro",
     "【片头",
+    "【Đầu phim",
     "【Intro",
     "【背景介绍",
+    "【Giới thiệu bối cảnh",
     "【Background",
     "【强制约束",
     "【Ràng buộc",
@@ -598,11 +600,10 @@ def build_seedance_production_section(
     """
     if ambient_only:
         lines = [
-            "1. 配音：本镜口播由后期外部 TTS 完成；视频内禁止任何旁白、对白、解说、哼唱、人声。",
-            "2. 字幕：禁止在画面内烧录字幕、标题、水印或口播文字。",
-            "3. 背景音乐：禁止任何 BGM、配乐、旋律、哼唱垫乐。",
-            "4. 音效：必须生成与画面同步的操作环境音（键盘敲击、鼠标点击、界面切换、轻微办公底噪）；"
-            "音量克制，不要盖过人声（人声后期再叠）。",
+            "1. Lồng tiếng / 配音: Lời thoại cảnh này do TTS bên ngoài thực hiện; video nghiêm cấm mọi lời dẫn, đối thoại, giải thích, ngân nga hay giọng người.",
+            "2. Phụ đề / 字幕: Nghiêm cấm ghi phụ đề, tiêu đề, watermark hoặc chữ lời thoại vào trong hình ảnh.",
+            "3. Nhạc nền / 背景音乐: Nghiêm cấm mọi BGM, nhạc đệm, giai điệu hoặc nhạc nền ngân nga.",
+            "4. Hiệu ứng âm thanh / 音效: Bắt buộc tạo âm thanh môi trường thao tác đồng bộ với hình ảnh (gõ phím, click chuột, chuyển giao diện, tiếng ồn văn phòng nhẹ); âm lượng tiết chế, không lấn át tiếng người (tiếng người sẽ ghép vào sau).",
         ]
         return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n" + "\n".join(lines)
 
@@ -611,99 +612,98 @@ def build_seedance_production_section(
     drama_mixed = script_is_drama_mixed(segment_script)
     bgm_mood = script_bgm_mood(segment_script)
 
-    if "音量低于人声" not in bgm_mood:
-        bgm_mood = f"{bgm_mood}，音量低于人声"
+    if "âm lượng thấp hơn giọng người" not in bgm_mood and "音量低于人声" not in bgm_mood:
+        bgm_mood = f"{bgm_mood}，âm lượng thấp hơn giọng người"
 
     # 后期字幕：口播保留，画面禁止任何文字（字幕交给剪辑/导出 SRT）
     no_burn = (
-        "禁止在画面内烧录字幕、标题、水印、字卡或口播文字；"
-        "口播仅出声，文字叠字由后期完成。"
+        "Nghiêm cấm ghi phụ đề, tiêu đề, watermark, thẻ chữ hoặc chữ lời thoại vào trong hình ảnh; "
+        "lời thoại chỉ phát ra tiếng, phần chữ phụ đề do khâu hậu kỳ thực hiện."
     )
 
     if drama_mixed:
         lines = [
-            "1. 配音范围：仅【旁白·…】【对白·…】标记的段落需要口播；"
-            "【画面·…】标记或未带配音前缀的段落为画面/动作描述，只呈现视觉与环境音，"
-            "禁止为其生成配音、禁止烧字幕、禁止把画面描述念出来。",
-            "2. 语速：旁白/对白语速自然偏慢，吐字清晰，留有呼吸与停顿；严禁加速赶词。",
+            "1. Phạm vi lồng tiếng / 配音范围: Chỉ các đoạn đánh dấu 【Lời dẫn / 旁白·…】【Đối thoại / 对白·…】 mới cần lồng tiếng; "
+            "các đoạn 【Hình ảnh / 画面·…】 hoặc không có tiền tố lồng tiếng là miêu tả hình ảnh/hành động, chỉ thể hiện thị giác và âm thanh môi trường, "
+            "nghiêm cấm tạo lồng tiếng, nghiêm cấm in phụ đề, nghiêm cấm đọc to miêu tả hình ảnh.",
+            "2. Tốc độ nói / 语速: Lời dẫn/đối thoại có tốc độ nói tự nhiên hơi chậm, phát âm rõ ràng, có nhịp thở và ngắt nghỉ; nghiêm cấm nói vội, đẩy nhanh tốc độ.",
             (
-                f"3. 字幕：{no_burn}"
+                f"3. Phụ đề / 字幕: {no_burn}"
                 if not burn_subtitles
                 else (
-                    "3. 字幕：仅【旁白·…】【对白·…】口播内容烧录简体中文字幕，底部居中；"
-                    "同一时刻只显示一行（一句），随口播进度逐句轮换，禁止把整段对白一次性叠满屏幕；"
-                    "禁止重复字、叠字、口吃式重复；字幕必须与当前正在说的那一句逐字一致；"
-                    "画面描述段不出现字幕。"
+                    "3. Phụ đề / 字幕: Chỉ nội dung lồng tiếng 【Lời dẫn / 旁白·…】【Đối thoại / 对白·…】 mới ghi phụ đề (theo ngôn ngữ gốc của lời thoại như Tiếng Việt / 中文), căn giữa phía dưới; "
+                    "tại một thời điểm chỉ hiển thị một dòng (một câu), luân chuyển từng câu theo tiến độ lời thoại, nghiêm cấm xếp kín toàn bộ hội thoại lên màn hình; "
+                    "nghiêm cấm lặp từ, nói lắp; phụ đề phải khớp từng chữ với câu đang nói; phần miêu tả hình ảnh không xuất hiện phụ đề."
                 )
             ),
         ]
         if has_vo:
             lines.append(
-                "4. 旁白：【旁白·…】段落以第三人称旁白慢速清晰配音；"
-                + ("仅出声，画面不叠字幕。" if not burn_subtitles else "字幕逐句轮换，与当前口播句同步。")
+                "4. Lời dẫn / 旁白: Đoạn 【Lời dẫn / 旁白·…】 lồng tiếng ngôi thứ ba chậm rãi rõ ràng; "
+                + ("chỉ phát tiếng, hình ảnh không chèn phụ đề." if not burn_subtitles else "phụ đề luân chuyển từng câu, đồng bộ với câu thoại hiện tại.")
             )
         elif has_dialogue:
             lines.append(
-                "4. 对白：【对白·…】段落按角色对白配音；"
+                "4. Đối thoại / 对白: Đoạn 【Đối thoại / 对白·…】 lồng tiếng theo nhân vật; "
                 + (
-                    "仅出声，画面不叠字幕；无对白标记时保持环境音即可。"
+                    "chỉ phát tiếng, hình ảnh không chèn phụ đề; khi không có đánh dấu đối thoại thì chỉ giữ âm thanh môi trường."
                     if not burn_subtitles
-                    else "字幕逐句轮换，与当前口播句同步；无对白标记时保持环境音即可。"
+                    else "phụ đề luân chuyển từng câu, đồng bộ với câu thoại hiện tại; khi không có đánh dấu đối thoại thì chỉ giữ âm thanh môi trường."
                 )
             )
         else:
             lines.append(
-                "4. 人声：本镜若无旁白/对白标记，则全程无口播，仅环境音与 BGM。"
+                "4. Giọng người / 人声: Cảnh này nếu không có đánh dấu lời dẫn/đối thoại thì toàn bộ cảnh không lồng tiếng, chỉ có âm thanh môi trường và BGM."
             )
         lines.append(
-            f"5. 背景音乐：{bgm_mood}；BGM 音量低于人声约 30%。"
+            f"5. Nhạc nền / 背景音乐: {bgm_mood}; âm lượng BGM thấp hơn giọng người khoảng 30%."
         )
         lines.append(
-            "6. 音效：环境音与动作音效与画面同步，层次低于人声。"
+            "6. Hiệu ứng âm thanh / 音效: Âm thanh môi trường và hiệu ứng động tác đồng bộ với hình ảnh, tầng âm lượng thấp hơn giọng người."
         )
-        if character_intro and "【人物介绍" in (segment_script or ""):
+        if character_intro and any(k in (segment_script or "") for k in ("【人物介绍", "【Giới thiệu nhân vật", "【giới thiệu nhân vật")):
             lines.append(
-                "7. 人物介绍叠字：【人物介绍·画面叠字·角色身旁】须贴在对应角色身旁"
-                "（肩侧/身旁小字），随该角色首次入画短暂出现；"
-                "禁止居中大标题、禁止底部与口播字幕抢位；"
-                "禁止口播念出介绍全文。"
+                "7. Chữ giới thiệu nhân vật / 人物介绍叠字: 【Giới thiệu nhân vật · Chữ trên hình bên cạnh nhân vật / 人物介绍·画面叠字·角色身旁】 phải gắn sát bên cạnh nhân vật tương ứng "
+                "(chữ nhỏ bên vai/bên người), xuất hiện ngắn khi nhân vật lần đầu vào khung hình; "
+                "nghiêm cấm tiêu đề lớn chính giữa, nghiêm cấm tranh vị trí phụ đề phía dưới; "
+                "nghiêm cấm lồng tiếng đọc toàn văn giới thiệu."
             )
         elif not character_intro:
             lines.append(
-                "7. 人物介绍：本镜禁止任何人物介绍叠字/字卡；身份信息不写入画面。"
+                "7. Giới thiệu nhân vật / 人物介绍: Cảnh này nghiêm cấm mọi chữ/thẻ giới thiệu nhân vật; thông tin danh tính không ghi vào khung hình."
             )
         return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n" + "\n".join(lines)
 
     # 科普旁白模式：整镜以旁白段为主（语速自然偏快，避免拖沓）
     lines = [
-        "1. 语速：旁白语速自然偏快、吐字清晰，节奏紧凑有呼吸感；"
-        "避免刻意放慢、拖腔或长时间停顿；不要压缩到含糊赶词，也不要提高播放倍速。",
+        "1. Tốc độ nói / 语速: Lời dẫn có tốc độ nói tự nhiên hơi nhanh, phát âm rõ ràng, nhịp điệu gọn gàng có nhịp thở; "
+        "tránh cố ý nói quá chậm hoặc dừng quá lâu; không ép tốc độ đến mức nuốt chữ và không tăng tốc độ phát video.",
         (
-            f"2. 字幕：{no_burn}"
+            f"2. Phụ đề / 字幕: {no_burn}"
             if not burn_subtitles
             else (
-                "2. 字幕：全程烧录简体中文字幕，位置底部居中，字号清晰可读；"
-                "旁白须逐句同步显示，字幕与口播一致。"
+                "2. Phụ đề / 字幕: In phụ đề toàn bộ cảnh (theo ngôn ngữ gốc của lời thoại như Tiếng Việt / 中文), vị trí căn giữa phía dưới, cỡ chữ rõ ràng dễ đọc; "
+                "lời dẫn hiển thị đồng bộ từng câu, phụ đề khớp hoàn toàn với lời nói."
             )
         ),
     ]
     if has_vo:
         lines.append(
-            "3. 旁白：脚本含旁白段落时以第三人称旁白配音，沉稳清晰、语速自然偏快；"
-            "视频内不要自行添加嘈杂对白；"
-            + ("口播仅出声，画面不叠字幕。" if not burn_subtitles else "旁白出现时字幕同步显示全文。")
+            "3. Lời dẫn / 旁白: Khi kịch bản có đoạn lời dẫn thì lồng tiếng ngôi thứ ba, điềm tĩnh rõ ràng, tốc độ tự nhiên; "
+            "trong video không tự ý thêm các đoạn đối thoại ồn ào; "
+            + ("lời thoại chỉ phát tiếng, màn hình không in phụ đề." if not burn_subtitles else "khi lời dẫn xuất hiện thì phụ đề hiển thị toàn văn đồng bộ.")
         )
     else:
         lines.append(
-            "3. 旁白：若脚本含旁白标记，按第三人称旁白自然偏快清晰配音"
-            + ("；口播仅出声，画面不叠字幕；" if not burn_subtitles else "，并同步烧录字幕；")
-            + "视频内不要自行添加嘈杂对白。"
+            "3. Lời dẫn / 旁白: Nếu kịch bản có đánh dấu lời dẫn, lồng tiếng ngôi thứ ba tự nhiên rõ ràng"
+            + ("; lời thoại chỉ phát tiếng, màn hình không in phụ đề;" if not burn_subtitles else ", đồng thời in phụ đề đồng bộ;")
+            + " trong video không tự ý thêm đối thoại ồn ào."
         )
     lines.append(
-        f"4. 背景音乐：{bgm_mood}；BGM 音量低于人声约 30%，不得盖过旁白与关键音效。"
+        f"4. Nhạc nền / 背景音乐: {bgm_mood}; âm lượng BGM thấp hơn giọng người khoảng 30%, không lấn át lời dẫn và âm hiệu then chốt."
     )
     lines.append(
-        "5. 音效：环境音与动作音效与画面同步，层次低于人声。"
+        "5. Hiệu ứng âm thanh / 音效: Âm thanh môi trường và hiệu ứng động tác đồng bộ với hình ảnh, tầng âm lượng thấp hơn giọng người."
     )
     return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n" + "\n".join(lines)
 

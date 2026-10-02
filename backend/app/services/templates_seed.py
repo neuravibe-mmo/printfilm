@@ -40,16 +40,16 @@ TEMPLATES: list[dict] = [
         "shot_duration_min": 5,
         "shot_duration_max": 12,
         "llm_system_addon": (
-            "这是开源/产品展示片。先【分析】用户文案：项目类型、核心能力、典型用户与使用路径，"
-            "再规划分镜与视觉，不要套固定蓝光大屏。"
-            "【画面硬性要求】每镜必须出现「人在操作系统」："
-            "操作员坐在工位前使用电脑/笔记本/平板，点击界面、填写配置、查看看板、"
-            "演示核心流程、部署发布或阅读文档；可辅以屏幕特写，但禁止整片只有空 UI 无人。"
-            "【逐段】每镜输出 segments：visual 与 narration 交替；单段 3-12 秒，镜合计适配口播。"
-            "【视觉】色板与界面气质跟内容走（浅色后台、IDE、文档站、终端等），禁止默认霓虹蓝。"
-            "【分镜】每镜对应不同能力或操作场景，构图必须明显不同，禁止待办清单/人物剧情戏。"
-            "title=模块短名（2-8字），subtitle=能力卖点（10-22字），text=口播；"
-            "img_prompt 写清人物姿态、面前界面类型、操作动作与主色。"
+            "Đây là video giới thiệu sản phẩm / mã nguồn mở. Trước tiên hãy 【Phân tích】nội dung của người dùng: loại dự án, tính năng cốt lõi, người dùng điển hình và quy trình sử dụng, "
+            "sau đó mới lên kế hoạch phân cảnh và thị giác, không rập khuôn màn hình xanh neon. "
+            "【Yêu cầu cứng về hình ảnh】Mỗi cảnh bắt buộc phải xuất hiện «người đang thao tác hệ thống»: "
+            "người thao tác ngồi trước bàn làm việc dùng máy tính / laptop / tablet, nhấp chuột vào giao diện, điền cấu hình, xem bảng dashboard, "
+            "trình diễn quy trình cốt lõi, triển khai phát hành hoặc đọc tài liệu; có thể kết hợp đặc tả màn hình, nhưng cấm cả video chỉ có giao diện trống không có người. "
+            "【Từng đoạn】Mỗi cảnh xuất mảng segments: xen kẽ visual và narration; mỗi đoạn 3-12 giây, tổng thời lượng cảnh khớp với lời đọc thoại. "
+            "【Thị giác】Bảng màu và phong cách giao diện đi theo nội dung (giao diện sáng màu, IDE, trang tài liệu, terminal...), cấm mặc định màu xanh neon. "
+            "【Phân cảnh】Mỗi cảnh tương ứng với một tính năng hoặc kịch bản thao tác khác nhau, bố cục phải khác biệt rõ rệt, cấm danh sách việc cần làm / kịch bản drama tình cảm. "
+            "title=tên ngắn của module (2-8 từ), subtitle=điểm bán năng lực (8-20 từ), text=lời đọc thuyết minh; "
+            "img_prompt viết rõ tư thế nhân vật, loại giao diện trước mặt, động tác thao tác và màu sắc chủ đạo bằng tiếng Việt."
         ),
         "seedream_config": {
             "ref_images": [],
@@ -101,12 +101,12 @@ TEMPLATES: list[dict] = [
         "shot_duration_min": 6,
         "shot_duration_max": 12,
         "llm_system_addon": (
-            "这是开源「真人工作场景」片。先分析项目能力与使用路径，再按内容拆多镜短镜。"
-            "【硬性】每镜必须出现真人在工位操作系统（侧脸/过肩/手部焦点，少正脸特写）。"
-            "【逐段】每镜必须输出 segments 数组：交替 visual（景别+动作+界面类型）与 narration（口播）；"
-            "单段 duration 3-12 秒，镜内合计不超过 12 秒；旁白按约 5 字/秒估时长，禁止拖腔注水。"
-            "【节拍】痛点工位→接入配置→核心工作台→流程结果→协作/部署；构图与操作动作禁止雷同。"
-            "title=模块短名，subtitle=卖点句，bgm 全片统一为轻快专业。"
+            "Đây là video mã nguồn mở «Bối cảnh người thật làm việc». Hãy phân tích tính năng dự án và lộ trình sử dụng trước, sau đó chia thành nhiều cảnh ngắn. "
+            "【Yêu cầu cứng】Mỗi cảnh bắt buộc xuất hiện người thật thao tác hệ thống tại bàn làm việc (góc nhìn nghiêng / qua vai / tiêu điểm bàn tay, hạn chế cận cảnh mặt). "
+            "【Từng đoạn】Mỗi cảnh bắt buộc xuất mảng segments: xen kẽ visual (cỡ cảnh + hành động + loại giao diện) và narration (lời đọc); "
+            "mỗi đoạn thời lượng 3-12 giây, tổng thời lượng trong cảnh không quá 12 giây; lời dẫn ước tính khoảng 3-4 từ/giây, cấm kéo dài rườm rà. "
+            "【Tiết tấu】Bàn làm việc giải quyết nỗi đau → cấu hình kết nối → bảng làm việc cốt lõi → kết quả quy trình → cộng tác/triển khai; bố cục và động tác cấm lặp lại giống nhau. "
+            "title=tên ngắn module, subtitle=câu điểm bán, bgm toàn phim thống nhất phong cách chuyên nghiệp nhẹ nhàng."
         ),
         "seedream_config": {
             "ref_images": [],
@@ -154,8 +154,8 @@ TEMPLATES: list[dict] = [
         "shot_duration_min": 5,
         "shot_duration_max": 12,
         "llm_system_addon": (
-            "真人街访/口播节奏。每镜输出 segments：建立环境 visual → narration 口播 → 反应/细节 visual。"
-            "人物外形全片一致；少正脸极端特写。title 短、subtitle 观点句。"
+            "Tiết tấu phỏng vấn đường phố / thuyết minh người thật. Mỗi cảnh xuất segments: thiết lập bối cảnh visual → narration thuyết minh → phản ứng/chi tiết visual. "
+            "Ngoại hình nhân vật đồng nhất toàn phim; hạn chế đặc tả khuôn mặt quá mức. title ngắn gọn, subtitle là câu quan điểm."
         ),
         "seedream_config": {
             "ref_images": [],
@@ -190,8 +190,8 @@ TEMPLATES: list[dict] = [
         "shot_duration_min": 5,
         "shot_duration_max": 12,
         "llm_system_addon": (
-            "桌面演示片。每镜 segments 必须含手部操作 visual + narration；"
-            "景别在全桌建立、手部特写、屏幕内容之间切换，禁止各镜雷同。"
+            "Video trình diễn trên bàn làm việc. Mỗi cảnh segments bắt buộc có visual thao tác bàn tay + narration; "
+            "Cỡ cảnh chuyển đổi linh hoạt giữa toàn cảnh mặt bàn, đặc tả bàn tay và nội dung màn hình, cấm các cảnh giống nhau."
         ),
         "seedream_config": {
             "ref_images": [],
@@ -229,7 +229,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "9:16",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
-        "llm_system_addon": "按故事节拍拆镜：起承转合。每镜 title 短标题、subtitle 叠字副标题、text 为可朗读旁白。画面必须全片统一插画风与人物外形，禁止某镜突然变成真人照片或另一套动漫风。",
+        "llm_system_addon": "Phân chia cảnh theo tiết tấu câu chuyện: Khởi - Thừa - Chuyển - Hợp. Mỗi cảnh có title tiêu đề ngắn, subtitle phụ đề ngắn gọn, text là lời thuyết minh đọc được. Hình ảnh toàn phim phải đồng nhất phong cách tranh minh họa và ngoại hình nhân vật, nghiêm cấm cảnh này đột ngột biến thành ảnh người thật hay phong cách anime khác.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
@@ -271,10 +271,10 @@ TEMPLATES: list[dict] = [
         "shot_duration_min": 4,
         "shot_duration_max": 12,
         "llm_system_addon": (
-            "三维动画叙事节奏：建立场景→角色动作→关键演示/知识点。"
-            "【画风】全片必须统一 3D CGI 动画风与同一角色造型，禁止某镜变成真人照片或二维赛璐璐。"
-            "涉及软件/系统/科普时，优先 3D 角色在工位或场景中操作界面、演示流程。"
-            "每镜 title 短、subtitle 卖点句；img_prompt 写清三维材质、光影与角色姿态。"
+            "Tiết tấu tự sự hoạt hình 3D: Thiết lập bối cảnh → Hành động nhân vật → Trình diễn then chốt / Điểm kiến thức. "
+            "【Phong cách】Toàn phim bắt buộc đồng nhất phong cách hoạt hình 3D CGI và tạo hình nhân vật, cấm cảnh này biến thành ảnh người thật hay 2D phẳng. "
+            "Khi liên quan đến phần mềm/hệ thống/khoa học, ưu tiên nhân vật 3D ngồi tại bàn hoặc trong bối cảnh thao tác giao diện, trình diễn quy trình. "
+            "Mỗi cảnh title ngắn, subtitle là câu điểm bán; img_prompt viết rõ chất liệu 3D, ánh sáng và tư thế nhân vật."
         ),
         "seedream_config": {
             "ref_images": [],
@@ -317,7 +317,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
-        "llm_system_addon": "按真人电影分镜：建立镜头→中景→特写。全片必须同一真人写实画风与同一演员外形，禁止某镜变成卡通。",
+        "llm_system_addon": "Phân cảnh theo chuẩn điện ảnh người thật: Cảnh toàn thiết lập → Trung cảnh → Cận cảnh. Toàn phim bắt buộc đồng nhất phong cách hiện thực người thật và ngoại hình diễn viên, cấm cảnh nào biến thành hoạt hình.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.75,
@@ -346,7 +346,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "9:16",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
-        "llm_system_addon": "人物叙事节奏，旁白口语化。全片统一真人写实画风与同一人物外形。",
+        "llm_system_addon": "Tiết tấu tự sự nhân vật, lời dẫn khẩu ngữ tự nhiên gần gũi. Toàn phim đồng nhất phong cách hiện thực người thật và ngoại hình nhân vật.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
@@ -375,7 +375,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
-        "llm_system_addon": "写实镜头语言：全景建立→细节特写。若有人物须外形全片一致；可无人物纯场景。禁止卡通化。",
+        "llm_system_addon": "Ngôn ngữ ống kính nhiếp ảnh hiện thực: Toàn cảnh thiết lập → Đặc tả chi tiết. Nếu có nhân vật phải đồng nhất ngoại hình toàn phim; có thể là cảnh thuần bối cảnh không người. Cấm phong cách hoạt hình.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
@@ -404,7 +404,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
-        "llm_system_addon": "按电影分镜节奏：建立镜头→特写→反应镜头。台词克制，留白给画面。全片统一胶片插画风与角色外形。",
+        "llm_system_addon": "Theo tiết tấu phân cảnh điện ảnh: Cảnh toàn thiết lập → Cận cảnh → Cảnh phản ứng. Thoại tiết chế, nhường không gian cho hình ảnh. Toàn phim đồng nhất phong cách minh họa film nhựa và ngoại hình nhân vật.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
@@ -432,7 +432,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
-        "llm_system_addon": "悬疑节奏：线索→反转→压迫。台词短句，画面多用阴影与构图张力。全片统一黑色电影插画风。",
+        "llm_system_addon": "Tiết tấu hồi hộp giật gân: Manh mối → Bước ngoặt đảo chiều → Căng thẳng dồn dập. Thoại câu ngắn, khung hình tận dụng bóng đổ và sức căng bố cục. Toàn phim đồng nhất phong cách minh họa phim noir.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
@@ -468,13 +468,13 @@ TEMPLATES: list[dict] = [
         "shot_duration_min": 4,
         "shot_duration_max": 15,
         "llm_system_addon": (
-            "按科普讲解节奏拆镜，台词口语化、信息密度适中。"
-            "【画面硬性要求】每镜必须出现「人在操作系统」："
-            "剪纸人物坐在工位/控制台前操作电脑或平板，点击鼠标键盘、切换菜单、"
-            "查看仪表盘、填写表单、对比前后状态、演示关键流程等；"
-            "可辅以屏幕特写或架构示意图，但禁止整片只有空概念图、无操作者。"
-            "title/subtitle 概括本镜知识点；img_prompt 写清人物姿态、面前屏幕内容类型与操作动作。"
-            "全片同一剪纸画风与同一操作员外形。"
+            "Phân cảnh theo tiết tấu thuyết minh khoa học, lời dẫn tự nhiên, mật độ thông tin vừa phải. "
+            "【Yêu cầu cứng về hình ảnh】Mỗi cảnh bắt buộc xuất hiện «người đang thao tác hệ thống»: "
+            "nhân vật phong cách cắt giấy ngồi trước bàn/bảng điều khiển dùng máy tính/tablet, nhấp chuột, gõ phím, chuyển menu, "
+            "kiểm tra dashboard, điền biểu mẫu, so sánh trước sau, trình diễn quy trình then chốt... "
+            "Có thể kết hợp đặc tả màn hình hoặc sơ đồ cấu trúc, nhưng cấm cả phim chỉ có hình khái niệm rỗng không có người thao tác. "
+            "title/subtitle tóm tắt kiến thức của cảnh; img_prompt viết rõ tư thế nhân vật, loại nội dung màn hình trước mặt và thao tác hành động. "
+            "Toàn phim đồng nhất phong cách cắt giấy và một tạo hình người thao tác duy nhất."
         ),
         "seedream_config": {
             "ref_images": [],
@@ -509,7 +509,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 14,
-        "llm_system_addon": "人文纪录节奏：观察→细节→情感落点。旁白平和真诚。全片统一温暖纪实插画风与人物外形。",
+        "llm_system_addon": "Tiết tấu tài liệu nhân văn: Quan sát → Chi tiết → Điểm chạm cảm xúc. Lời dẫn ôn hòa, chân thành. Toàn phim đồng nhất phong cách tranh minh họa tài liệu ấm áp và ngoại hình nhân vật.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.68,
@@ -537,7 +537,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
-        "llm_system_addon": "用孩子听得懂的短句，每镜突出一个可爱视觉元素，节奏轻快。",
+        "llm_system_addon": "Dùng các câu ngắn trẻ em dễ hiểu, mỗi cảnh làm nổi bật một yếu tố hình ảnh đáng yêu, tiết tấu vui tươi nhanh nhẹn.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.65,
@@ -565,7 +565,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
-        "llm_system_addon": "青春动漫叙事：情绪镜+对话镜交替。全片必须同一赛璐璐画风与角色外形，禁止某镜变真人。",
+        "llm_system_addon": "Tự sự anime thanh xuân: Xen kẽ cảnh cảm xúc + cảnh đối thoại. Toàn phim bắt buộc đồng nhất phong cách cel-shaded anime và tạo hình nhân vật, cấm cảnh này biến thành người thật.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
@@ -597,9 +597,9 @@ TEMPLATES: list[dict] = [
         "shot_duration_min": 4,
         "shot_duration_max": 15,
         "llm_system_addon": (
-            "偏讲解结构：定义→例子→对比。"
-            "每镜尽量出现简笔人物操作系统或在白板上演示系统流程"
-            "（指点屏幕、画模块箭头、对比操作前后），避免只有抽象符号没有操作者。"
+            "Thiên về cấu trúc giảng giải: Định nghĩa → Ví dụ → So sánh. "
+            "Mỗi cảnh cố gắng xuất hiện nhân vật nét vẽ phấn thao tác hệ thống hoặc trình diễn quy trình trên bảng trắng "
+            "(chỉ tay vào màn hình, vẽ mũi tên module, so sánh trước sau thao tác), tránh việc chỉ có ký hiệu trừu tượng mà không có người thao tác."
         ),
         "seedream_config": {
             "ref_images": [],
@@ -631,7 +631,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
-        "llm_system_addon": "科技/都市节奏偏快，每镜一个强视觉符号（霓虹、屏幕、雨夜）。全片统一赛博插画风。",
+        "llm_system_addon": "Tiết tấu công nghệ / đô thị nhanh, mỗi cảnh một biểu tượng thị giác mạnh mẽ (neon, màn hình, đêm mưa). Toàn phim đồng nhất phong cách minh họa cyberpunk.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
@@ -659,7 +659,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 14,
-        "llm_system_addon": "史诗叙事：远景建立世界观→人物登场→冲突高潮。台词可略庄重。全片统一奇幻插画风。",
+        "llm_system_addon": "Tự sự sử thi: Đại cảnh thiết lập thế giới quan → Nhân vật xuất hiện → Xung đột cao trào. Thoại mang âm hưởng trang trọng. Toàn phim đồng nhất phong cách minh họa kỳ ảo.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
@@ -687,7 +687,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "9:16",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
-        "llm_system_addon": "视觉冲击优先，每镜一个强构图，文案短而有力。",
+        "llm_system_addon": "Ưu tiên tác động thị giác, mỗi cảnh một bố cục ấn tượng, lời văn ngắn gọn và mạnh mẽ.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.75,
@@ -715,7 +715,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "9:16",
         "shot_duration_min": 3,
         "shot_duration_max": 10,
-        "llm_system_addon": "商业短句：卖点→场景→收束。每镜一个视觉焦点。全片统一极简品牌插画风。",
+        "llm_system_addon": "Câu thương mại ngắn gọn: Điểm bán → Bối cảnh → Đúc kết. Mỗi cảnh một tiêu điểm thị giác. Toàn phim đồng nhất phong cách minh họa thương hiệu tối giản.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.68,
@@ -744,8 +744,8 @@ TEMPLATES: list[dict] = [
         "shot_duration_min": 3,
         "shot_duration_max": 12,
         "llm_system_addon": (
-            "节奏偏游戏关卡感，信息点做成可辨识像素图标。"
-            "涉及软件/系统/工具时，优先像素小人坐在电脑前操作系统、点击菜单、通关式演示流程。"
+            "Tiết tấu mang cảm giác vượt ải game, các điểm thông tin chuyển thành icon pixel dễ nhận biết. "
+            "Khi liên quan đến phần mềm / hệ thống / công cụ, ưu tiên nhân vật pixel ngồi trước máy tính thao tác, nhấp menu, trình diễn quy trình kiểu qua màn."
         ),
         "seedream_config": {
             "ref_images": [],
@@ -774,7 +774,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
-        "llm_system_addon": "怀旧叙事，旁白可带年代感。全片统一 VHS 插画质感与角色外形。",
+        "llm_system_addon": "Tự sự hoài niệm, lời dẫn mang cảm giác thời đại. Toàn phim đồng nhất chất cảm minh họa băng VHS và ngoại hình nhân vật.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
@@ -802,7 +802,7 @@ TEMPLATES: list[dict] = [
         "default_ratio": "9:16",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
-        "llm_system_addon": "叙事偏意境与转折，台词可略文言白话混用，留白节奏。适合竖屏图文：每镜短标题+诗意副标题叠字，并写可朗读的旁白。",
+        "llm_system_addon": "Tự sự thiên về ý cảnh và bước ngoặt, lời thoại đậm chất văn học, tiết tấu khoảng lặng giàu cảm xúc. Thích hợp video đồ họa chữ màn hình dọc: Mỗi cảnh tiêu đề ngắn + phụ đề thơ mộng, kèm lời thuyết minh có thể đọc được.",
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,

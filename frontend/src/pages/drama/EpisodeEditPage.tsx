@@ -955,7 +955,7 @@ function EpisodeEditInner() {
       enqueueEpisodeVideoJobs({
         projectId: pid,
         episodeId: eid,
-        episodeName: ep.name || episode?.name,
+        episodeName: displayEpisodeName,
         fragments: (ep.fragments || []).map((f, i) => ({
           id: f.id,
           sort_order: f.sort_order ?? i,
@@ -1095,7 +1095,7 @@ function EpisodeEditInner() {
       enqueueEpisodeVideoJobs({
         projectId: pid,
         episodeId: eid,
-        episodeName: ep.name || episode?.name,
+        episodeName: displayEpisodeName,
         fragments: (ep.fragments || []).map((f, i) => ({
           id: f.id,
           sort_order: f.sort_order ?? i,
@@ -1419,7 +1419,7 @@ function EpisodeEditInner() {
           <button type="button" className="drama-ep-icon-btn" aria-label={t('drama.episodeEdit.back')} onClick={handleBack}>
             ‹
           </button>
-          <h1>{episode.name}</h1>
+          <h1>{displayEpisodeName}</h1>
         </div>
         <div className="drama-ep-header-controls">
           <EpisodeEditHeaderControls

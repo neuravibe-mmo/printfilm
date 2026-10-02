@@ -34,31 +34,31 @@ ASSET_MENTION_TOKEN_PATTERN = re.compile(r"@asset:(\d+)")
 INLINE_WHITESPACE_PATTERN = re.compile(r"[^\S\n]+")
 
 SEEDANCE_VISUAL_STYLE_SECTION_INTRO = (
-    "【强制约束：视频画面风格】全片画面必须严格遵循以下风格描述，"
-    "严禁偏离、弱化或混用其他画风与镜头美学："
+    "【Ràng buộc bắt buộc: Phong cách hình ảnh video / 强制约束：视频画面风格】Toàn bộ hình ảnh video phải tuân thủ nghiêm ngặt mô tả phong cách sau, "
+    "nghiêm cấm đi chệch hướng, làm suy yếu hoặc pha trộn phong cách nghệ thuật và thẩm mỹ máy quay khác:"
 )
 # 音色难控：暂不提交 reference_audio、不写音色约束；口播由 Seedance generate_audio 自发挥。
 # 恢复绑定/提交时改回 True。
 SEEDANCE_ATTACH_REFERENCE_AUDIO = False
 SEEDANCE_CHARACTER_VOICE_SECTION_HEADER = (
-    "【强制约束：角色音色】以下角色说话的音色、语气、节奏与发声质感必须与对应参考音频严格一致，"
-    "语速自然偏慢、吐字清晰，严禁加速赶词、替换、混用其他声线或自行改写："
+    "【Ràng buộc bắt buộc: Giọng nhân vật / 强制约束：角色音色】Giọng nói, ngữ điệu, nhịp điệu và chất âm của các nhân vật sau phải khớp chính xác với âm thanh tham chiếu tương ứng, "
+    "tốc độ nói tự nhiên hơi chậm, phát âm rõ ràng, nghiêm cấm nói vội, thay thế hoặc dùng giọng khác:"
 )
 SEEDANCE_NARRATION_VOICE_SECTION_HEADER = (
-    "【强制约束：旁白音色】以下旁白说话的音色、语气、节奏与发声质感必须与对应参考音频严格一致，"
-    "语速自然偏慢、吐字清晰，严禁加速赶词、替换、混用其他声线或自行改写："
+    "【Ràng buộc bắt buộc: Giọng lời dẫn / 强制约束：旁白音色】Giọng nói, ngữ điệu, nhịp điệu và chất âm của lời dẫn sau phải khớp chính xác với âm thanh tham chiếu tương ứng, "
+    "tốc độ nói tự nhiên hơi chậm, phát âm rõ ràng, nghiêm cấm nói vội hoặc dùng giọng khác:"
 )
 SEEDANCE_CHARACTER_APPEARANCE_SECTION_HEADER = (
-    "【强制约束：角色形象】以下角色的面容、体型、发型、服饰与整体气质必须与对应参考图严格一致，"
-    "严禁换脸、形象漂移或重绘为其他人物："
+    "【Ràng buộc bắt buộc: Ngoại hình nhân vật / 强制约束：角色形象】Khuôn mặt, vóc dáng, kiểu tóc, trang phục và thần thái tổng thể của các nhân vật sau phải khớp chính xác với ảnh tham chiếu tương ứng, "
+    "nghiêm cấm đổi mặt, lệch hình tượng hoặc vẽ lại thành người khác:"
 )
 SEEDANCE_SCENE_SECTION_HEADER = (
-    "【强制约束：场景】以下场景的空间结构、环境陈设、光影氛围必须与对应参考图严格一致，"
-    "严禁替换为其他场景或大幅偏离参考画面："
+    "【Ràng buộc bắt buộc: Bối cảnh / 强制约束：场景】Cấu trúc không gian, bài trí môi trường, ánh sáng và không khí của các bối cảnh sau phải khớp chính xác với ảnh tham chiếu tương ứng, "
+    "nghiêm cấm đổi cảnh khác hoặc sai lệch đáng kể so với ảnh tham chiếu:"
 )
 SEEDANCE_PROP_SECTION_HEADER = (
-    "【强制约束：道具】以下道具的外形、材质与关键细节必须与对应参考图严格一致，"
-    "严禁替换为其他物品或丢失标志性特征："
+    "【Ràng buộc bắt buộc: Đạo cụ / 强制约束：道具】Hình dáng, chất liệu và chi tiết then chốt của các đạo cụ sau phải khớp chính xác với ảnh tham chiếu tương ứng, "
+    "nghiêm cấm thay thế bằng vật khác hoặc làm mất đi đặc trưng nhận diện:"
 )
 
 
@@ -629,14 +629,14 @@ def build_seedance_content_items(
         # Seedance：first/last_frame 不能与 reference_* 混用；有角色/场景参考时改挂 reference_image
         if has_reference_media:
             prompt_text = (
-                "【强制约束：镜头衔接】另附上一镜尾帧作为参考图（参考图序列最后一张）。"
-                "本段开场须从该尾帧画面自然续接，保持主体、场景与光影连贯，禁止跳切到无关画面。\n\n"
+                "【Ràng buộc bắt buộc: Nối tiếp cảnh quay / 强制约束：镜头衔接】Đính kèm thêm khung hình cuối của cảnh trước làm ảnh tham chiếu (ảnh cuối cùng trong chuỗi ảnh tham chiếu). "
+                "Mở đầu đoạn này phải tiếp nối tự nhiên từ khung hình cuối đó, giữ chủ thể, bối cảnh và ánh sáng liền mạch, nghiêm cấm chuyển cảnh giật sang khung hình không liên quan.\n\n"
                 + prompt_text
             )
         else:
             prompt_text = (
-                "【强制约束：镜头衔接】本段视频必须以首帧图为开场画面自然续接，"
-                "保持主体、场景与光影连贯，禁止跳切到无关画面。\n\n"
+                "【Ràng buộc bắt buộc: Nối tiếp cảnh quay / 强制约束：镜头衔接】Đoạn video này bắt buộc phải lấy ảnh khung hình đầu làm cảnh mở đầu và tiếp nối tự nhiên, "
+                "giữ chủ thể, bối cảnh và ánh sáng liền mạch, nghiêm cấm chuyển cảnh giật sang khung hình không liên quan.\n\n"
                 + prompt_text
             )
 

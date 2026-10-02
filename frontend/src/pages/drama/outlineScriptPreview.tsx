@@ -57,16 +57,18 @@ export function speakerColor(name: string): string {
 export function parseOutlineSceneBlocks(text: string): OutlineSceneBlock[] {
   const raw = (text || '').trim()
   if (!raw) return []
-  const parts = raw.split(/(?=^#{1,3}\s*场)/m).map((p) => p.trim()).filter(Boolean)
-  if (parts.length <= 1 && !/^#{1,3}\s*场/.test(raw)) {
-    return [{ raw, label: '全文', title: '', body: raw }]
+  const scenePattern = /(?=^#{1,3}\s*(?:场|cảnh|scene)\b)/im
+  const hasSceneHeading = /^#{1,3}\s*(?:场|cảnh|scene)\b/im.test(raw)
+  const parts = raw.split(scenePattern).map((p) => p.trim()).filter(Boolean)
+  if (parts.length <= 1 && !hasSceneHeading) {
+    return [{ raw, label: 'Toàn văn', title: '', body: raw }]
   }
   return parts.map((part, index) => {
     const lines = part.split(/\r?\n/)
     const head = (lines[0] || '').replace(/^#+\s*/, '').trim()
-    const labelMatch = head.match(/^场\s*([^\s：:]+)/)
-    const label = labelMatch ? `场 ${labelMatch[1]}` : `场 ${index + 1}`
-    const title = head.replace(/^场\s*[^\s：:]+[：:\s]*/, '').trim()
+    const labelMatch = head.match(/^(?:场|cảnh|scene)\s*([^\s：:]+)/i)
+    const label = labelMatch ? `Phân cảnh ${labelMatch[1]}` : `Phân cảnh ${index + 1}`
+    const title = head.replace(/^(?:场|cảnh|scene)\s*[^\s：:]+[：:\s—\-]*/i, '').trim()
     const body = lines.slice(1).join('\n').trim()
     return { raw: part, label, title, body }
   })
@@ -83,8 +85,9 @@ export function parseScriptLine(line: string): ParsedScriptLine {
   const trimmed = text.trim()
   if (!trimmed) return { kind: 'empty', text }
   if (
-    /^(出场人物|时间|地点|内外景)/.test(trimmed) ||
-    /^[日夜早晚晨黄昏傍晚凌晨清晨午晚]\s*[内外]/.test(trimmed)
+    /^(出场人物|时间|地点|内外景|Nhân vật|Thời gian|Địa điểm|Bối cảnh|Ngoại cảnh|Nội cảnh)/i.test(trimmed) ||
+    /^[日夜早晚晨黄昏傍晚凌晨清晨午晚]\s*[内外]/.test(trimmed) ||
+    /^(Ngày|Đêm|Sáng|Tối|Chiều)\s*[—\-–\s]*(Nội|Ngoại)/i.test(trimmed)
   ) {
     return { kind: 'meta', text: trimmed }
   }
@@ -182,10 +185,10 @@ export function summarizeOutlineScene(body: string): OutlineSceneStats {
     if (line.kind === 'dialogue') dialogueCount += 1
     if (line.kind === 'action') actionCount += 1
     if (line.kind === 'meta') {
-      const castMatch = line.text.match(/^出场人物[：:]\s*(.+)$/)
+      const castMatch = line.text.match(/^(?:出场人物|Nhân vật xuất hiện|Nhân vật)[：:]\s*(.+)$/i)
       if (castMatch) cast = parseCastNames(castMatch[1])
       const locMatch = line.text.match(
-        /^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?\s*(?:内|外|内外)\s+(.+)$/,
+        /^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚|Ngày|Đêm|Sáng|Chiều|Tối)?\s*(?:内|外|内外|Nội|Ngoại|Nội ngoại)\s+(.+)$/i,
       )
       if (locMatch && !location) location = locMatch[1].split(/[／/]/)[0].trim()
       else if (/^[日夜早晚]/.test(line.text) && !location) location = line.text

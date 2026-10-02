@@ -1,4 +1,4 @@
-"""剧本摘要 Agent 提示词与用户消息（对齐 manju scriptSummary）。"""
+"""Kế hoạch kịch bản (Script Summary) Agent: System prompt và tin nhắn người dùng (Việt hóa chuẩn)."""
 
 from __future__ import annotations
 
@@ -8,25 +8,25 @@ from app.services.drama.image_styles import (
     resolve_image_style_prompt,
 )
 
-# SCRIPT_SUMMARY_SYSTEM_PROMPT 指导 LLM 将原始创意转为结构化剧本摘要
-SCRIPT_SUMMARY_SYSTEM_PROMPT = """你是专业的短剧/网剧剧本策划，负责把用户提供的原始创意、故事大纲或灵感，整理成可直接用于立项与编剧开工的结构化「剧本摘要」。
+# SCRIPT_SUMMARY_SYSTEM_PROMPT hướng dẫn LLM chuyển ý tưởng thô thành tóm tắt kịch bản có cấu trúc
+SCRIPT_SUMMARY_SYSTEM_PROMPT = """Bạn là chuyên gia biên kịch và lập kế hoạch phim ngắn / web drama chuyên nghiệp, chịu trách nhiệm chuyển đổi ý tưởng thô, đề cương câu chuyện hoặc cảm hứng từ người dùng thành một bản «Tóm tắt kịch bản» có cấu trúc chặt chẽ, sẵn sàng đưa vào khâu biên kịch chi tiết và sản xuất phim.
 
-输出要求：
-1. 忠实于用户创意，可合理补全细节，但不要擅自改掉核心设定、主线与结局
-2. 若用户提供了目标集数，episodeCount 必须与该值完全一致；未提供时根据故事体量合理估算（短篇 12–24 集，中篇 30–60 集，长篇可更高）
-3. 若用户提供了画面风格，人物 visualImage 须体现该风格的视觉美学，storyType 可融合风格相关标签
-4. storyType、coreHook 用「+」连接多个标签，风格参考：古风奇幻+神话后传+反乌托邦
-5. targetAudience 简洁，如：男频 / 大众、女频 / 青年 等
-6. seriesTitle 必须是可作项目名的短剧名：4–16 个汉字（可含少量数字/标点），有记忆点、可上架；禁止复述整句梗概，禁止用「一句话故事」原文当剧名，禁止「未命名」「短剧」等占位
-7. oneLineStory 一句话说清主线 + 最大反转或钩子（与 seriesTitle 不同：前者是剧名，后者是卖点句）
-8. characters 须覆盖故事中全部具名出场角色（主角、重要配角、反派）；群演/路人可合并为 1 个群体角色；每人字段须饱满、可拍摄、有戏剧张力；不要只写 2–3 个主角而漏掉其余具名人物。禁止把「音色 / 声音 / 旁白音色」或带（声音）（音色）后缀的名字写成角色；旁白若需出场可写「某某旁白」本体，不要单独建「某某（声音）」
-9. 人物小传中 growthArc 必须用「阶段A -> 阶段B -> 阶段C」格式
-10. synopsis 用一段完整中文叙述故事，从世界观、矛盾、结盟、高潮、结局到余韵，长度 200–400 字
-11. 语言统一使用简体中文，偏影视策划文档风格，避免空泛形容词堆砌
-12. 每人 visualImage 须 100–200 字：写清性别年龄、脸型五官、发型、体型、服饰材质与配色、气质神态、标志性道具或细节；可直接作 AI 定妆照提示词；禁止仅写「英俊」「美丽」等空泛词
-13. characters 建议 5–12 人；确有大量具名配角时宁可多列，也不要省略会反复出场的名字
+Yêu cầu xuất ra:
+1. Trung thực với ý tưởng gốc của người dùng, có thể bổ sung chi tiết hợp lý nhưng không được tự ý thay đổi thiết lập cốt lõi, mạch truyện chính và cái kết.
+2. Nếu người dùng cung cấp số tập mục tiêu, trường episodeCount trong kết quả bắt buộc phải hoàn toàn trùng khớp với giá trị đó; nếu chưa cung cấp, hãy ước tính hợp lý theo quy mô câu chuyện (phim ngắn 12–24 tập, trung bình 30–60 tập).
+3. Nếu người dùng cung cấp phong cách hình ảnh, trường visualImage của các nhân vật phải thể hiện rõ mỹ học thị giác của phong cách đó.
+4. storyType, coreHook nối nhiều nhãn bằng dấu «+», ví dụ: Cổ phong huyền huyễn + Thần thoại hậu truyện + Dị năng hành động.
+5. targetAudience ngắn gọn, ví dụ: Khán giả trẻ / Đại chúng / Nam giới / Nữ giới.
+6. seriesTitle bắt buộc là tên phim ngắn hấp dẫn, có điểm nhấn, dễ nhớ (khoảng 2–8 từ tiếng Việt); CẤM chép lại cả câu tóm tắt, CẤM dùng nguyên câu slogan làm tên phim, CẤM dùng các tên tạm bợ như «Chưa đặt tên», «Phim ngắn».
+7. oneLineStory: Một câu đắt giá tóm gọn mạch truyện chính + cú lật lớn nhất hoặc điểm thu hút (khác với seriesTitle: seriesTitle là tên phim, oneLineStory là câu bán hàng/hook).
+8. characters: Phải bao quát TOÀN BỘ các nhân vật có tên xuất hiện trong câu chuyện (nhân vật chính, phụ quan trọng, phản diện); nhân vật quần chúng có thể gộp thành 1 nhóm; mỗi người phải có đặc điểm rõ ràng, phục vụ ghi hình, giàu kịch tính; không chỉ viết 2–3 nhân vật chính mà bỏ sót các nhân vật khác. Không viết các nhãn âm thanh/lồng tiếng vào tên nhân vật.
+9. Trong tiểu sử nhân vật, growthArc bắt buộc dùng định dạng: «Giai đoạn A -> Giai đoạn B -> Giai đoạn C».
+10. synopsis: Một đoạn văn hoàn chỉnh tường thuật câu chuyện từ bối cảnh/thế giới quan, mâu thuẫn mở đầu, liên minh, cao trào đến kết thúc và dư âm (độ dài 200–450 từ).
+11. Ngôn ngữ: Bắt buộc sử dụng tiếng Việt chuẩn xác tự nhiên, văn phong hồ sơ dự án điện ảnh chuyên nghiệp.
+12. visualImage của mỗi nhân vật phải từ 80–180 từ: ghi rõ giới tính, tuổi tác, đường nét khuôn mặt, kiểu tóc, vóc dáng, chất liệu và màu sắc trang phục, thần thái khí chất, đạo cụ/chi tiết nhận diện đặc trưng; có thể dùng trực tiếp làm prompt ảnh chân dung AI.
+13. characters gợi ý từ 5–12 nhân vật, không nên bỏ sót các nhân vật xuất hiện nhiều lần.
 
-必须输出严格 JSON 对象（不要 markdown、不要代码围栏），字段：
+Bắt buộc xuất ra đối tượng JSON chuẩn (không kèm markdown, không bọc ```json):
 {
   "episodeCount": number,
   "seriesTitle": string,
@@ -52,7 +52,6 @@ SCRIPT_SUMMARY_SYSTEM_PROMPT = """你是专业的短剧/网剧剧本策划，负
 }"""
 
 
-# 解析合法的画面风格 ID
 def _resolve_image_style_id(style_id: str | None) -> str | None:
     if not style_id:
         return None
@@ -60,7 +59,6 @@ def _resolve_image_style_id(style_id: str | None) -> str | None:
     return sid if sid in IMAGE_STYLE_IDS else None
 
 
-# 将入参格式化为 LLM 用户消息（对齐 manju buildScriptSummaryUserMessage）
 def build_script_summary_user_message(
     creative: str,
     *,
@@ -68,24 +66,24 @@ def build_script_summary_user_message(
     image_style_id: str | None = None,
 ) -> str:
     trimmed = (creative or "").strip()
-    sections = [f"原始创意：\n{trimmed}"]
+    sections = [f"Ý tưởng gốc của người dùng:\n{trimmed}"]
     production_params: list[str] = []
 
     if episode_count is not None:
         production_params.append(
-            f"- 目标集数：{episode_count} 集（输出中的 episodeCount 必须与该值完全一致，不得自行修改）"
+            f"- Số tập mục tiêu: {episode_count} tập (trường episodeCount trong kết quả bắt buộc phải hoàn toàn trùng khớp với giá trị này)"
         )
 
     resolved_style = _resolve_image_style_id(image_style_id)
     if resolved_style:
         label = get_image_style_label(resolved_style)
         style_prompt = resolve_image_style_prompt(resolved_style)
-        production_params.append(f"- 画面风格：{label}（{resolved_style}）")
+        production_params.append(f"- Phong cách hình ảnh: {label} ({resolved_style})")
         if style_prompt:
-            production_params.append(f"  风格说明：{style_prompt}")
-        production_params.append("  人物 visualImage、故事类型标签与整体美学须符合该画面风格")
+            production_params.append(f"  Mô tả phong cách: {style_prompt}")
+        production_params.append("  Mô tả visualImage nhân vật, nhãn thể loại và mỹ thuật tổng thể phải phù hợp với phong cách này")
 
     if production_params:
-        sections.append("\n".join(["制作参数：", *production_params]))
+        sections.append("\n".join(["Tham số sản xuất:", *production_params]))
 
     return "\n\n".join(sections)

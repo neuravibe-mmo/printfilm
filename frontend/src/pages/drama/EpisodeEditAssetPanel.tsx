@@ -1,5 +1,6 @@
 /** 分集编辑：左侧资产栏（本集/全集 + 分类卡片） */
 import { useI18n } from '../../i18n'
+import { Workflow } from 'lucide-react'
 import { resolveDramaAssetPreviewUrl, type DramaAsset } from '../../api/drama'
 import { CharacterVoicePreviewButton } from '../../components/drama/CharacterVoicePreviewButton'
 import { readAssetVoiceBinding } from './CharacterVoiceBindModal'
@@ -87,9 +88,10 @@ export function EpisodeEditAssetPanel({
           type="button"
           className="drama-ep-icon-btn solid"
           aria-label={t('drama.mention.openCanvas')}
+          title={t('drama.mention.openCanvas')}
           onClick={onOpenCanvas}
         >
-          +
+          <Workflow size={16} strokeWidth={1.9} />
         </button>
       </div>
       <div className="drama-ep-asset-tabs">

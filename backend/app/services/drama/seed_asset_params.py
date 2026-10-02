@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-# DEFAULT_APPEARANCE_NAME 从剧本抽取角色时的默认形象名
-DEFAULT_APPEARANCE_NAME = "基础形象"
+# DEFAULT_APPEARANCE_NAME Tạo hình mặc định khi trích xuất nhân vật từ kịch bản
+DEFAULT_APPEARANCE_NAME = "Tạo hình cơ bản"
 
 # DEFAULT_IMAGE_GENERATION 默认生图参数（空 modelId 走后台 TokenFree 默认）
 DEFAULT_IMAGE_GENERATION = {
@@ -43,12 +43,12 @@ def manju_join_character_prompt(character: dict[str, Any]) -> str:
     personality = str(character.get("personality") or "").strip()
     parts = [
         visual,
-        f"身份：{title}" if title else "",
-        f"定位：{role_type}" if role_type else "",
-        f"标签：{core_tags}" if core_tags else "",
-        f"性格：{personality}" if personality else "",
+        f"Danh xưng: {title}" if title else "",
+        f"Vai trò: {role_type}" if role_type else "",
+        f"Nhãn: {core_tags}" if core_tags else "",
+        f"Tính cách: {personality}" if personality else "",
     ]
-    return "。".join(part for part in parts if part)
+    return ". ".join(part for part in parts if part)
 
 
 # 从摘要人物 dict 拼角色生图提示词正文（refresh/fallback 时可叙事化扩展）
@@ -102,5 +102,5 @@ def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
 # 组装场景资产 params（对齐 manju buildSceneParams）
 def build_scene_params(scene_name: str, story_type: str = "") -> dict[str, Any]:
     _ = story_type  # manju 场景 seed 未使用 storyType，保留参数供 refresh 扩展
-    prompt = f"场景：{scene_name.strip()}，影视级写实场景，构图清晰，适合短剧拍摄"
+    prompt = f"Bối cảnh: {scene_name.strip()}, bối cảnh điện ảnh chân thực, bố cục rõ ràng, phù hợp quay phim ngắn"
     return build_named_image_params(prompt, "16:9", kind="scene")

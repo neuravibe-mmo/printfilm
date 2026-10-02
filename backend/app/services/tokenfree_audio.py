@@ -25,7 +25,7 @@ TOKENFREE_TTS_FALLBACKS: tuple[str, ...] = (
 )
 
 # Omni 流式口播：禁止改写原文
-TOKENFREE_OMNI_TTS_SYSTEM = "你是语音合成器。只朗读用户给出的原文，禁止改写、解释或添加任何额外句子。"
+TOKENFREE_OMNI_TTS_SYSTEM = "Bạn là bộ tổng hợp giọng nói. Chỉ đọc to nguyên văn văn bản do người dùng cung cấp, tuyệt đối không viết lại, không giải thích và không thêm bất kỳ câu từ nào khác."
 # Omni 流式 PCM 实测为 24 kHz / 16-bit / mono
 TOKENFREE_OMNI_PCM_RATE = 24000
 

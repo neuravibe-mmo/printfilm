@@ -30,8 +30,8 @@ def build_voice_sample_line_short(character_name: str | None = None) -> str:
     name = normalize_character_name(character_name)
     display = name[:8] if len(name) > 8 else name
     return (
-        f"你好，我是{display}。"
-        "请听我的语气与声线，之后我会用这样的声音来讲述故事。"
+        f"Xin chào, tôi là {display}. "
+        "Hãy lắng nghe ngữ điệu và chất giọng của tôi, sau này tôi sẽ dùng giọng nói này để kể câu chuyện."
     )
 # 生成角色差异化试听台词
 def build_voice_sample_text(
@@ -44,24 +44,24 @@ def build_voice_sample_text(
         return build_voice_sample_line_short(character_name)
     name = normalize_character_name(character_name)
     prompt = (voice_prompt or "").strip()
-    blob = f"{name} {prompt}"
-    if any(k in blob for k in ("老", "翁", "族老", "首领", "青叔")):
-        line = f"{name}：诸位且听我说，此事关乎两岸百姓，不可延误。"
-    elif any(k in blob for k in ("禹", "治水", "领袖", "帝王", "君主")):
-        line = f"{name}：疏堵并举，通川达海，方能安民。"
-    elif any(k in blob for k in ("伯益", "谋士", "儒雅", "书生")):
-        line = f"{name}：依我之见，当先察水势，再定工段。"
-    elif any(k in blob for k in ("青壮", "少年", "青年", "小伙")):
-        line = f"{name}：跟我上，这点工程算不了什么！"
-    elif any(k in blob for k in ("百姓", "群众", "平民", "妇人")):
-        line = f"{name}：只求河道通畅，我们也好安心过日子。"
-    elif any(k in blob for k in ("女", "姑娘", "少女")):
-        line = f"{name}：请放心，我会把情况说明白。"
+    blob = f"{name} {prompt}".lower()
+    if any(k in blob for k in ("lão", "ông", "trưởng lão", "thủ lĩnh", "chú", "bác", "老", "翁", "首领")):
+        line = f"{name}: Chư vị hãy nghe tôi nói, việc này liên quan đến bách tính muôn dân, tuyệt đối không thể chậm trễ."
+    elif any(k in blob for k in ("vương", "hoàng", "lãnh tụ", "đế vương", "quân chủ", "trị thủy", "tướng", "领袖", "帝王")):
+        line = f"{name}: Khơi thông dòng chảy, hướng ra biển lớn, như vậy mới có thể an dân định quốc."
+    elif any(k in blob for k in ("mưu sĩ", "học giả", "thư sinh", "quân sư", "谋士", "儒雅")):
+        line = f"{name}: Theo thiển ý của tôi, trước hết cần quan sát thế nước và thời cuộc rồi mới định kế sách."
+    elif any(k in blob for k in ("thiếu niên", "thanh niên", "tráng sĩ", "chàng trai", "少年", "青年")):
+        line = f"{name}: Hãy theo tôi tiến lên, chút gian lao thử thách này chẳng là gì cả!"
+    elif any(k in blob for k in ("bách tính", "quần chúng", "bình dân", "dân làng", "百姓", "平民")):
+        line = f"{name}: Chúng tôi chỉ mong sao sóng yên biển lặng, để được yên ổn làm ăn sinh sống."
+    elif any(k in blob for k in ("nữ", "cô nương", "thiếu nữ", "tiểu thư", "nàng", "女", "姑娘")):
+        line = f"{name}: Xin người cứ yên tâm, tôi nhất định sẽ giải thích rõ ràng mọi việc."
     elif prompt:
-        snippet = prompt[:36].rstrip("，。；、 ")
-        line = f"{name}：{snippet}。"
+        snippet = prompt[:36].rstrip("，。；、 .!?:;,")
+        line = f"{name}: {snippet}."
     else:
-        line = f"{name}：请听我的语气与声线。"
+        line = f"{name}: Xin hãy lắng nghe ngữ điệu và chất giọng của tôi."
     return line[:180]
 # 解析可用于 voice_design image_prompt 的公网角色图 URL
 def resolve_character_image_url(character: DramaAsset | None) -> str | None:

@@ -193,22 +193,22 @@ def _build_opening_cue_lines(
     title = (episode_name or "").strip()
     series = (project_title or "").strip()
     if ep_no > 0 and title:
-        cues.append(f"【片头·集号叠字】第{ep_no}集｜{title}")
+        cues.append(f"【Đầu phim · Chữ số tập】Tập {ep_no}｜{title}")
     elif ep_no > 0:
-        cues.append(f"【片头·集号叠字】第{ep_no}集")
+        cues.append(f"【Đầu phim · Chữ số tập】Tập {ep_no}")
     elif title:
-        cues.append(f"【片头·集名叠字】{title}")
+        cues.append(f"【Đầu phim · Chữ tên tập】{title}")
     if series:
-        cues.append(f"【片头·剧名叠字】{series}")
+        cues.append(f"【Đầu phim · Chữ tên phim】{series}")
     genre = (story_type or "").strip()
     if genre:
-        cues.append(f"【片头·类型标注】{genre}")
+        cues.append(f"【Đầu phim · Thể loại】{genre}")
     bg = (background_blurb or one_line_story or "").strip()
     if bg:
-        short = re.split(r"[。！？]", bg, maxsplit=1)[0].strip() or bg
+        short = re.split(r"[。！？.!?]", bg, maxsplit=1)[0].strip() or bg
         if len(short) > 48:
             short = short[:47] + "…"
-        cues.append(f"【背景介绍·画面叠字】{short}")
+        cues.append(f"【Giới thiệu bối cảnh · Chữ trên hình】{short}")
     return cues
 
 

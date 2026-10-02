@@ -10,18 +10,18 @@ from app.services.drama.llm import drama_chat_json
 SUMMARY_TEXT_MAX = 4000
 EPISODE_SAMPLE_MAX = 2500
 
-SYSTEM_PROMPT = """你是短剧美术统筹，负责从剧本摘要与分集正文中整理「道具」资产清单，供后续 AI 生图使用。
+SYSTEM_PROMPT = """Bạn là điều phối viên mỹ thuật phim ngắn, chịu trách nhiệm tổng hợp danh sách tài sản «Đạo cụ» (props) từ bản tóm tắt kịch bản và nội dung các tập phim để phục vụ tạo ảnh AI tiếp theo.
 
-道具（props）：
-- 可被角色持有、传递、特写的物件（兵器、信物、刑具、神器、文书等）
-- 只保留对剧情有辨识度的关键道具，控制在 8–20 个
-- 不要把地点、角色、天气现象、气氛空镜当成道具
+Đạo cụ (props):
+- Các vật phẩm có thể được nhân vật cầm nắm, trao tay, đặc tả (vũ khí, tín vật, công cụ hình phạt, thần khí, văn thư, đồ vật quan trọng...)
+- Chỉ giữ lại các đạo cụ then chốt có độ nhận diện cao đối với cốt truyện, khống chế trong khoảng 8–20 món.
+- Không xem địa điểm, nhân vật, hiện tượng thời tiết hay cảnh trống không khí là đạo cụ.
 
-输出要求：
-1. 名称简短有辨识度；visualPrompt 用简体中文，每条 90–200 字，可直接作生图提示词
-2. visualPrompt 须含：材质/形制、色彩、尺度、磨损或做旧、戏剧符号、建议构图（特写/俯拍等）
-3. 必须输出严格 JSON 对象（不要 markdown）：{"props":[{"name":"...","visualPrompt":"..."}]}
-4. 不要输出 materials / 素材字段
+Yêu cầu xuất ra:
+1. Tên ngắn gọn, dễ nhận diện; visualPrompt viết bằng tiếng Việt, mỗi mục 90–200 từ, có thể dùng trực tiếp làm prompt tạo ảnh.
+2. visualPrompt phải bao gồm: chất liệu/hình dáng, màu sắc, kích thước/tỷ lệ, độ hao mòn hoặc cũ kỹ, biểu tượng kịch tính, gợi ý bố cục (cận cảnh/nhìn từ trên xuống...).
+3. Phải xuất ra đúng đối tượng JSON (không dùng markdown): {"props":[{"name":"...","visualPrompt":"..."}]}
+4. Không xuất ra trường materials / chất liệu cảnh.
 """
 
 
@@ -73,19 +73,19 @@ async def extract_props_materials(
     samples = [b.strip() for b in episode_bodies if (b or "").strip()][:6]
     if samples:
         episode_block = "\n\n".join(
-            f"【分集样例 {i + 1}】\n{text[:EPISODE_SAMPLE_MAX]}" for i, text in enumerate(samples)
+            f"【Tập phim mẫu {i + 1}】\n{text[:EPISODE_SAMPLE_MAX]}" for i, text in enumerate(samples)
         )
     else:
-        episode_block = "（暂无分集正文）"
+        episode_block = "（Tạm thời chưa có nội dung kịch bản phân tập）"
 
     user = "\n".join(
         [
-            "【剧本摘要】",
+            "【Tóm tắt kịch bản】",
             summary_text[:SUMMARY_TEXT_MAX],
             "",
             episode_block,
             "",
-            "请抽取 props（不要输出 materials）。",
+            "Vui lòng trích xuất props (không xuất materials).",
         ]
     )
     raw = await drama_chat_json(SYSTEM_PROMPT, user, max_tokens=4096)

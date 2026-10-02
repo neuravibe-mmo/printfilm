@@ -11,7 +11,7 @@ from app.services.agent.store import list_injectable_skills, list_skills_by_ids
 
 # MAX_SKILL_INJECT_CHARS 单次注入上限，避免撑爆上下文
 MAX_SKILL_INJECT_CHARS = 14000
-SKILL_HEADER = "\n\n## 已启用 Agent Skill（必须遵守，不要复述本段标题）\n"
+SKILL_HEADER = "\n\n## Agent Skill đã kích hoạt (Bắt buộc tuân thủ, không lặp lại tiêu đề này / 已启用 Agent Skill)\n"
 
 
 def skill_matches_task(skill: AgentSkill, task: str) -> bool:
@@ -30,14 +30,14 @@ def render_skill_block(skills: list[AgentSkill], *, max_chars: int = MAX_SKILL_I
     chunks: list[str] = [SKILL_HEADER]
     used = len(SKILL_HEADER)
     for skill in skills:
-        title = (skill.name or skill.slug or "未命名").strip()
+        title = (skill.name or skill.slug or "Chưa đặt tên").strip()
         body = (skill.body or "").strip()
         piece = f"\n### {title}\n\n{body}\n"
         if used + len(piece) > max_chars:
             remain = max_chars - used - 24
             if remain < 200:
                 break
-            piece = f"\n### {title}\n\n{body[:remain].rstrip()}\n…（后续已截断）\n"
+            piece = f"\n### {title}\n\n{body[:remain].rstrip()}\n…（Phần sau đã được rút gọn / 后续已截断）\n"
         chunks.append(piece)
         used += len(piece)
     return "".join(chunks) if len(chunks) > 1 else ""

@@ -74,9 +74,9 @@ export function isDefaultEpisodeTitle(title?: string | null, epNo?: number): boo
   if (!title) return true
   const s = title.trim()
   if (!s) return true
-  if (/^第\s*\d+\s*集$/i.test(s)) return true
-  if (/^第\s*[0-9一二三四五六七八九十百]+\s*集$/i.test(s)) return true
-  if (/^(tập|episode)\s*\d+$/i.test(s)) return true
+  if (/^第\s*\d+\s*集[\s:：\-—]*$/i.test(s)) return true
+  if (/^第\s*[0-9一二三四五六七八九十百]+\s*集[\s:：\-—]*$/i.test(s)) return true
+  if (/^(tập|episode)\s*\d+[\s:：\-—]*$/i.test(s)) return true
   if (
     epNo !== undefined &&
     (s === `第${epNo}集` ||

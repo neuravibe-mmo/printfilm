@@ -32,12 +32,12 @@ RATIO_SIZE = {
 }
 
 PRODUCT_PROMPTS = {
-    "白底图": "电商商品白底精修图，纯白无缝背景，主体居中，光线均匀，无文字、无水印、无logo",
-    "场景图": "电商商品生活场景图，自然光，真实使用氛围，主体清晰，无文字、无水印",
-    "详情长图": "竖构图商品细节展示图，干净背景，材质与细节清晰，无文字、无水印",
+    "白底图": "Ảnh thương mại điện tử nền trắng tinh khiết, nền trắng không tì vết, chủ thể ở trung tâm, ánh sáng đồng đều, không có chữ, không watermark, không logo. E-commerce product on clean pure white background, centered, even lighting, no text, no watermark",
+    "场景图": "Ảnh thương mại điện tử bối cảnh đời sống thực tế, ánh sáng tự nhiên, không khí sử dụng chân thực, chủ thể rõ ràng sắc nét, không có chữ, không watermark. E-commerce product in realistic lifestyle scene, natural light, clear subject, no text, no watermark",
+    "详情长图": "Ảnh bố cục dọc hiển thị chi tiết sản phẩm, hậu cảnh sạch sẽ gọn gàng, chất liệu và chi tiết sắc nét, không chữ, không watermark. Vertical product detail shot, clean background, sharp textures and details, no text, no watermark",
 }
 
-ECOM_POSTER = "竖构图卖点海报氛围图，主体突出，干净构图，无文字、无字幕、无logo、无水印"
+ECOM_POSTER = "Ảnh poster quảng cáo điểm bán hàng bố cục dọc, chủ thể nổi bật, bố cục tinh tế sạch sẽ, không chữ, không phụ đề, không logo, không watermark. Vertical product showcase poster, prominent subject, clean composition, no text, no watermark"
 
 
 # 用户独立工具产出目录（挂在 p0/tools 下，不占用项目 id）
@@ -89,20 +89,22 @@ def duration_seconds(raw: str | None) -> int:
 
 # 图生图相似度：低=改动大，高=尽量贴近参考图
 def strength_hint(level: str | None) -> str:
-    if level == "低":
-        return "允许大幅改变构图与风格，仅保留主体可识别特征"
-    if level == "高":
-        return "尽量保持参考图主体外形、构图与色彩"
-    return "在保持主体可识别的前提下适度改变风格"
+    raw = (level or "").strip()
+    if raw in ("低", "Thấp", "Low"):
+        return "cho phép thay đổi lớn về bố cục và phong cách, chỉ giữ lại các đặc trưng nhận diện của chủ thể"
+    if raw in ("高", "Cao", "High"):
+        return "cố gắng giữ nguyên hình dáng chủ thể, bố cục và màu sắc của ảnh tham khảo"
+    return "trong điều kiện giữ nguyên đặc trưng nhận diện của chủ thể, biến đổi phong cách ở mức độ vừa phải"
 
 
 # 视频运动强度提示，拼进 Seedance 文案
 def motion_hint(level: str | None) -> str:
-    if level == "弱":
-        return "镜头几乎静止，只有轻微呼吸感运动"
-    if level == "强":
-        return "镜头运动明显，推拉或环绕，节奏更快"
-    return "中等镜头运动，平稳跟拍"
+    raw = (level or "").strip()
+    if raw in ("弱", "Yếu", "Weak"):
+        return "máy quay gần như tĩnh, chỉ có dao động thở nhẹ nhàng, chuyển động tinh tế"
+    if raw in ("强", "Mạnh", "Strong"):
+        return "chuyển động máy quay rõ rệt, đẩy kéo hoặc xoay quanh chủ thể, tiết tấu nhanh và năng động"
+    return "chuyển động máy quay vừa phải, bám theo chủ thể ổn định mượt mà"
 
 
 # 把上传文件落到用户工具目录

@@ -645,7 +645,7 @@ class ArkGateway:
             ratio = (output_ratio or "16:9").strip() or "16:9"
             orient = "竖屏" if ratio == "9:16" else ("方形" if ratio == "1:1" else "横屏")
             system = (
-                f"你是{orient}图文短视频编剧。所有字段必须使用简体中文。"
+                f"你是{orient}图文短视频编剧。Tất cả các trường (title, subtitle, text, img_prompt, segments...) phải ưu tiên viết bằng tiếng Việt (hoặc ngôn ngữ của văn bản đầu vào)."
                 f"{consistency}{llm_system_addon}"
                 f"每镜 duration 在 {duration_min}-{shot_cap} 秒。"
                 "这是「静图+叠字+配音」模式：不生成 AI 视频，但需要旁白配音；"
@@ -672,8 +672,7 @@ class ArkGateway:
                 else f"画风与人物必须全片一致；拆成 {shot_range} 镜，短镜快切。"
             )
             system = (
-                "你是短视频分镜编剧。所有字段必须使用简体中文"
-                "（包括 title、text、img_prompt、video_prompt、camera、bgm、segments）。"
+                "你是短视频分镜编剧。Tất cả các trường (bao gồm title, text, img_prompt, video_prompt, camera, bgm, segments) phải ưu tiên viết bằng tiếng Việt (hoặc ngôn ngữ của kịch bản đầu vào)."
                 f"{consistency}{llm_system_addon}"
                 f"每镜 duration 在 {duration_min}-{shot_cap} 秒，不要为凑满上限而注水。"
                 "shots 字段说明："
@@ -2346,18 +2345,18 @@ class ArkGateway:
 
         if mode == "script":
             system = (
-                "你是科普短视频文案作者。根据用户主题写一篇可直接用于旁白的完整口播文案。"
-                "只输出严格 JSON：{\"title\":\"作品名\",\"content\":\"完整文案\"}。"
-                "title：8-18 字，吸引人、无标点堆砌。"
-                "content：300-700 字，口语化，分 4-8 个自然段，有开场钩子、知识点、收尾；"
-                "不要 markdown、不要分镜编号、不要标题行。"
+                "Bạn là tác giả biên kịch video ngắn. Căn cứ vào chủ đề của người dùng, hãy viết một kịch bản lời dẫn hoàn chỉnh sẵn sàng để đọc lồng tiếng bằng tiếng Việt. "
+                "Chỉ xuất đối tượng JSON: {\"title\":\"Tên tác phẩm\",\"content\":\"Toàn bộ kịch bản\"}. "
+                "title: 8-18 từ, hấp dẫn, không lạm dụng dấu câu. "
+                "content: 300-700 từ, giọng văn tự nhiên gần gũi, chia 4-8 đoạn, có móc câu mở đầu, nội dung kiến thức/cốt truyện và đoạn kết; "
+                "không dùng markdown, không đánh số phân cảnh, không thêm dòng tiêu đề."
             )
         else:
             system = (
-                "你是科普短视频选题策划。把用户输入扩写成一句清晰具体的创作主题。"
-                "只输出严格 JSON：{\"title\":\"作品名\",\"content\":\"主题句\"}。"
-                "title：8-18 字。"
-                "content：一句话主题，40-90 字，写清受众与要讲清的核心知识点；不要换行。"
+                "Bạn là chuyên gia lập kế hoạch đề tài video ngắn. Hãy mở rộng nội dung người dùng nhập thành một chủ đề sáng tạo rõ ràng, cụ thể bằng tiếng Việt. "
+                "Chỉ xuất đối tượng JSON: {\"title\":\"Tên tác phẩm\",\"content\":\"Câu chủ đề\"}. "
+                "title: 8-18 từ. "
+                "content: Một câu chủ đề hoàn chỉnh từ 30-80 từ, nêu rõ đối tượng khán giả và nội dung cốt lõi cần truyền tải; không xuống dòng."
             )
         content = await chat_completions(
             system,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from typing import Any
 
@@ -21,17 +22,24 @@ from app.services.drama.fragment_asset_limit import (
     strip_unlisted_asset_mentions,
 )
 
-# 场次标题：### 场1-2 / ### 场景1-2
-SCENE_HEADER_RE = re.compile(r"^###\s*场(?:景)?\s*\d+\s*[-－—]\s*\d+\s*$")
-# 兼容无空格、或标题后带说明
-SCENE_HEADER_LOOSE_RE = re.compile(r"^###\s*场(?:景)?\s*\d+\s*[-－—]\s*\d+")
+# 场次标题：支持中文 ### 场1-2 / ### 场景1-2 以及越南语 CẢNH 1 / ### Cảnh 1-2 / SCENE 1
+SCENE_HEADER_RE = re.compile(
+    r"^(?:###\s*)?(?:场(?:景)?|cảnh|scene)\s*\d+(?:\s*[-－—]\s*\d+)?\s*$",
+    re.IGNORECASE,
+)
+# 兼容无空格、或标题后带说明（如 CẢNH 1 — NGOẠI. NGÔI LÀNG — SÁNG）
+SCENE_HEADER_LOOSE_RE = re.compile(
+    r"^(?:###\s*)?(?:场(?:景)?|cảnh|scene)\s*\d+(?:\s*[-－—]\s*\d+)?(?:\s*[:—\-–].*)?$",
+    re.IGNORECASE,
+)
 # 时间内外景行
 SCENE_LOCATION_RE = re.compile(
-    r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?\s*(?:内|外|内外)\s+(.+)$"
+    r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚|sáng|trưa|chiều|tối|đêm)?\s*(?:内|外|内外|nội|ngoại|nội/ngoại)\s*[:.]?\s*(.+)$",
+    re.IGNORECASE,
 )
 # 出场人物行
-CAST_LINE_RE = re.compile(r"^出场人物[：:]\s*(.+)$")
-EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。"}
+CAST_LINE_RE = re.compile(r"^(?:出场人物|nhân vật|diễn viên)[：:]\s*(.+)$", re.IGNORECASE)
+EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。", "không", "không có"}
 
 FRAGMENT_DURATION_MIN = 3
 # 单行/单块 @duration 上限（对白、空镜等；整镜硬上限见 FRAGMENT_TOTAL_MAX）
@@ -40,9 +48,9 @@ FRAGMENT_DURATION_MAX = 15
 FRAGMENT_SOFT_MAX = 15
 # 单分镜总时长硬上限（短剧节奏；Seedance 仍支持更长，此处刻意收紧）
 FRAGMENT_TOTAL_MAX = 15
-# 整集分镜条数 / 时长预算（重新分镜与规则切分共用）
-EPISODE_FRAGMENT_MAX = 10
-EPISODE_DURATION_BUDGET_SEC = 90
+# 整集分镜条数 / 时长预算（重新分镜与规则切分共用，上限设为最多 3 条分镜）
+EPISODE_FRAGMENT_MAX = int(os.getenv("EPISODE_FRAGMENT_MAX", "3"))
+EPISODE_DURATION_BUDGET_SEC = 45
 # 重要角色：roleType / title / tags 命中则需要人物介绍叠字
 IMPORTANT_ROLE_RE = re.compile(r"主角|男主|女主|重要|反派|BOSS|核心|主人公")
 # 次要定位：默认不介绍
@@ -253,7 +261,7 @@ def _strip_production_prefix(line: str) -> str:
     return re.sub(r"^【[^】]*】\s*", "", (line or "").strip()).strip()
 
 
-_OPENING_CUE_PREFIXES = ("【片头", "【背景介绍")
+_OPENING_CUE_PREFIXES = ("【片头", "【背景介绍", "【Đầu phim", "【Giới thiệu bối cảnh")
 _CONTINUATION_START = tuple("（(，,、；;…—-")
 
 
@@ -633,16 +641,16 @@ def _infer_bgm_mood(hints: str, is_vi: bool = False) -> str:
         return "Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện, cảm xúc biến chuyển theo khung hình"
 
     rules = [
-        (r"刑|斩|战|杀|怒|崩|劫|乱", "低沉紧张、鼓点渐强，烘托压迫与危机感"),
-        (r"殿|宫|朝|帝|神|礼", "庄重史诗、弦乐铺底，气势恢宏但不抢戏"),
-        (r"夜|暗|悬疑|密", "神秘悬疑、低频铺底，留白感强"),
-        (r"水|河|海|雨|洪", "流动感环境音乐，水声与弦乐交织"),
-        (r"晨|春|暖|光", "轻柔开阔、希望感，钢琴或弦乐为主"),
+        (r"刑|斩|战|杀|怒|崩|劫|乱", "Âm trầm căng thẳng, tiếng trống dồn dập, tăng cảm giác áp bách và nguy cơ"),
+        (r"殿|宫|朝|帝|神|礼", "Trang nghiêm sử thi, đàn dây làm nền, khí thế hào hùng nhưng không lấn át lời thoại"),
+        (r"夜|暗|悬疑|密", "Huyền bí kịch tính, âm trầm tần số thấp, tạo nhiều khoảng lặng"),
+        (r"水|河|海|雨|洪", "Âm nhạc môi trường uyển chuyển, tiếng nước kết hợp đàn dây"),
+        (r"晨|春|暖|光", "Nhẹ nhàng rộng mở, cảm giác hy vọng, chủ đạo piano hoặc đàn dây"),
     ]
     for pattern, mood in rules:
         if re.search(pattern, text):
             return mood
-    return "贴合剧情氛围的轻量配乐，情绪随画面起伏"
+    return "Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện, cảm xúc biến chuyển theo khung hình"
 
 
 def _is_generic_intro_text(text: str) -> bool:
@@ -931,9 +939,9 @@ def _build_production_cues(
         if include_subtitles:
             lines.insert(0, DRAMA_SUBTITLE_CUE_VI)
     else:
-        lines = [f"【BGM：{_infer_bgm_mood(hint, is_vi=False)}；音量低于人声】"]
+        lines = [f"【BGM: {_infer_bgm_mood(hint, is_vi=True)}；âm lượng nhỏ hơn giọng nói】"]
         if include_subtitles:
-            lines.insert(0, DRAMA_SUBTITLE_CUE)
+            lines.insert(0, DRAMA_SUBTITLE_CUE_VI)
     lines.extend(character_intro_lines)
     return lines
 

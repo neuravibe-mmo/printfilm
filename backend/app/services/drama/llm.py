@@ -76,7 +76,7 @@ def _ensure_json_word_in_prompt(system: str, user: str) -> tuple[str, str]:
     blob = f"{system or ''}\n{user or ''}".lower()
     if "json" in blob:
         return system, user
-    suffix = "\n\n请只输出合法 JSON 对象，不要 markdown 代码围栏。"
+    suffix = "\n\nVui lòng chỉ xuất đối tượng JSON hợp lệ, không dùng khối mã markdown."
     return (system or "").rstrip() + suffix, user
 
 

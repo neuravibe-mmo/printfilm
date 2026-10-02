@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.models import User
 from app.models_drama import DramaAsset, DramaEpisode, DramaEpisodeFragment, DramaFragmentAssetRef, DramaProject
-from app.services.ark import get_ark
+from app.services.ark import TaskResult, get_ark
 from app.services.drama.billing_util import record_seedance_video_usage, record_seedream_image_usage, seedance_billing_key
 from app.services.drama.output_settings import (
     infer_aspect_ratio_from_pixels,
@@ -1208,7 +1208,7 @@ async def ensure_fragment_reference_audios(
                             if isinstance(voice_asset.params, dict)
                             else {}
                         )
-                        prompt = str(voice_params.get("voicePrompt") or "").strip() or "沉稳旁白，吐字清晰"
+                        prompt = str(voice_params.get("voicePrompt") or "").strip() or "Lời dẫn điềm tĩnh, phát âm rõ ràng"
                         speaker = str(
                             voice_params.get("speaker")
                             or voice_params.get("designedSpeakerId")

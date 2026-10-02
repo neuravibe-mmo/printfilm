@@ -11,15 +11,15 @@ sort_order 0–3：创建页「热门推荐」与默认模板会优先落到这�
 
 # 四条模板共用：事实边界 + 人称边界 + 合规（写入 llm_system_addon 前缀）
 HUOKE_IRON_RULES = (
-    "【获客铁律】只使用用户文案里出现的事实；没写到的价格、项目、口感、效果、服务细节一个字都不许编。"
-    "信息不够就写短，绝不用想象补齐。"
-    "【人称边界】第一人称（我试了/我看到/对我们）只能来自用户原文；"
-    "商家卖点只能写成客观陈述（「他们家主打X」），禁止写成「我用了X特别好」。"
-    "用户没提到的卖点不得放进「真实体验」分点。"
-    "【合规】禁止最、第一、国家级、100%、永久、根治等绝对化用语；数字以用户文案为准；"
-    "禁止编造成功率、案例人数、名人背书。"
-    "【名称】用户文案里出现的店名、地址、产品名必须原样保留，禁止改成某店/某品牌；文案没有的名称一律不许编。"
-    "【口播】短句口语，禁止通版广告腔。"
+    "【Quy tắc tiếp thị khách hàng】Chỉ sử dụng những sự thật có trong nội dung của người dùng; "
+    "tuyệt đối không tự bịa giá cả, sản phẩm, hiệu quả hay dịch vụ chưa được đề cập. "
+    "Thông tin không đủ thì viết ngắn gọn, tuyệt đối không dùng trí tưởng tượng để bù đắp. "
+    "【Giới hạn ngôi xưng】Ngôi thứ nhất (tôi đã thử / tôi thấy) chỉ được lấy từ nguyên văn của người dùng; "
+    "Điểm bán hàng của nhà bán chỉ được viết theo lời tường thuật khách quan, cấm viết kiểu thổi phồng. "
+    "【Tuân thủ】Nghiêm cấm các từ tuyệt đối hóa như số 1, tốt nhất, vĩnh viễn, triệt để; "
+    "Nghiêm cấm bịa đặt tỷ lệ thành công hay người nổi tiếng chứng thực. "
+    "【Tên gọi】Tên quán, địa chỉ, tên sản phẩm xuất hiện trong bài viết phải giữ nguyên vẹn. "
+    "【Lời dẫn】Câu ngắn gọn, khẩu ngữ tự nhiên, ngôn ngữ tiếng Việt."
 )
 
 # 叠字：竖屏获客片顶部大字 + 底部口播字幕
@@ -98,14 +98,14 @@ HUOKE_TEMPLATES: list[dict] = [
         shot_duration_min=3,
         shot_duration_max=6,
         structure_addon=(
-            "这是抖音获客口播片。【分镜数量】按 3–4 镜拆，忽略更长的默认区间；"
-            "事实不够就合并节拍，宁可少镜也不许编。"
-            "节拍：①【0-3秒钩子】反差/悬念/痛点，title 极短；"
-            "②【场景画面】交代在哪、做什么，只写用户文案里有的场景；"
-            "③【核心体验】最多 2 个可核验点，禁止凑满去编；"
-            "④【行动号召】到店/下单/私信的具体下一步，不承诺结果。"
-            "每镜 segments：visual 与 narration 交替；旁白短句能一口气读完；"
-            "title=钩子词，subtitle=卖点客观句，text=口播。"
+            "Đây là video thuyết minh tiếp thị khách hàng ngắn. 【Số lượng phân cảnh】Chia theo 3–4 cảnh, bỏ qua khoảng mặc định dài hơn; "
+            "Sự thật không đủ thì gộp nhịp phân cảnh, thà ít cảnh chứ tuyệt đối không bịa đặt. "
+            "Nhịp điệu: ①【Móc câu 0-3 giây】Sự tương phản/bí ẩn/nỗi đau, title cực ngắn; "
+            "②【Hình ảnh bối cảnh】Nêu rõ ở đâu, làm gì, chỉ viết các cảnh có trong văn bản của người dùng; "
+            "③【Trải nghiệm cốt lõi】Tối đa 2 điểm có thể kiểm chứng, cấm bịa thêm cho đủ; "
+            "④【Kêu gọi hành động】Bước tiếp theo cụ thể (đến cửa hàng / đặt hàng / nhắn tin), không hứa hẹn kết quả quá đà. "
+            "Mỗi cảnh output segments: xen kẽ visual và narration; lời dẫn câu ngắn có thể đọc trong một hơi thở; "
+            "title=từ móc câu, subtitle=câu điểm bán khách quan, text=lời dẫn lồng tiếng."
         ),
         seedream_config={
             "ref_images": [],
@@ -142,14 +142,14 @@ HUOKE_TEMPLATES: list[dict] = [
         shot_duration_min=4,
         shot_duration_max=8,
         structure_addon=(
-            "这是小红书获客安利片。【分镜数量】按 3–5 镜拆，忽略更长的默认区间；"
-            "事实不够就少镜，禁止编体验凑镜。"
-            "节拍：①钩子标题（情绪或反差，不像广告）；"
-            "②我为什么来 / 第一印象（只来自用户原文）；"
-            "③分点真实体验（每镜一个细节）；"
-            "④推荐给谁 / 值不值得（场景来自文案，给不出就客观收束）。"
-            "口播像跟闺蜜说话；title 短、subtitle 带一个具体细节。"
-            "每镜 segments：visual 与 narration 交替。"
+            "Đây là video chia sẻ giới thiệu trải nghiệm tiếp thị khách hàng. 【Số lượng phân cảnh】Chia theo 3–5 cảnh; "
+            "Sự thật không đủ thì giảm số cảnh, nghiêm cấm bịa đặt trải nghiệm để bù cảnh. "
+            "Nhịp điệu: ①Tiêu đề móc câu (cảm xúc hoặc tương phản, không giống quảng cáo lộ liễu); "
+            "②Tại sao tôi đến / Ấn tượng đầu tiên (chỉ lấy từ nguyên văn của người dùng); "
+            "③Các điểm trải nghiệm chân thực (mỗi cảnh một chi tiết cụ thể); "
+            "④Khuyên dùng cho ai / Có đáng giá không (bối cảnh lấy từ văn bản). "
+            "Lời dẫn như đang trò chuyện tâm sự; title ngắn, subtitle kèm một chi tiết cụ thể. "
+            "Mỗi cảnh output segments: xen kẽ visual và narration."
         ),
         seedream_config={
             "ref_images": [],
@@ -184,15 +184,15 @@ HUOKE_TEMPLATES: list[dict] = [
         shot_duration_min=5,
         shot_duration_max=10,
         structure_addon=(
-            "这是口碑/点评式获客讲解片。【分镜数量】按 3–5 镜拆，忽略更长的默认区间；"
-            "没写到的栏目直接跳过，禁止编事实凑镜。"
-            "节拍：①总体评价一句话（来自用户文案，禁止自行打分）；"
-            "②环境或服务（只写提到的）；"
-            "③推荐项+具体理由（理由必须来自原文）；"
-            "④人均与性价比（用户没写价格就不要猜，改讲「怎么选」）；"
-            "⑤适合场景与结论（给谁来、不适合谁，不承诺效果）。"
-            "旁白像认真写评价，信息密度高、少形容词。"
-            "每镜 segments：visual 与 narration 交替；title=栏目名，subtitle=可核验短句。"
+            "Đây là video phân tích đánh giá khách quan tiếp thị khách hàng. 【Số lượng phân cảnh】Chia theo 3–5 cảnh; "
+            "Mục nào chưa được nhắc đến thì bỏ qua, nghiêm cấm bịa đặt sự thật để bù cảnh. "
+            "Nhịp điệu: ①Một câu đánh giá tổng thể (lấy từ bài viết của người dùng); "
+            "②Môi trường hoặc dịch vụ (chỉ viết những gì được đề cập); "
+            "③Mục khuyên dùng + lý do cụ thể (lý do phải bắt nguồn từ nguyên văn); "
+            "④Chi phí và độ tương xứng giá trị (người dùng không viết giá thì không đoán mò, chuyển sang hướng dẫn chọn); "
+            "⑤Bối cảnh phù hợp và kết luận (dành cho ai, không phù hợp với ai). "
+            "Lời thuyết minh nghiêm túc, mật độ thông tin cao, ít tính từ sáo rỗng. "
+            "Mỗi cảnh output segments: xen kẽ visual và narration; title=tên mục, subtitle=câu ngắn có thể kiểm chứng."
         ),
         seedream_config={
             "ref_images": [],
@@ -233,12 +233,12 @@ HUOKE_TEMPLATES: list[dict] = [
         shot_duration_min=4,
         shot_duration_max=8,
         structure_addon=(
-            "这是朋友圈/熟人获客短片。【分镜数量】按 2–3 镜拆，忽略更长的默认区间；更短更好。"
-            "节拍：①一句真实感受（尽量靠近用户原话语感）；"
-            "②一个具体细节或画面（只取文案里最具体的那一点）；"
-            "③可选轻推荐（想来可以问我 / 自己去看看），不要强 CTA、不要优惠堆砌。"
-            "不加话题标签腔；emoji 不要写进旁白。"
-            "每镜 segments：visual 与 narration 交替；title 极短或不抢戏。"
+            "Đây là video ngắn chia sẻ đời thường/cho người quen. 【Số lượng phân cảnh】Chia theo 2–3 cảnh; càng ngắn gọn càng tốt. "
+            "Nhịp điệu: ①Một câu cảm nhận chân thực (gần gũi với giọng văn gốc của người dùng nhất có thể); "
+            "②Một chi tiết hoặc hình ảnh cụ thể nhất trong bài; "
+            "③Gợi ý nhẹ nhàng tùy chọn (nếu thích có thể hỏi mình / tự mình ghé xem), không chèn ép kêu gọi hay giảm giá dồn dập. "
+            "Không dùng giọng văn gắn thẻ hashtag; không chèn emoji vào lời đọc thoại. "
+            "Mỗi cảnh output segments: xen kẽ visual và narration; title cực ngắn gọn."
         ),
         seedream_config={
             "ref_images": [],

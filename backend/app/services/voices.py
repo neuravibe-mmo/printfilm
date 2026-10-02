@@ -257,9 +257,9 @@ def infer_speaker_from_voice_prompt(voice_prompt: str, *, character_name: str = 
     return infer_drama_speaker_from_prompt(voice_prompt, character_name=character_name, asset_id=asset_id)
 
 
-PREVIEW_TEXT = "大家好，这是当前音色的试听效果，适合科普短视频旁白讲解。"
+PREVIEW_TEXT = "Xin chào các bạn, đây là hiệu ứng nghe thử của giọng đọc này, rất phù hợp cho lời dẫn thuyết minh video."
 # 试听缓存文件名后缀：TTS 路由/edge 性别修复后递增，避免继续播放旧错误样例
-PREVIEW_CACHE_TAG = "v3"
+PREVIEW_CACHE_TAG = "v4"
 
 
 async def ensure_voice_preview(voice_id: str) -> str:

@@ -68,16 +68,16 @@ def build_tokenfree_image_body(
     style_ref_urls: list[str] | None = None,
 ) -> dict[str, Any]:
     """线上成功体只要 model + 自然语言 input，不要 size: 这种协议字段。"""
-    text = (prompt or "").strip() or "画面清晰，主体稳定"
+    text = (prompt or "").strip() or "Hình ảnh sắc nét, chủ thể ổn định"
     size_s = (size or "").strip()
     if size_s:
-        text = f"{text}。输出清晰度{size_s}"
+        text = f"{text}。Độ phân giải đầu ra {size_s}"
     refs = [u.strip() for u in (ref_urls or []) if (u or "").strip()]
     style_refs = [u.strip() for u in (style_ref_urls or []) if (u or "").strip()]
     if style_refs:
-        text = f"{text}。画风参考图（只借色调、笔触、光影，禁止抄主体与构图）：{' '.join(style_refs)}"
+        text = f"{text}。Ảnh tham chiếu phong cách (chỉ lấy tông màu, nét vẽ, ánh sáng; cấm sao chép chủ thể và bố cục / 画风参考图：只借色调、笔触、光影，禁止抄主体与构图）：{' '.join(style_refs)}"
     if refs:
-        text = f"{text}。构图与主体参考：{' '.join(refs)}"
+        text = f"{text}。Tham chiếu bố cục và chủ thể (构图与主体参考)：{' '.join(refs)}"
     return {"model": tokenfree_working_image_model(model), "input": text}
 
 

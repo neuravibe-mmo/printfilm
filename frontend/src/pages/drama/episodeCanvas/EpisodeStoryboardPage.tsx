@@ -30,6 +30,7 @@ import {
   getAssetTabLabel,
   normalizeAssetTab,
 } from '../dramaEpisodeEditUtils'
+import { isDefaultEpisodeTitle } from '../dramaWorkspaceUtils'
 import RequireAuth from '../RequireAuth'
 import {
   buildEpisodeFragmentFlow,
@@ -300,6 +301,19 @@ function EpisodeStoryboardInner() {
     return Boolean(tab) && !linkedIdSet.has(a.id)
   })
 
+  const epNumber = Number(episode?.params?.episodeNumber) || 0
+  const rawEpisodeName = (episode?.name || '').trim()
+  const displayEpisodeName =
+    rawEpisodeName && !isDefaultEpisodeTitle(rawEpisodeName, epNumber)
+      ? rawEpisodeName
+      : epNumber >= 1
+        ? t('drama.episodes.episode', { n: epNumber, no: epNumber })
+        : locale === 'vi'
+          ? `Tập ${eid}`
+          : locale === 'en'
+            ? `Episode ${eid}`
+            : `分集 ${eid}`
+
   const backHref = `/drama/projects/${pid}/episodes/${eid}`
 
   return (
@@ -316,10 +330,7 @@ function EpisodeStoryboardInner() {
             <ChevronLeft size={20} strokeWidth={1.8} />
           </button>
           <div className="ep-storyboard-title">
-            <strong>
-              {episode?.name ||
-                (locale === 'vi' ? `Tập ${eid}` : locale === 'en' ? `Episode ${eid}` : `分集 ${eid}`)}
-            </strong>
+            <strong>{displayEpisodeName}</strong>
             <span>
               {t('drama.canvas.storyboardTitle')} · {t('drama.canvas.shotCount', { n: fragments.length })}
               {dirty ? ` · ${t('drama.canvas.unsaved')}` : status ? ` · ${status}` : ''}

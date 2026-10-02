@@ -21,18 +21,18 @@ SUMMARY_TEXT_MAX = 3500
 BODY_SAMPLE_MAX = 4000
 BODY_PER_EPISODE_MAX = 1200
 
-CHARACTER_INTRO_SYSTEM = """你是影视编剧助理，为短剧/漫剧角色写「人物介绍叠字」短文案。
+CHARACTER_INTRO_SYSTEM = """Bạn là trợ lý biên kịch phim ảnh, chịu trách nhiệm viết câu ngắn «Phụ đề giới thiệu nhân vật» (character intro overlay) cho phim ngắn/web drama.
 
-用途：角色本剧首次出场时，画面在**该角色身旁**叠字一行「角色名｜身份头衔」（非口播、非底部字幕）。
+Mục đích: Khi nhân vật lần đầu tiên xuất hiện trong phim, khung hình sẽ hiện một dòng chữ nhỏ cạnh bên nhân vật đó «Tên nhân vật | Thân phận / Vai trò» (không phải lời đọc lồng tiếng, không phải phụ đề thoại dưới đáy màn hình).
 
-要求：
-1. 每条介绍 8~24 个汉字，突出身份、地位或与主线关系的一句话
-2. 风格贴合故事类型与剧本语境，可用「/」连接两个短语（如「治水首领/夏朝始祖」）
-3. 禁止占位废话：「出场人物」「剧本分集出场人物」「配角」等
-4. 只写给定名单中的角色；不要编造名单外人物
+Yêu cầu:
+1. Mỗi câu giới thiệu ngắn gọn từ 3 đến 8 từ tiếng Việt, nêu bật thân phận, địa vị hoặc mối quan hệ với cốt truyện chính.
+2. Phong cách phù hợp với thể loại truyện và bối cảnh kịch bản, có thể dùng dấu "/" để nối 2 vế ngắn (ví dụ: "Thủ lĩnh trị thủy / Tổ phụ triều Hạ").
+3. Nghiêm cấm các từ đệm vô nghĩa: "Nhân vật xuất hiện", "Nhân vật trong tập", "Vai phụ"...
+4. Chỉ viết cho các nhân vật có tên trong danh sách được giao; không tự ý bịa thêm nhân vật ngoài danh sách.
 
-输出严格 JSON（不要 markdown）：
-{"intros": {"角色名": "叠字介绍文案"}}
+Xuất ra đúng định dạng JSON (không dùng markdown):
+{"intros": {"Tên nhân vật": "Nội dung giới thiệu ngắn"}}
 """
 
 
@@ -57,7 +57,7 @@ def _summary_blob(summary: dict[str, Any] | None) -> str:
         ]
         line = " ".join(b for b in bits if b)
         if line:
-            parts.append(f"{name}：{line}")
+            parts.append(f"{name}: {line}")
     blob = "\n".join(parts)
     return blob[:SUMMARY_TEXT_MAX]
 
@@ -92,17 +92,17 @@ def _build_intro_user_prompt(
     if not genre and isinstance(summary, dict):
         genre = str(summary.get("storyType") or "").strip()
     lines = [
-        "请为以下角色各写一条人物介绍叠字文案：",
-        "、".join(names),
+        "Vui lòng viết cho mỗi nhân vật dưới đây một câu phụ đề giới thiệu nhân vật ngắn gọn:",
+        ", ".join(names),
     ]
     if genre:
-        lines.append(f"故事类型：{genre}")
+        lines.append(f"Thể loại câu chuyện: {genre}")
     summary_text = _summary_blob(summary)
     if summary_text:
-        lines.append(f"剧本摘要：\n{summary_text}")
+        lines.append(f"Tóm tắt kịch bản:\n{summary_text}")
     body_text = _bodies_sample(episode_bodies)
     if body_text:
-        lines.append(f"分集剧本节选：\n{body_text}")
+        lines.append(f"Trích đoạn kịch bản các tập:\n{body_text}")
     return "\n\n".join(lines)
 
 

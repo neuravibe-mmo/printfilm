@@ -44,41 +44,41 @@ MIN_PROMPT_LEN: dict[str, int] = {
     "material": 70,
 }
 
-CHARACTER_VISUAL_SYSTEM = """你是短剧美术造型指导，为 Seedream 生图写「视觉形象描述」。
+CHARACTER_VISUAL_SYSTEM = """Bạn là đạo diễn chỉ đạo tạo hình mỹ thuật phim ngắn, viết «Mô tả hình ảnh trực quan» cho việc tạo ảnh nhân vật (Seedream).
 
-优秀示例（仅作密度与写法参考，勿照抄）：
-「男性，二十岁左右，身形清瘦，面容带有山野少年的质朴与英气，肤色健康小麦色。头发用简单木簪束起，身穿以禽羽编织的轻甲，外罩粗麻短褐，腰系兽皮绳，脚踏草编凉鞋。气质机敏幽默，眼神明亮，嘴角常带笑意，像能辨兽语的青年猎手。」
+Ví dụ tốt (chỉ dùng tham khảo về độ chi tiết và cách viết, không sao chép nguyên văn):
+"Nam, khoảng hai mươi tuổi, vóc dáng thanh mảnh, gương mặt mang nét mộc mạc và anh dũng của thiếu niên miền sơn cước, làn da bánh mật khỏe khoắn. Tóc búi bằng trâm gỗ mộc, mặc giáp nhẹ kết bằng lông vũ, khoác áo vải thô nâu ngoài, eo thắt dây da thú, chân mang dép cỏ. Khí chất nhanh nhẹn, hóm hỉnh, ánh mắt sáng rực, khóe miệng luôn nở nụ cười, như một thợ săn trẻ tuổi có thể thấu hiểu tiếng thú."
 
-输出要求：
-1. 只输出一条简体中文，150–380 字，不要 JSON、不要标题、不要引号、不要「性格：」类字段标签
-2. 必须具体可拍：性别年龄、脸型五官、发型、体型、服饰分层（材质/颜色/纹样）、配饰道具、站姿气质、神态
-3. 把身份、性格、关系转化为可见视觉特征（如「沉稳」→ 肩背挺直、眼神低垂）
-4. 贴合故事类型与项目美学；描述须适配白底角色设定板（正/左侧/背三视图 + 面部大头 + 半身像），勿写构图指令本身
-5. 禁止空泛套话（如「五官清晰」「气质出众」），禁止剧情梗概与台词"""
+Yêu cầu xuất ra:
+1. Chỉ xuất ra một đoạn văn bằng tiếng Việt, từ 150–380 từ, không JSON, không tiêu đề, không để trong dấu ngoặc kép, không dùng nhãn trường như "Tính cách:".
+2. Phải cụ thể và khả thi để quay/vẽ: giới tính, độ tuổi, khuôn mặt, ngũ quan, kiểu tóc, vóc dáng, lớp trang phục (chất liệu/màu sắc/hoa văn), phụ kiện, đạo cụ, tư thế, thần thái.
+3. Chuyển hóa thân phận, tính cách, quan hệ thành đặc điểm thị giác nhìn thấy được (ví dụ "điềm tĩnh" → vai lưng thẳng tắp, ánh mắt nhìn sâu lắng).
+4. Phù hợp thể loại câu chuyện và phong cách mỹ thuật dự án; mô tả phải tương thích với bảng tạo hình nhân vật nền trắng (3 góc nhìn toàn thân chính diện/nghiêng/lưng + ảnh cận mặt + ảnh bán thân), không viết các chỉ lệnh bố cục kỹ thuật.
+5. Nghiêm cấm sáo rỗng chung chung (như "ngũ quan rõ nét", "khí chất xuất chúng"), cấm tóm tắt cốt truyện và lời thoại."""
 
-SCENE_VISUAL_SYSTEM = """你是短剧场景美术指导，为 Seedream 生图写「环境空间描述」。
+SCENE_VISUAL_SYSTEM = """Bạn là chỉ đạo mỹ thuật bối cảnh phim ngắn, viết «Mô tả không gian môi trường» cho việc tạo ảnh bối cảnh (Seedream).
 
-优秀示例（仅作密度参考）：
-「上古治水工地临时营帐区，午后偏硬的自然光。前景是泥泞夯土与散落的竹编筐、绳索，中景多顶粗麻营帐错落，帐外竖木桩挂兽皮与羽旗。背景可见疏朗山林与远处河滩反光，空气里有尘土与烟火气，色调偏土黄与灰绿，压抑中透出劳作紧迫感的横屏影视场景。」
+Ví dụ tốt (chỉ dùng tham khảo độ chi tiết):
+"Khu lều trại dã chiến của công trường trị thủy thời thượng cổ, ánh sáng tự nhiên gay gắt vào buổi chiều. Tiền cảnh là nền đất nện lầy lội với sọt tre đan, dây thừng rải rác; trung cảnh có nhiều lều bạt vải thô bố trí so le, ngoài lều cắm cọc gỗ treo da thú và cờ lông vũ. Hậu cảnh nhìn thấy rừng núi thưa thớt cùng ánh phản chiếu từ bãi sông xa xa, không khí phảng phất khói lửa và bụi đất, tông màu đất và xanh rêu xám, khung cảnh phim ngắn màn hình ngang toát lên sự khẩn trương của lao động."
 
-输出要求：
-1. 只输出一条简体中文，150–380 字，不要 JSON、不要标题、不要引号
-2. 须写清：空间类型、时代感、围合与立面要素（门窗/墙面/装修）、功能分区、关键陈设、光影、色调、氛围
-3. 以环境为主体，不写人物特写；可写无人痕迹（脚印、余烬、法阵光痕）
-4. 描述须适配「平视+俯视合图、左侧多面立面、右侧 2～4 处区域细节」的设计参考图，勿写构图指令本身
-5. 结合场戏摘录中的 △ 动作与道具，还原可拍摄的空间
-6. 禁止「影视级写实」「构图层次分明」等空泛套话"""
+Yêu cầu xuất ra:
+1. Chỉ xuất ra một đoạn văn bằng tiếng Việt, từ 150–380 từ, không JSON, không tiêu đề, không để trong dấu ngoặc kép.
+2. Phải nêu rõ: loại không gian, cảm giác thời đại, yếu tố bao quanh và mặt đứng (cửa ra vào/cửa sổ/bức tường/kiến trúc), phân khu chức năng, bài trí then chốt, ánh sáng, tông màu, không khí.
+3. Lấy môi trường làm chủ thể, không mô tả đặc tả nhân vật; có thể tả dấu vết sinh hoạt (dấu chân, tàn tro, vệt sáng).
+4. Mô tả phải tương thích với ảnh tham khảo thiết kế bối cảnh (kết hợp góc nhìn ngang + nhìn từ trên xuống, mặt đứng bên trái, chi tiết phân khu bên phải), không viết chỉ lệnh bố cục kỹ thuật.
+5. Kết hợp các hành động △ và đạo cụ trong trích đoạn phân cảnh để tái hiện không gian có thể quay được.
+6. Nghiêm cấm các câu sáo rỗng chung chung như "đẳng cấp điện ảnh", "bố cục phân tầng rõ ràng"."""
 
-PROP_VISUAL_SYSTEM = """你是短剧道具美术，为 Seedream 写「道具本体视觉描述」。
+PROP_VISUAL_SYSTEM = """Bạn là chuyên viên mỹ thuật đạo cụ phim ngắn, viết «Mô tả thị giác bản thể đạo cụ» cho tạo ảnh Seedream.
 
-输出要求：
-1. 只输出一条简体中文，100–220 字，不要 JSON、不要标题、不要引号
-2. 须写清：物件类型、整体外形与比例、材质分层、颜色、关键结构（开口/机关/铭文/纹样）、磨损做旧、戏剧符号
-3. 描述须适配白底道具设定板（正/左侧/背三视图 + 关键局部特写 + 材质结构特写），勿写构图指令本身
-4. 以物件为主体，不写人物手持或肖像；禁止空泛套话"""
+Yêu cầu xuất ra:
+1. Chỉ xuất ra một đoạn văn bằng tiếng Việt, từ 100–220 từ, không JSON, không tiêu đề, không để trong dấu ngoặc kép.
+2. Phải nêu rõ: loại vật phẩm, hình dáng tổng thể và tỷ lệ, phân tầng chất liệu, màu sắc, kết cấu then chốt (khe hở/cơ quan/khắc chữ/hoa văn), độ hao mòn cũ kỹ, biểu tượng kịch tính.
+3. Mô tả phải tương thích với bảng thiết kế đạo cụ nền trắng (3 góc nhìn chính diện/nghiêng/lưng + đặc tả bộ phận then chốt + đặc tả chất liệu kết cấu), không viết chỉ lệnh bố cục kỹ thuật.
+4. Lấy vật phẩm làm chủ thể, không vẽ nhân vật cầm nắm hay chân dung người; nghiêm cấm sáo rỗng chung chung."""
 
-MATERIAL_VISUAL_SYSTEM = """你是短剧气氛美术，为 Seedream 写空镜/气氛静帧描述。
-输出 100–220 字简体中文：景别、构图、光影、色调、氛围情绪、运动暗示（烟/水/光），适合 16:9 横屏。不要人物正脸。不要 JSON。"""
+MATERIAL_VISUAL_SYSTEM = """Bạn là chuyên viên mỹ thuật không khí phim ngắn, viết mô tả cảnh trống / ảnh tĩnh không khí cho Seedream.
+Xuất ra 100–220 từ bằng tiếng Việt: cỡ cảnh, bố cục, ánh sáng, tông màu, cảm xúc bầu không khí, gợi ý chuyển động (khói/nước/ánh sáng), phù hợp tỷ lệ màn hình ngang 16:9. Không có cận cảnh mặt nhân vật. Không JSON."""
 
 
 # 是否命中模板套话且整体偏短
@@ -131,37 +131,37 @@ def build_character_visual_context(
                 return text
         return ""
 
-    lines = [f"角色名：{asset.name or '未命名'}"]
+    lines = [f"Tên nhân vật: {asset.name or 'Chưa đặt tên'}"]
     mapping = [
-        ("称谓", pick("title")),
-        ("角色类型", pick("roleType")),
-        ("核心标签", pick("coreTags")),
-        ("身份背景", pick("identityBackground")),
-        ("成长经历", pick("growthExperience")),
-        ("性格", pick("personality")),
-        ("人物关系", pick("relationships")),
-        ("成长弧线", pick("growthArc")),
-        ("已有外形描述", pick("visualImage", "visualPrompt")),
+        ("Danh xưng", pick("title")),
+        ("Vai trò", pick("roleType")),
+        ("Nhãn cốt lõi", pick("coreTags")),
+        ("Thân thế bối cảnh", pick("identityBackground")),
+        ("Quá trình trưởng thành", pick("growthExperience")),
+        ("Tính cách", pick("personality")),
+        ("Mối quan hệ", pick("relationships")),
+        ("Đường phát triển nhân vật", pick("growthArc")),
+        ("Mô tả ngoại hình hiện có", pick("visualImage", "visualPrompt")),
     ]
     for label, value in mapping:
         if value:
-            lines.append(f"{label}：{value}")
+            lines.append(f"{label}: {value}")
     if summary:
         for key, label in (
-            ("storyType", "故事类型"),
-            ("oneLineStory", "一句话故事"),
-            ("coreHook", "核心钩子"),
+            ("storyType", "Thể loại câu chuyện"),
+            ("oneLineStory", "Một câu tóm tắt"),
+            ("coreHook", "Điểm lôi cuốn chính"),
         ):
             val = str(summary.get(key) or "").strip()
             if val:
-                lines.append(f"{label}：{val}")
+                lines.append(f"{label}: {val}")
         syn = str(summary.get("synopsis") or "").strip()
         if syn:
-            lines.append(f"故事梗概：{syn[:500]}")
+            lines.append(f"Tóm tắt cốt truyện: {syn[:500]}")
     return "\n".join(lines)
 
 
-# 从 params + 摘要规则拼接角色生图提示词
+# Từ params + tóm tắt kịch bản ghép prompt tạo ảnh nhân vật mặc định
 def fallback_character_visual_prompt(
     asset: DramaAsset,
     summary_char: dict[str, Any] | None = None,
@@ -173,10 +173,10 @@ def fallback_character_visual_prompt(
     text = compose_character_visual_text(merged)
     if text:
         return normalize_visual_prompt_text(text)
-    name = asset.name or "角色"
+    name = asset.name or "Nhân vật"
     return normalize_visual_prompt_text(
-        f"{name}，青年，身形匀称，面容清晰，发型与服饰符合上古神话短剧设定，"
-        f"白底全身站立，神态自然，影视定妆照。"
+        f"{name}, thanh niên, vóc dáng cân đối, diện mạo rõ nét, trang phục và tóc tai phù hợp với bối cảnh kịch bản, "
+        f"đứng toàn thân trên nền trắng, thần thái tự nhiên, ảnh tạo hình điện ảnh."
     )
 
 
@@ -296,11 +296,11 @@ async def resolve_visual_prompt_for_asset(
         context = build_character_visual_context(asset, summary_char, summary)
         style_id = str((project.params or {}).get("image_style_id") or "").strip()
         if style_id:
-            context += f"\n项目画面风格 ID：{style_id}"
+            context += f"\nID phong cách hình ảnh dự án: {style_id}"
         try:
             llm = await _llm_visual_prompt(
                 CHARACTER_VISUAL_SYSTEM,
-                f"请为以下角色生成视觉形象描述：\n\n{context}",
+                f"Vui lòng tạo mô tả hình ảnh trực quan cho nhân vật sau:\n\n{context}",
                 min_len=80,
                 **llm_bill,
             )
@@ -308,12 +308,12 @@ async def resolve_visual_prompt_for_asset(
             if len(prompt) >= min_len or len(prompt) >= 80:
                 return prompt
             if strict_llm:
-                raise RuntimeError(f"角色「{name}」AI 提示词过短（{len(prompt)} 字）")
+                raise RuntimeError(f"Prompt AI cho nhân vật '{name}' quá ngắn ({len(prompt)} ký tự)")
         except LlmUnavailableError:
             raise
         except Exception as exc:
             if strict_llm:
-                raise RuntimeError(f"角色「{name}」AI 提示词生成失败") from exc
+                raise RuntimeError(f"Tạo prompt AI cho nhân vật '{name}' thất bại") from exc
             logger.exception("角色视觉提示词 LLM 失败 asset_id=%s", asset.id)
         return rule_prompt
 
@@ -323,16 +323,16 @@ async def resolve_visual_prompt_for_asset(
         excerpt = collect_scene_excerpts(bodies, name)
         story_bits = []
         if summary:
-            story_bits.append(f"故事类型：{summary.get('storyType') or ''}")
-            story_bits.append(f"一句话：{summary.get('oneLineStory') or ''}")
+            story_bits.append(f"Thể loại câu chuyện: {summary.get('storyType') or ''}")
+            story_bits.append(f"Một câu tóm tắt: {summary.get('oneLineStory') or ''}")
             syn = str(summary.get("synopsis") or "").strip()
             if syn:
-                story_bits.append(f"梗概：{syn[:500]}")
+                story_bits.append(f"Tóm tắt: {syn[:500]}")
         user_msg = "\n".join(
             [
-                f"场景名：{name}",
+                f"Tên cảnh: {name}",
                 *story_bits,
-                f"场戏摘录：\n{excerpt}" if excerpt else "（暂无场戏摘录，请根据场景名与故事类型合理补全）",
+                f"Trích đoạn phân cảnh:\n{excerpt}" if excerpt else "（Tạm chưa có trích đoạn phân cảnh, hãy bổ sung hợp lý dựa vào tên cảnh và thể loại câu chuyện）",
             ]
         )
         try:
@@ -341,45 +341,45 @@ async def resolve_visual_prompt_for_asset(
             if len(prompt) >= min_len or len(prompt) >= 80:
                 return prompt
             if strict_llm:
-                raise RuntimeError(f"场景「{name}」AI 提示词过短（{len(prompt)} 字）")
+                raise RuntimeError(f"Prompt AI cho bối cảnh '{name}' quá ngắn ({len(prompt)} ký tự)")
         except LlmUnavailableError:
             raise
         except Exception as exc:
             if strict_llm:
-                raise RuntimeError(f"场景「{name}」AI 提示词生成失败") from exc
+                raise RuntimeError(f"Tạo prompt AI cho bối cảnh '{name}' thất bại") from exc
             logger.exception("场景视觉提示词 LLM 失败 asset_id=%s", asset.id)
         return rule_prompt
 
     if kind in {"prop", "material", "none"}:
         rule_prompt = stored or normalize_visual_prompt_text(
-            f"{name}，{'关键道具' if kind == 'prop' else '气氛空镜'}，"
-            f"材质细节清晰，戏剧感强，背景简洁。"
+            f"{name}, {'đạo cụ then chốt' if kind == 'prop' else 'cảnh không khí'}, "
+            f"chi tiết chất liệu rõ nét, giàu tính kịch, hậu cảnh đơn giản."
         )
 
         system = PROP_VISUAL_SYSTEM if kind == "prop" else MATERIAL_VISUAL_SYSTEM
-        ctx = f"名称：{name}\n"
+        ctx = f"Tên: {name}\n"
         if summary:
-            ctx += f"故事类型：{summary.get('storyType') or ''}\n"
+            ctx += f"Thể loại câu chuyện: {summary.get('storyType') or ''}\n"
         if stored:
-            ctx += f"已有描述：{stored}\n"
+            ctx += f"Mô tả hiện có: {stored}\n"
         excerpt = collect_scene_excerpts(bodies, name)
         if excerpt:
-            ctx += f"剧本相关摘录：\n{excerpt[:800]}"
+            ctx += f"Trích đoạn kịch bản liên quan:\n{excerpt[:800]}"
         try:
             llm = await _llm_visual_prompt(system, ctx, min_len=60, **llm_bill)
             prompt = merge_visual_prompts(rule_prompt, llm, min_len=min_len)
             if len(prompt) >= 60:
                 return prompt
             if strict_llm:
-                raise RuntimeError(f"「{name}」AI 提示词过短（{len(prompt)} 字）")
+                raise RuntimeError(f"Prompt AI cho '{name}' quá ngắn ({len(prompt)} ký tự)")
         except LlmUnavailableError:
             raise
         except Exception as exc:
             if strict_llm:
-                raise RuntimeError(f"「{name}」AI 提示词生成失败") from exc
+                raise RuntimeError(f"Tạo prompt AI cho '{name}' thất bại") from exc
             logger.exception("%s 视觉提示词 LLM 失败 asset_id=%s", kind, asset.id)
         return rule_prompt
 
     if stored and len(stored) >= min_len:
         return stored
-    return normalize_visual_prompt_text(f"{name}，影视级静物/空镜，材质与氛围清晰，构图简洁。")
+    return normalize_visual_prompt_text(f"{name}, cảnh tĩnh/vật thể điện ảnh, chất liệu và không khí rõ nét, bố cục súc tích.")

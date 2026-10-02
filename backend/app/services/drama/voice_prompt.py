@@ -13,13 +13,13 @@ from app.services.voices import infer_drama_speaker_from_prompt
 
 logger = logging.getLogger(__name__)
 
-VOICE_PROMPT_SYSTEM = """你是短剧配音导演。根据角色设定，输出一条「音色描述」供 TTS 试听与 Seedance 视频 reference_audio 使用。
+VOICE_PROMPT_SYSTEM = """Bạn là đạo diễn lồng tiếng phim ngắn. Căn cứ vào thiết lập nhân vật, hãy xuất ra một đoạn «Mô tả chất giọng» dùng cho nghe thử TTS và âm thanh tham chiếu (reference_audio) của video Seedance.
 
-要求：
-1. 只输出一条简体中文描述，50–120 字，不要 JSON、不要标题、不要引号包裹
-2. 须明确或可推断：年龄感、性别、声线质感（清亮/低沉/沙哑/童声等）、语速、吐字、语气与情绪基调
-3. 须贴合角色身份、性格与故事类型（古装神话/都市悬疑等）
-4. 偏「配音选角说明」口吻，便于 TTS 与视频模型理解，避免写台词或剧情梗概"""
+Yêu cầu:
+1. Chỉ xuất ra một mô tả bằng tiếng Việt, từ 50–120 từ, không JSON, không tiêu đề, không để trong dấu ngoặc kép.
+2. Phải nêu rõ hoặc có thể suy đoán được: cảm giác độ tuổi, giới tính, chất giọng (trong trẻo/trầm ấm/khàn/giọng trẻ thơ...), tốc độ nói, độ nhả chữ, ngữ điệu và sắc thái cảm xúc chủ đạo.
+3. Phải bám sát thân phận, tính cách nhân vật và thể loại câu chuyện (cổ trang, thần thoại, đô thị, huyền bí...).
+4. Viết theo giọng điệu «Chỉ dẫn tuyển diễn viên lồng tiếng», giúp mô hình TTS và video dễ hiểu, tránh viết lời thoại hoặc tóm tắt cốt truyện."""
 
 WHITESPACE_PATTERN = re.compile(r"\s+")
 
@@ -53,22 +53,22 @@ def build_character_voice_context(
                 return text
         return ""
 
-    lines = [f"角色名：{asset.name or '未命名'}"]
+    lines = [f"Tên nhân vật: {asset.name or 'Chưa đặt tên'}"]
     mapping = [
-        ("称谓", pick("title")),
-        ("角色类型", pick("roleType")),
-        ("核心标签", pick("coreTags")),
-        ("身份背景", pick("identityBackground")),
-        ("成长经历", pick("growthExperience")),
-        ("性格", pick("personality")),
-        ("人物关系", pick("relationships")),
-        ("成长弧线", pick("growthArc")),
-        ("外形气质", pick("visualImage", "visualPrompt")),
-        ("人物介绍", pick("introText", "intro")),
+        ("Danh xưng", pick("title")),
+        ("Vai trò", pick("roleType")),
+        ("Nhãn cốt lõi", pick("coreTags")),
+        ("Thân thế bối cảnh", pick("identityBackground")),
+        ("Quá trình trưởng thành", pick("growthExperience")),
+        ("Tính cách", pick("personality")),
+        ("Mối quan hệ", pick("relationships")),
+        ("Đường phát triển", pick("growthArc")),
+        ("Khí chất ngoại hình", pick("visualImage", "visualPrompt")),
+        ("Giới thiệu nhân vật", pick("introText", "intro")),
     ]
     for label, value in mapping:
         if value:
-            lines.append(f"{label}：{value}")
+            lines.append(f"{label}: {value}")
     return "\n".join(lines)
 
 
@@ -133,7 +133,7 @@ async def suggest_voice_prompt_for_character(
     )
     raw = await drama_chat_text(
         VOICE_PROMPT_SYSTEM,
-        f"请为以下角色生成音色描述：\n\n{context}",
+        f"Vui lòng tạo mô tả chất giọng cho nhân vật sau:\n\n{context}",
         temperature=0.6,
         max_tokens=512,
     )
