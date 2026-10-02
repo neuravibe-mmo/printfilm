@@ -80,10 +80,10 @@ export type TaskListOut = {
 }
 
 export const tasksApi = {
-  // 单任务详情（含 steps / events）
+  // Chi tiết nhiệm vụ đơn lẻ (bao gồm các bước/sự kiện)
   get: (taskId: number) => request<TaskRunOut>(`/api/tasks/${taskId}`),
 
-  // 按目标筛选最近任务（如 fragment）
+  // Lọc các tác vụ gần đây theo mục tiêu (chẳng hạn như đoạn)
   list: (params: {
     page?: number
     page_size?: number

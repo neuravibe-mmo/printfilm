@@ -15,7 +15,7 @@ import { useI18n } from "@/i18n/useI18n";
 
 type ListRes = { items: AdminDramaProject[]; meta: PageMeta };
 
-/** 漫剧项目列表：点击进入二级详情页 */
+/** Danh sách dự án phim truyền hình truyện tranh: Bấm vào để vào trang chi tiết phụ */
 export function DramaProjectsPage() {
   const { m, locale } = useI18n();
   const [page, setPage] = useState(1);

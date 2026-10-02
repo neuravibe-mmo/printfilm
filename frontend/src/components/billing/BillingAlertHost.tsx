@@ -13,10 +13,10 @@ type BillingAlertItem = {
   created_at?: string | null
 }
 
-/** 轮询待展示的用户额度告警并弹窗提示。 */
+/** Thăm dò ý kiến ​​để hiển thị cảnh báo hạn ngạch người dùng và lời nhắc bật lên. */
 export default function BillingAlertHost() {
   const { t } = useI18n()
-  // 在发起 pending 请求前就上锁，避免 focus/interval/StrictMode 并发重入
+  // Khóa trước khi bắt đầu các yêu cầu đang chờ xử lý để tránh việc truy cập lại đồng thời tiêu điểm/khoảng thời gian/Chế độ nghiêm ngặt
   const showingRef = useRef(false)
 
   const checkAlerts = useCallback(async () => {
@@ -35,11 +35,11 @@ export default function BillingAlertHost() {
         try {
           await api.billingAlertAck(item.id)
         } catch {
-          // 已确认或并发 ack 导致 404 时忽略，避免反复重试刷屏
+          // Bỏ qua khi 404 xảy ra do xác nhận hoặc xác nhận đồng thời để tránh việc thử lại nhiều lần để làm mới màn hình
         }
       }
     } catch {
-      // 未登录或网络异常时静默跳过
+      // Bỏ qua một cách im lặng khi chưa đăng nhập hoặc khi mạng có vấn đề bất thường.
     } finally {
       showingRef.current = false
     }

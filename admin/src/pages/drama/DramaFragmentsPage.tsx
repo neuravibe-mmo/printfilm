@@ -15,7 +15,7 @@ import { useI18n } from "@/i18n/useI18n";
 
 type ListRes = { items: AdminDramaFragment[]; meta: PageMeta };
 
-/** 全站漫剧分镜列表 */
+/** Danh sách cốt truyện truyện tranh trên toàn trang web */
 export function DramaFragmentsPage() {
   const { m } = useI18n();
   const [searchParams] = useSearchParams();

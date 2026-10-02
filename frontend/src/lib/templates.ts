@@ -301,7 +301,7 @@ export const TEMPLATE_TRANSLATIONS: Record<string, TemplateMeta> = {
       vi: 'Thu hút khách · Đề xuất chia sẻ',
     },
     description: {
-      zh: '竖屏闺蜜安利结构：钩子标题→第一印象→分点真实体验→推荐给谁。封面信息量高、口语化。',
+      zh: '竖屏闺蜜安利结构：钩子Tiêu đề→第一印象→分点真实体验→推荐给谁。封面信息量高、口语化。',
       en: 'Friendly recommendation structure: hook title -> first impression -> real breakdown -> who it is for. High-info cover, conversational tone.',
       vi: 'Cấu trúc chia sẻ gần gũi màn dọc: tiêu đề lôi cuốn → ấn tượng đầu tiên → phân tích trải nghiệm thật → phù hợp với ai. Bìa nhiều thông tin, lời thoại tự nhiên.',
     },
@@ -336,7 +336,7 @@ export const TEMPLATE_TRANSLATIONS: Record<string, TemplateMeta> = {
 const NAME_TO_KEY: Record<string, string> = {}
 for (const [key, meta] of Object.entries(TEMPLATE_TRANSLATIONS)) {
   NAME_TO_KEY[meta.name.zh] = key
-  // also normalize dot variants: 获客·抖音钩子 vs 获客 · 抖音钩子
+  // cũng chuẩn hóa các biến thể dấu chấm: Thu hút khách hàng·Móc Douyin vs Thu hút khách hàng·Móc Douyin
   const spaced = meta.name.zh.replace(/·/g, ' · ')
   if (spaced !== meta.name.zh) NAME_TO_KEY[spaced] = key
   const unspaced = meta.name.zh.replace(/ · /g, '·')

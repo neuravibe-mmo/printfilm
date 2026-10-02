@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Token 单价与费用换算。"""
+"""Đơn giá token và chuyển đổi phí."""
 from __future__ import annotations
 
 import math
@@ -16,7 +16,7 @@ SKUS: list[dict[str, Any]] = [
 
 ORDER_EXPIRE_SECONDS = 300
 
-# Kie 1 credit ≈ $0.005；按约 7 CNY/USD 折合 ¥0.035 ≈ 3.5 分（可配置）
+# Kie 1 tín dụng ≈ $0,005; tương đương với khoảng 7 CNY/USD ¥0,035 ≈ 3,5 điểm (có thể định cấu hình)
 DEFAULT_KIE_FEN_PER_CREDIT = 3.5
 
 
@@ -46,7 +46,7 @@ def kie_credits_to_cost_fen(
     credits: Any,
     settings: Settings | None = None,
 ) -> int | None:
-    """Kie creditsConsumed → 上游成本（分）。"""
+    """Kie creditĐã tiêu dùng → chi phí ngược dòng (xu)."""
     try:
         amount = float(credits)
     except (TypeError, ValueError):
@@ -57,7 +57,7 @@ def kie_credits_to_cost_fen(
 
 
 def user_charge_fen(cost_fen: int, settings: Settings | None = None) -> int:
-    """用户扣费 = TokenFree / 上游成本，不再乘 markup。"""
+    """Khấu trừ người dùng = TokenFree / chi phí ngược dòng, không còn sử dụng đánh dấu."""
     if cost_fen <= 0:
         return 0
     return max(1, int(cost_fen))
@@ -69,7 +69,7 @@ def charge_fen_for_tokens(
     *,
     settings: Settings | None = None,
 ) -> tuple[int, int]:
-    """Return (cost_fen, charge_fen)；charge 与成本相同。"""
+    """Trả lại (cost_fen, charge_fen); phí cũng giống như chi phí."""
     s = settings or get_settings()
     t = max(0, int(tokens))
     yuan_per_m = provider_yuan_per_m(billing_key, s)
@@ -82,7 +82,7 @@ def charge_fen_for_tokens(
 
 
 def _has_request_tokens(block: dict[str, Any]) -> bool:
-    """是否像单次调用 usage（带 token 字段），而不是账户余额。"""
+    """Nó giống như một lệnh gọi sử dụng (với trường mã thông báo), thay vì số dư tài khoản."""
     return any(
         block.get(key) is not None
         for key in ("prompt_tokens", "completion_tokens", "total_tokens", "input_tokens", "output_tokens")
@@ -90,7 +90,7 @@ def _has_request_tokens(block: dict[str, Any]) -> bool:
 
 
 def _extract_newapi_quota(data: dict[str, Any], usage: dict[str, Any]) -> Any:
-    """从单次调用响应提取 New API 消耗额度（不是账户剩余）。"""
+    """Trích xuất hạn ngạch tiêu thụ API mới (không phải số dư tài khoản) từ phản hồi của một cuộc gọi."""
     for key in ("quota_consumed", "consumed_quota"):
         if usage.get(key) is not None:
             return usage.get(key)
@@ -107,7 +107,7 @@ def parse_upstream_cost_fen(
     data: dict[str, Any] | None,
     settings: Settings | None = None,
 ) -> int | None:
-    """从 New API quota / 火山 usage / Kie credits 解析上游成本（分）；无则 None。"""
+    """Phân tích chi phí ngược dòng (xu) từ hạn ngạch API mới/sử dụng núi lửa/tín dụng Kie; Không có nếu không."""
     if not data:
         return None
     usage = data.get("usage") if isinstance(data.get("usage"), dict) else data
@@ -126,7 +126,7 @@ def parse_upstream_cost_fen(
         converted = quota_to_cost_fen(newapi_quota, settings)
         if converted > 0:
             return converted
-    # 明确人民币字段；无 New API quota 时才把火山 cost 当人民币元
+    # Làm rõ trường RMB; chỉ sử dụng chi phí núi lửa làm RMB khi không có hạn ngạch API mới
     has_quota_field = any(
         usage.get(key) is not None or data.get(key) is not None
         for key in ("quota", "quota_consumed", "consumed_quota")
@@ -140,7 +140,7 @@ def parse_upstream_cost_fen(
                 return max(0, int(math.ceil(float(usage[key]) * 100)))
             except (TypeError, ValueError):
                 pass
-    # Kie：任务级 creditsConsumed（usage 内或顶层）
+    # Kie: tín dụng cấp nhiệm vụĐã sử dụng (ở mức sử dụng hoặc cấp cao nhất)
     credits = usage.get("creditsConsumed")
     if credits is None:
         credits = data.get("creditsConsumed")
@@ -151,7 +151,7 @@ def parse_upstream_cost_fen(
 
 
 def _image_size_from_raw(raw_usage: dict[str, Any] | None) -> str:
-    """用量里的生图清晰度；忽略 480p 等视频档。"""
+    """Độ phân giải của ảnh thô khi sử dụng; bỏ qua các tập tin video như 480p."""
     if not isinstance(raw_usage, dict):
         return ""
     usage = raw_usage.get("usage") if isinstance(raw_usage.get("usage"), dict) else {}
@@ -177,7 +177,7 @@ def charge_fen_for_usage(
     model: str = "",
     size: str = "",
 ) -> tuple[int, int, bool]:
-    """按上游实际成本或 token 用量计算 (cost_fen, charge_fen, used_upstream_cost)。
+    """Được tính dựa trên chi phí ngược dòng thực tế hoặc mức sử dụng mã thông báo (cost_fen, charge_fen, used_upstream_cost).
 
     用户扣费与 TokenFree / 上游成本相同，不再加价。
     生图无 quota 时：按张官方价，避免 8 元/百万 token 低估约十倍。
@@ -200,7 +200,7 @@ def charge_fen_for_usage(
 
 
 def _catalog_image_fen_if_per_call(settings: Settings, model: str, *, size: str = "") -> int | None:
-    """gpt-image / Seedream（TokenFree 上改走 gpt-image）按张价；token 计价模型返回 None。"""
+    """gpt-image / Seedream (đã đổi thành gpt-image trên TokenFree) giá mỗi sản phẩm; mô hình định giá mã thông báo trả về Không có."""
     from app.services.tokenfree_image import is_seedream_family, tokenfree_working_image_model
     from app.services.tokenfree_pricing import charge_fen_official_image, lookup_rate, resolve_billing_image_size
 
@@ -254,7 +254,7 @@ def billing_key_label(billing_key: str) -> str:
 
 
 def billing_model_rate_rows(settings: Settings | None = None) -> list[dict[str, Any]]:
-    """管理端展示：推荐模型走 TokenFree /api/pricing；无缓存时仍列出短名单。"""
+    """Hiển thị bên quản lý: Mô hình được đề xuất là TokenFree /api/pricing; danh sách rút gọn sẽ vẫn được liệt kê khi không có bộ đệm."""
     from app.services.tokenfree_pricing import build_official_rate_rows, cached_rates
 
     return build_official_rate_rows(cached_rates(), settings)

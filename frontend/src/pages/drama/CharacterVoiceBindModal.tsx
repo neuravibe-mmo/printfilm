@@ -1,4 +1,4 @@
-/** 角色音色绑定：从漫剧 voice 资产选择，写入 params 供 Seedance reference_audio 使用 */
+/** Liên kết giọng nói nhân vật: Chọn từ nội dung giọng nói truyện tranh và viết thông số để Seedance reference_audio sử dụng */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { dramaApi, resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
 import Modal from '../../components/ui/Modal'
@@ -20,19 +20,19 @@ type Props = {
   onError: (message: string) => void
 }
 
-// 读取 voice 资产已保存的 speaker
+// Đọc nội dung giọng nói đã lưu của người nói
 function readVoiceSpeaker(asset: DramaAsset): string {
   const params = (asset.params || {}) as Record<string, unknown>
   return typeof params.speaker === 'string' ? params.speaker.trim() : ''
 }
 
-// 读取 voice 资产的音色描述
+// Đọc mô tả giọng nói của nội dung giọng nói
 export function readVoicePrompt(asset: DramaAsset): string {
   const params = (asset.params || {}) as Record<string, unknown>
   return typeof params.voicePrompt === 'string' ? params.voicePrompt.trim() : ''
 }
 
-// 从角色资产 params 读取已绑定音色
+// Đọc âm thanh ràng buộc từ thông số nội dung nhân vật
 export function readAssetVoiceBinding(asset: DramaAsset): VoiceBinding | null {
   const params = (asset.params || {}) as Record<string, unknown>
   const raw = params.voiceAudio
@@ -74,7 +74,7 @@ export function readAssetVoiceBinding(asset: DramaAsset): VoiceBinding | null {
   return null
 }
 
-// 构建绑定后的 params（同时写 voiceAudio 与 canvas.voiceAudio）
+// Xây dựng các thông số ràng buộc (viết voiceAudio và canvas.voiceAudio cùng một lúc)
 export function buildBoundParams(asset: DramaAsset, voice: DramaAsset): Record<string, unknown> {
   const url = voice.url || ''
   const binding: VoiceBinding = {
@@ -98,7 +98,7 @@ export function buildBoundParams(asset: DramaAsset, voice: DramaAsset): Record<s
   }
 }
 
-// 渲染角色音色绑定弹窗
+// Kết xuất cửa sổ bật lên liên kết tông màu ký tự
 export function CharacterVoiceBindModal({
   asset,
   projectId,
@@ -109,13 +109,13 @@ export function CharacterVoiceBindModal({
 }: Props) {
   const { t } = useI18n()
   /*
-   * voiceAssets 项目内 voice 资产
-   * selectedId 选中音色
-   * newPrompt 新建音色描述
-   * newName 新建音色名称
-   * busy 提交中
-   * synthBusy 合成中
-   * promptBusy AI 生成提示词中
+   * voiceAssets tài sản giọng nói trong dự án
+   * đã chọnId âm thanh đã chọn
+   * newPrompt Mô tả âm sắc mới
+   * newName Tên âm thanh mới
+   * bận gửi bài
+   * synthBusy Tổng hợp
+   * nhắc nhởBusy AI đang tạo ra các từ nhắc nhở
    */
   const [voiceAssets, setVoiceAssets] = useState<DramaAsset[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -132,7 +132,7 @@ export function CharacterVoiceBindModal({
   const selectedVoice = voiceAssets.find((v) => v.id === selectedId) || null
   const previewUrl = selectedVoice?.url ? resolveDramaMediaUrl(selectedVoice.url) : ''
 
-  // 根据角色设定 AI 生成音色描述
+  // AI tạo mô tả âm sắc dựa trên cài đặt ký tự
   const fetchVoicePrompt = useCallback(
     async (force = false) => {
       if (promptBusy) return
@@ -181,7 +181,7 @@ export function CharacterVoiceBindModal({
       .catch((err) => onError(err instanceof Error ? err.message : t('drama.voiceBind.loadFailed')))
   }, [open, asset, projectId, bound?.sourceAssetId, onError])
 
-  // 进入「新建并合成」时自动 AI 生成音色描述
+  // Tự động tạo mô tả âm sắc bằng AI khi vào "Mới và Tổng hợp"
   useEffect(() => {
     if (!open || mode !== 'create' || promptRequestedRef.current) return
     promptRequestedRef.current = true
@@ -190,7 +190,7 @@ export function CharacterVoiceBindModal({
 
   if (!open) return null
 
-  // 按提示词新建并合成 voice 资产
+  // Tạo và tổng hợp nội dung giọng nói theo lời nhắc
   async function handleCreateAndSynth() {
     const prompt = newPrompt.trim()
     if (!prompt || synthBusy) return
@@ -215,7 +215,7 @@ export function CharacterVoiceBindModal({
     }
   }
 
-  // 对已有 voice 资产重新合成
+  // Tổng hợp lại nội dung giọng nói hiện có
   async function handleResynth(voice: DramaAsset) {
     const prompt = readVoicePrompt(voice)
     if (!prompt || synthBusy) return
@@ -238,7 +238,7 @@ export function CharacterVoiceBindModal({
     }
   }
 
-  // 确认绑定到角色
+  // Xác nhận ràng buộc với vai trò
   async function handleConfirm() {
     if (!selectedVoice?.url || busy) {
       onError(t('drama.voiceBind.selectRequired'))
@@ -258,7 +258,7 @@ export function CharacterVoiceBindModal({
     }
   }
 
-  // 解除绑定
+  // Hủy liên kết
   async function handleUnbind() {
     if (busy) return
     setBusy(true)

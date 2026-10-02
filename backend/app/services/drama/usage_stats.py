@@ -1,4 +1,4 @@
-"""漫剧项目用量聚合：按 usage_events.drama_project_id 汇总费用与生图/生视频次数。"""
+"""Tổng hợp mức sử dụng dự án phim truyền hình: Tổng hợp chi phí và số lượng hình ảnh/video theo use_events.drama_project_id."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from app.schemas_drama import DramaProjectUsageStats
 
 
 def empty_usage_stats() -> DramaProjectUsageStats:
-    """返回全零用量统计。"""
+    """Trả về tất cả số liệu thống kê sử dụng bằng không."""
     return DramaProjectUsageStats()
 
 
@@ -71,7 +71,7 @@ async def get_drama_project_usage(
     user_id: int,
     project_id: int,
 ) -> DramaProjectUsageStats:
-    """单部漫剧用量汇总。"""
+    """Tóm tắt cách sử dụng của một bộ truyện tranh."""
     mapped = await aggregate_drama_usage_by_project_ids(
         db, user_id=user_id, project_ids=[project_id]
     )

@@ -18,7 +18,7 @@ function profitClass(profitFen: number): string {
   return "";
 }
 
-/** 管理端财务列表：按日展示扣费、成本、token、实际成本与利润 */
+/** Danh sách tài chính cuối cùng của quản lý: hiển thị các khoản khấu trừ, chi phí, mã thông báo, chi phí thực tế và lợi nhuận hàng ngày */
 export function FinanceListPage() {
   const { t, locale } = useI18n();
   const [days, setDays] = useState<FinanceDays>("30");

@@ -54,7 +54,7 @@ function defaultLabel(
   }
 }
 
-/** 跨页实体跳转链接 */
+/** Liên kết nhảy thực thể xuyên trang */
 export function AdminEntityLink({ kind, id, label, className }: AdminEntityLinkProps) {
   const { t } = useI18n();
   if (!id) return <span className="text-[var(--admin-muted)]">—</span>;

@@ -1,4 +1,4 @@
-/** 获客短视频宣传页（/method）文案：对标交付方法论结构，不承诺效果 */
+/** Bản sao trang quảng bá video ngắn thu hút khách hàng (/method): Cấu trúc phương pháp luận bàn giao, không cam kết hiệu quả */
 
 export const METHOD_START_URL = 'https://www.printfilm.com/studio/new'
 export const METHOD_GEO_URL = 'https://www.geohao.com/'

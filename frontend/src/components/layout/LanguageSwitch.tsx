@@ -1,7 +1,7 @@
 import { LOCALES, type Locale } from '../../i18n/detect'
 import { useI18n } from '../../i18n'
 
-/** 顶栏中/英切换：点击后写入偏好，覆盖浏览器语言 */
+/** Chuyển đổi tiếng Trung/tiếng Anh ở thanh trên cùng: nhấp để viết tùy chọn và ghi đè ngôn ngữ trình duyệt */
 export default function LanguageSwitch() {
   const { locale, setLocale, t } = useI18n()
 

@@ -1,27 +1,27 @@
 /**
- * 科普分镜脚本内 @duration 解析、校验与分段预览
- * 常量与后端 seedance_segments 对齐（单段 3–12s，镜合计 ≤30s）
+ * @duration phân tích, xác minh và xem trước phân đoạn trong kịch bản bảng phân cảnh khoa học phổ biến
+ * Các hằng số được căn chỉnh với các phân đoạn hạt giống phụ trợ (phân đoạn đơn 3–12 giây, tổng phản chiếu 30 giây)
  */
 
-/** 单段时长下限（秒） */
+/** Giới hạn dưới của thời lượng một phân đoạn (giây) */
 export const SEGMENT_DURATION_MIN = 3
 
-/** 单段时长上限（秒） */
+/** Thời lượng tối đa của một phân đoạn (giây) */
 export const SEGMENT_DURATION_MAX = 12
 
-/** 单镜脚本内 @duration 合计上限（秒） */
+/** Tổng giới hạn trên của @duration trong một tập lệnh nhân bản (giây) */
 export const SHOT_DURATION_MAX = 30
 
-/** 时长快捷选项（秒） */
+/** Tùy chọn phím tắt thời lượng (giây) */
 export const SEGMENT_DURATION_PRESETS = [4, 6, 8, 10, 12] as const
 
-/** 与后端一致的字幕 cue（后期叠字，非模型烧录） */
+/** Dấu hiệu phụ đề phù hợp với phần phụ trợ (chồng chất hậu sản xuất, không ghi mô hình) */
 export const SUBTITLE_CUE = '【字幕：后期叠旁白字幕，简体中文逐句同步】'
 
-/** 与后端一致的旁白前缀（科普自然偏快；旧稿「慢速清晰」仍可识别） */
+/** Tiền tố tường thuật nhất quán với phần phụ trợ (phổ biến khoa học đương nhiên là nhanh hơn; bản nháp cũ "chậm và rõ ràng" vẫn có thể được nhận ra) */
 export const NARRATION_PREFIX = '【旁白·自然语速·同步字幕】'
 
-/** 脚本编辑区 placeholder */
+/** Phần giữ chỗ vùng chỉnh sửa tập lệnh */
 export const SEGMENT_SCRIPT_PLACEHOLDER = `${SUBTITLE_CUE}\n【BGM：后期混音 · 轻快专业，音量低于人声】\n@duration:4\n过肩工位操作画面…\n@duration:8\n${NARRATION_PREFIX}口播内容…`
 
 const DURATION_TOKEN_PATTERN = /@duration:(\d+)/g
@@ -29,8 +29,8 @@ const DURATION_TOKEN_PATTERN = /@duration:(\d+)/g
 export type SegmentBeatView = { duration: number; text: string }
 
 /**
- * 从脚本中提取全部 @duration 秒数（保留顺序）
- * @param content 逐段分镜脚本文本
+ * Trích xuất tất cả @duration giây từ tập lệnh (giữ nguyên thứ tự)
+ * @param nội dung văn bản kịch bản phân cảnh theo từng phần
  */
 export function extractDurations(content: string): number[] {
   const durations: number[] = []
@@ -44,16 +44,16 @@ export function extractDurations(content: string): number[] {
 }
 
 /**
- * 合计脚本内 @duration 秒数
- * @param content 逐段分镜脚本文本
+ * Tổng số @duration giây trong tập lệnh
+ * @param nội dung văn bản kịch bản phân cảnh theo từng phần
  */
 export function sumDuration(content: string): number {
   return extractDurations(content).reduce((sum, value) => sum + value, 0)
 }
 
 /**
- * 校验单个时长是否在科普单段合法区间
- * @param seconds 时长秒数
+ * Xác minh xem một khoảng thời gian có nằm trong phạm vi pháp lý của phần khoa học phổ biến hay không
+ * @param giây Thời lượng tính bằng giây
  */
 export function isValidSegmentDuration(seconds: number): boolean {
   return (
@@ -64,8 +64,8 @@ export function isValidSegmentDuration(seconds: number): boolean {
 }
 
 /**
- * 校验脚本内时长标签：单段范围 + 合计 ≤ 镜上限
- * @param content 逐段分镜脚本文本
+ * Xác minh nhãn thời lượng trong tập lệnh: phạm vi phân đoạn đơn + tổng giới hạn trên phản chiếu
+ * @param nội dung văn bản kịch bản phân cảnh theo từng phần
  */
 export function validateSegmentScriptDuration(content: string): {
   valid: boolean
@@ -102,17 +102,17 @@ export function validateSegmentScriptDuration(content: string): {
 }
 
 /**
- * 解析脚本为字幕/BGM cues 与带时长的正文段（列表预览用）
- * @param script 逐段分镜脚本
+ * Phân tích tập lệnh thành phụ đề/tín hiệu nhạc nền và đoạn văn bản có thời lượng (để xem trước danh sách)
+ * @param script kịch bản phân cảnh theo từng phần
  */
 export function parseSegmentScript(script: string | undefined | null): {
   cues: string[]
   beats: SegmentBeatView[]
 } {
   /*
-   * cues 字幕/BGM 行
-   * beats 带 duration 的正文段
-   * pendingDur 上一段 @duration 值
+   * tín hiệu phụ đề/dòng BGM
+   * đánh bại đoạn văn bản có thời lượng
+   * đang chờ xử lý Giá trị @duration trước đó
    */
   const cues: string[] = []
   const beats: SegmentBeatView[] = []
@@ -154,7 +154,7 @@ export function parseSegmentScript(script: string | undefined | null): {
 
 const NARRATION_LINE_PREFIX = /^【(?:旁白|Lời dẫn|Narration)[^】]*】/i
 
-/** 脚本行是否为旁白口播（字幕 cue 含「旁白」二字但不算） */
+/** Dòng kịch bản có được đọc bằng lời tường thuật hay không (phần phụ đề có chứa từ "tường thuật" nhưng không được tính) */
 export function isNarrationScriptLine(line: string): boolean {
   const stripped = line.trim()
   if (
@@ -170,12 +170,12 @@ export function isNarrationScriptLine(line: string): boolean {
   return NARRATION_LINE_PREFIX.test(stripped)
 }
 
-/** 去掉旁白前缀，得到可朗读正文 */
+/** Xóa tiền tố tường thuật và lấy văn bản có thể đọc to */
 export function stripNarrationPrefix(line: string): string {
   return line.trim().replace(NARRATION_LINE_PREFIX, '').trim()
 }
 
-/** 从脚本提取旁白正文（多段拼接） */
+/** Trích xuất văn bản tường thuật từ kịch bản (ghép nhiều đoạn) */
 export function narrationFromScript(script: string | undefined | null): string {
   const parts: string[] = []
   for (const line of String(script || '').replace(/\r\n/g, '\n').split('\n')) {
@@ -187,7 +187,7 @@ export function narrationFromScript(script: string | undefined | null): string {
   return parts.join('')
 }
 
-/** 从脚本提取首段画面（非旁白、非 cue） */
+/** Trích cảnh đầu tiên từ kịch bản (không tường thuật, không gợi ý) */
 export function firstVisualFromScript(script: string | undefined | null): string {
   for (const line of String(script || '').replace(/\r\n/g, '\n').split('\n')) {
     const stripped = line.trim()
@@ -209,7 +209,7 @@ export function firstVisualFromScript(script: string | undefined | null): string
   return ''
 }
 
-/** 把弹窗旁白写回脚本中的旁白段 */
+/** Viết lời tường thuật pop-up quay lại phần tường thuật trong kịch bản */
 export function replaceNarrationInScript(script: string, narration: string): string {
   const text = narration.trim()
   const lines = String(script || '').replace(/\r\n/g, '\n').split('\n')
@@ -232,7 +232,7 @@ export function replaceNarrationInScript(script: string, narration: string): str
   return out.join('\n').trim()
 }
 
-/** 把弹窗首帧画面写回脚本第一段 visual */
+/** Viết khung đầu tiên của cửa sổ bật lên trở lại đoạn đầu tiên của hình ảnh kịch bản */
 export function replaceFirstVisualInScript(script: string, visual: string): string {
   const text = visual.trim()
   if (!text) return String(script || '').trim()

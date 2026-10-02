@@ -1,4 +1,4 @@
-/** 画布工作区：React Flow 与 overlay UI 组合 */
+/** Không gian làm việc Canvas: Kết hợp giao diện người dùng luồng phản ứng và lớp phủ */
 import { useCallback, useEffect } from 'react'
 import { ReactFlowProvider, useReactFlow } from '@xyflow/react'
 import { CanvasBottomControls } from './CanvasBottomControls'
@@ -14,11 +14,11 @@ import './canvas.css'
 
 type CanvasWorkspaceProps = {
   projectId: number
-  /** fullscreen 独立页；embedded 嵌入分集编辑右侧 */
+  /** trang độc lập toàn màn hình; được nhúng ở phía bên phải của phần chỉnh sửa tập */
   variant?: 'fullscreen' | 'embedded'
 }
 
-/** 渲染画布主体与各区域 overlay */
+/** Hiển thị phần thân chính của khung vẽ và lớp phủ ở từng khu vực */
 function CanvasWorkspaceContent({
   projectId,
   variant = 'fullscreen',
@@ -84,7 +84,7 @@ function CanvasWorkspaceContent({
   )
 }
 
-/** 提供 React Flow 与画布状态上下文 */
+/** Cung cấp bối cảnh trạng thái canvas và Luồng phản ứng */
 export function CanvasWorkspace({
   projectId,
   variant = 'fullscreen',

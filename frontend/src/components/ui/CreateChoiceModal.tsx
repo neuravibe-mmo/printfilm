@@ -8,12 +8,12 @@ type Props = {
   onClose: () => void
 }
 
-/** 开始创作：在漫剧与科普之间选择入口 */
+/** Bắt đầu sáng tạo: Lựa chọn giữa truyện tranh và khoa học đại chúng */
 export default function CreateChoiceModal({ open, onClose }: Props) {
   const nav = useNavigate()
   const { t } = useI18n()
 
-  // 跳转到目标产品并关闭弹层
+  // Chuyển đến sản phẩm mục tiêu và đóng lớp bật lên
   function go(path: string) {
     onClose()
     nav(path)

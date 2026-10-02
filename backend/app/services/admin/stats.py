@@ -1,4 +1,4 @@
-"""管理端统计聚合：仪表盘调用量/费用/排行。"""
+"""Tổng hợp số liệu thống kê của bên quản lý: số lượng cuộc gọi/chi phí/xếp hạng trên bảng điều khiển."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from sqlalchemy.orm import aliased
 from app.models import Order, Project, UsageEvent, User
 from app.models_drama import DramaProject
 
-# 同一 task 内只应有一行的计费 key（并发双记时需折叠）；llm/tts 等同 key 多行合法保留
+# Chỉ nên có một hàng khóa thanh toán trong cùng một tác vụ (cần gấp lại khi ghi hai lần đồng thời); llm/tts tương đương với khóa. Nhiều hàng được bảo lưu hợp pháp.
 _SINGLE_SHOT_BILLING_KEY_PREFIXES = ("seedance",)
 _SINGLE_SHOT_BILLING_KEYS = frozenset({"seedream"})
 
@@ -27,7 +27,7 @@ def _utc_month_start() -> datetime:
 
 
 def _day_key(value: Any) -> str:
-    """把 DB 返回的 date/datetime/str 统一成 YYYY-MM-DD。"""
+    """Hợp nhất ngày/thời gian/str được DB trả về thành YYYY-MM-DD."""
     if isinstance(value, datetime):
         return value.date().isoformat()
     if isinstance(value, date):
@@ -37,13 +37,13 @@ def _day_key(value: Any) -> str:
 
 
 async def _usage_day_expr(db: AsyncSession):
-    """按日历日分桶（PostgreSQL CAST AS DATE）。"""
+    """Nhóm theo ngày dương lịch (PostgreSQL CAST AS DATE)."""
     _ = db
     return cast(UsageEvent.created_at, Date)
 
 
 def _derived_capability_expr():
-    """能力分桶：优先 billing_key 推导，与 billing_key_to_capability 语义一致。"""
+    """Phân nhóm khả năng: Ưu tiên dẫn xuất Billing_key, nhất quán với ngữ nghĩa Billing_key_to_capability."""
     return case(
         (UsageEvent.billing_key == "llm_chat", "llm"),
         (UsageEvent.billing_key == "seedream", "image"),
@@ -56,7 +56,7 @@ def _derived_capability_expr():
 
 
 def _capability_scope_clause(capability: str) -> Any:
-    """能力筛选：与分桶共用推导表达式。"""
+    """Lọc khả năng: chia sẻ biểu thức đạo hàm với tính năng phân nhóm."""
     cap = (capability or "").strip().lower()
     if not cap or cap == "all":
         return True
@@ -68,7 +68,7 @@ def _usage_scope_filters(
     domain: str = "all",
     capability: str = "all",
 ) -> list[Any]:
-    """领域 / 能力筛选条件（不含时间）。"""
+    """Bộ lọc Trường/Năng lực (không bao gồm thời gian)."""
     filters: list[Any] = []
     if domain and domain != "all":
         filters.append(UsageEvent.domain == domain)
@@ -83,7 +83,7 @@ async def _usage_window_totals(
     since: datetime | None = None,
     scope_filters: list[Any] | None = None,
 ) -> dict[str, int]:
-    """聚合 usage_events：calls / charge / cost。"""
+    """Tổng mức sử dụng_sự kiện: cuộc gọi/phí/chi phí."""
     filters: list[Any] = list(scope_filters or [])
     if since is not None:
         filters.append(UsageEvent.created_at >= since)
@@ -110,7 +110,7 @@ async def _group_usage(
     scope_filters: list[Any] | None = None,
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
-    """按某一列分组聚合 usage。"""
+    """Tổng hợp mức sử dụng bằng cách nhóm theo một cột nhất định."""
     key = func.coalesce(group_col, "unknown")
     stmt = (
         select(
@@ -149,7 +149,7 @@ async def build_admin_dashboard_stats(
     capability: str = "all",
     top_metric: str = "charge",
 ) -> dict[str, Any]:
-    """组装管理端仪表盘全部统计字段。"""
+    """Tập hợp tất cả các trường thống kê của bảng điều khiển quản lý."""
     today = _utc_today_start()
     month = _utc_month_start()
     window_days = max(1, min(30, int(days)))
@@ -198,7 +198,7 @@ async def build_admin_dashboard_stats(
         db, group_col=UsageEvent.domain, since=range_start, scope_filters=scope
     )
 
-    # 按日趋势（筛选窗口内补零）
+    # Theo xu hướng hàng ngày (không có khoảng đệm trong cửa sổ bộ lọc)
     day_expr = await _usage_day_expr(db)
     daily_stmt = (
         select(
@@ -234,7 +234,7 @@ async def build_admin_dashboard_stats(
             }
         )
 
-    # 筛选窗口内用户 Top10（按指标排序）
+    # Top 10 người dùng trong cửa sổ bộ lọc (sắp xếp theo chỉ số)
     owner = aliased(User)
     metric_key = (top_metric or "charge").strip().lower()
     order_col = func.coalesce(func.sum(UsageEvent.charge_fen), 0)
@@ -293,7 +293,7 @@ async def build_admin_dashboard_stats(
 
 
 def _usage_billing_cases():
-    """按 billing_key 拆分图/视/LLM/TTS 调用次数。"""
+    """Chia số lượng lệnh gọi biểu đồ/chế độ xem/LLM/TTS theo Billing_key."""
     return (
         case((UsageEvent.billing_key == "seedream", 1), else_=0),
         case((UsageEvent.billing_key.like("seedance%"), 1), else_=0),
@@ -329,7 +329,7 @@ def _row_to_usage_summary(row: Any) -> dict[str, int]:
 
 
 def _single_shot_billing_key_filter():
-    """单次调用类 billing_key：seedance* / seedream。"""
+    """Lệnh gọi một lần tới lớp Billing_key: Seedance*/seedream."""
     clauses = [UsageEvent.billing_key.like(f"{p}%") for p in _SINGLE_SHOT_BILLING_KEY_PREFIXES]
     if _SINGLE_SHOT_BILLING_KEYS:
         clauses.append(UsageEvent.billing_key.in_(tuple(_SINGLE_SHOT_BILLING_KEYS)))
@@ -370,7 +370,7 @@ async def _sum_task_charged_fen(
     project_ids: list[int] | None = None,
     drama_project_ids: list[int] | None = None,
 ) -> dict[int, int]:
-    """按任务实扣汇总（钱包结算口径）。"""
+    """Tổng hợp các khoản khấu trừ thực tế dựa trên nhiệm vụ (tầm cỡ thanh toán ví)."""
     from app.models_tasks import TaskRun
 
     if project_ids is not None:
@@ -411,7 +411,7 @@ async def _sum_orphan_usage_charge_fen(
     scope_col,
     scope_ids: list[int],
 ) -> dict[int, int]:
-    """无 task_run_id 的用量扣费（未走 TaskRun 结算的历史/旁路行）。"""
+    """Khấu trừ mức sử dụng không có task_run_id (dòng lịch sử/bỏ qua của việc giải quyết TaskRun không được sử dụng)."""
     if not scope_ids:
         return {}
     rows = (
@@ -435,7 +435,7 @@ async def _aggregate_usage_by_scope(
     project_ids: list[int] | None = None,
     drama_project_ids: list[int] | None = None,
 ) -> dict[int, dict[str, Any]]:
-    """按项目/漫剧项目聚合去重后的用量行；扣费用任务实扣+孤儿用量。"""
+    """Tổng hợp các hàng sử dụng bị trùng lặp theo dự án/dự án truyện tranh; khấu trừ thực tế cho các nhiệm vụ khấu trừ phí + sử dụng mồ côi."""
     image_case, video_case, llm_case, tts_case = _usage_billing_cases()
     empty = _empty_usage_summary()
     if not scope_ids:

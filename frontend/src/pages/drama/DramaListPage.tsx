@@ -1,4 +1,4 @@
-/** 漫剧 Agent 首页：AI 生剧本 / 自由画布 + 我的项目（多选删除） */
+/** Trang chủ đại lý truyện tranh kịch: AI Script / Canvas miễn phí + Dự án của tôi (Nhiều lựa chọn để xóa) */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -36,7 +36,7 @@ const CREATIVE_MAX_LENGTH = 2000
 
 type AgentTab = 'ai' | 'canvas'
 
-// 格式化更新时间
+// Thời gian cập nhật định dạng
 function formatUpdatedAt(raw?: string) {
   if (!raw) return ''
   const d = new Date(raw)
@@ -58,7 +58,7 @@ export default function DramaListPage() {
   )
 }
 
-// 渲染 Agent 首页内容
+// Nội dung trang chủ của Đại lý kết xuất
 function DramaListInner() {
   const navigate = useNavigate()
   const { t, m } = useI18n()
@@ -71,19 +71,19 @@ function DramaListInner() {
     [m],
   )
   /*
-   * storyText AI 创意输入
-   * episodeCount 目标集数
-   * imageStyleId 画面风格
-   * items 我的项目列表
-   * loading 列表加载中
-   * busy 创建中
-   * canvasBusy 画布创建中
-   * error 错误文案
-   * selected 多选 id
-   * deleting 批量删除中
-   * filter 列表筛选
-   * query 搜索
-   * showCreate 是否展开新建面板
+   * storyText Đầu vào sáng tạo AI
+   * tậpĐếm số tập mục tiêu
+   * phong cách hình ảnh imageStyleId
+   * mục Danh sách dự án của tôi
+   * loading Danh sách đang tải
+   * đang bận tạo
+   * canvasBusy Canvas đang được tạo
+   * lỗi lỗi sao chép
+   * đã chọn id nhiều lựa chọn
+   * đang xóa Đang xóa hàng loạt
+   * bộ lọc danh sách bộ lọc
+   * truy vấn tìm kiếm
+   * showCreate Có nên mở rộng bảng điều khiển mới hay không
    */
   const [storyText, setStoryText] = useState('')
   const [episodeCount, setEpisodeCount] = useState(12)
@@ -99,7 +99,7 @@ function DramaListInner() {
   const [query, setQuery] = useState('')
   const [showCreate, setShowCreate] = useState(false)
 
-  // 加载项目列表
+  // Tải danh sách dự án
   async function loadProjects() {
     const rows = await dramaApi.listProjects()
     setItems(rows)
@@ -116,7 +116,7 @@ function DramaListInner() {
       .finally(() => setLoading(false))
   }, [])
 
-  // AI 立即生成：创建项目并进入大纲步骤
+  // AI Build Now: Tạo dự án và đi đến các bước phác thảo
   async function handleGenerate() {
     const source = storyText.trim()
     if (source.length < CREATIVE_MIN_LENGTH) {
@@ -144,7 +144,7 @@ function DramaListInner() {
     }
   }
 
-  // 自由画布：创建占位创意项目并进入画布
+  // Canvas miễn phí: Tạo các dự án sáng tạo giữ chỗ và nhập canvas
   async function handleEnterCanvas() {
     if (canvasBusy) return
     setCanvasBusy(true)
@@ -164,7 +164,7 @@ function DramaListInner() {
     }
   }
 
-  // 切换 Tab；画布 Tab 直接创建并跳转
+  // Chuyển tab; Tab Canvas được tạo và nhảy trực tiếp
   function handleTabClick(next: AgentTab) {
     if (next === 'canvas') {
       void handleEnterCanvas()
@@ -200,7 +200,7 @@ function DramaListInner() {
     return true
   })
 
-  // 切换选中
+  // Lựa chọn chuyển đổi
   const toggleSelect = useCallback((id: number) => {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -210,7 +210,7 @@ function DramaListInner() {
     })
   }, [])
 
-  // 打开项目：自由画布进画布，普通项目进工作台
+  // Mở dự án: nhập canvas miễn phí vào canvas và nhập dự án bình thường vào bàn làm việc
   function openProject(item: DramaProjectListItem) {
     if (selectionMode) {
       toggleSelect(item.id)
@@ -219,7 +219,7 @@ function DramaListInner() {
     navigate(dramaProjectEntryPath(item))
   }
 
-  // 重命名
+  // Đổi tên
   async function handleRename(item: DramaProjectListItem) {
     const name = await dialog.prompt({
       title: t('dramaList.renameTitle'),
@@ -236,7 +236,7 @@ function DramaListInner() {
     }
   }
 
-  // 删除单个
+  // Xóa một bài
   async function handleDeleteOne(item: DramaProjectListItem) {
     const ok = await dialog.confirm({
       title: t('dramaList.deleteTitle'),
@@ -258,7 +258,7 @@ function DramaListInner() {
     }
   }
 
-  // 批量删除
+  // Xóa hàng loạt
   async function handleDeleteSelected() {
     const ids = [...selected]
     if (ids.length === 0) return

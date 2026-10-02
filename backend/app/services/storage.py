@@ -22,9 +22,9 @@ import httpx
 
 from app.config import get_settings
 
-# 科普成片文件名：仅此文件在 skip_oss_intermediates 下仍入 OSS
+# Tên tệp phim khoa học phổ biến: Chỉ có tệp này là vẫn được đưa vào OSS dưới Skip_oss_intermediates
 _KEPU_FINAL_NAMES = frozenset({"final.mp4"})
-# True 时 publish_local 跳过中间文件的异步 OSS 入队
+# Khi Đúng, Publish_local bỏ qua việc xếp hàng OSS không đồng bộ của các tệp trung gian.
 _skip_oss_intermediates: ContextVar[bool] = ContextVar("skip_oss_intermediates", default=False)
 
 logger = logging.getLogger(__name__)
@@ -87,14 +87,14 @@ def local_path_from_url(url: str) -> Path | None:
 
 
 def _download_timeout(timeout: float | httpx.Timeout) -> httpx.Timeout:
-    """把秒数收成 httpx.Timeout：连接短、读体长，避免整包 120s 把大视频掐断。"""
+    """Gain giây httpx.Timeout: kết nối ngắn, đọc lâu, tránh cắt video dung lượng lớn trong 120s."""
     if isinstance(timeout, httpx.Timeout):
         return timeout
     seconds = max(30.0, float(timeout))
     return httpx.Timeout(connect=min(30.0, seconds), read=seconds, write=60.0, pool=30.0)
 
 
-# 下载远程文件到 dest；TokenFree 成片 URL 可传 Bearer headers
+# Tải tập tin từ xa về đích; URL phim TokenFree có thể vượt qua tiêu đề Bearer
 async def download_to(
     url: str,
     dest: Path,
@@ -169,7 +169,7 @@ def is_local_static_url(url: str | None) -> bool:
     base = settings.public_base_url.rstrip("/")
     if url.startswith(f"{base}/static/"):
         return True
-    # 主站 / 旧站 / 历史拼写错误域名、本地调试地址
+    # Trang web chính / trang web cũ / tên miền lỗi chính tả lịch sử, địa chỉ gỡ lỗi cục bộ
     for host in (
         "www.printfilm.com",
         "printfilm.com",
@@ -183,7 +183,7 @@ def is_local_static_url(url: str | None) -> bool:
         for scheme in ("https://", "http://"):
             if url.startswith(f"{scheme}{host}/static/"):
                 return True
-    # 远程 http(s)（含 OSS public_base）一律非本地；勿因磁盘副本误判
+    # (Các) http từ xa (bao gồm OSS public_base) luôn không cục bộ; đừng đánh giá sai dựa trên bản sao đĩa
     if url.startswith("http://") or url.startswith("https://"):
         return False
     return False
@@ -191,7 +191,7 @@ def is_local_static_url(url: str | None) -> bool:
 
 @contextmanager
 def skip_oss_intermediates() -> Iterator[None]:
-    """科普流水线：中间分镜不入 OSS 队列，成片 final.mp4 仍上传。"""
+    """Popular Science Pipeline: Các bảng phân cảnh trung gian không được đưa vào hàng đợi OSS, nhưng bản Final.mp4 của phim hoàn thiện vẫn được tải lên."""
     token = _skip_oss_intermediates.set(True)
     try:
         yield
@@ -203,7 +203,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def without_intermediate_oss(fn: F) -> F:
-    """装饰科普入口：调用期间跳过中间文件异步 OSS 上传。"""
+    """Cổng thông tin khoa học trang trí: Bỏ qua các tệp trung gian để tải lên OSS không đồng bộ trong cuộc gọi."""
 
     @wraps(fn)
     async def _wrapped(*args: Any, **kwargs: Any):
@@ -214,7 +214,7 @@ def without_intermediate_oss(fn: F) -> F:
 
 
 def is_kepu_final_media(path: Path) -> bool:
-    """是否为科普最终成片文件（当前仅 final.mp4）。"""
+    """Đây có phải là tệp phim khoa học nổi tiếng cuối cùng không (hiện chỉ có Final.mp4)."""
     return Path(path).name.lower() in _KEPU_FINAL_NAMES
 
 
@@ -263,7 +263,7 @@ def publish_local(path: Path, *, sync: bool = False, retries: int = 2) -> str:
     if not oss_svc.oss_enabled():
         return local_url
 
-    # 科普中间文件：异步不入队；显式 sync 仍走公网（方舟拉参考图）
+    # Tệp trung gian khoa học phổ biến: không đồng bộ không tham gia hàng đợi; đồng bộ hóa rõ ràng vẫn sử dụng mạng công cộng (hình ảnh tham khảo kéo Ark)
     skip_mid = _skip_oss_intermediates.get() and not is_kepu_final_media(path)
     if skip_mid and not sync:
         return local_url

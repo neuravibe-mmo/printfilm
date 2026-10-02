@@ -1,11 +1,11 @@
-/** 画布左下角缩放与撤销控制条 */
+/** Thanh điều khiển thu phóng và hoàn tác ở góc dưới bên trái của khung vẽ */
 import { useCallback, useState } from 'react'
 import { LocateFixed, Magnet, Map, Minus, Plus, Redo2, Scan, Undo2 } from 'lucide-react'
 import { useOnViewportChange, useReactFlow } from '@xyflow/react'
 import { useCanvasStore } from './CanvasStore'
 import { useI18n } from '../../../i18n'
 
-/** 渲染画布左下角控制条 */
+/** Hiển thị thanh điều khiển ở góc dưới bên trái của khung vẽ */
 export function CanvasBottomControls() {
   const { t } = useI18n()
   const {

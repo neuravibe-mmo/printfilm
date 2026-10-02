@@ -12,7 +12,7 @@ type AdminListStatsProps = {
   className?: string;
 };
 
-/** 列表页顶部指标卡（白底简洁样式） */
+/** Thẻ chỉ báo ở đầu trang danh sách (kiểu đơn giản với nền trắng) */
 export function AdminListStats({ items, className }: AdminListStatsProps) {
   if (items.length === 0) return null;
   return (

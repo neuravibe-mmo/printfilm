@@ -37,7 +37,7 @@ class V1VideoGenerateRequest(BaseModel):
 
 
 class V1SeedanceTaskRequest(BaseModel):
-    """接近火山 Seedance 的任务体，服务端补全 model 并转发。"""
+    """Gần với phần nhiệm vụ của Volcano Seedance, máy chủ hoàn thiện mô hình và chuyển tiếp nó."""
 
     content: list[dict]
     duration: int | None = Field(default=None, ge=4, le=30)

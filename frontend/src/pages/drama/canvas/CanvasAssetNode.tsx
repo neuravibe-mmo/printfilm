@@ -1,4 +1,4 @@
-/** 画布资产自定义节点：类型图标 + 媒体卡片 + 选中工具栏 */
+/** Nút tùy chỉnh nội dung canvas: biểu tượng loại + thẻ nhớ + thanh công cụ đã chọn */
 import { memo, useCallback, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react'
 import { Handle, NodeToolbar, Position, type Node, type NodeProps } from '@xyflow/react'
 import { AudioLines, Image as ImageIcon, Landmark, Loader2, Maximize2, Play, UserRound } from 'lucide-react'
@@ -18,7 +18,7 @@ import { CanvasNodeUploadBar } from './nodes/CanvasNodeUploadBar'
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../../lib/dramaVoiceBinding'
 import { useI18n } from '../../../i18n'
 
-/** 画布视频缩略：仅展示封面，不拦截单击（单击要选中并显示提示词面板） */
+/** Canvas video viết tắt: chỉ hiển thị bìa và không chặn click chuột (click để chọn và hiển thị bảng từ gợi ý) */
 function CanvasAssetVideoPreview({ src }: { src: string }) {
   return (
     <div className="fc-asset-video">
@@ -30,7 +30,7 @@ function CanvasAssetVideoPreview({ src }: { src: string }) {
   )
 }
 
-/** 按类型返回占位图标 */
+/** Trả về các biểu tượng giữ chỗ theo loại */
 function PlaceholderIcon({ kind }: { kind: CanvasAssetNodeData['kind'] }) {
   const className = 'fc-placeholder-icon'
   if (kind === 'character') return <UserRound className={className} size={40} strokeWidth={1.4} />
@@ -41,7 +41,7 @@ function PlaceholderIcon({ kind }: { kind: CanvasAssetNodeData['kind'] }) {
   return <ImageIcon className={className} size={40} strokeWidth={1.4} />
 }
 
-/** 渲染单个画布资产节点 */
+/** Hiển thị một nút nội dung canvas duy nhất */
 function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasAssetNodeData>>) {
   const { t, locale } = useI18n()
   const { updateNodeTextContent, renameNode } = useCanvasStore()
@@ -69,9 +69,9 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
         ? displayName
         : null
 
-  // renaming 是否正在编辑节点名称
-  // draftName 编辑中的名称草稿
-  // previewOpen 是否打开大屏预览
+  // đổi tên Tên nút có đang được chỉnh sửa không
+  // DraftName Tên dự thảo đang được chỉnh sửa
+  // xem trướcMở Có mở bản xem trước màn hình lớn hay không
   const [renaming, setRenaming] = useState(false)
   const [draftName, setDraftName] = useState(displayName)
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -86,7 +86,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     [id, updateNodeTextContent],
   )
 
-  /** 进入重命名 */
+  /** Nhập đổi tên */
   const startRename = (event: MouseEvent) => {
     event.stopPropagation()
     event.preventDefault()
@@ -94,7 +94,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     setRenaming(true)
   }
 
-  /** 提交重命名 */
+  /** Gửi đổi tên */
   const commitRename = () => {
     setRenaming(false)
     const next = draftName.trim()
@@ -114,7 +114,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     }
   }
 
-  /** 双击卡片：放大预览（单击留给选中 / 提示词面板） */
+  /** Click đúp vào thẻ: phóng to xem trước (click để chọn/nhắc bảng từ) */
   const handleCardDoubleClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement
     if (target.closest('textarea, input, button, a')) return
@@ -123,7 +123,7 @@ function CanvasAssetNodeComponent({ id, data, selected }: NodeProps<Node<CanvasA
     setPreviewOpen(true)
   }
 
-  /** 角标放大：不冒泡，避免抢走节点选中 */
+  /** Mở rộng góc: không sủi bọt để tránh lấy đi các lựa chọn nút */
   const handleExpandClick = (event: MouseEvent) => {
     event.stopPropagation()
     event.preventDefault()

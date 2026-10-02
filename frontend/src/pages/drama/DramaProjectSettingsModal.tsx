@@ -1,4 +1,4 @@
-/** 大纲「项目设置」：画幅/画风/字幕/人物介绍/尾帧衔接（全局可改；分镜页只读） */
+/** Phác thảo "Cài đặt dự án": khung/kiểu/phụ đề/giới thiệu nhân vật/kết nối khung cuối cùng (có thể thay đổi toàn cục; trang bảng phân cảnh ở chế độ chỉ đọc) */
 import { useState } from 'react'
 import { useI18n } from '../../i18n'
 import Modal from '../../components/ui/Modal'
@@ -55,7 +55,7 @@ function coerceLinkLastFrame(params: Record<string, unknown> | null | undefined)
   return Boolean(raw)
 }
 
-/** 项目设置内选项条（复用大纲 chip 样式） */
+/** Thanh tùy chọn trong cài đặt dự án (sử dụng lại kiểu chip phác thảo) */
 function SettingsChoiceRow<T extends string | boolean>({
   options,
   value,
@@ -79,7 +79,7 @@ function SettingsChoiceRow<T extends string | boolean>({
   )
 }
 
-/** 项目级全局成片设置弹窗 */
+/** Cửa sổ bật lên bối cảnh phim toàn cầu cấp dự án */
 export function DramaProjectSettingsModal({
   open,
   projectId,

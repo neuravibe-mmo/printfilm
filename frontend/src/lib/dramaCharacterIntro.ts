@@ -1,13 +1,13 @@
-/** 分集人物介绍叠字开关：模型叠字 / 关闭。 */
+/** Công tắc lớp phủ giới thiệu nhân vật của tập: lớp phủ mô hình / tắt. */
 
 export type DramaCharacterIntroMode = 'model' | 'off'
 
-// 判断是否由模型烧录人物介绍叠字。
+// Xác định xem bản sao giới thiệu nhân vật có được ghi vào mô hình hay không.
 export function characterIntroModeEnabled(mode: DramaCharacterIntroMode): boolean {
   return mode === 'model'
 }
 
-// 兼容历史布尔值，读取分集人物介绍方式；默认关闭叠字。
+// Tương thích với các giá trị Boolean lịch sử, hãy đọc cách giới thiệu nhân vật của tập phim; sao chép từ được tắt theo mặc định.
 export function readEpisodeCharacterIntroMode(
   params: Record<string, unknown> | null | undefined,
 ): DramaCharacterIntroMode {
@@ -16,7 +16,7 @@ export function readEpisodeCharacterIntroMode(
   return readEpisodeCharacterIntroEnabled(params) ? 'model' : 'off'
 }
 
-// 兼容历史字符串/数字布尔值，默认关闭人物介绍叠字。
+// Tương thích với các giá trị Boolean chuỗi/số lịch sử, tính năng sao chép giới thiệu ký tự bị tắt theo mặc định.
 export function readEpisodeCharacterIntroEnabled(
   params: Record<string, unknown> | null | undefined,
 ): boolean {
@@ -32,12 +32,12 @@ export function readEpisodeCharacterIntroEnabled(
   return Boolean(value)
 }
 
-// 判断是否为人物介绍 cue 行。
+// Xác định xem đó có phải là dòng gợi ý giới thiệu nhân vật hay không.
 export function isCharacterIntroCueLine(line: string): boolean {
   return line.trim().startsWith('【人物介绍')
 }
 
-// 从单条分镜正文去掉人物介绍叠字行。
+// Loại bỏ các dòng giới thiệu nhân vật chồng chéo khỏi văn bản bảng phân cảnh đơn lẻ.
 export function stripCharacterIntroFromContent(content: string): string {
   const next = String(content || '')
     .replace(/\r\n/g, '\n')
@@ -46,7 +46,7 @@ export function stripCharacterIntroFromContent(content: string): string {
   return next.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
 }
 
-// 按人物介绍开关批量改写分镜正文（关闭时去掉叠字；开启不回填，需重新分镜）。
+// Nhấn nút giới thiệu nhân vật để viết lại văn bản bảng phân cảnh theo đợt (loại bỏ các từ chồng chéo khi tắt; không chèn lấp khi bật và cần phải viết lại bảng phân cảnh).
 export function applyCharacterIntroModeToFragments<T extends { content?: string | null }>(
   fragments: T[],
   mode: DramaCharacterIntroMode,

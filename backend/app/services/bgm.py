@@ -23,13 +23,13 @@ _BGM_FILES: list[tuple[re.Pattern[str], str]] = [
 
 
 def clip_shot_bgm(mood: str | None) -> str:
-    """Shot.bgm_mood 列上限 64，写入前截断。"""
+    """Shot.bgm_mood giới hạn cột là 64, được cắt bớt trước khi viết."""
     text = (mood or "").strip()
     return (text[:SHOT_BGM_MAX] if text else "neutral") or "neutral"
 
 
 def resolve_bgm_path(mood: str | None) -> Path | None:
-    """有本地曲库才叠 BGM；没有真实音频文件就跳过，避免正弦波垫乐当杂音。"""
+    """Chỉ phủ BGM nếu có thư viện nhạc cục bộ; bỏ qua nếu không có tệp âm thanh thực để tránh nhạc đệm hình sin bị nhiễu."""
     root = _STATIC_ROOT / "bgm"
     blob = (mood or "").strip()
     stem = "default"

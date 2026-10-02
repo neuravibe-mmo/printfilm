@@ -1,4 +1,4 @@
-"""火山引擎音色设计 API（POST /api/v3/tts/voice_design）。"""
+"""API thiết kế âm thanh động cơ núi lửa (POST /api/v3/tts/voice_design)."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ VOICE_DESIGN_SUCCESS_STATUS = {2, 4}
 
 @dataclass
 class VoiceDesignResult:
-    """音色设计接口返回摘要。"""
+    """Giao diện thiết kế âm thanh trả về bản tóm tắt."""
 
     speaker_id: str
     demo_audio_url: str
@@ -29,12 +29,12 @@ class VoiceDesignResult:
     available_training_times: int | None = None
 
 
-# 解析控制台购买的 S_ speaker 池（逗号分隔）
+# Phân tích nhóm loa S_ được bảng điều khiển mua (phân tách bằng dấu phẩy)
 def parse_speaker_pool(raw: str) -> list[str]:
     return [item.strip() for item in (raw or "").split(",") if item.strip().startswith("S_")]
 
 
-# 是否已配置音色设计所需凭证与 speaker 槽位
+# Bạn đã định cấu hình thông tin xác thực và khe cắm loa cần thiết cho thiết kế âm thanh chưa?
 def voice_design_enabled(settings: Settings | None = None) -> bool:
     cfg = settings or get_settings()
     if not parse_speaker_pool(cfg.volc_tts_voice_design_speaker_ids):
@@ -44,7 +44,7 @@ def voice_design_enabled(settings: Settings | None = None) -> bool:
     return bool((cfg.volc_tts_app_id or "").strip() and (cfg.volc_tts_access_key or "").strip())
 
 
-# 为 voice 资产选取或复用 S_ speaker 槽位
+# Chọn hoặc sử dụng lại khe loa S_ cho nội dung giọng nói
 def resolve_speaker_slot(
     asset_id: int,
     params: dict[str, Any] | None,
@@ -59,7 +59,7 @@ def resolve_speaker_slot(
     return pool[asset_id % len(pool)]
 
 
-# 构建 voice_design 鉴权头（新版 X-Api-Key 或旧版 AppId + AccessKey）
+# Xây dựng tiêu đề xác thực voice_design (phiên bản mới của X-Api-Key hoặc phiên bản cũ của AppId + AccessKey)
 def build_voice_design_headers(settings: Settings) -> dict[str, str]:
     headers = {
         "Content-Type": "application/json",
@@ -74,7 +74,7 @@ def build_voice_design_headers(settings: Settings) -> dict[str, str]:
     return headers
 
 
-# 截断文本提示词与试听台词至接口上限
+# Cắt bớt các từ nhắc nhở trong văn bản và dòng thử giọng đến giới hạn trên của giao diện
 def clamp_voice_design_prompt(text_prompt: str, sample_text: str) -> tuple[str, str]:
     prompt = (text_prompt or "").strip()[:200]
     text = (sample_text or "").strip()[:300]
@@ -85,7 +85,7 @@ def clamp_voice_design_prompt(text_prompt: str, sample_text: str) -> tuple[str, 
     return prompt, text
 
 
-# 调用音色设计 HTTP 接口
+# Gọi giao diện HTTP thiết kế âm thanh
 async def design_voice(
     *,
     speaker_id: str,
@@ -157,7 +157,7 @@ async def design_voice(
     )
 
 
-# 下载 demo_audio 到本地并返回 /static URL
+# Tải demo_audio xuống cục bộ và trả về /URL tĩnh
 async def persist_demo_audio(
     demo_url: str,
     *,

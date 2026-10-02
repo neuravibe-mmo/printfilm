@@ -1,11 +1,11 @@
-"""每镜视觉资产上限：预留画风板与衔接帧后，避免一次提交超过参考图上限。"""
+"""Giới hạn trên của nội dung hình ảnh trên mỗi ảnh: Sau khi đặt bảng kiểu và khung kết nối, tránh gửi nhiều hơn giới hạn trên của hình ảnh tham chiếu cùng một lúc."""
 
 from __future__ import annotations
 
 import re
 from typing import Any
 
-# 预留画风板 + 上一镜尾帧后，分镜可挂的角色/场景/道具
+# Bảng kiểu dành riêng + nhân vật/cảnh/đạo cụ có thể gắn vào bảng phân cảnh sau khung hình cuối cùng của cảnh quay trước
 FRAGMENT_MAX_VISUAL_ASSETS = 6
 FRAGMENT_MAX_CHARACTERS = 3
 FRAGMENT_MAX_PROPS = 2
@@ -14,7 +14,7 @@ _ASSET_MENTION_RE = re.compile(r"@asset:(\d+)")
 
 
 def cap_asset_id_list(asset_ids: list[int] | None, *, limit: int = FRAGMENT_MAX_VISUAL_ASSETS) -> list[int]:
-    """保序去重截断（合并分镜后不再区分类型时用）。"""
+    """Loại bỏ trùng lặp và cắt ngắn bảo toàn trật tự (được sử dụng khi các loại không còn được phân biệt sau khi hợp nhất các cảnh)."""
     out: list[int] = []
     seen: set[int] = set()
     for raw in asset_ids or []:
@@ -34,7 +34,7 @@ def cap_fragment_asset_ids(
     *,
     limit: int = FRAGMENT_MAX_VISUAL_ASSETS,
 ) -> list[int]:
-    """每镜视觉参考：1 场景 + 最多 3 角色 + 剩余给道具。"""
+    """Tham chiếu hình ảnh cho mỗi cảnh quay: 1 cảnh + tối đa 3 nhân vật + đạo cụ còn lại."""
     by_id = {int(getattr(item, "id", 0) or 0): item for item in assets if getattr(item, "id", None)}
     scenes: list[int] = []
     chars: list[int] = []
@@ -71,7 +71,7 @@ def cap_fragment_asset_ids(
 
 
 def strip_unlisted_asset_mentions(content: str, allowed_ids: list[int] | set[int]) -> str:
-    """正文里只保留已入选的 @asset，避免生成阶段再把砍掉的资产捞回来。"""
+    """Chỉ @asset đã chọn mới được giữ lại trong văn bản để tránh lấy lại những nội dung đã bị cắt trong giai đoạn tạo."""
     allowed = {int(x) for x in allowed_ids if int(x) > 0}
 
     def _keep(match: re.Match[str]) -> str:

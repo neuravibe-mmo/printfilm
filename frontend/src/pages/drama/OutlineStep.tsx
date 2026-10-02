@@ -1,4 +1,4 @@
-/** 剧情大纲步骤：自动摘要 + 分集剧本流水线 */
+/** Các bước phác thảo cốt truyện: tóm tắt tự động + dây chuyền lắp ráp kịch bản tập */
 import { useEffect, useRef, useState } from 'react'
 import {
   dramaApi,

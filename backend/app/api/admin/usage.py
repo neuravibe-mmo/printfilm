@@ -73,7 +73,7 @@ async def list_usage_events(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminUsageEventListOut:
-    """分页列出用量明细，支持用户/任务/领域筛选。"""
+    """Liệt kê chi tiết cách sử dụng trong các trang, hỗ trợ lọc người dùng/tác vụ/trường."""
     owner = aliased(User)
     task = aliased(TaskRun)
     filters = []

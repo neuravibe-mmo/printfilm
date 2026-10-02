@@ -1,4 +1,4 @@
-"""用户 API Key 创建、校验与撤销。"""
+"""Tạo, xác minh và thu hồi Khóa API người dùng."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def _hash_key(raw: str) -> str:
 
 
 def generate_api_key() -> tuple[str, str, str]:
-    """返回 (完整 key, 展示前缀, hash)。"""
+    """Trả về (khóa hoàn chỉnh, tiền tố hiển thị, hàm băm)."""
     secret = secrets.token_urlsafe(24).replace("-", "").replace("_", "")[:32]
     raw = f"{API_KEY_PREFIX}{secret}"
     prefix = raw[:16]

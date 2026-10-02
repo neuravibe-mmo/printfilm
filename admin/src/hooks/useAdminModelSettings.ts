@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, type AdminModelSettings } from "@/api/client";
 
-// 加载 / 保存管理端 flat 配置（DB 覆盖 env）
+// Tải/lưu cấu hình phẳng phía quản lý (DB ghi đè env)
 export function useAdminModelSettings() {
   const [form, setForm] = useState<AdminModelSettings | null>(null);
   const [loading, setLoading] = useState(true);

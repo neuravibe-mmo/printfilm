@@ -1,8 +1,8 @@
-/** Agent Skill API：列表 / 上传 / 启用 / 删除 */
+/** API kỹ năng của tác nhân: Danh sách/Tải lên/Bật/Xóa */
 
 import { getDramaApiBase } from './drama'
 
-/** 组装请求头；FormData 时不要强行 JSON */
+/** Tập hợp các tiêu đề yêu cầu; không ép buộc JSON khi sử dụng FormData */
 function authHeaders(json = true): HeadersInit {
   const token = localStorage.getItem('token')
   const headers: Record<string, string> = {}
@@ -11,7 +11,7 @@ function authHeaders(json = true): HeadersInit {
   return headers
 }
 
-/** 带登录态请求 Agent Skill API */
+/** Yêu cầu API kỹ năng đại lý với trạng thái đăng nhập */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getDramaApiBase()}${path}`, {
     ...init,
@@ -39,12 +39,12 @@ export type AgentSkill = {
   updated_at?: string | null
 }
 
-/** 列出内置 + 当前用户 Skill */
+/** Danh sách tích hợp + Kỹ năng người dùng hiện tại */
 export function listAgentSkills() {
   return request<{ items: AgentSkill[] }>('/api/drama/skills')
 }
 
-/** 上传 markdown 文本 */
+/** Tải lên văn bản đánh dấu */
 export function uploadAgentSkillMarkdown(markdown: string) {
   return request<AgentSkill>('/api/drama/skills', {
     method: 'POST',
@@ -52,7 +52,7 @@ export function uploadAgentSkillMarkdown(markdown: string) {
   })
 }
 
-/** 上传 .md 文件 */
+/** Tải lên tệp .md */
 export async function uploadAgentSkillFile(file: File) {
   const token = localStorage.getItem('token')
   const body = new FormData()
@@ -69,7 +69,7 @@ export async function uploadAgentSkillFile(file: File) {
   return res.json() as Promise<AgentSkill>
 }
 
-/** 启用/停用或改正文 */
+/** Bật/tắt hoặc sửa văn bản */
 export function patchAgentSkill(skillId: number, body: { markdown?: string; is_active?: boolean }) {
   return request<AgentSkill>(`/api/drama/skills/${skillId}`, {
     method: 'PATCH',
@@ -77,12 +77,12 @@ export function patchAgentSkill(skillId: number, body: { markdown?: string; is_a
   })
 }
 
-/** 删除用户 Skill（内置不可删） */
+/** Xóa kỹ năng người dùng (không thể xóa tích hợp) */
 export function deleteAgentSkill(skillId: number) {
   return request<{ ok: boolean }>(`/api/drama/skills/${skillId}`, { method: 'DELETE' })
 }
 
-/** 按勾选 Skill 优化提示词（保留 @asset 引用） */
+/** Nhấp để kiểm tra từ nhắc nhở Tối ưu hóa kỹ năng (giữ lại tham chiếu @asset) */
 export function optimizePromptWithSkills(body: {
   prompt: string
   skill_ids: number[]

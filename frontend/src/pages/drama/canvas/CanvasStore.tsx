@@ -1,4 +1,4 @@
-/** 画布状态上下文：节点/边、历史、UI 开关与增删操作 */
+/** Bối cảnh trạng thái canvas: nút/cạnh, lịch sử, chuyển đổi giao diện người dùng cũng như các thao tác thêm và xóa */
 import {
   useCallback,
   useEffect,
@@ -108,13 +108,13 @@ type CanvasStoreValue = {
   ensureNodeAsset: (nodeId: string) => Promise<number>
   uploadNodeMedia: (nodeId: string, file: File) => Promise<void>
   applyLibraryMediaToNode: (nodeId: string, source: DramaAsset) => Promise<void>
-  /** 用最新资产字段同步节点（音色绑定等） */
+  /** Đồng bộ hóa các nút với các trường nội dung mới nhất (ràng buộc giai điệu, v.v.) */
   syncNodeFromAsset: (nodeId: string, asset: DramaAsset) => void
-  /** 写回节点提示词（本地） */
+  /** Viết lại từ nhắc nút (cục bộ) */
   updateNodePrompt: (nodeId: string, prompt: string) => void
-  /** 写回视频节点生成参数 */
+  /** Ghi lại các tham số tạo nút video */
   updateNodeVideoOptions: (nodeId: string, options: Record<string, unknown>) => void
-  /** 重命名节点（同步资产 name） */
+  /** Đổi tên nút (đồng bộ hóa tên tài sản) */
   renameNode: (nodeId: string, name: string) => Promise<void>
   generateNodeImage: (
     nodeId: string,
@@ -127,7 +127,7 @@ type CanvasStoreValue = {
     options?: Partial<VideoGenerationOptions>,
   ) => Promise<void>
   updateNodeTextContent: (nodeId: string, textContent: string) => void
-  /** 可供 @ 引用的画布节点（角色/场景/图片等） */
+  /** Nút canvas (nhân vật/cảnh/hình ảnh, v.v.) có thể được tham chiếu bởi @ */
   mentionableNodes: Array<{
     nodeId: string
     assetId: number
@@ -135,9 +135,9 @@ type CanvasStoreValue = {
     label: string
     mediaUrl?: string | null
   }>
-  /** 项目级内置画面风格 ID */
+  /** ID kiểu hình ảnh tích hợp ở cấp độ dự án */
   projectImageStyleId: string
-  /** 是否自由画布工作流（非大纲分集） */
+  /** Có sử dụng quy trình làm việc canvas miễn phí hay không (các tập không có phác thảo) */
   freeCanvasMode: boolean
 }
 
@@ -146,7 +146,7 @@ type CanvasStoreProviderProps = {
   children: ReactNode
 }
 
-/** 提供画布受控状态与历史操作 */
+/** Cung cấp trạng thái được kiểm soát canvas và các hoạt động lịch sử */
 export function CanvasStoreProvider({ projectId, children }: CanvasStoreProviderProps) {
   const [nodes, setNodes] = useState<Node<CanvasAssetNodeData>[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
@@ -158,8 +158,8 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   const [snapToGrid, setSnapToGrid] = useState(false)
   const [showMinimap, setShowMinimap] = useState(false)
   const [focusNodeId, setFocusNodeId] = useState<string | null>(null)
-  // projectImageStyleId 项目内置画面风格
-  // freeCanvasMode 是否自由画布项目
+  // projectImageStyleId Kiểu màn hình tích hợp của dự án
+  // freeCanvasMode Đây có phải là mục canvas miễn phí không?
   const [projectImageStyleId, setProjectImageStyleId] = useState('')
   const [freeCanvasMode, setFreeCanvasMode] = useState(false)
   const readyRef = useRef(false)
@@ -269,8 +269,8 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       const removeChanges = changes.filter((c) => c.type === 'remove')
       const hasRemove = removeChanges.length > 0
       /*
-       * removedAssetIds 待删后端资产
-       * nextNodes / nextEdges 删除后的布局（立刻落盘，避免刷新复现）
+       * đã xóaAssetIds Nội dung phụ trợ sẽ bị xóa
+       * nextNodes / nextEdges bố cục sau khi xóa (đặt đĩa ngay lập tức để tránh làm mới và lặp lại)
        */
       const removedAssetIds: number[] = []
       if (hasRemove) {
@@ -293,7 +293,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       nodesRef.current = nextNodes
       setNodes(nextNodes)
 
-      /* 同步剪掉指向已删节点的边，避免布局脏边刷新后异常 */
+      /* Cắt đồng bộ các cạnh trỏ đến các nút đã xóa để tránh ngoại lệ sau khi làm mới các cạnh bẩn của bố cục */
       let nextEdges = edgesRef.current
       if (hasRemove) {
         const removedIds = new Set(removeChanges.map((c) => c.id))
@@ -399,7 +399,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
           mediaUrl: null,
         },
       }
-      /* 回写 canvas_node_id，刷新后仍能识别为画布节点 */
+      /* Ghi lại canvas_node_id, nó vẫn có thể được nhận dạng là nút canvas sau khi làm mới */
       void dramaApi
         .updateAsset(assetId, { params: { canvas_node_id: id, on_canvas: true } })
         .catch(() => undefined)
@@ -414,7 +414,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
       nodesRef.current = nextNodes
       setNodes(nextNodes)
       markDirty()
-      /* 立刻落盘，避免刷新丢失新建节点 */
+      /* Tải ngay đĩa về tránh làm mới và mất node mới */
       void flushRef.current({
         nodes: nextNodes,
         edges: edgesRef.current,
@@ -423,7 +423,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty, projectId],
   )
 
-  /** 确保节点已绑定后端资产，返回 assetId */
+  /** Đảm bảo nút đã được liên kết với nội dung phụ trợ và trả về assetsId */
   const ensureNodeAsset = useCallback(
     async (nodeId: string) => {
       const node = nodesRef.current.find((n) => n.id === nodeId)
@@ -451,7 +451,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty, projectId],
   )
 
-  /** 本地上传图片到节点 */
+  /** Tải hình ảnh cục bộ lên nút */
   const uploadNodeMedia = useCallback(
     async (nodeId: string, file: File) => {
       pushSnapshot()
@@ -470,7 +470,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [ensureNodeAsset, markDirty, pushSnapshot],
   )
 
-  /** 从全局资产库选用图片并写回节点，保留可编辑提示词以便再次生成 */
+  /** Chọn hình ảnh từ thư viện nội dung toàn cầu và ghi nó trở lại nút, giữ lại từ nhắc nhở có thể chỉnh sửa để tái tạo. */
   const applyLibraryMediaToNode = useCallback(
     async (nodeId: string, source: DramaAsset) => {
       if (!source.url && !source.cover) {
@@ -540,7 +540,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [ensureNodeAsset, markDirty, pushSnapshot],
   )
 
-  /** 用最新资产字段同步节点展示（音色、封面、提示词等） */
+  /** Đồng bộ hóa hiển thị nút với các trường nội dung mới nhất (âm, bìa, lời nhắc, v.v.) */
   const syncNodeFromAsset = useCallback(
     (nodeId: string, asset: DramaAsset) => {
       const next = buildNodeDataFromAsset(asset)
@@ -552,7 +552,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
                 data: {
                   ...n.data,
                   ...next,
-                  // 保留本地 generating 状态，避免绑定时闪断
+                  // Giữ trạng thái tạo cục bộ để tránh gián đoạn trong quá trình liên kết
                   generating: n.data.generating,
                 },
               }
@@ -564,7 +564,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty],
   )
 
-  /** AI 生图并写回节点 */
+  /** AI tạo biểu đồ và ghi nó trở lại các nút */
   const generateNodeImage = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<ImageGenerationOptions>) => {
       const trimmed = prompt.trim()
@@ -584,7 +584,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
 
       try {
         const assetId = await ensureNodeAsset(nodeId)
-        /* 把 @asset:id 展开为可读名称再送生图 API；本地仍保留 token */
+        /* Mở rộng @asset:id thành một tên có thể đọc được rồi gửi nó tới API; mã thông báo vẫn được giữ lại cục bộ */
         const expandedPrompt = trimmed.replace(/@asset:(\d+)/g, (token, idStr: string) => {
           const refId = Number(idStr)
           const ref = nodesRef.current.find((n) => n.data.assetId === refId)
@@ -660,7 +660,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [ensureNodeAsset, markDirty, projectId, projectImageStyleId, pushSnapshot],
   )
 
-  /** 收集连入当前节点的参考资产 ID */
+  /** Thu thập ID nội dung tham chiếu được kết nối với nút hiện tại */
   const collectIncomingAssetIds = useCallback((nodeId: string) => {
     const ids: number[] = []
     const seen = new Set<number>()
@@ -675,7 +675,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     return ids
   }, [])
 
-  /** AI 生视频并写回节点（Seedance，保留 @asset:id） */
+  /** AI tạo video và ghi nó trở lại nút (Seedance, giữ lại @asset:id) */
   const generateNodeVideo = useCallback(
     async (nodeId: string, prompt: string, options?: Partial<VideoGenerationOptions>) => {
       const trimmed = prompt.trim()
@@ -754,7 +754,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     ],
   )
 
-  /** 更新节点提示词（不触发生成） */
+  /** Cập nhật từ nhắc nút (không kích hoạt việc tạo) */
   const updateNodePrompt = useCallback(
     (nodeId: string, prompt: string) => {
       setNodes((current) =>
@@ -767,7 +767,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty],
   )
 
-  /** 更新视频节点 Seedance 参数 */
+  /** Cập nhật thông số Seedance của nút video */
   const updateNodeVideoOptions = useCallback(
     (nodeId: string, options: Record<string, unknown>) => {
       setNodes((current) =>
@@ -780,7 +780,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [markDirty],
   )
 
-  /** 重命名节点并同步资产 name */
+  /** Đổi tên nút và đồng bộ hóa tên nội dung */
   const renameNode = useCallback(
     async (nodeId: string, name: string) => {
       const trimmed = name.trim()
@@ -814,7 +814,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
     [ensureNodeAsset, markDirty, pushSnapshot],
   )
 
-  /** 更新文本节点内容 */
+  /** Cập nhật nội dung nút văn bản */
   const updateNodeTextContent = useCallback(
     (nodeId: string, textContent: string) => {
       setNodes((current) =>
@@ -867,7 +867,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   })
   flushRef.current = flush
 
-  /* 页面关闭前尽量刷一次保存 */
+  /* Hãy thử làm mới và lưu trang trước khi đóng nó. */
   useEffect(() => {
     const onBeforeUnload = () => {
       if (dirty) void flush()
@@ -976,7 +976,7 @@ export function CanvasStoreProvider({ projectId, children }: CanvasStoreProvider
   return <CanvasStoreContext.Provider value={value}>{children}</CanvasStoreContext.Provider>
 }
 
-/** 读取画布状态上下文 */
+/** Đọc ngữ cảnh trạng thái canvas */
 export function useCanvasStore() {
   return useCanvasStoreBase<CanvasStoreValue>()
 }

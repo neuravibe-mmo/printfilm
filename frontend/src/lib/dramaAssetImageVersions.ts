@@ -1,4 +1,4 @@
-/** 资产形象历史版本读写 */
+/** Đọc và ghi phiên bản lịch sử của hình ảnh tài sản */
 import { resolveDramaMediaUrl, type DramaAsset } from '../api/drama'
 
 export type AssetImageVersion = {
@@ -10,7 +10,7 @@ export type AssetImageVersion = {
   source?: string
 }
 
-// 从 params.image_versions 读取可展示的历史形象
+// Đọc hình ảnh lịch sử có thể hiển thị từ params.image_versions
 export function readAssetImageVersions(asset: DramaAsset | null | undefined): AssetImageVersion[] {
   const raw = (asset?.params as Record<string, unknown> | null | undefined)?.image_versions
   if (!Array.isArray(raw)) return []

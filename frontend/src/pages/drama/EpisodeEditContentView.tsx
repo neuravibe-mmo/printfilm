@@ -1,4 +1,4 @@
-/** 分镜正文只读渲染：把 @asset:id 显示为带缩略图的关联标签 */
+/** Hiển thị văn bản chỉ đọc trong bảng phân cảnh: hiển thị @asset:id dưới dạng thẻ được liên kết với hình thu nhỏ */
 import { Fragment, useMemo } from 'react'
 import { resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
 import { useI18n } from '../../i18n'
@@ -15,7 +15,7 @@ type Part =
 
 const ASSET_TOKEN = /@asset:(\d+)/g
 
-// 将正文拆成文本与资产引用片段
+// Chia văn bản thành các đoạn tham chiếu văn bản và nội dung
 function splitContentParts(content: string): Part[] {
   const parts: Part[] = []
   let last = 0
@@ -34,7 +34,7 @@ function splitContentParts(content: string): Part[] {
   return parts
 }
 
-// 渲染只读正文（关联标签可视化）
+// Hiển thị văn bản chỉ đọc (trực quan hóa các thẻ liên quan)
 export function EpisodeEditContentView({ content, assets, onOpenAsset }: Props) {
   const { t } = useI18n()
   const byId = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets])

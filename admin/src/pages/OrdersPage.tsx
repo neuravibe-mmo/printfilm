@@ -54,7 +54,7 @@ function ledgerRefLink(row: AdminLedger, orderLabel?: string) {
   );
 }
 
-// 充值订单、钱包流水与用量明细
+// Lệnh nạp tiền, chi tiết giao dịch ví và cách sử dụng
 export function OrdersPage() {
   const { t, locale } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();

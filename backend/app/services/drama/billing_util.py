@@ -1,4 +1,4 @@
-"""漫剧计费辅助：Seedance token 估算、Seed LLM 用量聚合。"""
+"""Hỗ trợ thanh toán truyện tranh: Ước tính mã thông báo Seedance, tổng hợp mức sử dụng Seed LLM."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from app.services.ark import ImageResult, TaskResult
 
 
-# 按分镜时长估算 Seedance 视频 token（与科普 pipeline 一致）
+# Ước tính mã thông báo video Seedance theo thời lượng của bảng phân cảnh (phù hợp với quy trình khoa học phổ biến)
 def seedance_video_billing_tokens(duration_sec: int | float | None) -> int:
     settings = get_settings()
     dur = max(float(duration_sec or 8), 2.0)
@@ -28,7 +28,7 @@ def seedance_billing_key(*, generate_audio: bool = True) -> str:
     return "seedance2:video0" if generate_audio else "seedance2:video1"
 
 
-# 匹配 raw JSON 中的 provider_task_id 字段（带 key，避免裸 ID 子串误伤；兼容 dumps 空格）
+# Khớp trường cung cấp_task_id trong JSON thô (có khóa để tránh thiệt hại do vô tình gây ra bởi chuỗi con ID trần; tương thích với khoảng trắng kết xuất)
 def _provider_task_id_match(provider_id: str):
     pid = provider_id.replace("\\", "\\\\").replace('"', '\\"')
     return or_(
@@ -51,7 +51,7 @@ async def record_seedance_video_usage(
     project_id: int | None = None,
     shot_id: int | None = None,
 ) -> UsageEvent:
-    """按官方任务 usage / 成本或时长估算写入 Seedance 视频用量行。
+    """Viết hàng sử dụng video Seedance theo ước tính mức sử dụng/chi phí hoặc thời lượng tác vụ chính thức.
 
     幂等：同 task_run+billing_key，或同 provider_task_id 已有行时直接返回，避免并发收尾双记。
     """
@@ -73,7 +73,7 @@ async def record_seedance_video_usage(
         if existing is not None:
             return existing
 
-    # 无 billing_scope 时仍可按上游任务 ID 精确去重
+    # Nếu không có Billing_scope, bạn vẫn có thể loại bỏ trùng lặp một cách chính xác theo ID tác vụ ngược dòng.
     if provider_id:
         by_provider = (
             await db.execute(
@@ -111,7 +111,7 @@ async def record_seedance_video_usage(
     raw: dict[str, Any] | None = None
     if raw_usage:
         raw = dict(raw_usage) if isinstance(raw_usage, dict) else {"usage": dict(raw_usage)}
-        # 统一把计费字段放进 usage，便于 charge_fen_for_usage / display
+        # Thống nhất trường thanh toán vào mục sử dụng để hỗ trợ charge_fen_for_usage/hiển thị
         usage_block = raw.get("usage") if isinstance(raw.get("usage"), dict) else {}
         merged_usage = {**usage_block}
         if "creditsConsumed" in raw and "creditsConsumed" not in merged_usage:
@@ -194,7 +194,7 @@ async def record_seedream_image_usage(
     shot_id: int | None = None,
     extra_raw: dict[str, Any] | None = None,
 ) -> UsageEvent:
-    """按 Seedream 响应 usage / 成本写入图片用量行；缺失时回退估算 token。"""
+    """Nhấn Seedream để phản hồi mức sử dụng/chi phí và viết dòng sử dụng hình ảnh; quay trở lại mã thông báo ước tính nếu bị thiếu."""
     total_tokens = int(getattr(image_result, "total_tokens", 0) or 0)
     completion_tokens = int(getattr(image_result, "completion_tokens", 0) or 0)
     prompt_tokens = int(getattr(image_result, "prompt_tokens", 0) or 0)
@@ -259,7 +259,7 @@ async def record_seed_assets_llm_usage(
     drama_project_id: int,
     result: SeedAssetsResult,
 ) -> None:
-    """按 seed 结果聚合 LLM 调用次数写入 usage_events（需在 billing_scope 内）。"""
+    """Số lượng lệnh gọi LLM được tổng hợp theo kết quả ban đầu được ghi vào Usage_events (cần phải nằm trong Billing_scope)."""
     settings = get_settings()
     llm_calls = int(result.llm_calls_props or 0) + int(result.prompts_refreshed or 0)
     if llm_calls <= 0:

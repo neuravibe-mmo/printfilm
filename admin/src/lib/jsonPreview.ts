@@ -1,6 +1,6 @@
 /** Compact JSON preview for admin task list / tooltips. */
 
-// 将对象压成单行摘要；空值返回 —
+// Nén đối tượng thành một bản tóm tắt trên một dòng; trả về giá trị rỗng -
 export function compactJsonPreview(value: unknown, maxLen = 96): string {
   if (value == null) return "—";
   if (typeof value === "string") {
@@ -23,7 +23,7 @@ export function compactJsonPreview(value: unknown, maxLen = 96): string {
   }
 }
 
-// 美化多行 JSON（详情弹窗）
+// Làm đẹp JSON nhiều dòng (cửa sổ bật lên chi tiết)
 export function prettyJson(value: unknown): string {
   if (value == null) return "—";
   try {
@@ -33,7 +33,7 @@ export function prettyJson(value: unknown): string {
   }
 }
 
-// 是否有可展示的 JSON 内容
+// Có nội dung JSON nào có thể được hiển thị không?
 export function hasJsonContent(value: unknown): boolean {
   if (value == null) return false;
   if (typeof value === "string") return value.trim().length > 0;

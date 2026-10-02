@@ -1,4 +1,4 @@
-/** React Flow 无限画布核心 */
+/** Lõi canvas vô hạn React Flow */
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   Background,
@@ -17,7 +17,7 @@ type FreeCanvasFlowProps = {
   projectId: number
 }
 
-/** 渲染 React Flow 无限画布 */
+/** Render React Flow canvas vô hạn */
 export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
   const nodeTypes = useMemo(() => ({ asset: CanvasAssetNode }), [])
   const {
@@ -36,7 +36,7 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const dragSnapshotPushed = useRef(false)
 
-  /* 聚焦文件夹选中的节点 */
+  /* Tập trung vào nút được chọn trong thư mục */
   useEffect(() => {
     if (!focusNodeId) return
     const node = getNode(focusNodeId)
@@ -61,7 +61,7 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
     wrapperRef.current?.focus()
   }, [])
 
-  /* 拖拽开始时压入历史快照（同一拖拽只压一次） */
+  /* Đẩy ảnh chụp nhanh lịch sử khi bắt đầu kéo (cùng thao tác kéo chỉ được đẩy một lần) */
   const handleNodeDragStart = useCallback(() => {
     if (!dragSnapshotPushed.current) {
       pushSnapshot()
@@ -73,7 +73,7 @@ export function FreeCanvasFlow({ projectId }: FreeCanvasFlowProps) {
     dragSnapshotPushed.current = false
   }, [])
 
-  /* 保证容器可聚焦；加载后有节点时适应视图 */
+  /* Đảm bảo rằng vùng chứa có thể lấy nét được; thích ứng với chế độ xem khi có nút sau khi tải */
   useEffect(() => {
     wrapperRef.current?.focus()
   }, [projectId])

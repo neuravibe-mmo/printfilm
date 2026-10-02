@@ -1,4 +1,4 @@
-/** 漫剧生图：风格 / 模型 / 画幅选择条（内置风格，无手填） */
+/** Vẽ truyện tranh: thanh chọn kiểu/kiểu/khung (kiểu tích hợp, không điền thủ công) */
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { BarChart3, ChevronDown, RectangleVertical, Smile } from 'lucide-react'
 import {
@@ -27,13 +27,13 @@ type DramaImageGenOptionsBarProps = {
   value: ImageGenerationOptions
   onChange: (next: ImageGenerationOptions) => void
   disabled?: boolean
-  /** 是否持久化风格到项目（Assets 步骤用） */
+  /** Có nên duy trì phong cách cho dự án hay không (đối với bước Tài sản) */
   onStylePersist?: (styleId: string) => void | Promise<void>
 }
 
 type OpenPanel = 'style' | 'model' | 'output' | null
 
-/** 渲染生图选项条：风格 · 模型 · 比例清晰度 */
+/** Thanh tùy chọn hiển thị: Kiểu · Kiểu · Độ rõ của tỷ lệ */
 export function DramaImageGenOptionsBar({
   value,
   onChange,
@@ -46,7 +46,7 @@ export function DramaImageGenOptionsBar({
   const imageModels = catalogImageModels(catalog)
 
   useEffect(() => {
-    // 目录到达后，把旧 Kie/方舟 id 换成后台默认图片模型
+    // Sau khi thư mục đến, hãy thay thế ID Kie/Ark cũ bằng mẫu hình ảnh nền mặc định
     if (!catalog || disabled) return
     const ids = imageModels.map((m) => m.id)
     if (!ids.length) return
@@ -57,7 +57,7 @@ export function DramaImageGenOptionsBar({
 
   useEffect(() => {
     if (!open) return
-    // 点击外部关闭弹层
+    // Click ra ngoài để đóng lớp thun lại
     function onDoc(e: Event) {
       const target = e.target as Node | null
       if (rootRef.current && target && !rootRef.current.contains(target)) {

@@ -1,4 +1,4 @@
-/** 漫剧全局生成队列：右下角圆钮，展示图片 / 视频等任务 */
+/** Hàng đợi thế hệ toàn cầu của loạt truyện tranh: nút tròn ở góc dưới bên phải, hiển thị các tác vụ như hình ảnh/video */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clapperboard, ImageIcon, Layers, Octagon, Trash2, X } from 'lucide-react'
 import { dramaApi } from '../../api/drama'

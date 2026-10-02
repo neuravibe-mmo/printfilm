@@ -1,4 +1,4 @@
-"""Selectable TTS voice presets (豆包 openspeech + template aliases)."""
+"""Cài đặt trước giọng nói TTS có thể lựa chọn (openpeech túi đậu + bí danh mẫu)."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ VOICE_PRESETS: list[dict[str, Any]] = [
     },
 ]
 
-# 漫剧角色音色：按关键词为不同角色匹配不同 speaker（避免全员同一声线）
+# Giọng nhân vật truyện tranh: ghép các giọng nói khác nhau cho các nhân vật khác nhau theo từ khóa (tránh trường hợp tất cả các thành viên đều có giọng giống nhau)
 DRAMA_SPEAKER_RULES: list[dict[str, Any]] = [
     {
         "speaker": "zh_male_baqiqingshu_uranus_bigtts",
@@ -141,7 +141,7 @@ MALE_HINTS = (
 )
 FEMALE_HINTS = ("女", "少女", "女声", "御姐", "小姐", "娘娘", "萝莉", "姑娘", "妇人", "村妇")
 
-# edge-tts 确认可用的男声仅 Yunxi/Yunjian/Yunyang（Yunxia 实为女童，不给男角色）
+# edge-tts xác nhận giọng nam chỉ có Yunxi/Yunjian/Yunyang (Yunxia thực chất là nữ, không có nhân vật nam)
 EDGE_TTS_BY_SPEAKER: dict[str, str] = {
     "zh_male_shaonianzixin_uranus_bigtts": "zh-CN-YunxiNeural",
     "zh_male_taocheng_uranus_bigtts": "zh-CN-YunxiNeural",
@@ -171,7 +171,7 @@ def list_voices() -> list[dict[str, Any]]:
 
 
 def infer_speaker_gender(speaker: str) -> str | None:
-    """openspeech speaker id → female | male（勿用子串 male，zh_female_* 会误判）。"""
+    """id người nói openpeech → nữ | male (không sử dụng chuỗi con male, zh_female_* sẽ gây ra phán đoán sai)."""
     s = (speaker or "").strip().lower()
     if not s:
         return None
@@ -183,7 +183,7 @@ def infer_speaker_gender(speaker: str) -> str | None:
 
 
 def edge_tts_voice_for_speaker(speaker: str) -> str:
-    """edge-tts 兜底：按豆包 speaker 映射不同中文 neural，避免全员同一条 Yunxi。"""
+    """edge-tts Quay lại đầu trang: Lập bản đồ các nơ-ron tiếng Trung khác nhau theo các loa Beanbag để tránh sử dụng cùng một Yunxi cho tất cả các thành viên."""
     mapped = EDGE_TTS_BY_SPEAKER.get((speaker or "").strip())
     if mapped:
         return mapped
@@ -212,7 +212,7 @@ def resolve_speaker(voice_id: str | None, *, template_preset: str | None = None)
     return raw
 
 
-# 推断漫剧角色应使用的 TTS speaker（多声线 + 稳定哈希打散同分候选）
+# Suy ra loa TTS mà nhân vật truyện tranh nên sử dụng (nhiều giọng nói + hàm băm ổn định để chia các ứng viên có cùng số điểm)
 def infer_drama_speaker_from_prompt(
     voice_prompt: str,
     *,
@@ -252,13 +252,13 @@ def infer_drama_speaker_from_prompt(
     return top[int(digest[:8], 16) % len(top)]
 
 
-# 兼容旧调用
+# Tương thích với các cuộc gọi cũ
 def infer_speaker_from_voice_prompt(voice_prompt: str, *, character_name: str = "", asset_id: int = 0) -> str:
     return infer_drama_speaker_from_prompt(voice_prompt, character_name=character_name, asset_id=asset_id)
 
 
 PREVIEW_TEXT = "Xin chào các bạn, đây là hiệu ứng nghe thử của giọng đọc này, rất phù hợp cho lời dẫn thuyết minh video."
-# 试听缓存文件名后缀：TTS 路由/edge 性别修复后递增，避免继续播放旧错误样例
+# Hậu tố tên tệp bộ đệm thử giọng: Tăng giới tính tuyến/cạnh TTS sau khi sửa chữa để tránh tiếp tục phát các mẫu lỗi cũ
 PREVIEW_CACHE_TAG = "v4"
 
 

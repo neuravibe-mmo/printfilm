@@ -1,4 +1,4 @@
-/** 英文：壳层、通用、账号、状态 */
+/** Tiếng Anh: shell, chung, tài khoản, trạng thái */
 
 export const enShell = {
   meta: {

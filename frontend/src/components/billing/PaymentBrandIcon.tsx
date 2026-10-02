@@ -2,7 +2,7 @@ type PayBrand = 'alipay' | 'wxpay' | 'unionpay'
 
 type Props = {
   brand: PayBrand
-  /** sm 用于按钮内；md 用于弹窗标题 */
+  /** sm được sử dụng trong nút; md được sử dụng trong tiêu đề cửa sổ bật lên */
   size?: 'sm' | 'md'
   className?: string
 }
@@ -13,7 +13,7 @@ const BRAND_META: Record<PayBrand, { src: string; alt: string }> = {
   unionpay: { src: '/payment/unionpay.svg', alt: '银联支付' },
 }
 
-/** 支付渠道品牌图标 */
+/** Biểu tượng thương hiệu kênh thanh toán */
 export default function PaymentBrandIcon({ brand, size = 'sm', className = '' }: Props) {
   const meta = BRAND_META[brand]
   return (

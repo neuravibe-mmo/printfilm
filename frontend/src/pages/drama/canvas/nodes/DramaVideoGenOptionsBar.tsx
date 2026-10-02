@@ -1,4 +1,4 @@
-/** 画布视频节点：风格 / Seedance 模型 / 时长 / 比例清晰度 */
+/** Nút video canvas: Kiểu / Mô hình hạt giống / Thời lượng / Độ rõ của tỷ lệ */
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { BarChart3, ChevronDown, RectangleVertical, Smile, Timer } from 'lucide-react'
 import {
@@ -34,7 +34,7 @@ type DramaVideoGenOptionsBarProps = {
 
 type OpenPanel = 'style' | 'model' | 'duration' | 'output' | null
 
-/** 渲染视频生成选项条 */
+/** Thanh tùy chọn tạo video kết xuất */
 export function DramaVideoGenOptionsBar({
   value,
   onChange,
@@ -46,7 +46,7 @@ export function DramaVideoGenOptionsBar({
   const videoModels = catalogVideoModels(catalog)
 
   useEffect(() => {
-    // 目录到达后，把旧 Kie/方舟 id 换成后台默认视频模型
+    // Sau khi thư mục đến, hãy thay thế ID Kie/Ark cũ bằng mô hình video mặc định nền
     if (!catalog || disabled) return
     const ids = videoModels.map((m) => m.id)
     if (!ids.length) return

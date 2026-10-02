@@ -1,4 +1,4 @@
-/** 画布节点大屏预览：图片 / 视频 / 音频 / 文本，可下载 */
+/** Xem trước màn hình lớn của nút canvas: hình ảnh/video/âm thanh/văn bản, có thể tải xuống */
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Download, X } from 'lucide-react'
@@ -25,7 +25,7 @@ type CanvasNodePreviewModalProps = {
   onClose: () => void
 }
 
-/** 按节点内容决定大屏展示形态 */
+/** Xác định hình thức hiển thị màn hình lớn dựa trên nội dung nút */
 function previewMode(payload: CanvasNodePreviewPayload) {
   const media = (payload.mediaUrl || '').trim()
   const voice = (payload.voiceUrl || '').trim()
@@ -40,7 +40,7 @@ function previewMode(payload: CanvasNodePreviewPayload) {
   return 'empty' as const
 }
 
-/** 节点媒体大屏弹层 */
+/** Lớp bật lên màn hình lớn của phương tiện Node */
 export function CanvasNodePreviewModal({ payload, onClose }: CanvasNodePreviewModalProps) {
   const { t } = useI18n()
   const [busy, setBusy] = useState(false)

@@ -21,7 +21,7 @@ type DashboardInsightGridProps = {
   className?: string;
 };
 
-/** 仪表盘图标洞察格：能力/领域/周期指标 */
+/** Lưới thông tin chi tiết về biểu tượng trang tổng quan: Các chỉ báo về khả năng/Miền/Chu kỳ */
 export function DashboardInsightGrid({ items, columns = 4, className }: DashboardInsightGridProps) {
   const { m } = useI18n();
   if (items.length === 0) {

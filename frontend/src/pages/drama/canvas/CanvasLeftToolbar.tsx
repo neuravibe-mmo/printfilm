@@ -1,4 +1,4 @@
-/** 画布左侧垂直居中工具栏与添加节点面板 */
+/** Thanh công cụ được căn giữa theo chiều dọc ở phía bên trái của canvas và bảng Add Node */
 import { useEffect, useRef, useState } from 'react'
 import { FolderOpen, Plus, X } from 'lucide-react'
 import { useCanvasStore } from './CanvasStore'
@@ -9,19 +9,19 @@ type CanvasLeftToolbarProps = {
   onSelectNode: (kind: CanvasNodeKind) => void
 }
 
-/** 渲染画布左侧浮动工具栏 */
+/** Hiển thị thanh công cụ nổi ở phía bên trái của khung vẽ */
 export function CanvasLeftToolbar({ onSelectNode }: CanvasLeftToolbarProps) {
   const { t, locale } = useI18n()
   const { nodes, requestFocusNode } = useCanvasStore()
   /*
-   * panelOpen 添加节点面板
-   * folderOpen 节点列表面板
+   * bảngMở Thêm bảng nút
+   * thư mụcMở bảng danh sách nút
    */
   const [panelOpen, setPanelOpen] = useState(false)
   const [folderOpen, setFolderOpen] = useState(false)
   const addAnchorRef = useRef<HTMLDivElement>(null)
 
-  // 点击外侧关闭添加面板
+  // Nhấp vào bên ngoài để đóng bảng thêm
   useEffect(() => {
     if (!panelOpen) return
     const onPointerDown = (event: PointerEvent) => {

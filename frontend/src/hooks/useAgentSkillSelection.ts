@@ -1,4 +1,4 @@
-/** 加载可见 Agent Skill，并记住勾选 */
+/** Tải Kỹ năng tác nhân hiển thị và nhớ kiểm tra */
 
 import { useCallback, useEffect, useState } from 'react'
 import { listAgentSkills, uploadAgentSkillFile, type AgentSkill } from '../api/agentSkills'
@@ -21,14 +21,14 @@ type UseAgentSkillSelectionResult = {
   uploadSkill: (file: File) => Promise<void>
 }
 
-/** 列出 Skill 并同步本地勾选 */
+/** Liệt kê các kỹ năng và đồng bộ hóa kiểm tra cục bộ */
 export function useAgentSkillSelection(): UseAgentSkillSelectionResult {
   /*
-   * skills 可见 Skill
-   * selectedIds 当前勾选
-   * loaded 列表是否已拉完
-   * uploading 正在上传 md
-   * uploadError 上传失败文案
+   * kỹ năng hiển thị Kỹ năng
+   * selectedId hiện đã được kiểm tra
+   * đã tải Danh sách đã xong chưa?
+   * đang tải lên Đang tải lên md
+   * uploadError tải lên bản sao không thành công
    */
   const [skills, setSkills] = useState<AgentSkill[]>([])
   const [selectedIds, setSelectedIdsState] = useState<number[]>([])

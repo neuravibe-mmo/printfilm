@@ -1,4 +1,4 @@
-"""漫剧内置图片风格 ID 与生图提示词片段。"""
+"""Bộ truyện tranh có ID kiểu hình ảnh tích hợp và các đoạn từ gợi ý hình ảnh."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# 画风板只借鉴气质，禁止抄参考图里的人物与构图
+# Bảng phong cách vẽ tranh chỉ đề cập đến khí chất. Nghiêm cấm sao chép các ký tự và bố cục trong ảnh tham khảo.
 STYLE_BOARD_PROMPT_HINT = (
     "Kèm ảnh tham khảo phong cách mỹ thuật: Chỉ mượn tông màu, nét vẽ, ánh sáng và khí chất tổng thể, "
     "nghiêm cấm sao chép nhân vật, chủ thể bối cảnh và bố cục của ảnh đó."
@@ -19,7 +19,7 @@ _board_url_cache: dict[tuple[str, int, int], str] = {}
 _board_fail_cache: dict[tuple[str, int, int], float] = {}
 _BOARD_FAIL_TTL_SEC = 60.0
 
-# IMAGE_STYLE_IDS 内置风格 ID（与前端 dramaImageStyles 对齐）
+# IMAGE_STYLE_IDS ID kiểu tích hợp (phù hợp với dramaImageStyles giao diện người dùng)
 IMAGE_STYLE_IDS = (
     "wartime-epic-film",
     "retro-sci-fi-atompunk",
@@ -45,7 +45,7 @@ IMAGE_STYLE_IDS = (
     "shadow-puppet-illustration",
 )
 
-# IMAGE_STYLE_PROMPTS 风格 → 提示词片段
+# Kiểu IMAGE_STYLE_PROMPTS → đoạn từ gợi ý
 IMAGE_STYLE_PROMPTS: dict[str, str] = {
     "wartime-epic-film": (
         "35mm胶片电影质感，悲壮战争史诗风格，低饱和暖沉色调，真实战场硝烟与战火残垣，"
@@ -144,7 +144,7 @@ IMAGE_STYLE_PROMPTS: dict[str, str] = {
     ),
 }
 
-# IMAGE_STYLE_LABELS 风格展示名
+# Tên hiển thị kiểu IMAGE_STYLE_LABELS
 IMAGE_STYLE_LABELS: dict[str, str] = {
     "wartime-epic-film": "悲壮战争史诗电影",
     "retro-sci-fi-atompunk": "复古科幻原子朋克",
@@ -171,12 +171,12 @@ IMAGE_STYLE_LABELS: dict[str, str] = {
 }
 
 
-# 根据风格 ID 返回展示名称
+# Trả về tên hiển thị dựa trên ID kiểu
 def get_image_style_label(style_id: str) -> str:
     return IMAGE_STYLE_LABELS.get(style_id, style_id)
 
 
-# 根据风格 ID 返回生图提示词片段，无效 ID 返回空字符串
+# Trả về đoạn từ gợi ý hình ảnh theo ID kiểu và trả về một chuỗi trống nếu ID không hợp lệ.
 def resolve_image_style_prompt(style_id: str | None = None) -> str:
     if not style_id:
         return ""
@@ -184,7 +184,7 @@ def resolve_image_style_prompt(style_id: str | None = None) -> str:
 
 
 def _first_raster(directory: Path, style_id: str) -> Path | None:
-    """目录下按常见栅格后缀找风格板，跳过 svg 占位。"""
+    """Tìm bảng kiểu theo các hậu tố lưới phổ biến trong thư mục và bỏ qua phần giữ chỗ svg."""
     if not directory.is_dir():
         return None
     for ext in _STYLE_BOARD_EXTS:
@@ -194,7 +194,7 @@ def _first_raster(directory: Path, style_id: str) -> Path | None:
     return None
 
 
-# 延迟导入，避免与 storage 循环依赖
+# Trì hoãn nhập để tránh phụ thuộc vòng tròn vào bộ nhớ
 def _static_root() -> Path:
     from app.services.storage import STATIC_ROOT
 
@@ -202,7 +202,7 @@ def _static_root() -> Path:
 
 
 def _safe_image_style_id(style_id: str | None) -> str | None:
-    """只接受内置风格 ID，拒绝路径穿越。"""
+    """Chỉ chấp nhận ID kiểu tích hợp và từ chối truyền tải đường dẫn."""
     sid = (style_id or "").strip()
     if not sid or sid not in IMAGE_STYLE_IDS:
         return None
@@ -212,7 +212,7 @@ def _safe_image_style_id(style_id: str | None) -> str | None:
 
 
 def style_board_local_path(style_id: str | None) -> Path | None:
-    """风格板本地文件：优先 backend/static，其次前端 public 封面。"""
+    """Các tệp cục bộ của bảng định kiểu: ưu tiên là phụ trợ/tĩnh, tiếp theo là bìa công khai ở mặt trước."""
     sid = _safe_image_style_id(style_id)
     if not sid:
         return None
@@ -225,7 +225,7 @@ def style_board_local_path(style_id: str | None) -> Path | None:
 
 
 def resolve_image_style_board_url(style_id: str | None = None) -> str:
-    """把风格板发到公网 https，供 Seedream / Seedance 拉图；失败则空串（仍走提示词）。"""
+    """Gửi style board tới công chúng https để Seedream/Seedance vẽ; nếu thất bại, chuỗi sẽ trống (từ nhắc sẽ vẫn được sử dụng)."""
     path = style_board_local_path(style_id)
     if path is None:
         return ""
@@ -271,7 +271,7 @@ def append_style_board_url(
     *,
     max_total: int = 9,
 ) -> list[str]:
-    """画风板接到角色/场景图之后，去重，并为板子预留最后一个名额。"""
+    """Sau khi nhận được bản vẽ nhân vật/cảnh trên bảng kiểu, hãy loại bỏ các bản sao trùng lặp và dành vị trí cuối cùng cho bảng."""
     board = (board_url or "").strip()
     out = [u.strip() for u in urls if (u or "").strip()]
     cap = max(1, int(max_total))

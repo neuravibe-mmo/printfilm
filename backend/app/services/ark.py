@@ -74,22 +74,22 @@ from app.services import seedance_segments as segplan
 
 logger = logging.getLogger(__name__)
 
-# TokenFree /v1/responses 同步等图；Kie sunburst 偶发超过 10 分钟才回
+# TokenFree /v1/responses đồng bộ hóa và chờ ảnh; Kie sunburst thỉnh thoảng phải hơn 10 phút mới trả lời
 IMAGE_GEN_READ_SEC = 1200.0
-# 创建视频任务应返回 task_id；TokenFree 拉参考图时可能拖到一两分钟
+# Tạo tác vụ video sẽ trả về task_id; khi TokenFree lấy hình ảnh tham chiếu, có thể mất một hoặc hai phút.
 VIDEO_CREATE_READ_SEC = 180.0
-# 轮询/单次查询只要状态 JSON
+# Thăm dò ý kiến/truy vấn đơn chỉ cần trạng thái JSON
 VIDEO_POLL_READ_SEC = 60.0
 VIDEO_FETCH_READ_SEC = 30.0
 
 
 def _upstream_timeout(read_sec: float, *, connect: float = 30.0) -> httpx.Timeout:
-    """上游 HTTP 超时：建连短、等结果长，避免 ReadTimeout 被当成连不上。"""
+    """Thời gian chờ HTTP ngược dòng: ngắn khi thiết lập kết nối và dài khi chờ kết quả, để tránh ReadTimeout bị coi là lỗi kết nối."""
     return httpx.Timeout(connect=connect, read=float(read_sec), write=60.0, pool=30.0)
 
 
 def reraise_upstream_timeout(exc: BaseException, *, kind: str, read_sec: float) -> NoReturn:
-    """把 httpx 超时翻成可读 RuntimeError；ReadTimeout 表示已连通但等结果超时。"""
+    """Chuyển đổi thời gian chờ httpx thành RuntimeError có thể đọc được; ReadTimeout có nghĩa là nó được kết nối nhưng hết thời gian chờ kết quả."""
     if isinstance(exc, httpx.ReadTimeout):
         raise RuntimeError(
             f"{kind}等待上游超时（ReadTimeout）：已连通 TokenFree，但 {read_sec:.0f} 秒内未返回结果，请稍后重试"
@@ -111,7 +111,7 @@ def _raise_seedream_http_error(
     model: str = "",
     tokenfree: bool = False,
 ) -> None:
-    """将出图 HTTP 错误转为可读 RuntimeError；TokenFree 文案与官方方舟分开。"""
+    """Chuyển đổi lỗi HTTP hình ảnh thành RuntimeError có thể đọc được; Bản sao chép của TokenFree được tách ra khỏi Ark chính thức."""
     snippet = (body or "")[:800]
     if status_code == 403 and "AccountOverdueError" in snippet:
         logger.error("Seedream AccountOverdueError — upstream Ark account overdue: %s", snippet[:200])
@@ -129,14 +129,14 @@ def _raise_seedream_http_error(
         if is_tokenfree_input_text_sensitive(status_code=status_code, body=snippet):
             raise RuntimeError(
                 "生图文案未通过内容审核（可能含敏感或历史名人相关表述），"
-                "请修改提示词后重试。"
+                "请修Thay đổi lời nhắc后重试。"
                 f" 详情：{snippet[:240]}"
             )
         raise RuntimeError(tokenfree_image_user_error(model=model, status_code=status_code, body=snippet))
     if "InputTextSensitive" in snippet or "InputTextSensitiveContentDetected" in snippet:
         raise RuntimeError(
             "生图文案未通过内容审核（可能含敏感或历史名人相关表述），"
-            "请修改提示词后重试。"
+            "请修Thay đổi lời nhắc后重试。"
             f" 详情：{snippet[:240]}"
         )
     raise RuntimeError(f"Seedream error {status_code}: {snippet}")
@@ -178,7 +178,7 @@ def _fallback_overlay_subtitle(text: str) -> str:
 
 
 def _looks_truncated_token(title: str, full_text: str) -> bool:
-    """True if title is a prefix of narration that cuts a Latin/数字专有词 mid-way."""
+    """Đúng nếu tiêu đề là tiền tố của câu chuyện cắt ngang một từ tiếng Latin/kỹ thuật số."""
     t = re.sub(r"\s+", "", (title or "").strip())
     full = re.sub(r"\s+", "", (full_text or "").strip())
     if not t or not full.startswith(t):
@@ -228,7 +228,7 @@ _SEEDREAM_SANITIZE: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"Space\s*X"), "民营商业航天公司"),
 ]
 
-# 真人 / 写实人脸审核命中后追加的画风引导，压低照片级真人触发概率
+# Hướng dẫn bổ sung về phong cách vẽ sau khi đánh giá khuôn mặt thật/thực, giảm xác suất kích hoạt các khuôn mặt giống như ảnh thật
 _SEEDREAM_CG_STYLE = (
     "用CG厚涂、游戏CG的风格打造的画面，色彩层次丰富，质感细腻逼真，"
     "真实的光影效果赋予画面生动感"
@@ -236,7 +236,7 @@ _SEEDREAM_CG_STYLE = (
 
 
 def storyboard_name_policy(allow_source_names: bool) -> str:
-    """旁白是否保留用户文案中的店名/产品名；画面始终不烧录 logo。"""
+    """Liệu lời tường thuật có giữ lại tên cửa hàng/tên sản phẩm trong bản sao của người dùng hay không; logo không bao giờ bị ghi vào màn hình."""
     if allow_source_names:
         return (
             "用户文案里出现的店名、地址、产品名、人名必须在旁白与 title 原样保留，"
@@ -277,19 +277,19 @@ class TaskResult:
     completion_tokens: int = 0
     raw_usage: dict[str, Any] | None = None
     provider_task_id: str | None = None
-    # Kie credits 等换算后的上游成本（分）；有值时优先于 token 估算
+    # Tín dụng Kie và các chi phí ngược dòng được quy đổi khác (xu); nếu có một giá trị, nó sẽ được ưu tiên hơn ước tính mã thông báo
     upstream_cost_fen: int | None = None
 
 
-# 任务查询的瞬时 HTTP 状态：限流/网关故障，任务本身仍可能在跑，
-# 必须交给轮询退避（poller 有总超时兜底），单次命中绝不能判任务 failed。
+# Trạng thái HTTP tức thời của truy vấn tác vụ: giới hạn hiện tại/lỗi cổng, bản thân tác vụ có thể vẫn đang chạy,
+# Nó phải được chuyển sang chế độ bỏ phiếu lùi (người thăm dò có tổng thời gian chờ) và một lần truy cập không được đánh giá là thất bại.
 def _is_transient_http_status(status_code: int) -> bool:
-    """429 限流或 5xx 网关/上游故障视为可重试。"""
+    """Giới hạn hiện tại 429 hoặc lỗi cổng/ngược dòng 5xx được coi là có thể thử lại."""
     return status_code == 429 or status_code >= 500
 
 
 def _retry_after_seconds(resp: httpx.Response, default: float) -> float:
-    """尊重 Retry-After（delta-seconds）；缺失或 HTTP-date 形式时用默认间隔，上限 60s。"""
+    """Tôn trọng Thử lại sau (delta-giây); khi bị thiếu hoặc ở dạng ngày HTTP, khoảng thời gian mặc định sẽ được sử dụng, với giới hạn trên là 60 giây."""
     raw = resp.headers.get("Retry-After")
     if raw:
         try:
@@ -299,7 +299,7 @@ def _retry_after_seconds(resp: httpx.Response, default: float) -> float:
     return default
 
 
-# 从 Seedance / New API 任务查询响应解析状态、媒体 URL 与官方 usage
+# Trạng thái phân tích cú pháp phản hồi truy vấn, URL phương tiện và cách sử dụng chính thức từ Seedance / tác vụ API mới
 def _build_task_result_from_payload(data: dict[str, Any]) -> TaskResult:
     payload = unwrap_video_task_payload(data)
     status = normalize_video_task_status(str(payload.get("status", "") or "running"))
@@ -334,7 +334,7 @@ def _build_task_result_from_payload(data: dict[str, Any]) -> TaskResult:
     )
 
 
-# 从 Seedance 任务成功响应中提取尾帧 URL
+# Trích xuất URL khung kết thúc từ phản hồi thành công của nhiệm vụ Seedance
 def _extract_seedance_last_frame_url(data: dict[str, Any]) -> str | None:
     content = data.get("content")
     if isinstance(content, dict):
@@ -356,7 +356,7 @@ def _extract_seedance_last_frame_url(data: dict[str, Any]) -> str | None:
     return None
 
 
-# 从错误文案解析 content[n] 下标与可选标签
+# Phân tích nội dung[n] chỉ số dưới và thẻ tùy chọn từ văn bản lỗi
 def _seedance_content_slot_label(
     text: str,
     content_labels: list[str] | None = None,
@@ -369,7 +369,7 @@ def _seedance_content_slot_label(
     return idx, label
 
 
-# 将 Seedance 创建失败响应转为可读中文（保留关键 code 便于前端匹配）
+# Chuyển đổi phản hồi lỗi tạo Seedance sang tiếng Trung có thể đọc được (giữ lại mã khóa để hỗ trợ khớp giao diện người dùng)
 def _format_seedance_create_error(
     status_code: int,
     body: str,
@@ -396,7 +396,7 @@ def _format_seedance_create_error(
         return "分镜文案未通过内容审核，请修改敏感表述后重试"
     if "resource download failed" in text and "audio" in text.lower():
         return "参考音频无法下载，请检查角色音色绑定后重试"
-    # Seedance r2v：reference_audio 时长须 ≥ 1.8 秒
+    # Seedance r2v: thời lượng reference_audio phải ≥ 1,8 giây
     if re.search(r"audio duration.*(?:1\.8|greater than or equal)", text, re.I) or (
         "audio duration" in text.lower() and "content[" in text.lower()
     ):
@@ -428,7 +428,7 @@ class ArkGateway:
     def settings(self) -> Settings:
         return self._settings_override or get_settings()
 
-    # 优先后台 TokenFree / 方舟渠道 Key，env 仅作空渠道时的兜底
+    # Ưu tiên phụ trợ TokenFree / Khóa kênh Ark, env chỉ dùng để rút ngắn kênh
     def _ark_api_key(self) -> str:
         try:
             from app.services.model_settings import get_routing_snapshot
@@ -457,14 +457,14 @@ class ArkGateway:
         }
 
     def _url(self, path: str) -> str:
-        """拼接方舟/TokenFree 基址；视频任务路径在 TokenFree 上改写为 /videos。"""
+        """Địa chỉ cơ sở Splicing Ark/TokenFree; đường dẫn tác vụ video được ghi lại thành /video trên TokenFree."""
         path = remap_video_path(path, base_url=self.settings.ark_base_url)
         base = self.settings.ark_base_url.rstrip("/")
         if not path.startswith("/"):
             path = "/" + path
         return f"{base}{path}"
 
-    # 按逻辑路由解析 ARK 渠道凭证
+    # Phân tích chứng chỉ kênh ARK theo định tuyến logic
     def _resolve_ark_route(self, capability: str, model_id: str | None) -> ResolvedModelRoute | None:
         logical_id = resolve_logical_model_id(capability, model_id)
         return resolve_logical_model(capability, logical_id)
@@ -478,7 +478,7 @@ class ArkGateway:
         return self._headers()
 
     def _route_url(self, path: str, route: ResolvedModelRoute | None = None) -> str:
-        """按逻辑路由基址拼 URL；无路由时回落到 _url。"""
+        """Ghép nối URL theo địa chỉ cơ sở định tuyến logic; quay lại _url khi không có định tuyến."""
         if route and route.base_url:
             path = remap_video_path(
                 path,
@@ -496,13 +496,13 @@ class ArkGateway:
         body: dict[str, Any],
         route: ResolvedModelRoute | None = None,
     ) -> dict[str, Any]:
-        """TokenFree 上把 Seedance 方舟 body 包装成 POST /v1/videos 请求体。"""
+        """TokenFree gói phần thân Seedance Ark vào phần thân yêu cầu POST /v1/videos."""
         base = (route.base_url if route and route.base_url else self.settings.ark_base_url) or ""
         channel_id = (route.channel_id if route else "") or ""
         return prepare_video_create_body(body, base_url=base, channel_id=channel_id)
 
     def _finalize_video_result(self, result: TaskResult, task_id: str) -> TaskResult:
-        """TokenFree 成功但无公网 URL 时，改用 GET /videos/{id}/content。"""
+        """Khi TokenFree thành công nhưng không có URL công khai, thay vào đó hãy sử dụng GET /video/{id}/content."""
         result.provider_task_id = task_id
         if result.status == "succeeded" and not result.url and uses_tokenfree_video(
             base_url=self.settings.ark_base_url
@@ -511,7 +511,7 @@ class ArkGateway:
         return result
 
     async def download_result_media(self, url: str, dest: Path) -> None:
-        """下载生成媒体；TokenFree 任务/content URL 带 Bearer，读超时放宽。"""
+        """Tải xuống phương tiện được tạo; URL nội dung/tác vụ TokenFree có Bearer, thời gian chờ đọc được thoải mái."""
         headers = None
         timeout: float | httpx.Timeout = 300.0
         if is_tokenfree_content_url(url) or is_tokenfree_image_url(url):
@@ -609,16 +609,16 @@ class ArkGateway:
                 "每镜 img_prompt 只写本镜场景与构图（景物、动作、光影），不要重复粘贴大段画风/人物锁定原文；"
                 "出现人物时用短句点出与 character_bible 一致的关键特征即可。"
             )
-        # shot_cap 单镜 duration 上限（秒）；shot_lo/shot_hi 按文案字数或模板锁定
+        # shot_cap Giới hạn trên của thời lượng bắn một lần (giây); shot_lo/shot_hi bị khóa theo số từ trong bản sao hoặc mẫu
         shot_cap = min(duration_max, max_shot_duration)
         if shot_range_override:
             shot_lo, shot_hi = shot_range_override
         else:
             shot_lo, shot_hi = segplan.suggested_kepu_shot_range(source_text, pipeline_mode=pipeline_mode)
         shot_range = f"{shot_lo}-{shot_hi}"
-        # name_rule 获客模板保留用户文案中的店名；其它模板改用泛称以免商标入画
+        # name_rule Mẫu chuyển đổi khách hàng giữ lại tên cửa hàng trong bản sao của người dùng; các mẫu khác sử dụng tên chung để tránh nhãn hiệu.
         name_rule = storyboard_name_policy(allow_source_names)
-        # segment_rules 科普逐段脚本生产约束（对齐漫剧 cue，无 @asset）
+        # Seg_rules Các ràng buộc sản xuất kịch bản theo từng phân đoạn theo từng đoạn khoa học phổ biến (phù hợp với gợi ý truyện tranh, không có @asset)
         segment_rules = (
             "【segments 生产规范】"
             "segments 必填；系统会落成 @duration +【字幕：后期叠旁白字幕】/【BGM：后期混音】/"
@@ -652,7 +652,7 @@ class ArkGateway:
                 "画面禁止出现任何文字/水印/字幕。"
                 "shots 字段说明："
                 "shot(序号)、duration(秒)、"
-                "title(对本镜内容的概括短标题，2-8字，语义完整有力；"
+                "title(对本镜内容的概括Tiêu đề ngắn，2-8字，语义完整有力；"
                 "必须是总结提炼，禁止从 text 截取前几个字，禁止截断专有名词如 ERP→ER)、"
                 "subtitle(对本镜卖点/要点的一句概括，8-22字，同样禁止原文截取前缀)、"
                 "text(旁白台词，口语化，约匹配该镜时长，可供 TTS 朗读，一般 20-60 字)、"
@@ -677,7 +677,7 @@ class ArkGateway:
                 f"每镜 duration 在 {duration_min}-{shot_cap} 秒，不要为凑满上限而注水。"
                 "shots 字段说明："
                 "shot(序号)、duration(秒)、"
-                "title(对本镜旁白的概括短标题，2-8字，语义完整；"
+                "title(对本镜旁白的概括Tiêu đề ngắn，2-8字，语义完整；"
                 "必须是总结提炼，禁止从 text 截取前缀，禁止截断专有名词如 ERP→ER)、"
                 "subtitle(可选，一句要点概括 8-22字)、"
                 "text(旁白台词，与 segments 中 narration 文案一致或为其摘要)、"
@@ -755,7 +755,7 @@ class ArkGateway:
         aspect_ratio: str | None = None,
         style_ref_urls: list[str] | None = None,
     ) -> ImageResult:
-        """调用 TokenFree 生图（Seedream 家族在网关侧重映射）。
+        """Gọi TokenFree để tạo bản đồ (gia đình Seedream tập trung vào việc lập bản đồ tại cổng).
 
         只软化用户正文并保留设定板前缀；InputTextSensitive 时仍用简化三视图重试，
         最后一档才缩成「三视图+服装风格」。不做空主体 / CG 厚涂兜底。
@@ -779,7 +779,7 @@ class ArkGateway:
             style_only_seedream_prompt_for_retry,
         )
 
-        # 只软化用户正文，保留角色/场景/道具结构前缀（三视图等）
+        # Chỉ làm mềm văn bản người dùng và giữ lại tiền tố cấu trúc ký tự/cảnh/prop (ba chế độ xem, v.v.)
         original = (prompt or "").strip()
         current = soften_seedream_input_text(original)
         if current != original:
@@ -817,7 +817,7 @@ class ArkGateway:
             except Exception as exc:  # noqa: BLE001
                 last_err = exc
                 msg = str(exc)
-                # 仅文本审核可走压缩/风格重试；其它策略/错误直接失败
+                # Chỉ xem xét văn bản mới có thể sử dụng tính năng nén/thử lại kiểu; các chiến lược/lỗi khác sẽ thất bại trực tiếp
                 if not self._is_seedream_input_text_sensitive(msg):
                     if self._is_seedream_policy_error(msg):
                         logger.warning(
@@ -852,7 +852,7 @@ class ArkGateway:
         aspect_ratio: str | None = None,
         style_ref_urls: list[str] | None = None,
     ) -> ImageResult:
-        """单次 Seedream 请求并落盘（文件名含 uuid，避免重生成覆盖）。"""
+        """Yêu cầu Seedream đơn lẻ và vị trí đĩa (tên tệp chứa uuid để tránh ghi đè do tái tạo)."""
         route = self._resolve_ark_route("image", model)
         upstream_model = route.upstream_model if route else ((model or "").strip() or self.settings.model_image)
         from app.services.drama.seedream_options import (
@@ -862,7 +862,7 @@ class ArkGateway:
 
         resolved_size = size or self.settings.ark_image_size
         if is_seedream_pro_model(upstream_model):
-            # Pro：3K/4K 档位非法；超大 WxH 等比钳到 4624220
+            # Pro: Thiết bị 3K/4K là bất hợp pháp; tỷ lệ WxH quá khổ được kẹp ở mức 4624220
             tier = str(resolved_size or "").strip().upper()
             if tier in {"3K", "4K"}:
                 resolved_size = "2K"
@@ -877,7 +877,7 @@ class ArkGateway:
         on_tokenfree = uses_tokenfree_image(base_url=base, channel_id=channel_id)
         chosen = tokenfree_working_image_model(upstream_model) if on_tokenfree else upstream_model
         if on_tokenfree and "gpt-image" in chosen.lower():
-            # Kie / gpt-image 实际按 1K·2K 档；3K/4K 钳到 2K，与计费一致
+            # Kie / gpt-image thực sự nằm trong phạm vi 1K·2K; 3K/4K được giới hạn ở mức 2K, phù hợp với hóa đơn
             if str(resolved_size or "").strip().upper() in {"3K", "4K"}:
                 resolved_size = "2K"
         if on_tokenfree:
@@ -906,7 +906,7 @@ class ArkGateway:
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(IMAGE_GEN_READ_SEC)) as client:
                 async def _post():
-                    # 单次上游 POST，限流重试由外层包住
+                    # POST ngược dòng đơn, việc thử lại giới hạn dòng điện được bao bọc bởi lớp bên ngoài
                     return await client.post(
                         self._route_url(path, route),
                         headers=self._route_headers(route),
@@ -918,7 +918,7 @@ class ArkGateway:
                         resp = await post_until_not_rate_limited(_post)
                 else:
                     resp = await _post()
-                # 限流/4xx 走 HTTP 文案；200 + status=failed 留给 raise_tokenfree_image_if_failed
+                # Giới hạn hiện tại/4xx sử dụng tính năng sao chép HTTP; 200 + status=failed được để lại cho raise_tokenfree_image_if_failed
                 if resp.status_code >= 400 or is_tokenfree_rate_limit(
                     status_code=resp.status_code, body=resp.text
                 ):
@@ -975,7 +975,7 @@ class ArkGateway:
 
     @staticmethod
     def _is_seedream_input_text_sensitive(msg: str) -> bool:
-        """Seedream 输入文案审核拦截（可压缩提示词重试）。"""
+        """Seedream Enter chặn đánh giá copywriting (từ nhắc nhở có thể nén để thử lại)."""
         text = msg or ""
         return (
             "InputTextSensitive" in text
@@ -985,7 +985,7 @@ class ArkGateway:
 
     @staticmethod
     def _is_seedream_input_privacy_error(msg: str) -> bool:
-        """参考图 / 输入侧真人隐私拦截（改文案无效）。"""
+        """Hình ảnh tham chiếu / Đánh chặn quyền riêng tư của người thực từ phía đầu vào (việc thay đổi bản sao sẽ không hợp lệ)."""
         text = msg or ""
         return any(
             k in text
@@ -994,7 +994,7 @@ class ArkGateway:
 
     @staticmethod
     def _is_seedream_policy_error(msg: str) -> bool:
-        """文案或输出内容策略拦截（生图侧直接失败，不做提示词兜底）。"""
+        """Viết quảng cáo hoặc chặn chiến lược nội dung đầu ra (lỗi trực tiếp ở phía hình ảnh, không sử dụng từ gợi ý)."""
         text = msg or ""
         if ArkGateway._is_seedream_input_privacy_error(text):
             return False
@@ -1008,7 +1008,7 @@ class ArkGateway:
 
     @staticmethod
     def _is_seedance_input_privacy_error(msg: str) -> bool:
-        """Seedance 参考图真人隐私拦截（改视频文案无效）。"""
+        """Seedance Tham khảo hình ảnh chặn quyền riêng tư của người thật (việc thay đổi bản sao video sẽ không có hiệu lực)."""
         text = msg or ""
         return any(
             k in text
@@ -1022,7 +1022,7 @@ class ArkGateway:
 
     @staticmethod
     def _is_seedance_text_policy_error(msg: str) -> bool:
-        """Seedance 文案/策略拦截（可追加 CG 风格重试一次）。"""
+        """Seedance copywriting/đánh chặn chiến lược (có thể thêm kiểu CG và thử lại)."""
         text = msg or ""
         if ArkGateway._is_seedance_input_privacy_error(text):
             return False
@@ -1043,7 +1043,7 @@ class ArkGateway:
 
     @staticmethod
     def _with_seedream_cg_style(prompt: str) -> str:
-        """在提示词末尾追加 CG 厚涂风格（已含则原样返回）。"""
+        """Thêm kiểu impasto CG vào cuối từ nhắc (trả về như cũ nếu nó đã được đưa vào)."""
         base = (prompt or "").strip()
         if not base:
             return _SEEDREAM_CG_STYLE
@@ -1053,14 +1053,14 @@ class ArkGateway:
 
     @staticmethod
     def _with_seedance_cg_style(prompt: str) -> str:
-        """视频提示词追加 CG 厚涂（与 Seedream 同款文案）。"""
+        """Các từ gợi ý video được thêm lớp phủ dày CG (cách viết quảng cáo giống như Seedream)."""
         return ArkGateway._with_seedream_cg_style(prompt)
 
     @staticmethod
     def _seedance_content_with_cg_style(
         content: list[Any] | None,
     ) -> list[dict[str, Any]] | None:
-        """给 content[] 内全部 text 项追加 CG；无变化则返回 None。"""
+        """Thêm CG vào tất cả các mục văn bản trong nội dung[]; trả về Không nếu không có thay đổi."""
         if not isinstance(content, list):
             return None
         changed = False
@@ -1083,7 +1083,7 @@ class ArkGateway:
 
     @staticmethod
     def _sanitize_seedream_prompt(prompt: str) -> str:
-        """品牌/IP 软化（科普分镜等调用方可选使用；生图主路径不做兜底改写）。"""
+        """Làm mềm thương hiệu/IP (tùy chọn để người gọi sử dụng chẳng hạn như bảng phân cảnh khoa học phổ biến; đường dẫn chính của bản vẽ sẽ không được viết lại)."""
         out = prompt or ""
         for pat, repl in _SEEDREAM_SANITIZE:
             out = pat.sub(repl, out)
@@ -1149,8 +1149,8 @@ class ArkGateway:
         if "@duration:" in plain or "00:" in plain or plain.startswith("【"):
             text = plain
             prompt_as_json = False
-        # 有目标画幅时用 reference_image + ratio（可强制 9:16）。
-        # 纯 first_frame 禁止传 ratio，且实测即使静帧竖屏也可能吐横屏。
+        # Sử dụng tham chiếu_image + tỷ lệ (có thể buộc 9:16) khi có khung mục tiêu.
+        # Pure first_frame cấm truyền tỷ lệ và trong thử nghiệm thực tế, ngay cả khi khung tĩnh ở màn hình dọc, nó có thể hiển thị màn hình ngang.
         image_role, target_ratio = resolve_seedance_i2v_image_role(ratio)
         extra_refs: list[str] = []
         for raw in extra_image_urls or []:
@@ -1162,7 +1162,7 @@ class ArkGateway:
             except Exception:  # noqa: BLE001
                 logger.warning("Seedance extra ref resolve failed url=%s", text_url[:120])
         if extra_refs:
-            # 多图只能走 reference_image，不能与 first_frame 混用
+            # Nhiều hình ảnh chỉ có thể sử dụng reference_image và không thể trộn lẫn với first_frame.
             image_role = "reference_image"
             if not target_ratio:
                 target_ratio = (ratio or "").strip() or "16:9"
@@ -1221,7 +1221,7 @@ class ArkGateway:
                         headers=self._route_headers(route),
                         json=self._video_json(body, route),
                     )
-                # 文案策略：在 ratio/adaptive 结构回退前，对当前意图 body 追加 CG 重试
+                # Chiến lược viết quảng cáo: Trước khi hoàn nguyên tỷ lệ/cấu trúc thích ứng, hãy thêm CG vào nội dung ý định hiện tại và thử lại.
                 if resp.status_code >= 400:
                     raw_err = resp.text or ""
                     if self._is_seedance_input_privacy_error(raw_err):
@@ -1242,7 +1242,7 @@ class ArkGateway:
                             )
                 if resp.status_code >= 400:
                     err_text = resp.text or ""
-                    # 仅「误用 first_frame + ratio」时去掉 ratio；有目标画幅时不得回落到 adaptive 横屏
+                    # Chỉ xóa tỷ lệ khi "lạm dụng first_frame + tỷ lệ"; không quay lại màn hình ngang thích ứng khi có khung mục tiêu
                     if (
                         not target_ratio
                         and "ratio" in err_text.lower()
@@ -1255,7 +1255,7 @@ class ArkGateway:
                             json=self._video_json(body, route),
                         )
                 if resp.status_code >= 400 and not target_ratio:
-                    # 无目标画幅时的兼容回退；有竖屏目标时禁止 adaptive，避免再次出横屏
+                    # Dự phòng khả năng tương thích khi không có khung mục tiêu; vô hiệu hóa thích ứng khi có mục tiêu màn hình dọc để tránh màn hình ngang trở lại
                     body["content"][1].pop("role", None)
                     body["ratio"] = "adaptive"
                     resp = await client.post(
@@ -1275,7 +1275,7 @@ class ArkGateway:
         return task_id
 
     async def _resolve_media_ref(self, media_url: str, *, prefer_https: bool = False) -> str:
-        """解析图片/音频 URL 供 Seedance 拉取。"""
+        """Phân tích URL hình ảnh/âm thanh để Seedance kéo."""
         return await self._resolve_image_ref(media_url, prefer_https=prefer_https)
 
     async def _resolve_seedance_content_items(
@@ -1307,7 +1307,7 @@ class ArkGateway:
         project_id: int = 0,
         content_labels: list[str] | None = None,
     ) -> str:
-        """提交 Seedance 多模态请求体（参考图 + reference_audio）。
+        """Gửi nội dung yêu cầu đa phương thức Seedance (hình ảnh tham chiếu + reference_audio).
 
         文案/策略拦截时追加 CG 厚涂提示词重试一次；参考图真人隐私拦截不重试。
         """
@@ -1343,7 +1343,7 @@ class ArkGateway:
                 )
                 if resp.status_code >= 400:
                     raw_err = resp.text or ""
-                    # 参考图真人：改文案无效
+                    # Ảnh tham khảo người thật: Việc thay đổi bản sao không hợp lệ
                     if self._is_seedance_input_privacy_error(raw_err):
                         raise RuntimeError(
                             _format_seedance_create_error(
@@ -1392,7 +1392,7 @@ class ArkGateway:
         max_attempts: int = 2,
         content_labels: list[str] | None = None,
     ) -> tuple[str, str | None, TaskResult]:
-        """创建 Seedance 多模态任务并等待完成；返回 (本地视频 URL, 可选本地尾帧 URL, 任务结果)。"""
+        """Tạo tác vụ đa phương thức Seedance và chờ hoàn thành; return (URL video cục bộ, URL khung cuối cùng cục bộ tùy chọn, kết quả tác vụ)."""
         def _is_audio_download_error(err: Exception) -> bool:
             msg = str(err)
             return "audio_url" in msg and "resource download failed" in msg
@@ -1431,7 +1431,7 @@ class ArkGateway:
         audio_fallback_used = False
 
         def _audio_fallback(exc: Exception, *, accepted: bool) -> bool:
-            """仅"参考音频下载失败"允许去掉参考音频重提一次；其他错误一律不重建任务。
+            """Chỉ "tải xuống âm thanh tham chiếu không thành công" mới cho phép bạn xóa âm thanh tham chiếu và thử lại; đối với các lỗi khác, tác vụ sẽ không được xây dựng lại.
 
             上游接受任务后的重提会产生第二个计费任务，故必须严格白名单，
             隐私拦截/失败/轮询超时等异常必须立即上抛，避免重复扣费。
@@ -1454,7 +1454,7 @@ class ArkGateway:
             return True
 
         for _attempt in range(max_attempts):
-            # 提交阶段失败：除参考音频错误外立即上抛，绝不盲目重新建单
+            # Thất bại ở khâu gửi: Ngoại trừ lỗi âm thanh tham chiếu, hãy vứt nó đi ngay lập tức và đừng bao giờ tạo lại đơn hàng một cách mù quáng.
             try:
                 task_id = await self.gen_video_seedance_body(
                     fallback_body,
@@ -1465,7 +1465,7 @@ class ArkGateway:
                 if _audio_fallback(exc, accepted=False):
                     continue
                 raise
-            # 等待阶段失败：隐私/任务失败/超时等立即上抛；仅参考音频下载失败重提一次
+            # Thất bại trong giai đoạn chờ đợi: quyền riêng tư/lỗi tác vụ/thời gian chờ, v.v. ngay lập tức bị loại bỏ; chỉ đề cập đến lỗi tải xuống âm thanh và nâng cao lại
             try:
                 return await self.wait_video_assets(
                     task_id, project_id=project_id, shot_no=shot_no
@@ -1493,15 +1493,15 @@ class ArkGateway:
                         headers=self._headers(),
                     )
                 except httpx.HTTPError as exc:
-                    # 单次网络抖动：退避后继续轮询，由 deadline 收敛，不直接判失败
+                    # Jitter mạng đơn: tiếp tục thăm dò sau khi lùi lại, hội tụ theo thời hạn, không trực tiếp xác định lỗi
                     logger.warning(
                         "Seedance poll network error task=%s: %s; backing off", task_id, exc
                     )
                     await asyncio.sleep(float(self.settings.ark_video_poll_interval))
                     continue
                 if resp.status_code >= 400:
-                    # 429/5xx 是上游瞬时故障，任务状态未知，按轮询间隔退避继续，
-                    # 由 deadline 总超时收敛；400/401/403/404 等才是确定终态。
+                    # 429/5xx là lỗi tạm thời ở thượng nguồn, trạng thái nhiệm vụ không xác định và quá trình chờ tiếp tục diễn ra theo khoảng thời gian kiểm tra vòng.
+                    # Nó được hội tụ theo tổng thời gian chờ; 400/401/403/404, v.v. là trạng thái cuối cùng.
                     if _is_transient_http_status(resp.status_code):
                         logger.warning(
                             "Seedance poll transient HTTP %s task=%s; backing off",
@@ -1525,7 +1525,7 @@ class ArkGateway:
         return TaskResult(status="failed", error="poll timeout", provider_task_id=task_id)
 
     async def fetch_task_once(self, task_id: str) -> TaskResult:
-        """单次查询 Seedance 任务，不阻塞等待。"""
+        """Nhiệm vụ Seedance truy vấn đơn, không chặn và chờ đợi."""
         if self.mock or task_id.startswith("mock-task-"):
             return TaskResult(
                 status="succeeded",
@@ -1539,7 +1539,7 @@ class ArkGateway:
                     headers=self._headers(),
                 )
         except httpx.HTTPError as exc:
-            # 网络抖动对 poller 是下轮重试、对同步端点是继续转圈，均优于 500/误判失败
+            # Mạng jitter có nghĩa là người thăm dò sẽ thử lại ở vòng tiếp theo và điểm cuối đồng bộ hóa sẽ tiếp tục quay vòng, cả hai đều tốt hơn 500/thất bại đánh giá sai.
             logger.warning("Seedance fetch network error task=%s: %s", task_id, exc)
             return TaskResult(status="running", provider_task_id=task_id)
         if resp.status_code >= 400:
@@ -1560,14 +1560,14 @@ class ArkGateway:
         project_id: int,
         shot_no: int,
     ) -> tuple[str, str | None]:
-        """将单次 poll 成功结果落盘为本地视频与可选尾帧。"""
+        """Lưu trữ kết quả thành công của một cuộc thăm dò dưới dạng video cục bộ và khung hình cuối cùng tùy chọn."""
         if result.status != "succeeded" or not result.url:
             raise RuntimeError(result.error or "video generation failed")
 
         if result.url.startswith("/static/"):
             video_local = result.url
         else:
-            # 每次生成独立文件名，避免覆盖旧成片导致历史版本失效
+            # Tạo tên tệp độc lập mỗi lần để tránh ghi đè lên tệp cũ và khiến các phiên bản lịch sử trở nên không hợp lệ.
             stamp = int(time.time())
             dest = storage.project_dir(project_id) / f"shot_{shot_no:03d}_{stamp}.mp4"
             await self.download_result_media(result.url, dest)
@@ -1597,7 +1597,7 @@ class ArkGateway:
         project_id: int,
         shot_no: int,
     ) -> tuple[str, str | None, TaskResult]:
-        """等待任务完成并落盘视频；若有尾帧则一并落盘。"""
+        """Đợi nhiệm vụ hoàn thành và tải video xuống; nếu có khung cuối cùng thì nó sẽ được tải xuống cùng nhau."""
         result = await self.poll_task(task_id)
         video_local, last_local = await self.save_video_assets_from_result(
             result,
@@ -1613,7 +1613,7 @@ class ArkGateway:
         project_id: int,
         shot_no: int,
     ) -> tuple[str, TaskResult]:
-        """等待成片并优先把已落盘尾帧写回 result，供下一镜参考。"""
+        """Đợi phim chạy xong rồi ghi khung hình cuối cùng của phim trở lại kết quả trước để tham khảo ở lần quay tiếp theo."""
         video_local, last_local, result = await self.wait_video_assets(
             task_id, project_id=project_id, shot_no=shot_no
         )
@@ -1637,7 +1637,7 @@ class ArkGateway:
         model: str | None = None,
         extra_image_urls: list[str] | None = None,
     ) -> tuple[str, TaskResult]:
-        """Create i2v task and wait；开源版只走 TokenFree（不直连 Kie / 火山）。"""
+        """Tạo tác vụ i2v và chờ đợi; phiên bản mã nguồn mở chỉ sử dụng TokenFree (không kết nối trực tiếp với Kie/Huoshan)."""
         last_err: Exception | None = None
         for attempt in range(max_attempts):
             use_json = attempt != 1  # attempt0 json, attempt1 plain, attempt2 json again
@@ -1683,7 +1683,7 @@ class ArkGateway:
         raise RuntimeError(str(last_err) if last_err else "video generation failed")
 
     def _openspeech_configured(self) -> bool:
-        """豆包 openspeech 是否已配置（新版 API Key 或旧版 AppId + AccessKey）。"""
+        """Liệu openpeech đã được định cấu hình chưa (Khóa API phiên bản mới hoặc phiên bản cũ AppId + AccessKey)."""
         if (self.settings.volc_tts_api_key or "").strip():
             return True
         return bool(self.settings.volc_tts_app_id and self.settings.volc_tts_access_key)
@@ -1703,7 +1703,7 @@ class ArkGateway:
         *,
         model: str | None = None,
     ) -> bool:
-        """TokenFree 上 Qwen-TTS 的 /audio/speech 未实现，改走 Omni/Gemini chat。"""
+        """Qwen-TTS /audio/speech trên TokenFree không được triển khai và thay vào đó, trò chuyện Omni/Gemini được sử dụng."""
         base = (self.settings.ark_base_url or "").rstrip("/")
         key = (self.settings.ark_api_key or "").strip()
         if not base or not key:
@@ -1747,7 +1747,7 @@ class ArkGateway:
         *,
         model: str,
     ) -> bool:
-        """Gemini 非流式 chat 出音频；Qwen-Omni 必须 SSE 流式。"""
+        """Âm thanh đầu ra trò chuyện không phát trực tuyến của Gemini; Qwen-Omni phải phát trực tuyến SSE."""
         base = (self.settings.ark_base_url or "").rstrip("/")
         if not base:
             return False
@@ -1790,7 +1790,7 @@ class ArkGateway:
 
     @staticmethod
     def _build_tts_additions(speaker: str, emotion_hint: str | None) -> str | None:
-        """组装 openspeech additions（S_ 克隆 + 语气 context_texts）。"""
+        """Tập hợp các phần bổ sung openpeech (S_ clone + mood context_texts)."""
         additions: dict[str, Any] = {}
         if speaker.startswith("S_"):
             additions["model_type"] = 4
@@ -1811,7 +1811,7 @@ class ArkGateway:
         duration_hint: float = 4.0,
         emotion_hint: str | None = None,
     ) -> str:
-        """整片/单镜配音：豆包 openspeech → TokenFree 多 TTS → edge-tts；失败则抛错，不写静音。"""
+        """Lồng tiếng toàn bộ phim/một cảnh quay: doubao openpeech → TokenFree multi-TTS → edge-tts; nếu thất bại, một lỗi sẽ được đưa ra và chế độ tắt tiếng sẽ không được ghi."""
         voice_map = {
             "narrator_calm": "zh_female_cancan_uranus_bigtts",
             "warm_storyteller": "zh_female_tianmeixiaoyuan_uranus_bigtts",
@@ -1849,7 +1849,7 @@ class ArkGateway:
         audio_model = self._resolved_audio_model()
         on_tokenfree = uses_tokenfree_audio(base_url=self.settings.ark_base_url or "")
 
-        # 豆包 openspeech：标准 speaker 优先，避免 /audio/speech 忽略音色 id
+        # Doubao openpeech: ưu tiên loa chuẩn tránh /audio/speech bỏ qua id âm sắc
         if self._openspeech_configured():
             try:
                 ok = await self._tts_openspeech(clean, speaker, dest, emotion_hint=emotion_hint)
@@ -1861,7 +1861,7 @@ class ArkGateway:
             except Exception as exc:  # noqa: BLE001
                 logger.warning("openspeech TTS failed: %s", exc)
 
-        # TokenFree：默认模型 + Gemini / ElevenLabs / Qwen 其它 TTS 依次试
+        # TokenFree: Mô hình mặc định + Gemini / ElevenLabs / Qwen TTS khác thử theo trình tự
         if on_tokenfree:
             for model_id in iter_tokenfree_tts_models(audio_model):
                 try:
@@ -1879,7 +1879,7 @@ class ArkGateway:
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("tokenfree speech failed model=%s: %s", model_id, exc)
 
-        # edge-tts：按 speaker 映射不同 neural，上游都失败时仍能分出角色声线
+        # edge-tts: Ánh xạ các nơ-ron thần kinh khác nhau tùy theo người nói và giọng nói của nhân vật vẫn có thể tách ra khi upstream không thành công.
         try:
             await self._tts_edge(clean, dest, voice_hint=speaker)
             url = await _accept_if_audible("edge-tts")
@@ -1889,7 +1889,7 @@ class ArkGateway:
         except Exception as exc:  # noqa: BLE001
             logger.warning("edge-tts failed: %s", exc)
 
-        # 非 TokenFree 时再试 /audio/speech（方舟等）
+        # Hãy thử lại khi /audio/speech không phải là TokenFree (Ark, v.v.)
         if not on_tokenfree:
             try:
                 ok = await self._tts_openai_speech(clean, speaker, dest, model=audio_model)
@@ -1976,7 +1976,7 @@ class ArkGateway:
         return b"".join(chunks)
 
     async def _tts_edge(self, text: str, dest: Path, voice_hint: str = "") -> None:
-        """微软 edge-tts 兜底。国内连 api.msedgeservices.com 常超过默认 10s，拉长握手并重试。"""
+        """Microsoft edge-tts biết mọi thứ. Các kết nối trong nước tới api.msedgeservices.com thường vượt quá 10 giây mặc định, hãy kéo dài thời gian bắt tay và thử lại."""
         import edge_tts
 
         voice = edge_tts_voice_for_speaker(voice_hint)
@@ -2000,7 +2000,7 @@ class ArkGateway:
         raise RuntimeError(str(last_err) if last_err else "edge-tts failed")
 
     def _persist_tts_mp3(self, dest: Path, audio: bytes) -> bool:
-        """把 Omni WAV 转成配音 mp3；已是 MPEG 则直接落盘。转码失败返回 False。"""
+        """Chuyển đổi Omni WAV sang lồng tiếng mp3; nếu là MPEG, hãy tải trực tiếp xuống. Trả về Sai nếu chuyển mã không thành công."""
         if len(audio) < 1000:
             return False
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -2011,7 +2011,7 @@ class ArkGateway:
         import subprocess
         import tempfile
 
-        # ffmpeg 可执行文件 / 临时 wav / 转码进程
+        # Tệp thực thi ffmpeg/quá trình chuyển mã/wav tạm thời
         ffmpeg = shutil.which(self.settings.ffmpeg_path) or shutil.which("ffmpeg")
         if not ffmpeg:
             logger.warning("tts persist skipped: ffmpeg not found")
@@ -2088,7 +2088,7 @@ class ArkGateway:
             ):
                 return raw
         if prefer_https:
-            # Seedance 2.0: 需要公网 https；本地 /static 先同步上 OSS
+            # Seedance 2.0: Cần có https mạng công cộng; local/static cần được đồng bộ hóa với OSS trước
             local = storage.local_path_from_url(raw)
             if local and local.exists():
                 public = storage.republish_url(raw, sync=True)
@@ -2110,7 +2110,7 @@ class ArkGateway:
         return storage.to_public_url(raw)
 
     def _write_mock_image(self, prompt: str, size: str | None = None) -> str:
-        """写出 mock 立绘 SVG；每次唯一文件名，避免重试覆盖。"""
+        """Viết ra SVG mô phỏng theo chiều dọc; tên tệp duy nhất mỗi lần để tránh ghi đè bằng cách thử lại."""
         digest = uuid.uuid4().hex[:12]
         root = Path(__file__).resolve().parents[2] / "static" / "mock"
         root.mkdir(parents=True, exist_ok=True)
@@ -2208,7 +2208,7 @@ class ArkGateway:
             ]
         if len(chunks) < 3:
             chunks = chunks + ["补充画面过渡", "收尾总结"]
-        # shot_lo/shot_hi 与正式拆镜区间一致，避免 mock 仍只出 5 镜
+        # shot_lo/shot_hi phù hợp với phạm vi loại bỏ ống kính chính thức để tránh bị chế giễu và vẫn chỉ sản xuất 5 ống kính
         if shot_range_override:
             shot_lo, shot_hi = shot_range_override
         else:

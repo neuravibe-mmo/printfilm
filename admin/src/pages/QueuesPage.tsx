@@ -20,7 +20,7 @@ import { useI18n } from "@/i18n/useI18n";
 const REFRESH_MS = 15000;
 const TERMINAL_STATUSES = new Set(["succeeded", "failed", "cancelled"]);
 
-// 任务状态 → 样式
+// trạng thái nhiệm vụ → phong cách
 function statusClass(status: string): string {
   if (status === "running" || status === "leased") return "is-run";
   if (status === "succeeded") return "is-done";
@@ -34,7 +34,7 @@ function formatTime(value: string | null | undefined): string {
   return new Date(value).toLocaleString();
 }
 
-// 阻止冒泡到行 onClick，避免链接跳转时同时打开详情
+// Ngăn hiện tượng sủi bọt lên hàng onClick để tránh mở chi tiết cùng lúc khi liên kết nhảy
 function stopRowClick(e: { stopPropagation: () => void }) {
   e.stopPropagation();
 }
@@ -72,7 +72,7 @@ function canCancel(task: AdminTaskRow): boolean {
   return task.cancelable && !TERMINAL_STATUSES.has(task.status);
 }
 
-// 列表单元格：参数/结果单行摘要；title 也截断，避免巨 payload 塞进 DOM
+// Ô danh sách: tóm tắt một dòng các thông số/kết quả; tiêu đề cũng bị cắt bớt để ngăn tải trọng lớn bị nhồi vào DOM
 function jsonCell(value: Record<string, unknown> | null | undefined) {
   if (!hasJsonContent(value)) {
     return <span className="text-[#909399]">—</span>;
@@ -86,7 +86,7 @@ function jsonCell(value: Record<string, unknown> | null | undefined) {
   );
 }
 
-// 统一任务平台监控页
+// Trang giám sát nền tảng tác vụ hợp nhất
 export function QueuesPage() {
   const { t, locale } = useI18n();
   const [stats, setStats] = useState<AdminTaskStats | null>(null);

@@ -24,7 +24,7 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 _mock_delay_create_lock = asyncio.Lock()
 
 
-# 创建一个延时完成的模拟任务，便于联调任务平台。
+# Tạo một tác vụ mô phỏng bị trì hoãn để tạo điều kiện cho việc gỡ lỗi chung của nền tảng tác vụ.
 @router.post("/mock-delay", response_model=TaskRunOut)
 async def create_mock_delay_task(
     body: MockDelayTaskRequest,
@@ -64,7 +64,7 @@ async def create_mock_delay_task(
     return TaskRunOut.model_validate(task)
 
 
-# 查询单个任务详情（含 steps/targets/events）
+# Truy vấn chi tiết của một nhiệm vụ (bao gồm các bước/mục tiêu/sự kiện)
 @router.get("/{task_id}", response_model=TaskRunOut)
 async def get_task_run(
     task_id: int,
@@ -78,7 +78,7 @@ async def get_task_run(
     return TaskRunOut.model_validate(task)
 
 
-# 当前用户的统一任务列表，支持 domain/target/project 维度筛选
+# Danh sách nhiệm vụ thống nhất cho người dùng hiện tại, hỗ trợ lọc thứ nguyên miền/mục tiêu/dự án
 @router.get("", response_model=TaskListOut)
 async def list_task_runs(
     page: int = Query(1, ge=1),
@@ -114,7 +114,7 @@ async def list_task_runs(
     )
 
 
-# 统一取消入口：标记 cancel_requested 并等待运行时协作收敛
+# Mục hủy hợp nhất: đánh dấu cancel_requested và chờ cộng tác thời gian chạy hội tụ
 @router.post("/{task_id}/cancel", response_model=TaskRunOut)
 async def cancel_task_run(
     task_id: int,

@@ -14,7 +14,7 @@ import { useI18n } from "@/i18n/useI18n";
 
 type ListRes = { items: AdminDramaEpisode[]; meta: PageMeta };
 
-/** 全站漫剧分集列表 */
+/** Tất cả các tập truyện tranh trên trang web */
 export function DramaEpisodesPage() {
   const { m } = useI18n();
   const [searchParams] = useSearchParams();

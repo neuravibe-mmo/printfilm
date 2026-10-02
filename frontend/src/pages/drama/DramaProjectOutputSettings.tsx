@@ -1,4 +1,4 @@
-/** 分集 / 项目画幅与清晰度设置（写入 episode.params 或 project.params） */
+/** Cài đặt định nghĩa và khung tập/dự án (ghiep.params hoặc project.params) */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, RectangleVertical } from 'lucide-react'
@@ -17,7 +17,7 @@ import './drama.css'
 
 type Props = {
   params: Record<string, unknown>
-  /** 分集模式下用于展示继承的项目默认 */
+  /** Dự án mặc định được sử dụng để hiển thị tính kế thừa ở chế độ đa dạng */
   fallbackParams?: Record<string, unknown>
   scope?: 'episode' | 'project'
   disabled?: boolean
@@ -25,7 +25,7 @@ type Props = {
   onChange: (nextParams: Record<string, unknown>) => void | Promise<void>
 }
 
-// 渲染输出规格控件
+// Kiểm soát thông số đầu ra kết xuất
 export function DramaProjectOutputSettings({
   params,
   fallbackParams = {},
@@ -113,7 +113,7 @@ export function DramaProjectOutputSettings({
     e.stopPropagation()
   }
 
-  // 合并写回 params
+  // Hợp nhất và viết lại các thông số
   async function applyPatch(patch: Partial<{ aspect_ratio: string; resolution: string }>) {
     if (disabled || saving) return
     const nextParams = { ...params, ...patch }

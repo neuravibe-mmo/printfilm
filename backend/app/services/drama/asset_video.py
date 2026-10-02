@@ -1,4 +1,4 @@
-"""画布视频资产：按提示词与参考图调用 Seedance 生成成片。"""
+"""Nội dung video canvas: Gọi Seedance dựa trên từ gợi ý và hình ảnh tham chiếu để tạo video."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ from app.services.drama.image_styles import (
 logger = logging.getLogger(__name__)
 
 
-# 合并正文 @asset:id 与显式传入的参考资产 ID（去重、排除自身）
+# Hợp nhất nội dung @asset:id với ID nội dung tham chiếu được truyền rõ ràng (xóa trùng lặp, loại trừ chính nó)
 def merge_reference_asset_ids(
     prompt: str,
     extra_ids: list[int] | None,
@@ -46,7 +46,7 @@ def merge_reference_asset_ids(
     return merged
 
 
-# 按项目加载参考资产，忽略跨项目或已删除的 ID
+# Tải nội dung tham chiếu theo dự án, bỏ qua các ID dự án chéo hoặc đã xóa
 async def load_reference_assets(
     db: AsyncSession,
     project_id: int,
@@ -75,12 +75,12 @@ async def generate_asset_video(
     image_style_id: str | None = None,
     reference_asset_ids: list[int] | None = None,
 ) -> DramaAsset:
-    """为画布 video 资产生成 Seedance 视频（不是 Seedream 静帧）。"""
+    """Tạo video Seedance (không phải ảnh tĩnh Seedream) cho nội dung video canvas."""
     settings = get_settings()
     ark = get_ark()
-    # content 用户提示词（保留 @asset:id 供 Seedance 替换）
-    # duration 夹紧到官方时长区间
-    # style_id 画面风格
+    # nội dung Lời nhắc của người dùng (@asset:id được dành riêng cho việc thay thế Seedance)
+    # thời lượng được giới hạn trong phạm vi thời lượng chính thức
+    # style_id kiểu màn hình
     content = (prompt or "").strip() or "短剧镜头"
     duration = int(duration_sec or 8)
     duration = max(settings.seedance_duration_min, min(duration, settings.seedance_duration_max))
@@ -98,7 +98,7 @@ async def generate_asset_video(
     ref_assets = await load_reference_assets(db, project.id, ref_ids)
     ref_assets = await ensure_reference_assets_public_urls(db, ref_assets)
     ref_payloads = [drama_asset_to_payload(item) for item in ref_assets]
-    # catalog 参考资产；video_board_url 仅在已有角色/场景图时挂画风板
+    # catalog tài sản tham chiếu; video_board_url chỉ gắn bảng phong cách khi đã có ảnh nhân vật/bối cảnh
     catalog = build_seedance_reference_catalog(ref_payloads)
     board_url = resolve_image_style_board_url(style_id)
     video_board_url = board_url if catalog.images else ""

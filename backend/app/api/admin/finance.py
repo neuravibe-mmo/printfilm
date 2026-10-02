@@ -18,7 +18,7 @@ async def admin_finance_daily(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminFinanceDailyOut:
-    """按日财务对照：本地扣费、本地成本、token、实际成本与利润。"""
+    """So sánh tài chính hàng ngày: các khoản khấu trừ địa phương, chi phí địa phương, mã thông báo, chi phí thực tế và lợi nhuận."""
     raw = await build_finance_daily_list(db, days=days)
     return AdminFinanceDailyOut(**raw)
 
@@ -30,7 +30,7 @@ async def admin_finance_daily_sync(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminFinanceDailyOut:
-    """刷新官方上游成本快照后返回财务列表。"""
+    """Quay lại danh sách tài chính sau khi làm mới ảnh chụp nhanh chi phí ngược dòng chính thức."""
     try:
         await sync_upstream_usage(db, days=days, force=force)
     except RuntimeError as exc:

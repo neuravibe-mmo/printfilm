@@ -48,7 +48,7 @@ type TemplateEditorDialogProps = {
 
 type EditorTab = "basic" | "prompts" | "publish";
 
-// 解析封面预览地址
+// Phân tích địa chỉ xem trước bìa
 function coverPreviewSrc(url: string): string {
   const trimmed = (url || "").trim();
   if (!trimmed) return "";
@@ -56,7 +56,7 @@ function coverPreviewSrc(url: string): string {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
-// 模板新建/编辑弹窗（分 Tab + 封面预览）
+// Cửa sổ bật lên mẫu mới/chỉnh sửa (được chia thành Tab + xem trước bìa)
 export function TemplateEditorDialog({
   open,
   saving,

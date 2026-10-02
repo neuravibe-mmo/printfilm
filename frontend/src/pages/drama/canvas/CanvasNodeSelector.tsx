@@ -1,4 +1,4 @@
-/** 空画布居中展示的默认节点选择器 */
+/** Bộ chọn nút mặc định được hiển thị ở giữa khung vẽ trống */
 import { MousePointer2 } from 'lucide-react'
 import { CANVAS_NODE_OPTIONS, getNodeKindLabel, type CanvasNodeKind } from './canvasTypes'
 import { useI18n } from '../../../i18n'
@@ -7,7 +7,7 @@ type CanvasNodeSelectorProps = {
   onSelect: (kind: CanvasNodeKind) => void
 }
 
-/** 渲染快速新建节点类型选择器 */
+/** Hiển thị nhanh bộ chọn loại nút mới */
 export function CanvasNodeSelector({ onSelect }: CanvasNodeSelectorProps) {
   const { t, locale } = useI18n()
   return (

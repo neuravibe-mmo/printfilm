@@ -79,7 +79,7 @@ class AdminModelSettingsOut(BaseModel):
     has_oss_access_key_id: bool = False
     has_oss_access_key_secret: bool = False
 
-    # Volcengine TOS（可选）
+    # Volcengine TOS (tùy chọn)
     tos_endpoint: str = ""
     tos_bucket: str = ""
     tos_access_key: str = ""
@@ -88,7 +88,7 @@ class AdminModelSettingsOut(BaseModel):
     has_tos_secret_key: bool = False
     cdn_base: str = ""
 
-    # Epay 易支付
+    # Epay thanh toán dễ dàng
     epay_api_url: str = ""
     epay_pid: str = ""
     epay_key: str = ""
@@ -96,7 +96,7 @@ class AdminModelSettingsOut(BaseModel):
     epay_return_url: str = ""
     has_epay_key: bool = False
 
-    # Token 计费
+    # Thanh toán bằng token
     billing_enabled: bool = False
     billing_markup: float = 1.0
     billing_estimate_buffer: float = 1.2
@@ -114,7 +114,7 @@ class AdminModelSettingsOut(BaseModel):
     quota_enabled: bool = False
     new_user_quota: int = 5
 
-    # 额度告警
+    # Báo động hạn ngạch
     billing_user_alert_enabled: bool = True
     billing_user_alert_interval_fen: int = 10000
     billing_admin_cost_alert_enabled: bool = False
@@ -133,7 +133,7 @@ class AdminModelSettingsOut(BaseModel):
     smtp_use_tls: bool = True
     has_smtp_password: bool = False
 
-    # 站点与工具
+    # Trang web và Công cụ
     public_base_url: str = ""
     ffmpeg_path: str = "ffmpeg"
     ffprobe_path: str = "ffprobe"

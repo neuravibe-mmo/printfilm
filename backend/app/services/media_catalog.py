@@ -1,4 +1,4 @@
-"""前台图/视频模型目录：来自 TokenFree 路由快照，不再展示 Kie/方舟。"""
+"""Thư mục mô hình hình ảnh/video giao diện người dùng: từ ảnh chụp nhanh định tuyến TokenFree, không còn hiển thị Kie/Ark nữa."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from app.services.model_routing_config import infer_model_capability, normalize_
 
 
 def _row(*, model_id: str, label: str, recommended: bool, description: str = "") -> dict[str, Any]:
-    """组装前台一条模型选项。"""
+    """Lắp ráp một tùy chọn mô hình mặt trước."""
     return {
         "id": model_id,
         "label": (label or model_id).strip() or model_id,
@@ -28,7 +28,7 @@ def build_media_catalog(
     fallback_image: str = "",
     fallback_video: str = "",
 ) -> dict[str, Any]:
-    """按逻辑模型 + 渠道勾选生成 image/video 目录。"""
+    """Chọn mô hình logic + kênh để tạo thư mục hình ảnh/video."""
     images: list[dict[str, Any]] = []
     videos: list[dict[str, Any]] = []
     seen_image: set[str] = set()
@@ -111,7 +111,7 @@ def build_media_catalog(
 
 
 def catalog_payload() -> dict[str, Any]:
-    """公开目录 JSON，供前台 /api/media-models。"""
+    """JSON thư mục công khai cho giao diện người dùng /api/media-models."""
     from app.services.model_settings import get_routing_snapshot
 
     snap = get_routing_snapshot()
@@ -126,7 +126,7 @@ def catalog_payload() -> dict[str, Any]:
 
 
 def is_valid_project_media_model(model_id: str | None, capability: LogicalModelCapability) -> bool:
-    """科普项目 image_model / video_model：与 /api/media-models 及 TokenFree 路由一致。"""
+    """Dự án khoa học phổ biến image_model / video_model: phù hợp với /api/media-models và định tuyến TokenFree."""
     mid = (model_id or "").strip()
     if not mid:
         return True
@@ -144,7 +144,7 @@ def is_valid_project_media_model(model_id: str | None, capability: LogicalModelC
         return True
     if resolve_logical_model_candidates(capability, mid):
         return True
-    # 与前台 /api/media-models 同源；能力推断一致即允许保存，具体路由在生成阶段解析
+    # Nó có cùng nguồn gốc với /api/media-models giao diện người dùng; nếu khả năng suy luận nhất quán thì được phép lưu và tuyến đường cụ thể được phân tích cú pháp trong giai đoạn tạo.
     if infer_model_capability(mid) == capability:
         return True
     settings = get_settings()

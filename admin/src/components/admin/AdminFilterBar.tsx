@@ -7,7 +7,7 @@ type AdminFilterBarProps = {
   className?: string;
 };
 
-/** 管理端列表筛选条：单行紧凑横排，空间不足时自动换行 */
+/** Thanh lọc danh sách bên quản lý: hàng đơn nhỏ gọn và nằm ngang, tự động ngắt dòng khi không đủ chỗ */
 export function AdminFilterBar({ children, trailing, className }: AdminFilterBarProps) {
   return (
     <div className={cn("admin-filter-bar", className)}>
@@ -23,7 +23,7 @@ type AdminFilterFieldProps = {
   className?: string;
 };
 
-/** 筛选条内联字段：标签与控件同一行 */
+/** Trường nội tuyến của thanh bộ lọc: nhãn và điều khiển nằm trên cùng một dòng */
 export function AdminFilterField({ label, children, className }: AdminFilterFieldProps) {
   return (
     <label className={cn("admin-filter-inline", className)}>

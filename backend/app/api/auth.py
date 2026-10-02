@@ -88,7 +88,7 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict[str, bool]:
-    """校验当前密码后写入新密码。"""
+    """Xác minh mật khẩu hiện tại rồi viết mật khẩu mới."""
     if not verify_password(body.current_password, user.hashed_password):
         raise HTTPException(status_code=400, detail="当前密码不正确")
     if body.current_password == body.new_password:
@@ -103,7 +103,7 @@ async def forgot_password(
     body: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, object]:
-    """发送密码重置邮件；统一成功文案，避免邮箱枚举。"""
+    """Gửi email đặt lại mật khẩu; thống nhất bản sao thành công để tránh liệt kê hộp thư."""
     try:
         return await request_password_reset(db, str(body.email))
     except RedisUnavailableError as exc:
@@ -115,7 +115,7 @@ async def reset_password(
     body: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, bool]:
-    """用邮件中的一次性 token 设置新密码。"""
+    """Đặt mật khẩu mới bằng mã thông báo một lần trong email."""
     try:
         await apply_password_reset(db, token=body.token, new_password=body.new_password)
     except RedisUnavailableError as exc:
@@ -131,7 +131,7 @@ async def update_me(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> User:
-    """更新当前用户的用户名、登录邮箱与联系手机号（仅记录，无验证码）。"""
+    """Cập nhật tên người dùng, email đăng nhập và số điện thoại liên hệ của người dùng hiện tại (chỉ ghi lại, không có mã xác minh)."""
     try:
         fields = prepare_profile_update(
             nickname=body.nickname,

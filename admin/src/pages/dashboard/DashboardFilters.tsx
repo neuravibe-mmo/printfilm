@@ -23,7 +23,7 @@ type DashboardFiltersProps = {
   onChange: (next: DashboardFilterState) => void;
 };
 
-/** 仪表盘用量筛选条（两行紧凑布局） */
+/** Thanh bộ lọc sử dụng bảng điều khiển (bố cục thu gọn hai dòng) */
 export function DashboardFilters({ value, onChange }: DashboardFiltersProps) {
   const { m } = useI18n();
   const patch = (partial: Partial<DashboardFilterState>) => onChange({ ...value, ...partial });

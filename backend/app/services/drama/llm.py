@@ -1,4 +1,4 @@
-"""漫剧 Agent 文字 LLM（Kimi / OpenAI 兼容，对齐 manju agents/llm.ts）。"""
+"""Văn bản Manga Agent LLM (tương thích với Kimi/OpenAI, được căn chỉnh theo manju Agent/llm.ts)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from app.services.llm_client import (
 
 logger = logging.getLogger(__name__)
 
-# 兼容旧引用
+# Tương thích với các tài liệu tham khảo cũ
 DramaLlmUnavailableError = LlmUnavailableError
 
 _JSON_FENCE_RE = re.compile(r"^```(?:json)?\s*", re.IGNORECASE)
@@ -32,7 +32,7 @@ _SMART_QUOTE_MAP = str.maketrans(
 
 
 def _strip_json_fences(text: str) -> str:
-    # 去掉 markdown 代码围栏
+    # Xóa hàng rào mã đánh dấu
     raw = (text or "").strip()
     raw = _JSON_FENCE_RE.sub("", raw)
     raw = _JSON_FENCE_TAIL_RE.sub("", raw)
@@ -40,14 +40,14 @@ def _strip_json_fences(text: str) -> str:
 
 
 def _repair_json_text(raw: str) -> str:
-    # 常见 LLM JSON 瑕疵：智能引号、尾逗号
+    # Các lỗi JSON LLM phổ biến: dấu ngoặc kép thông minh, dấu phẩy ở cuối
     repaired = raw.translate(_SMART_QUOTE_MAP)
     repaired = _TRAILING_COMMA_RE.sub(r"\1", repaired)
     return repaired
 
 
 def _extract_json(text: str) -> Any:
-    # 从模型输出解析 JSON（去围栏、修复常见格式错误）
+    # Phân tích cú pháp JSON từ đầu ra mô hình (khử hàng rào, sửa các lỗi định dạng phổ biến)
     raw = _strip_json_fences(text)
     candidates = [raw, _repair_json_text(raw)]
 
@@ -72,7 +72,7 @@ def _extract_json(text: str) -> Any:
 
 
 def _ensure_json_word_in_prompt(system: str, user: str) -> tuple[str, str]:
-    """DeepSeek 等要求 response_format=json_object 时 prompt 须含 json 字样。"""
+    """Khi DeepSeek và những người khác yêu cầu reply_format=json_object, lời nhắc phải chứa từ json."""
     blob = f"{system or ''}\n{user or ''}".lower()
     if "json" in blob:
         return system, user
@@ -100,7 +100,7 @@ async def drama_chat_json(
             response_format=json_format,
         )
     except RuntimeError as exc:
-        # 部分兼容网关不支持 response_format，降级为普通调用
+        # Một số cổng tương thích không hỗ trợ reply_format và bị hạ cấp xuống các cuộc gọi thông thường.
         if "response_format" not in str(exc).lower() and "json_object" not in str(exc).lower():
             raise
         logger.warning("LLM 不支持 response_format，降级普通调用: %s", exc)

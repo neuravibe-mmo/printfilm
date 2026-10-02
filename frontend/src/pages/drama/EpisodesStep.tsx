@@ -1,4 +1,4 @@
-/** 分集视频步骤：进页规则切分；支持全集规则重切与单集 AI 分镜 */
+/** Chia các bước video: phân đoạn quy tắc nhập trang; hỗ trợ cắt lại quy tắc toàn tập và viết kịch bản phân cảnh AI cho một tập */
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Clapperboard, Film, Layers, Sparkles, Wand2 } from 'lucide-react'
@@ -26,7 +26,7 @@ type EpisodeSummary = {
   planStatus: string
 }
 
-// 读取分集 AI 分镜状态
+// Đọc trạng thái bảng phân cảnh AI đa dạng
 function readPlanStatus(ep: DramaEpisode): string {
   const active = (ep.active_tasks || []).find((task) => task.task_type === 'fragment_plan')
   if (
@@ -40,7 +40,7 @@ function readPlanStatus(ep: DramaEpisode): string {
   return typeof st === 'string' ? st : ''
 }
 
-// 汇总单集分镜与视频进度
+// Tóm tắt cốt truyện từng tập và tiến trình video
 function summarizeEpisode(ep: DramaEpisode): EpisodeSummary {
   const frags = ep.fragments || []
   const activeFragmentIds = new Set<number>()
@@ -84,14 +84,14 @@ function summarizeEpisode(ep: DramaEpisode): EpisodeSummary {
   }
 }
 
-// 分集标题竖排展示用（过长截断）
+// Để hiển thị tiêu đề tập theo chiều dọc (cắt ngắn nếu quá dài)
 function verticalTitleLabel(name: string, max = 14): string {
   const clean = (name || '').replace(/\s+/g, '')
   if (clean.length <= max) return clean
   return `${clean.slice(0, max - 1)}…`
 }
 
-// 渲染分集视频步骤
+// Các bước kết xuất video tập phim
 export function EpisodesStep({ projectId, onError }: EpisodesStepProps) {
   const { t } = useI18n()
   const navigate = useNavigate()

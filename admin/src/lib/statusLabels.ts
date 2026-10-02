@@ -75,7 +75,7 @@ export const TASK_DOMAIN_LABELS: Record<string, string> = {
   api: "开放 API",
 };
 
-/** Task type → Chinese（轻量同步 + 平台任务） */
+/** Loại nhiệm vụ → Tiếng Trung (đồng bộ nhẹ + tác vụ nền tảng) */
 export const TASK_TYPE_LABELS: Record<string, string> = {
   agent_chat: "漫剧助手聊天",
   skill_optimize: "Skill 优化提示词",

@@ -12,7 +12,7 @@ export type PayCheckout = {
   pay_type: 'alipay' | 'wxpay' | string
   amount_fen: number
   credit_fen: number
-  /** qr=弹窗扫码；redirect=新开易支付收银台 */
+  /** qr=Mã quét cửa sổ bật lên; redirect=Nhân viên thu ngân Easy Pay mới */
   pay_mode?: 'qr' | 'redirect' | string
   qr_payload: string
   payurl?: string
@@ -37,7 +37,7 @@ function formatRemain(sec: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-/** 扫码支付弹窗：展示二维码或等待收银台回跳，并轮询订单状态 */
+/** Quét mã để thanh toán cửa sổ bật lên: hiển thị mã QR hoặc đợi nhân viên thu ngân trả lại và thăm dò trạng thái đơn hàng */
 export default function PaymentModal({ open, checkout, onClose, onPaid }: Props) {
   const { t, locale } = useI18n()
   const [qrDataUrl, setQrDataUrl] = useState('')

@@ -1,1 +1,1 @@
-"""后端 Agent：按任务加载 Skill 并注入 LLM 系统提示。"""
+"""Tác nhân phụ trợ: Tải Kỹ năng theo nhiệm vụ và đưa vào lời nhắc hệ thống LLM."""

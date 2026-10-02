@@ -1,4 +1,4 @@
-/** 漫剧项目工作流：剧情大纲 → 分镜 → 生成视频；资产库为独立入口 */
+/** Quy trình làm việc của dự án phim truyền hình truyện tranh: phác thảo cốt truyện → bảng phân cảnh → tạo video; thư viện tài sản là một lối vào độc lập */
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Boxes, ChevronLeft } from 'lucide-react'
@@ -30,7 +30,7 @@ export default function ProjectWorkspacePage() {
   )
 }
 
-// 项目工作台主体
+// Nội dung chính của bàn làm việc dự án
 function WorkspaceInner() {
   const { t } = useI18n()
   const { projectId } = useParams()
@@ -38,12 +38,12 @@ function WorkspaceInner() {
   const navigate = useNavigate()
   const location = useLocation()
   /*
-   * project 项目详情
-   * activeStep 当前步骤（大纲 / 分集）
-   * assetsOpen 资产库独立视图
-   * titleDraft 可编辑标题
-   * editingTitle 是否在编辑标题
-   * loading / error 加载态
+   * dự án chi tiết dự án
+   * activeStep bước hiện tại (phác thảo/tập)
+   * assetsMở chế độ xem độc lập của thư viện nội dung
+   * titleTiêu đề có thể chỉnh sửa được
+   * editTitle Liệu tiêu đề có đang được chỉnh sửa hay không
+   * trạng thái tải / tải lỗi
    */
   const [project, setProject] = useState<DramaProject | null>(null)
   const [activeStep, setActiveStep] = useState<ProjectStepKey>('outline')
@@ -54,7 +54,7 @@ function WorkspaceInner() {
   const [error, setError] = useState('')
   const locationApplied = useRef(false)
 
-  // 应用路由 state：assets / 分镜类步骤跳转
+  // Trạng thái định tuyến ứng dụng: bước nhảy nội dung/bảng phân cảnh
   function applyLocationState(state: WorkspaceLocationState | null) {
     const normalized = normalizeWorkspaceStep(state?.activeStep || state?.returnStep)
     if (normalized === 'assets' || state?.activeStep === 'assets') {
@@ -73,7 +73,7 @@ function WorkspaceInner() {
     }
   }
 
-  // 加载项目；自由画布项目强制进入画布页
+  // Tải dự án; dự án canvas miễn phí buộc phải vào trang canvas
   async function reload() {
     const p = await dramaApi.getProject(id)
     if (isCanvasWorkflow(p)) {
@@ -115,7 +115,7 @@ function WorkspaceInner() {
     applyLocationState(location.state as WorkspaceLocationState | null)
   }, [location.state])
 
-  // 切换步骤时刷新用量（生图/生视频后顶栏数字同步）
+  // Làm mới mức sử dụng khi chuyển đổi các bước (số thanh trên cùng được đồng bộ hóa sau khi tạo ảnh/video)
   useEffect(() => {
     if (!Number.isFinite(id) || id <= 0 || loading || !project) return
     void dramaApi
@@ -124,10 +124,10 @@ function WorkspaceInner() {
         setProject((prev) => (prev ? { ...prev, usage: p.usage } : p))
       })
       .catch(() => undefined)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅随视图变化刷新
+    // eslint-disable-next-line Reac-hooks/exhaustive-deps -- chỉ làm mới khi có thay đổi về chế độ xem
   }, [activeStep, assetsOpen, id])
 
-  // 保存标题
+  // Lưu tiêu đề
   async function saveTitle() {
     const next = titleDraft.trim()
     if (!next || !project) {

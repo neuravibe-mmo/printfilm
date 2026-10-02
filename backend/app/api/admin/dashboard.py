@@ -23,7 +23,7 @@ _ALLOWED_TOP_METRICS = frozenset({"charge", "cost", "calls"})
 
 
 def _validate_stats_days(raw: int) -> int:
-    """仅允许固定档位，非法值返回 422。"""
+    """Chỉ cho phép bánh răng cố định và các giá trị không hợp lệ trả về 422."""
     if raw not in _ALLOWED_STATS_DAYS:
         allowed = ", ".join(str(v) for v in sorted(_ALLOWED_STATS_DAYS))
         raise HTTPException(status_code=422, detail=f"days must be one of: {allowed}")
@@ -47,7 +47,7 @@ async def admin_stats(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminStatsOut:
-    """用户/充值 + AI 调用量/费用/趋势/排行。"""
+    """Người dùng/nạp tiền + số lượng cuộc gọi AI/chi phí/xu hướng/xếp hạng."""
     window_days = _validate_stats_days(days)
     metric = _normalize_top_metric(top_metric)
     raw = await build_admin_dashboard_stats(
@@ -85,7 +85,7 @@ async def admin_upstream_usage(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminUpstreamUsageOut:
-    """近 N 日 TokenFree 官方用量与本地成本对照。"""
+    """Việc sử dụng TokenFree chính thức trong N ngày qua được so sánh với chi phí địa phương."""
     raw = await build_upstream_usage_compare(db, days=days)
     return AdminUpstreamUsageOut(**raw)
 
@@ -97,7 +97,7 @@ async def admin_upstream_usage_sync(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminUpstreamUsageSyncOut:
-    """手动刷新官方用量快照。"""
+    """Làm mới ảnh chụp nhanh sử dụng chính thức theo cách thủ công."""
     try:
         raw = await sync_upstream_usage(db, days=days, force=force)
     except RuntimeError as exc:

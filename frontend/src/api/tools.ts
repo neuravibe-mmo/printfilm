@@ -1,4 +1,4 @@
-/** 独立创作工具 API：/api/tools/* */
+/** API công cụ soạn thảo độc lập: /api/tools/* */
 
 import { throwApiError } from '../lib/apiError'
 
@@ -51,7 +51,7 @@ export type ToolRunList = {
   page_size: number
 }
 
-// 将 /static 相对路径补全为可访问地址
+// Đường dẫn tương đối hoàn chỉnh/tĩnh đến địa chỉ có thể truy cập
 export function resolveToolMediaUrl(url?: string | null): string {
   if (!url) return ''
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
@@ -61,7 +61,7 @@ export function resolveToolMediaUrl(url?: string | null): string {
   return url
 }
 
-// 解析 FastAPI 错误详情
+// Phân tích chi tiết lỗi FastAPI
 function errorMessage(detail: unknown, fallback: string): string {
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) {
@@ -83,7 +83,7 @@ export type ToolRunPayload = {
   files?: File[]
 }
 
-// 提交工具生成（multipart）
+// Gửi công cụ tạo (nhiều phần)
 export async function runStudioTool(payload: ToolRunPayload): Promise<ToolRunResult> {
   const token = localStorage.getItem('token')
   const body = new FormData()
@@ -112,7 +112,7 @@ export async function runStudioTool(payload: ToolRunPayload): Promise<ToolRunRes
   return res.json()
 }
 
-// 查询视频任务状态
+// Truy vấn trạng thái tác vụ video
 export async function pollStudioToolTask(taskId: string): Promise<ToolTaskResult> {
   const token = localStorage.getItem('token')
   const res = await fetch(`${API_BASE}/api/tools/tasks/${encodeURIComponent(taskId)}`, {
@@ -126,7 +126,7 @@ export async function pollStudioToolTask(taskId: string): Promise<ToolTaskResult
   return res.json()
 }
 
-// 个人中心：分页拉取工具创作记录
+// Trung tâm cá nhân: Bản ghi tạo công cụ kéo phân trang
 export async function listToolRuns(page = 1, pageSize = 8): Promise<ToolRunList> {
   const token = localStorage.getItem('token')
   const qs = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
@@ -141,7 +141,7 @@ export async function listToolRuns(page = 1, pageSize = 8): Promise<ToolRunList>
   return res.json()
 }
 
-// 个人中心：单条创作详情（含 OSS 结果地址）
+// Trung tâm cá nhân: Chi tiết tạo đơn lẻ (bao gồm địa chỉ kết quả OSS)
 export async function getToolRun(runId: number): Promise<ToolRunRecord> {
   const token = localStorage.getItem('token')
   const res = await fetch(`${API_BASE}/api/tools/runs/${runId}`, {

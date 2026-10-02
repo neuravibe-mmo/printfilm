@@ -1,4 +1,4 @@
-/** 英文：首页、帮助、联系、工具、定价、历史、漫剧列表 */
+/** Tiếng Anh: Trang chủ, Trợ giúp, Liên hệ, Công cụ, Giá cả, Lịch sử, Danh sách truyện tranh */
 
 export const enPages = {
   home: {

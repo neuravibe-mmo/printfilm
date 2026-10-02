@@ -8,7 +8,7 @@ type Props = {
   onClose: () => void
 }
 
-// 渲染图片放大层
+// Render lớp phóng đại hình ảnh
 export function DramaImageLightbox({ src, alt, onClose }: Props) {
   const { t } = useI18n()
   const displayAlt = alt || t('drama.assetsStep.previewImage')

@@ -1,4 +1,4 @@
-/** 画布顶栏：返回、标题、已保存指示、设置占位 */
+/** Thanh trên cùng của canvas: trả về, tiêu đề, chỉ báo đã lưu, cài đặt giữ chỗ */
 import { useState } from 'react'
 import { ChevronLeft, Maximize2, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -10,7 +10,7 @@ type Props = {
   variant?: 'fullscreen' | 'embedded'
 }
 
-/** 渲染画布页顶部工具栏 */
+/** Hiển thị thanh công cụ trên cùng của trang canvas */
 export function CanvasTopBar({ variant = 'fullscreen' }: Props) {
   const navigate = useNavigate()
   const { t } = useI18n()

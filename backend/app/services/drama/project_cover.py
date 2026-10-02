@@ -1,11 +1,11 @@
-"""漫剧项目列表封面：从分镜/资产解析展示图。"""
+"""Bìa danh sách dự án phim truyền hình truyện tranh: Hiển thị hình ảnh từ phân tích bảng phân cảnh/nội dung."""
 
 from __future__ import annotations
 
 from app.models_drama import DramaProject
 
 
-# 解析项目封面 URL 与是否待生成
+# Phân tích URL bìa dự án và liệu nó có cần được tạo hay không
 def resolve_drama_project_cover(project: DramaProject) -> tuple[str | None, bool]:
     cover_url: str | None = None
     cover_pending = False

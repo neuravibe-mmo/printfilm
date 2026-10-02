@@ -35,12 +35,12 @@ from app.services.drama.llm import DramaLlmUnavailableError, drama_chat_text
 router = APIRouter()
 logger = logging.getLogger("app.drama.agents")
 
-# summary_generating_at 超过该时长仍无结果，允许重新入队
+# summary_generated_at Nếu sau thời gian này vẫn không có kết quả thì được phép vào lại.
 SUMMARY_GENERATING_STALE_MINUTES = 25
 
 
 def _summary_generating_is_stale(params: dict) -> bool:
-    # 判断 generating 是否已超时（避免 Celery 失败/丢任务后前端永久转圈）
+    # Xác định xem quá trình tạo đã hết thời gian chờ chưa (để ngăn giao diện người dùng quay vĩnh viễn sau khi Celery thất bại/mất nhiệm vụ)
     started_raw = params.get("summary_generating_at")
     if not started_raw:
         return True
@@ -59,7 +59,7 @@ async def script_summary(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    # 入队摘要任务，立即返回；前端轮询 script.params.summary_status
+    # Xếp hàng nhiệm vụ tóm tắt và trả về ngay; script bỏ phiếu phía trước.params.summary_status
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     if not project.script:
         raise HTTPException(status_code=400, detail="缺少剧本")
@@ -133,7 +133,7 @@ async def episode_script(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    # 入队完整分集生成或单集优化；前端轮询 episode_content_status / episode_optimize_status
+    # Enqueue tạo tập hoàn chỉnh hoặc tối ưu hóa tập đơn; thăm dò ý kiến phía trước tập_content_status / tập_optizes_status
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     if not project.script or not project.script.summary:
         raise HTTPException(status_code=400, detail="请先生成剧本摘要")
@@ -178,7 +178,7 @@ async def episode_script(
             }
 
         existing = _existing_episodes(project.script.episode_content)
-        # 生成前可写入本集创意/标题
+        # Bạn có thể viết nội dung/tiêu đề của tập này trước khi tạo
         creative_in = (body.creative or "").strip()
         title_in = (body.title or "").strip()
         if creative_in or title_in:
@@ -226,7 +226,7 @@ async def episode_script(
                 )
                 cur_creative = str((cur or {}).get("creative") or "").strip()
             if len(cur_creative) < 20:
-                raise HTTPException(status_code=400, detail="请先填写本集原始创意（至少 20 字）")
+                raise HTTPException(status_code=400, detail="请先填写Ý tưởng ban đầu của tập này（至少 20 字）")
         elif mode == "brief":
             cur = next(
                 (
@@ -352,7 +352,7 @@ async def episode_script(
 
 
 def _existing_episodes(content: object) -> list:
-    # 从 episode_content 取出分集数组
+    # Lấy mảng tập từ fileep_content
     if isinstance(content, dict) and isinstance(content.get("episodes"), list):
         return list(content["episodes"])
     if isinstance(content, list):
@@ -361,7 +361,7 @@ def _existing_episodes(content: object) -> list:
 
 
 def _apply_episode_count(project, script, total: int) -> None:
-    # 同步项目 / 剧本 / 摘要上的目标集数
+    # Số tập mục tiêu trên dự án đồng bộ/tập lệnh/tóm tắt
     summary = dict(script.summary) if isinstance(script.summary, dict) else {}
     summary["episodeCount"] = int(total)
     script.summary = summary
@@ -379,7 +379,7 @@ async def add_episode(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """手动追加一集空分集，供用户粘贴剧本后再 AI 优化。"""
+    """Thêm một tập trống theo cách thủ công để người dùng dán tập lệnh rồi tối ưu hóa bằng AI."""
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     if not project.script or not project.script.summary:
         raise HTTPException(status_code=400, detail="请先生成剧本摘要")

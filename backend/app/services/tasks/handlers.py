@@ -21,19 +21,19 @@ class TaskHandler:
     task_type: str
     executor: TaskExecutor
 
-    # 为任务创建时生成默认步骤
+    # Tạo các bước mặc định khi tạo tác vụ
     def plan_steps(self, body: TaskCreateRequest) -> list[TaskStepCreate]:
         return [TaskStepCreate(step_key=body.task_type, step_type="job")]
 
 
-# 执行漫剧剧本摘要任务。
+# Thực hiện nhiệm vụ tóm tắt kịch bản truyện tranh.
 async def _run_drama_script_summary(task: TaskRun) -> dict[str, Any] | None:
     from app.services.drama.jobs import run_script_summary_job
 
     return await run_script_summary_job(_require_int(task.drama_project_id, "drama_project_id"))
 
 
-# 执行漫剧分集剧本生成任务。
+# Thực hiện nhiệm vụ tạo kịch bản cho các tập phim truyện tranh.
 async def _run_drama_episode_script(task: TaskRun) -> dict[str, Any] | None:
     from app.services.drama.jobs import run_episode_scripts_job
 
@@ -55,7 +55,7 @@ async def _run_drama_episode_script(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行单集分镜规划任务。
+# Thực hiện nhiệm vụ lập kế hoạch cho từng tập phim.
 async def _run_drama_fragment_plan(task: TaskRun) -> dict[str, Any] | None:
     from app.services.drama.jobs import run_episode_fragment_plan_job
 
@@ -68,7 +68,7 @@ async def _run_drama_fragment_plan(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行漫剧分镜视频任务（NIO + 任务平台计费；每 task 仅处理一个 fragment）。
+# Thực thi tác vụ video bảng phân cảnh truyện tranh (NIO + thanh toán nền tảng tác vụ; mỗi tác vụ chỉ xử lý một đoạn).
 async def _run_drama_fragment_video(task: TaskRun) -> dict[str, Any] | None:
     from app.services.drama.jobs import submit_fragment_video_task
 
@@ -79,7 +79,7 @@ async def _run_drama_fragment_video(task: TaskRun) -> dict[str, Any] | None:
     return await submit_fragment_video_task(task)
 
 
-# 执行漫剧资产生图任务。
+# Thực hiện nhiệm vụ sản xuất hình ảnh cho các sản phẩm truyện tranh.
 async def _run_drama_asset_image(task: TaskRun) -> dict[str, Any] | None:
     from app.services.drama.jobs import run_asset_image_job
 
@@ -98,7 +98,7 @@ async def _run_drama_asset_image(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行漫剧资产生视频任务。
+# Thực hiện nhiệm vụ tạo video từ nội dung truyện tranh.
 async def _run_drama_asset_video(task: TaskRun) -> dict[str, Any] | None:
     from app.services.drama.jobs import run_asset_video_job
 
@@ -120,7 +120,7 @@ async def _run_drama_asset_video(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行漫剧资产抽取任务。
+# Thực hiện nhiệm vụ trích xuất nội dung truyện tranh.
 async def _run_drama_seed_assets(task: TaskRun) -> dict[str, Any] | None:
     from app.services.drama.jobs import run_seed_assets_job
 
@@ -132,8 +132,8 @@ async def _run_drama_seed_assets(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行科普可取消子流程：项目已被用户请求取消时，PipelineCancelled 收敛为
-# {"cancelled": True}（executor 据此落取消态并退回冻结）；其余异常照常抛出。
+# Thực thi quy trình con có thể hủy được trong khoa học phổ biến: Khi dự án bị hủy theo yêu cầu của người dùng, PipelineCancelled hội tụ đến
+# {"cancelled": True} (người thực thi thoát khỏi trạng thái tương ứng và quay lại trạng thái đóng băng); các trường hợp ngoại lệ khác được đưa ra như bình thường.
 async def _await_kepu(task: TaskRun, aw: Awaitable[Any], **extra: Any) -> dict[str, Any]:
     from app.services.pipeline import PipelineCancelled
 
@@ -146,7 +146,7 @@ async def _await_kepu(task: TaskRun, aw: Awaitable[Any], **extra: Any) -> dict[s
     return {"ok": True, "project_id": task.project_id, **extra}
 
 
-# 执行科普分阶段流水线（严格按 payload.phase 预扣对应阶段）。
+# Thực hiện quy trình phổ biến khoa học theo giai đoạn (tuân thủ nghiêm ngặt việc giữ lại payload.phase của giai đoạn tương ứng).
 async def _run_kepu_project_pipeline(task: TaskRun) -> dict[str, Any] | None:
     from app.services.pipeline import run_pipeline
 
@@ -162,7 +162,7 @@ async def _run_kepu_project_pipeline(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行科普单镜生图任务。
+# Thực hiện nhiệm vụ tạo ra những bức ảnh ống kính đơn về khoa học phổ thông.
 async def _run_kepu_shot_image(task: TaskRun) -> dict[str, Any] | None:
     from app.services.pipeline import regen_shot_image
 
@@ -176,7 +176,7 @@ async def _run_kepu_shot_image(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行科普单镜生视频任务。
+# Thực hiện nhiệm vụ video ống kính đơn về khoa học phổ biến.
 async def _run_kepu_shot_video(task: TaskRun) -> dict[str, Any] | None:
     from app.services.pipeline import regen_shot_video
 
@@ -190,7 +190,7 @@ async def _run_kepu_shot_video(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行科普单镜配音任务。
+# Thực hiện nhiệm vụ lồng tiếng bằng ống kính đơn về khoa học phổ biến.
 async def _run_kepu_shot_audio(task: TaskRun) -> dict[str, Any] | None:
     from app.services.pipeline import regen_shot_audio
 
@@ -204,7 +204,7 @@ async def _run_kepu_shot_audio(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行科普整片重配音任务。
+# Thực hiện nhiệm vụ lồng tiếng cho toàn bộ bộ phim khoa học nổi tiếng.
 async def _run_kepu_project_audio(task: TaskRun) -> dict[str, Any] | None:
     from app.services.pipeline import regen_project_audio_and_compose
 
@@ -214,7 +214,7 @@ async def _run_kepu_project_audio(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行科普仅合成任务。
+# Thực hiện các nhiệm vụ tổng hợp chỉ phổ biến khoa học.
 async def _run_kepu_compose(task: TaskRun) -> dict[str, Any] | None:
     from app.services.pipeline import compose_only
 
@@ -224,7 +224,7 @@ async def _run_kepu_compose(task: TaskRun) -> dict[str, Any] | None:
     )
 
 
-# 执行延时模拟任务，便于验证任务平台状态流转。
+# Thực thi các tác vụ mô phỏng bị trì hoãn để tạo điều kiện xác minh luồng trạng thái nền tảng tác vụ.
 async def _run_tools_mock_delay(task: TaskRun) -> dict[str, Any] | None:
     payload = task.payload or {}
     delay_seconds = int(payload.get("delay_seconds") or 10)
@@ -248,12 +248,12 @@ async def _run_tools_mock_delay(task: TaskRun) -> dict[str, Any] | None:
     }
 
 
-# 轻量任务占位 handler（实际由 run_billed_ephemeral 内联执行）。
+# Trình xử lý giữ chỗ tác vụ nhẹ (thực sự được thực thi nội tuyến bởi run_billed_ephemeral).
 async def _noop_ephemeral(task: TaskRun) -> dict[str, Any] | None:
     return {"ok": True, "ephemeral": True}
 
 
-# 确保关键主键字段存在。
+# Đảm bảo tồn tại các trường khóa chính chính.
 def _require_int(value: int | None, field_name: str) -> int:
     if isinstance(value, int) and value > 0:
         return value
@@ -288,6 +288,6 @@ TASK_HANDLERS: dict[tuple[str, str], TaskHandler] = {
 }
 
 
-# 按 domain + task_type 找到平台 handler。
+# Nhấn domain + task_type để tìm trình xử lý nền tảng.
 def get_task_handler(domain: str, task_type: str) -> TaskHandler | None:
     return TASK_HANDLERS.get((domain, task_type))

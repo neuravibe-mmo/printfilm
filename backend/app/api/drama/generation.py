@@ -35,7 +35,7 @@ async def generate_image(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    # 入队生图；返回 queued，前端轮询资产 params.generation / 列表刷新
+    # Tham gia nhóm để tạo biểu đồ; quay trở lại hàng đợi, giao diện người dùng thăm dò nội dung params.thế hệ / làm mới danh sách
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     asset = None
     if body.asset_id:
@@ -57,7 +57,7 @@ async def generate_image(
         raise HTTPException(status_code=400, detail="缺少 prompt")
 
     kind = body.asset_type_kind or (asset.type if asset else "character")
-    # style_id 请求优先，否则回退项目 params
+    # style_id ưu tiên yêu cầu, nếu không các thông số dự án sẽ bị khôi phục
     style_id = (body.image_style_id or "").strip() or str(
         (project.params or {}).get("image_style_id") or ""
     ).strip() or None
@@ -110,7 +110,7 @@ async def generate_video(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    # 入队画布资产生视频；前端轮询资产 params.generation
+    # Xếp hàng nội dung canvas để tạo video; thông số nội dung cuộc thăm dò giao diện người dùng.
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     asset = await db.get(DramaAsset, body.asset_id)
     if not asset or asset.project_id != project.id:
@@ -174,7 +174,7 @@ async def suggest_voice_prompt(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """根据角色设定 AI 生成音色描述提示词。"""
+    """AI tạo lời nhắc mô tả âm sắc dựa trên cài đặt ký tự."""
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     asset = await db.get(DramaAsset, body.asset_id)
     if not asset or asset.project_id != project.id:
@@ -231,7 +231,7 @@ async def generate_voice(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """按提示词合成 voice 资产参考音频（漫剧独立音色库，非科普 /api/voices）。"""
+    """Tổng hợp âm thanh tham chiếu nội dung giọng nói theo các từ gợi ý (thư viện giọng nói độc lập cho truyện tranh, /api/voices khoa học không phổ biến)."""
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     prompt = (body.voice_prompt or "").strip()
     if not prompt:

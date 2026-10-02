@@ -1,4 +1,4 @@
-"""根据角色/场景设定解析资产生图提示词（规则 + LLM）。"""
+"""Phân tích nội dung và tạo lời nhắc bằng đồ họa (quy tắc + LLM) dựa trên cài đặt vai trò/kịch bản."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ WEAK_PROMPT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# 模板化套话：出现且总长偏短则视为需 AI 重写
+# Những câu nói sáo rỗng theo khuôn mẫu: Nếu chúng xuất hiện và tổng độ dài quá ngắn, chúng được cho là cần được AI viết lại.
 GENERIC_TEMPLATE_MARKERS = (
     "影视级写实环境空间",
     "构图层次分明、光影有戏剧张力",
@@ -81,7 +81,7 @@ MATERIAL_VISUAL_SYSTEM = """Bạn là chuyên viên mỹ thuật không khí phi
 Xuất ra 100–220 từ bằng tiếng Việt: cỡ cảnh, bố cục, ánh sáng, tông màu, cảm xúc bầu không khí, gợi ý chuyển động (khói/nước/ánh sáng), phù hợp tỷ lệ màn hình ngang 16:9. Không có cận cảnh mặt nhân vật. Không JSON."""
 
 
-# 是否命中模板套话且整体偏短
+# Nó có đúng mẫu không và nhìn chung có quá ngắn không?
 def is_generic_template_prompt(text: str) -> bool:
     stripped = (text or "").strip()
     if len(stripped) >= 180:
@@ -90,7 +90,7 @@ def is_generic_template_prompt(text: str) -> bool:
     return hits >= 1 or (stripped.startswith("场景：") and len(stripped) < 120)
 
 
-# 判断当前提示词是否过短、占位或模板化
+# Xác định xem từ nhắc hiện tại có quá ngắn, quá ngắn hoặc quá khuôn mẫu không
 def is_weak_visual_prompt(prompt: str, asset_name: str, kind: str) -> bool:
     text = (prompt or "").strip()
     kind_lower = (kind or "").strip().lower()
@@ -104,7 +104,7 @@ def is_weak_visual_prompt(prompt: str, asset_name: str, kind: str) -> bool:
         return True
     if is_generic_template_prompt(text):
         return True
-    # 角色若只有「身份：」「标签：」字段堆叠而无足够 visualImage 密度
+    # Nếu vai trò chỉ có các trường "Identity:" và "Label:" được xếp chồng lên nhau mà không có đủ mật độ hình ảnh trực quan
     if kind_lower == "character" and text.count("：") >= 3 and len(text) < 160:
         label_hits = sum(1 for label in ("身份：", "定位：", "标签：", "性格：", "背景：") if label in text)
         if label_hits >= 2 and "，" not in text[:40]:
@@ -112,7 +112,7 @@ def is_weak_visual_prompt(prompt: str, asset_name: str, kind: str) -> bool:
     return False
 
 
-# 从资产 params 与摘要拼角色上下文
+# Xây dựng bối cảnh vai trò từ thông số nội dung và tóm tắt
 def build_character_visual_context(
     asset: DramaAsset,
     summary_char: dict[str, Any] | None = None,
@@ -180,7 +180,7 @@ def fallback_character_visual_prompt(
     )
 
 
-# 从场戏正文提取与场景名相关的摘录
+# Trích xuất các đoạn trích liên quan đến tên cảnh trong văn bản cảnh
 def collect_scene_excerpts(bodies: list[str], scene_name: str, max_chars: int = 3200) -> str:
     target = (scene_name or "").strip()
     if not target:
@@ -189,7 +189,7 @@ def collect_scene_excerpts(bodies: list[str], scene_name: str, max_chars: int = 
     for body in bodies:
         if target not in body:
             continue
-        for block in re.split(r"(?=###\s*场)", body):
+        for block in re.split(r"(?=###\s*field)", body):
             head = block[:280]
             if target in head or target in block[:160]:
                 snippet = block.strip()
@@ -204,7 +204,7 @@ def collect_scene_excerpts(bodies: list[str], scene_name: str, max_chars: int = 
     return "\n---\n".join(chunks[:5])[:max_chars]
 
 
-# 规则拼接场景生图提示词
+# Gợi ý cách vẽ tranh trong các cảnh ghép thông thường
 def fallback_scene_visual_prompt(
     asset: DramaAsset,
     summary: dict[str, Any] | None,
@@ -218,7 +218,7 @@ def fallback_scene_visual_prompt(
     return normalize_visual_prompt_text(base)
 
 
-# 清洗 LLM 输出
+# Đầu ra LLM sạch
 def normalize_visual_prompt_text(raw: str) -> str:
     text = (raw or "").strip()
     text = re.sub(r"^[\"'「『]|[\"'」』]$", "", text).strip()
@@ -227,7 +227,7 @@ def normalize_visual_prompt_text(raw: str) -> str:
     return text[:680]
 
 
-# 合并规则稿与 LLM 稿，避免过短
+# Hợp nhất bản thảo quy tắc và bản nháp LLM để tránh quá ngắn
 def merge_visual_prompts(rule_prompt: str, llm_prompt: str, *, min_len: int = 100) -> str:
     rule = normalize_visual_prompt_text(rule_prompt)
     llm = normalize_visual_prompt_text(llm_prompt)
@@ -270,7 +270,7 @@ async def resolve_visual_prompt_for_asset(
     strict_llm: bool = False,
     db: AsyncSession | None = None,
 ) -> str:
-    """解析资产生图用的用户描述（过短/模板化则规则 + LLM 补全）。"""
+    """Phân tích cú pháp mô tả người dùng được sử dụng để ánh xạ nội dung (quy tắc quá ngắn/theo mẫu + hoàn thành LLM)."""
     kind = (asset.type or "character").lower()
     name = asset.name or ""
     params = asset.params if isinstance(asset.params, dict) else {}

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""用量行写入：唯一写 usage_events 的入口。"""
+"""Cách viết dòng sử dụng: mục duy nhất để viết use_events."""
 from __future__ import annotations
 
 import json
@@ -39,7 +39,7 @@ async def record_line(
             total = s.billing_est_llm_tokens
             estimated = True
         elif billing_key == "seedream":
-            # TokenFree /responses 常回 0 token；按张价在 charge_fen_for_usage 计算
+            # TokenFree /responses thường trả về 0 token; được tính ở mức charge_fen_for_usage dựa trên giá mỗi vé
             estimated = True
         elif billing_key == "tts":
             total = s.billing_est_tts_tokens
@@ -93,7 +93,7 @@ async def record_llm_chat_line(
     project_id: int | None = None,
     tokens: int | None = None,
 ) -> UsageEvent | None:
-    """在 billing_scope 内记录一次 LLM 调用；无 scope 时跳过（由调用方聚合计费）。"""
+    """Ghi lại cuộc gọi LLM trong Billing_scope; bỏ qua nếu không có phạm vi (tổng hóa đơn của người gọi)."""
     if get_current_task_run_id() is None:
         return None
     s = get_settings()
@@ -110,7 +110,7 @@ async def record_llm_chat_line(
     )
 
 
-# 兼容旧调用名
+# Tương thích với tên gọi cũ
 async def record_usage(
     db: AsyncSession,
     *,

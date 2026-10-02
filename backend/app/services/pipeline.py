@@ -49,7 +49,7 @@ from app.services.bgm import clip_shot_bgm, resolve_bgm_path
 
 logger = logging.getLogger(__name__)
 
-# 成片 FFmpeg 被 SIGTERM 打断时的自动重试次数
+# Số lần thử lại tự động khi FFmpeg bị gián đoạn bởi SIGTERM
 _COMPOSE_SIGTERM_MAX_ATTEMPTS = 3
 
 _cancelled: set[int] = set()
@@ -164,7 +164,7 @@ class PipelineCancelled(Exception):
 
 
 def cancel_pipeline(project_id: int) -> bool:
-    """标记项目取消；流水线由任务平台 executor 驱动，无进程内任务可停，恒返回 False。"""
+    """Đánh dấu dự án bị hủy bỏ; quy trình được điều khiển bởi người thực thi nền tảng tác vụ, không có tác vụ nào đang trong quá trình dừng và nó luôn trả về Sai."""
     _cancelled.add(project_id)
     return False
 
@@ -178,7 +178,7 @@ def _is_image_text(project: Project) -> bool:
 
 
 def _kepu_seedance_sfx_audio(project: Project | None = None) -> bool:
-    """科普 full：向 Seedance 要操作/环境音效（不含口播与 BGM）。"""
+    """Khoa học phổ thông đầy đủ: Hỏi Seedance về hiệu ứng âm thanh vận hành/môi trường (không bao gồm lời nói và BGM)."""
     if project is not None and _is_image_text(project):
         return False
     return bool(get_settings().kepu_seedance_sfx_audio)
@@ -204,7 +204,7 @@ def _project_voice(project: Project) -> str:
 
 
 def clamp_shot_duration(duration: float, *, pipeline_mode: str, tpl_min: int, tpl_max: int) -> float:
-    """将单镜时长钳到模板区间；完整模式再压到科普节奏上限。"""
+    """Kẹp thời lượng một lần chụp vào phạm vi mẫu; sau đó nhấn chế độ đầy đủ đến giới hạn trên của nhịp điệu khoa học phổ biến."""
     settings = get_settings()
     if pipeline_mode == "image_text":
         lo = IMAGE_TEXT_DURATION_MIN
@@ -216,7 +216,7 @@ def clamp_shot_duration(duration: float, *, pipeline_mode: str, tpl_min: int, tp
 
 
 def _merge_subtitle_preset(sub_cfg: dict, preset: str) -> dict:
-    """科普字幕预设覆盖模板 subtitle_config。"""
+    """Mẫu lớp phủ cài sẵn phụ đề khoa học phổ biến subtitle_config."""
     out = dict(sub_cfg or {})
     key = (preset or "").strip().lower()
     if key == "large":
@@ -237,7 +237,7 @@ def _kepu_video_prompt(
     camera: str,
     ambient_only: bool,
 ) -> str:
-    """科普提交 Seedance：后期叠字，禁止模型烧录字幕。"""
+    """Nguồn gốc của bài đăng khoa học phổ biến: Lớp phủ các từ ở giai đoạn sau và cấm người mẫu ghi phụ đề."""
     return segplan.build_seedance_prompt(
         segplan.normalize_kepu_subtitle_cue(script or ""),
         style_prefix=style_prefix,
@@ -264,7 +264,7 @@ def _full_narration_path(project_id: int) -> Path:
 
 
 def join_shot_narrations(narrations: list[str]) -> str:
-    """Merge per-shot旁白 into one continuous TTS script (punctuation = natural breath)."""
+    """Hợp nhất tường thuật từng cảnh quay thành một tập lệnh TTS liên tục (dấu câu = hơi thở tự nhiên)."""
     parts: list[str] = []
     for raw in narrations:
         t = (raw or "").strip()
@@ -319,7 +319,7 @@ async def _synthesize_continuous_audio(
             raise RuntimeError("整片配音生成失败")
         if src.resolve() != dest.resolve():
             dest.write_bytes(src.read_bytes())
-        # 新合成必须复查近静音：TTS 偶发返回极低音量音频，静默合成会产出无声成片
+        # Các tác phẩm mới phải được xem xét về mức độ gần như im lặng: TTS đôi khi trả về âm thanh có âm lượng rất thấp và các tác phẩm im lặng tạo ra cảnh quay im lặng
         if is_near_silent_audio(dest):
             raise RuntimeError("整片配音近静音（音量异常），请重新配音")
 
@@ -363,7 +363,7 @@ async def _resume_plan(project_id: int) -> tuple[bool, bool, bool, bool]:
         image_text = _is_image_text(project)
         shots = list(project.shots)
         has_images = all(shot_image_ready(s) for s in shots)
-        # 与计费 resolve_kepu_billing_phase 共用旁白就绪规则
+        # Chia sẻ quy tắc sẵn sàng tường thuật với giải quyết thanh toán_kepu_billing_phase
         has_audio = project_audio_ready(project)
         has_videos = all(shot_video_ready(s) for s in shots)
         skip_script = len(shots) > 0
@@ -374,7 +374,7 @@ async def _resume_plan(project_id: int) -> tuple[bool, bool, bool, bool]:
 
 @storage.without_intermediate_oss
 async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
-    """跑科普流水线；phase 指定时只执行该计费阶段，避免冻 A 跑 B。"""
+    """Chạy kênh phổ biến khoa học; khi giai đoạn được chỉ định, chỉ giai đoạn thanh toán sẽ được thực thi để tránh đóng băng A và chạy B."""
     from app.services.kepu_stages import normalize_kepu_pipeline_phase
 
     try:
@@ -429,7 +429,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
             },
         )
 
-        # 显式 phase：只跑对应阶段并暂停，保证与预扣一致
+        # Giai đoạn rõ ràng: chỉ chạy giai đoạn tương ứng và tạm dừng để đảm bảo tính nhất quán với việc khấu trừ
         if requested == "assets":
             if not skip_assets:
                 await _parallel_image_and_audio(project_id)
@@ -451,7 +451,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
 
         if requested == "videos":
             if not skip_assets:
-                # 预扣按视频，但旁白/出图未齐：先补 assets 并停下，避免冻视频款去跑视频
+                # Trích trước video nhưng phần tường thuật/hình ảnh chưa đầy đủ: thêm nội dung trước rồi dừng để tránh bị đơ video và chạy video
                 await _parallel_image_and_audio(project_id)
                 await _ensure_not_cancelled(project_id)
                 await publish_progress(
@@ -507,7 +507,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
             )
             return
 
-        # 无 phase（旧任务/兼容）：每段只跑一步后暂停
+        # Không có pha (tác vụ cũ/tương thích): Mỗi đoạn chỉ chạy một bước rồi tạm dừng.
         if not skip_assets:
             await _parallel_image_and_audio(project_id)
             await _ensure_not_cancelled(project_id)
@@ -559,8 +559,8 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
             {"event": "done", "percent": 100, "video_url": await _final_url(project_id)},
         )
     except (PipelineCancelled, asyncio.CancelledError):
-        # 落项目态、推 SSE 后必须 re-raise：本函数由任务平台 executor 驱动，
-        # 吞掉会让 TaskRun 误判 succeeded 扣费，并破坏 asyncio 任务取消语义。
+        # Bạn phải raise lại sau khi bỏ trạng thái dự án và đẩy SSE: Chức năng này được điều khiển bởi người thực thi nền tảng tác vụ.
+        # Nuốt sẽ khiến TaskRun đánh giá sai việc khấu trừ thành công và phá hủy ngữ nghĩa hủy tác vụ asyncio.
         logger.info("pipeline cancelled project=%s", project_id)
         async with AsyncSessionLocal() as db:
             project = await db.get(Project, project_id)
@@ -687,7 +687,7 @@ async def _script_stage(project_id: int) -> None:
             duration_max=d_max,
             max_shot_duration=d_max,
             pipeline_mode=mode,
-            # 仅用户显式覆盖才当强制人设；模板角色交给 llm_system_addon 与主题由 AI 决定
+            # Chỉ ghi đè người dùng rõ ràng là bắt buộc; vai trò mẫu được trao cho llm_system_addon và chủ đề được xác định bởi AI
             character_hint=char_hint,
             extra_requirements=extra,
             consistency_mode=consist,
@@ -703,7 +703,7 @@ async def _script_stage(project_id: int) -> None:
         tpl_bgm = ""
         if tpl and isinstance(tpl.audio_config, dict):
             tpl_bgm = str(tpl.audio_config.get("bgm_mood") or "").strip()
-        # 风格页用户选曲优先，其次 LLM / 模板推断
+        # Người dùng trang phong cách sẽ ưu tiên lựa chọn bài hát, sau đó là suy luận LLM/mẫu
         user_bgm = (getattr(project, "bgm_lock", None) or "").strip()
         project.bgm_lock = (
             user_bgm
@@ -780,12 +780,12 @@ def _template_seedream_field(project: Project, key: str) -> str:
 
 
 def _effective_character_prompt(project: Project) -> str:
-    """仅用户在项目里写的角色覆盖；模板角色不当作用户强制约束。"""
+    """Chỉ những vai trò do người dùng viết trong dự án mới bị ghi đè; vai trò mẫu không được coi là ràng buộc bắt buộc đối với người dùng."""
     return (getattr(project, "character_prompt", None) or "").strip()
 
 
 def resolve_script_character_bible(user_character_prompt: str, llm_bible: str = "") -> str:
-    """用户覆盖优先，否则用分镜 LLM 的 character_bible。"""
+    """Ghi đè người dùng được ưu tiên, nếu không thì character_bible của LLM bảng phân cảnh sẽ được sử dụng."""
     user = (user_character_prompt or "").strip()
     if user:
         return user
@@ -846,7 +846,7 @@ def _db_write_lock() -> asyncio.Lock:
 
 
 async def _parallel_image_and_audio(project_id: int) -> None:
-    """逐镜出图（后镜参考上一镜静帧），同时整片连贯配音。"""
+    """Các bức ảnh được chụp từng shot (ảnh sau ám chỉ khung hình tĩnh của ảnh trước đó) và toàn bộ phim được lồng tiếng liên tục."""
     await _set_status(project_id, ProjectStatus.IMAGING, 18, "PARALLEL_ASSETS")
     cfg = get_settings()
     ark = get_ark()
@@ -900,7 +900,7 @@ async def _parallel_image_and_audio(project_id: int) -> None:
     img_sem = asyncio.Semaphore(max(1, cfg.pipeline_image_concurrency))
     done_img = 0
     progress_lock = asyncio.Lock()
-    # 静图成片与完整模式都合成连贯旁白；已有音轨则跳过
+    # Cả hai chế độ hình ảnh tĩnh và chế độ hoàn chỉnh đều tổng hợp lời tường thuật mạch lạc; các bản âm thanh hiện có sẽ bị bỏ qua.
     need_audio = not _continuous_audio_ok(project_id)
 
     async def bump_images() -> None:
@@ -951,7 +951,7 @@ async def _parallel_image_and_audio(project_id: int) -> None:
         await bump_images()
 
     async def one_image(meta: dict, ref_urls: list[str]) -> SimpleNamespace | None:
-        """生成一镜；返回静帧代理供下一镜参考。"""
+        """Tạo một cảnh quay; trả lại proxy khung hình tĩnh để tham khảo trong lần chụp tiếp theo."""
         await _ensure_not_cancelled(project_id)
         if meta.get("has_image"):
             await bump_images()
@@ -987,7 +987,7 @@ async def _parallel_image_and_audio(project_id: int) -> None:
         return SimpleNamespace(image_ark_url=img.remote_url, image_url=img.local_url)
 
     async def run_images() -> None:
-        """逐镜出图：后镜 Seedream 参考上一镜静帧。"""
+        """Trích xuất ảnh được chụp theo từng ảnh: Ảnh phía sau Seedream đề cập đến khung hình tĩnh của ảnh trước đó."""
         prev_proxy = None
         for meta in shot_meta:
             if meta.get("has_image"):
@@ -1077,7 +1077,7 @@ async def _parallel_image_and_audio(project_id: int) -> None:
 
 
 async def _parallel_videos(project_id: int) -> None:
-    """按镜序逐个出视频；后镜参考上一镜尾帧。"""
+    """Phát từng video một theo thứ tự quay; ảnh chụp phía sau đề cập đến khung hình cuối cùng của ảnh chụp trước đó."""
     from app.services.kepu_stages import VIDEO_SKIP_REASON_PRIVACY
 
     await _set_status(project_id, ProjectStatus.VIDEOING, 55, "VIDEOING")
@@ -1092,7 +1092,7 @@ async def _parallel_videos(project_id: int) -> None:
         )
         project = result.scalar_one()
         tpl = project.template
-        # 科普 full：Seedance 出操作音效，口播改后期 TTS
+        # Khoa học phổ thông đầy đủ: Seedance có hiệu ứng âm thanh khi vận hành và phát sóng bằng miệng được đổi thành TTS hậu kỳ
         generate_audio = _kepu_seedance_sfx_audio(project)
         ambient_only = generate_audio
         consistency = template_consistency_mode(tpl) == "character" and bool(
@@ -1142,7 +1142,7 @@ async def _parallel_videos(project_id: int) -> None:
             done += 1
             pct = 55 + int(30 * done / max(total, 1))
             if meta.get("video_skip_reason") == VIDEO_SKIP_REASON_PRIVACY:
-                # 上一轮已确认真人隐私拦截：不再重提上游，直接沿用静图
+                # Vòng đánh chặn quyền riêng tư của người thực cuối cùng đã được xác nhận: không đề cập đến thượng nguồn nữa, chỉ tiếp tục sử dụng hình ảnh tĩnh
                 await publish_progress(
                     project_id,
                     {
@@ -1224,7 +1224,7 @@ async def _parallel_videos(project_id: int) -> None:
                     meta["shot_no"],
                     msg[:240],
                 )
-                # 持久跳过标记：后续轮次不再重提上游（否则每轮都被拦截、白等配额）
+                # Dấu bỏ qua liên tục: việc ngược dòng sẽ không được nhắc lại ở các vòng tiếp theo (nếu không mỗi vòng sẽ bị chặn và hạn ngạch sẽ bị lãng phí)
                 async with _db_write_lock():
                     async with AsyncSessionLocal() as db:
                         skipped_shot = await db.get(Shot, meta["id"])
@@ -1434,7 +1434,7 @@ async def _compose_stage(project_id: int) -> None:
             project.status = ProjectStatus.DONE
             project.progress = 100
             await db.commit()
-# 遇到 SIGTERM 自动重试，避免部署重启等打断直接落失败
+# Tự động thử lại khi gặp SIGTERM để tránh những gián đoạn như khởi động lại quá trình triển khai và lỗi ngay lập tức.
 async def _run_ffmpeg_compose_with_retry(project_id: int, work) -> None:
     last_exc: BaseException | None = None
     for attempt in range(1, _COMPOSE_SIGTERM_MAX_ATTEMPTS + 1):
@@ -1462,7 +1462,7 @@ async def _run_ffmpeg_compose_with_retry(project_id: int, work) -> None:
             )
             await asyncio.sleep(float(attempt) * 2.0)
         except Exception as exc:  # noqa: BLE001
-            # 历史错误文案里也可能带 signal 15
+            # Văn bản lỗi lịch sử cũng có thể bao gồm tín hiệu 15
             if is_ffmpeg_interrupted_error(exc) and attempt < _COMPOSE_SIGTERM_MAX_ATTEMPTS:
                 last_exc = exc
                 logger.warning(
@@ -1488,7 +1488,7 @@ async def _run_ffmpeg_compose_with_retry(project_id: int, work) -> None:
 
 @storage.without_intermediate_oss
 async def regen_shot_image(project_id: int, shot_id: int) -> None:
-    """重绘单镜首帧图，并清掉该镜视频以便后续重生。"""
+    """Vẽ lại khung hình đầu tiên của một cảnh quay và xóa video để tái sinh tiếp theo."""
     ark = get_ark()
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -1500,7 +1500,7 @@ async def regen_shot_image(project_id: int, shot_id: int) -> None:
         shot = next((s for s in project.shots if s.id == shot_id), None)
         if not shot:
             raise ValueError("shot not found")
-        # 生成前先备好参考，避免长等待占着同一条 DB 连接
+        # Hãy chuẩn bị một tham chiếu trước khi tạo để tránh phải chờ đợi lâu cho cùng một kết nối DB.
         shot_no = shot.shot_no
         ref_urls = image_refs_for_shot(previous_usable_shot(list(project.shots), shot_no), _project_base_refs(project))
         negative = _project_image_negative(project)
@@ -1530,14 +1530,14 @@ async def regen_shot_image(project_id: int, shot_id: int) -> None:
             shot.image_ark_url = img.remote_url
             shot.video_url = None
             shot.last_frame_url = None
-            shot.video_skip_reason = None  # 换了首帧图，真人隐私可能已消失
+            shot.video_skip_reason = None  # Thay đổi khung hình đầu tiên, quyền riêng tư của người thật có thể đã biến mất
             shot.status = ShotStatus.IMAGE_READY
             shot.version += 1
             project.status = ProjectStatus.IMAGE_READY
             project.final_video_url = None
             await db.commit()
     s = get_settings()
-    # 上游成本已真实发生：即使项目刚被取消也要记账，随后抛出让任务收敛取消态
+    # Chi phí ngược dòng thực tế đã phát sinh: ngay cả khi dự án vừa bị hủy cũng phải được ghi lại, sau đó trạng thái hủy sẽ được ném ra để cho phép nhiệm vụ hội tụ.
     await _record_seedream_usage(
         project_id,
         image_result=img,
@@ -1550,7 +1550,7 @@ async def regen_shot_image(project_id: int, shot_id: int) -> None:
 
 @storage.without_intermediate_oss
 async def regen_shot_video(project_id: int, shot_id: int) -> None:
-    """重绘单镜视频；后镜参考上一镜尾帧。"""
+    """Vẽ lại video ống kính đơn; ống kính phía sau đề cập đến khung hình cuối cùng của ống kính trước đó."""
     ark = get_ark()
     cfg = get_settings()
     async with AsyncSessionLocal() as db:
@@ -1621,14 +1621,14 @@ async def regen_shot_video(project_id: int, shot_id: int) -> None:
         if not cancelled:
             shot.video_url = local_video
             shot.last_frame_url = last
-            shot.video_skip_reason = None  # 视频成功生成，清除跳过标记
+            shot.video_skip_reason = None  # Video được tạo thành công, xóa dấu bỏ qua
             shot.status = ShotStatus.VIDEO_READY
             shot.version += 1
             project.final_video_url = None
             project.status = ProjectStatus.VIDEO_READY
             await db.commit()
     billing_key = "seedance2:video0" if generate_audio else "seedance2:video1"
-    # 上游成本已真实发生：即使项目刚被取消也要记账，随后抛出让任务收敛取消态
+    # Chi phí ngược dòng thực tế đã phát sinh: ngay cả khi dự án vừa bị hủy cũng phải được ghi lại, sau đó trạng thái hủy sẽ được ném ra để cho phép nhiệm vụ hội tụ.
     await _record_seedance_usage(
         project_id,
         billing_key=billing_key,
@@ -1748,7 +1748,7 @@ async def regen_project_audio_and_compose(project_id: int) -> None:
         raise
 
 
-# 拼接失败时把项目落成 FAILED，避免长期卡在 COMPOSING 无法点「重新拼接」
+# Khi nối không thành công, hãy đặt dự án thành FAILED để tránh bị kẹt trong COMPOSING lâu và không bấm được "Resplice"
 async def _fail_project_compose(project_id: int, exc: Exception) -> None:
     raw = str(exc)
     if is_ffmpeg_interrupted_error(exc):

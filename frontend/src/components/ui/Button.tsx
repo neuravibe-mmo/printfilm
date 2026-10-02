@@ -28,7 +28,7 @@ type ButtonAsLink = CommonProps & {
 
 type Props = ButtonAsButton | ButtonAsLink
 
-// 组装按钮 class
+// Lớp nút lắp ráp
 function buttonClass(props: {
   variant: ButtonVariant
   size: ButtonSize
@@ -47,7 +47,7 @@ function buttonClass(props: {
   )
 }
 
-/** PRINTFILM 统一按钮：lime / dark / ghost / outline / text；可作 Link */
+/** Nút thống nhất PRINTFILM: vôi / tối / ma / phác thảo / văn bản; có thể được sử dụng làm liên kết */
 export default function Button(props: Props) {
   const {
     children,

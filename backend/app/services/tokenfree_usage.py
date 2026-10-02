@@ -1,4 +1,4 @@
-"""TokenFree / New API 上游额度、日用量与人民币分换算。"""
+"""TokenFree / Hạn ngạch ngược dòng API mới, mức sử dụng hàng ngày và chuyển đổi điểm RMB."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ DEFAULT_USD_CNY = 7.0
 
 
 def usd_cny_rate(settings: Settings | None = None) -> float:
-    """美元兑人民币，用于把 New API quota/USD 折成上游成本（分）。"""
+    """USD sang RMB, được sử dụng để chuyển đổi hạn ngạch API mới/USD thành chi phí ngược dòng (xu)."""
     s = settings or get_settings()
     try:
         rate = float(getattr(s, "billing_usd_cny", None) or DEFAULT_USD_CNY)
@@ -35,12 +35,12 @@ def usd_cny_rate(settings: Settings | None = None) -> float:
 
 
 def tokenfree_usage_configured() -> bool:
-    """已填写 TokenFree API Key 即可拉官方用量，无需火山 AK/SK。"""
+    """Khi bạn đã điền Khóa API TokenFree, bạn có thể sử dụng chính thức mà không cần Volcano AK/SK."""
     return bool(resolve_tokenfree_api_key())
 
 
 def quota_to_cost_fen(quota: Any, settings: Settings | None = None) -> int:
-    """New API quota → 人民币分；500000 quota = 1 USD。"""
+    """Hạn ngạch API mới → Điểm RMB; Hạn ngạch 500000 = 1 USD."""
     try:
         amount = int(quota or 0)
     except (TypeError, ValueError):
@@ -52,7 +52,7 @@ def quota_to_cost_fen(quota: Any, settings: Settings | None = None) -> int:
 
 
 def billing_usage_to_cost_fen(total_usage: Any, settings: Settings | None = None) -> int:
-    """OpenAI 兼容 total_usage（单位 0.01 USD）→ 人民币分。"""
+    """Total_usage tương thích với OpenAI (đơn vị 0,01 USD) → Điểm RMB."""
     try:
         raw = float(total_usage)
     except (TypeError, ValueError):
@@ -63,14 +63,14 @@ def billing_usage_to_cost_fen(total_usage: Any, settings: Settings | None = None
 
 
 def usage_dates_are_ignored(first: float, second: float, window: float, *, eps: float = 0.05) -> bool:
-    """单日与整段窗口用量几乎相同，视为站点忽略了 start_date/end_date。"""
+    """Việc sử dụng trong một ngày gần giống như trong toàn bộ cửa sổ, có nghĩa là trang web bỏ qua ngày bắt đầu/ngày kết thúc."""
     if abs(window) <= eps:
         return False
     return abs(first - second) <= eps and abs(first - window) <= eps
 
 
 def _item_day_key(item: dict[str, Any]) -> str | None:
-    """从 New API quota_data / 日志行解析 YYYY-MM-DD。"""
+    """Phân tích cú pháp YYYY-MM-DD từ dòng Quota_data/log API mới."""
     for key in ("date", "Day", "day"):
         raw = item.get(key)
         if isinstance(raw, str) and len(raw) >= 10:
@@ -93,7 +93,7 @@ def aggregate_quota_data_by_day(
     items: list[dict[str, Any]],
     settings: Settings | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """按日汇总 New API quota_data / 消费日志。"""
+    """Tóm tắt hàng ngày Hạn ngạch_data/nhật ký tiêu thụ API mới."""
     out: dict[str, dict[str, Any]] = {}
     for item in items:
         if not isinstance(item, dict):
@@ -129,7 +129,7 @@ def aggregate_quota_data_by_day(
 
 
 def used_quota_from_raw_json(raw_json: str | None) -> int | None:
-    """从日快照 raw_json 读取累计 used_quota。"""
+    """Đọc used_quota tích lũy từ ảnh chụp nhanh hàng ngày raw_json."""
     if not raw_json:
         return None
     try:
@@ -148,7 +148,7 @@ def used_quota_from_raw_json(raw_json: str | None) -> int | None:
 
 
 def day_start_used_quota_from_raw_json(raw_json: str | None) -> int | None:
-    """读取当日开始时的累计 used_quota（累计差分用）。"""
+    """Đọc hạn ngạch đã sử dụng tích lũy (đối với chênh lệch tích lũy) vào đầu ngày."""
     if not raw_json:
         return None
     try:
@@ -167,7 +167,7 @@ def day_start_used_quota_from_raw_json(raw_json: str | None) -> int | None:
 
 
 def _list_from_payload(payload: Any) -> list[dict[str, Any]]:
-    """从 data/items/logs 中取出对象列表；success=false 视为空。"""
+    """Lấy danh sách đối tượng từ data/items/logs; thành công=false được coi là trống."""
     if isinstance(payload, dict) and payload.get("success") is False:
         return []
     inner = payload
@@ -186,7 +186,7 @@ def _list_from_payload(payload: Any) -> list[dict[str, Any]]:
 
 
 def _billing_dict(payload: Any) -> dict[str, Any] | None:
-    """解开 dashboard 计费 JSON；失败或 success=false 返回 None。"""
+    """Giải nén JSON thanh toán trên trang tổng quan; trả về Không có nếu thất bại hoặc thành công=false."""
     if not isinstance(payload, dict):
         return None
     if payload.get("success") is False:
@@ -198,7 +198,7 @@ def _billing_dict(payload: Any) -> dict[str, Any] | None:
 
 
 async def _tokenfree_get(path: str, *, params: dict[str, Any] | None = None) -> Any:
-    """GET TokenFree 站点路径；Bearer 使用模型页同一把 Key。"""
+    """NHẬN đường dẫn trang web TokenFree; Bearer sử dụng Key giống như trang mô hình."""
     key = resolve_tokenfree_api_key()
     if not key:
         raise RuntimeError("未配置 TokenFree API Key，请先在「模型」填写")
@@ -216,7 +216,7 @@ async def _tokenfree_get(path: str, *, params: dict[str, Any] | None = None) -> 
 
 
 async def _try_tokenfree_get(path: str, *, params: dict[str, Any] | None = None) -> Any | None:
-    """可选接口：401/未实现时返回 None，不中断主流程。"""
+    """Giao diện tùy chọn: 401/Return None khi không được triển khai, không làm gián đoạn quá trình chính."""
     try:
         return await _tokenfree_get(path, params=params)
     except RuntimeError as exc:
@@ -225,7 +225,7 @@ async def _try_tokenfree_get(path: str, *, params: dict[str, Any] | None = None)
 
 
 async def fetch_tokenfree_account(settings: Settings | None = None) -> dict[str, Any]:
-    """查询 TokenFree 剩余额度（复用模型 Key）。"""
+    """Truy vấn số dư còn lại của TokenFree (tái sử dụng Key mô hình)."""
     s = settings or get_settings()
     quota: int | None = None
     used_quota: int | None = None
@@ -307,7 +307,7 @@ async def fetch_tokenfree_account(settings: Settings | None = None) -> dict[str,
 
 
 async def _fetch_billing_usage(start: date, end: date) -> float | None:
-    """GET /v1/dashboard/billing/usage，返回 total_usage（0.01 USD）。"""
+    """GET /v1/dashboard/billing/usage, trả về tổng_usage (0,01 USD)."""
     v1 = TOKENFREE_BASE_URL.rstrip("/")
     payload = await _try_tokenfree_get(
         f"{v1}/dashboard/billing/usage",
@@ -327,7 +327,7 @@ async def fetch_tokenfree_daily_usage(
     until: date,
     settings: Settings | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """拉取区间内官方日用量；日期参数无效时返回空，由调用方做累计差分。"""
+    """Kéo mức sử dụng hàng ngày chính thức trong phạm vi; khi tham số ngày không hợp lệ, nó sẽ trả về trống và người gọi sẽ tạo ra sự khác biệt tích lũy."""
     s = settings or get_settings()
     start_ts = int(datetime.combine(since, datetime.min.time(), tzinfo=UTC).timestamp())
     end_ts = int(datetime.combine(until + timedelta(days=1), datetime.min.time(), tzinfo=UTC).timestamp())

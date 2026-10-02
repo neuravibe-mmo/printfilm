@@ -3,7 +3,7 @@ import { BarChart3, Clapperboard, LayoutDashboard, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/useI18n";
 
-/** 仪表盘主板块 */
+/** Phần chính của bảng điều khiển */
 export type DashboardSection = "overview" | "usage" | "finance" | "projects";
 
 type DashboardSectionTabsProps = {
@@ -11,7 +11,7 @@ type DashboardSectionTabsProps = {
   onChange: (next: DashboardSection) => void;
 };
 
-/** 仪表盘板块切换 */
+/** Chuyển đổi phần bảng điều khiển */
 export function DashboardSectionTabs({ value, onChange }: DashboardSectionTabsProps) {
   const { m } = useI18n();
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""从上游渠道拉取可用模型目录（TokenFree / OpenAI 兼容）。"""
+"""Kéo thư mục mô hình có sẵn từ kênh ngược dòng (tương thích với TokenFree / OpenAI)."""
 from __future__ import annotations
 
 import logging
@@ -30,7 +30,7 @@ async def _resolve_channel_credentials(
     base_url: str,
     api_key_override: str | None,
 ) -> tuple[str, str, str]:
-    """返回 (protocol, base_url, api_key)。"""
+    """Trả về (giao thức, base_url, api_key)."""
     proto = (protocol or "auto").strip().lower() or "auto"
     base = (base_url or "").strip().rstrip("/")
     key = (api_key_override or "").strip()
@@ -61,7 +61,7 @@ async def _list_openai_compatible_models(
     api_key: str,
     capability: str = "all",
 ) -> list[dict[str, str]]:
-    """GET {base}/models，按 OpenAI 兼容响应解析。"""
+    """NHẬN {base}/models, được phân tích cú pháp bằng phản hồi tương thích với OpenAI."""
     if not base_url:
         raise RuntimeError("请先填写 Base URL")
     if not api_key:
@@ -110,7 +110,7 @@ async def list_upstream_models(
     api_key_override: str | None = None,
     capability: str = "all",
 ) -> list[dict[str, str]]:
-    """按渠道协议拉取可用模型。"""
+    """Kéo các mẫu có sẵn theo thỏa thuận kênh."""
     proto, base, key = await _resolve_channel_credentials(
         db,
         channel_id=channel_id,

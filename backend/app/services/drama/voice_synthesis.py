@@ -1,4 +1,4 @@
-"""漫剧音色资产：音色设计或 TTS 合成参考音频（供 Seedance reference_audio 使用）。"""
+"""Nội dung âm thanh truyện tranh: Thiết kế âm thanh hoặc Âm thanh tham chiếu tổng hợp TTS (để sử dụng bởi Seedance reference_audio)."""
 from __future__ import annotations
 import logging
 import re
@@ -21,11 +21,11 @@ from app.services.drama.voice_reference_audio import finalize_voice_reference_ur
 from app.services.voices import infer_drama_speaker_from_prompt
 logger = logging.getLogger(__name__)
 NAME_SUFFIX_PATTERN = re.compile(r"(音色|的声音|语音)$")
-# 从 voice 资产名还原角色名（如「禹音色」→「禹」）
+# Khôi phục tên nhân vật từ tên nội dung giọng nói (chẳng hạn như "Yu Voice" → "Yu")
 def normalize_character_name(name: str | None) -> str:
     raw = (name or "我").strip() or "我"
     return NAME_SUFFIX_PATTERN.sub("", raw).strip() or "我"
-# 生成 Seedance 参考音试听句（须 ≥2s，避免 r2v 拒收过短音频）
+# Tạo các câu thử nghiệm âm thanh tham chiếu Seedance (phải ≥2s để tránh r2v từ chối âm thanh quá ngắn)
 def build_voice_sample_line_short(character_name: str | None = None) -> str:
     name = normalize_character_name(character_name)
     display = name[:8] if len(name) > 8 else name
@@ -33,7 +33,7 @@ def build_voice_sample_line_short(character_name: str | None = None) -> str:
         f"Xin chào, tôi là {display}. "
         "Hãy lắng nghe ngữ điệu và chất giọng của tôi, sau này tôi sẽ dùng giọng nói này để kể câu chuyện."
     )
-# 生成角色差异化试听台词
+# Tạo dòng thử giọng khác biệt cho nhân vật
 def build_voice_sample_text(
     voice_prompt: str,
     character_name: str | None = None,
@@ -63,7 +63,7 @@ def build_voice_sample_text(
     else:
         line = f"{name}: Xin hãy lắng nghe ngữ điệu và chất giọng của tôi."
     return line[:180]
-# 解析可用于 voice_design image_prompt 的公网角色图 URL
+# Phân tích cú pháp URL bản đồ vai trò mạng công cộng có thể được sử dụng cho voice_design image_prompt
 def resolve_character_image_url(character: DramaAsset | None) -> str | None:
     if not character:
         return None
@@ -88,7 +88,7 @@ async def _synthesize_via_voice_design(
     display_name: str,
     image_url: str | None,
 ) -> tuple[str, str]:
-    """调用音色设计 API，返回 (audio_url, designed_speaker_id)。"""
+    """Gọi API thiết kế âm thanh và trả về (audio_url,design_loa_id)."""
     pool = parse_speaker_pool(settings.volc_tts_voice_design_speaker_ids)
     speaker_slot = resolve_speaker_slot(
         asset.id,
@@ -136,14 +136,14 @@ async def synthesize_voice_asset(
     character_name: str | None = None,
     character_asset: DramaAsset | None = None,
 ) -> DramaAsset:
-    """按提示词合成音色参考音频并写回 voice 资产。"""
+    """Tổng hợp âm thanh tham chiếu âm sắc theo các từ gợi ý và ghi lại vào nội dung giọng nói."""
     settings = get_settings()
     ark = get_ark()
     prompt = (voice_prompt or "").strip()
     if not prompt:
         raise ValueError("缺少音色描述 prompt")
     display_name = normalize_character_name(character_name or asset.name)
-    # Seedance reference_audio 须 ≥1.8s（落盘目标 ≥2s）；默认用较长试听句
+    # Seedance reference_audio phải ≥1,8s (vị trí mục tiêu ≥2s); mặc định là sử dụng bản án xét xử dài hơn
     text = (sample_text or "").strip() or build_voice_sample_text(prompt, display_name, short=False)
     image_url = resolve_character_image_url(character_asset)
     audio_url: str | None = None

@@ -7,13 +7,13 @@ type Props = {
   message: string | null | undefined
   className?: string
   style?: CSSProperties
-  /** 内联链接文案 */
+  /** Viết bài liên kết nội tuyến */
   linkText?: string
-  /** 使用 span 而非 p（工具栏条内联错误） */
+  /** Sử dụng span thay vì p (lỗi nội tuyến trên thanh công cụ) */
   inline?: boolean
 }
 
-/** 错误提示：余额不足时附带快速跳转充值链接 */
+/** Thông báo lỗi: Liên kết nạp tiền nhảy nhanh được đính kèm khi số dư không đủ. */
 export default function BillingErrorNotice({
   message,
   className = 'pf-error',

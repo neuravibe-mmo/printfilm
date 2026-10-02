@@ -1,4 +1,4 @@
-/** 选中节点顶部：本地上传 + 从全局资产库选择 + 角色音色生成/试听 */
+/** Chọn phần trên cùng của nút: tải lên cục bộ + lựa chọn từ thư viện nội dung toàn cầu + tạo/nghe âm ký tự */
 import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
 import { AudioLines, FolderOpen, Loader2, Upload } from 'lucide-react'
 import { dramaApi } from '../../../../api/drama'
@@ -16,13 +16,13 @@ import { useI18n } from '../../../../i18n'
 type CanvasNodeUploadBarProps = {
   nodeId: string
   kind: CanvasNodeKind
-  /** 角色节点已绑定音色名 */
+  /** Nút ký tự đã được gắn với tên âm thanh */
   voiceLabel?: string | null
-  /** 角色节点已绑定音色试听地址 */
+  /** Nút ký tự đã được liên kết với địa chỉ thử âm sắc. */
   voiceUrl?: string | null
 }
 
-/** 渲染选中节点的上传与资产库操作条 */
+/** Hiển thị thanh thao tác thư viện tài sản và tải lên của nút đã chọn */
 export function CanvasNodeUploadBar({
   nodeId,
   kind,
@@ -31,9 +31,9 @@ export function CanvasNodeUploadBar({
 }: CanvasNodeUploadBarProps) {
   const { t } = useI18n()
   /*
-   * uploading 本地上传中
-   * pickerOpen 资产库弹窗
-   * voiceLoading 音色生成或拉取角色资产中
+   * đang tải lên Tải lên cục bộ
+   * pickerMở cửa sổ bật lên thư viện nội dung
+   * voiceLoading Tạo giọng nói hoặc lấy nội dung nhân vật
    */
   const {
     uploadNodeMedia,
@@ -77,7 +77,7 @@ export function CanvasNodeUploadBar({
       .finally(() => setUploading(false))
   }
 
-  // 一键 AI 生成音色并绑定到角色节点
+  // AI chỉ bằng một cú nhấp chuột sẽ tạo ra âm thanh và liên kết chúng với các nút ký tự
   async function handleGenerateVoice() {
     if (voiceLoading) return
     setVoiceLoading(true)

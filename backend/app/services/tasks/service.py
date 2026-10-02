@@ -37,12 +37,12 @@ def task_detail_options() -> tuple:
     )
 
 
-# payload 中标记 poller 成片收尾窗口截止时间的键
+# Chìa khóa trong tải trọng đánh dấu thời hạn kết thúc thời hạn của người thăm dò ý kiến
 FINALIZING_UNTIL_KEY = "finalizing_until"
 
 
 def task_finalizing_window_open(task: TaskRun, *, now: datetime | None = None) -> bool:
-    """任务是否处于 poller 的 finalizing 收尾窗口（成片正在下载落盘并记用量）。
+    """Liệu tác vụ có nằm trong cửa sổ hoàn thiện của cuộc thăm dò ý kiến hay không (phim hoàn chỉnh đang được tải xuống và quá trình sử dụng được ghi lại).
 
     窗口内收到取消不得直接全额退款：成片可能恰好在落盘，先退款会造成
     usage_events 悬空（settled=0）且钱货两失。应收敛取消动作，
@@ -64,7 +64,7 @@ def task_finalizing_window_open(task: TaskRun, *, now: datetime | None = None) -
 
 
 def clear_finalizing_window(payload: Any) -> dict:
-    """返回移除 finalizing 窗口标记后的 payload 副本（无标记时原样拷贝）。"""
+    """Trả về bản sao của tải trọng sau khi xóa dấu cửa sổ hoàn thiện (sao chép nguyên bản nếu không có dấu)."""
     data = dict(payload) if isinstance(payload, dict) else {}
     data.pop(FINALIZING_UNTIL_KEY, None)
     return data
@@ -99,7 +99,7 @@ async def create_task(
     *,
     commit: bool = True,
 ) -> TaskRun:
-    """创建任务并预写步骤。commit=False 时仅 flush，由调用方与业务状态同事务提交。"""
+    """Tạo nhiệm vụ và các bước viết trước. Khi commit=False, chỉ việc xóa được thực hiện và người gọi thực hiện giao dịch tương tự như trạng thái nghiệp vụ."""
     await _validate_task_scope(db, user, body)
     handler = get_task_handler(body.domain, body.task_type)
     if handler is None:
@@ -181,7 +181,7 @@ async def create_task(
     return await get_task_for_user(db, user, task.id)
 
 
-# 串行 batch 中上一镜完成后激活下一镜任务。
+# Trong đợt nối tiếp, nhiệm vụ bắn tiếp theo được kích hoạt sau khi lần bắn trước hoàn thành.
 async def activate_next_sequential_task(db: AsyncSession, batch_key: str | None, completed_index: int) -> None:
     if not batch_key:
         return
@@ -219,7 +219,7 @@ async def activate_next_sequential_task(db: AsyncSession, batch_key: str | None,
         return
 
 
-# 串行 batch 中某一镜失败后，终止后续仍 pending 的兄弟任务。
+# Sau khi một bản sao trong lô nối tiếp bị lỗi, các tác vụ kế tiếp vẫn đang chờ xử lý sẽ bị chấm dứt.
 async def fail_remaining_sequential_batch(
     db: AsyncSession,
     batch_key: str | None,
@@ -279,16 +279,16 @@ async def fail_remaining_sequential_batch(
     return changed
 
 
-# 进行中的分镜生成状态（重新生成会保留旧 video，不能当「已完成」误取消）
+# Trạng thái đang tạo bảng phân cảnh (việc tạo lại sẽ giữ lại video cũ và không thể hủy do nhầm lẫn là "đã hoàn thành")
 _ACTIVE_FRAGMENT_VIDEO_GEN = frozenset({"queued", "running", "generating"})
-# 分镜删除后需立即作废的在途态（含 awaiting_poll，避免上游成功后报「上下文丢失」）
+# Trạng thái đang chuyển tiếp cần được vô hiệu hóa ngay sau khi xóa bảng phân cảnh (bao gồm cả chờ_poll để tránh "mất ngữ cảnh" được báo cáo sau thành công ở thượng nguồn)
 _STALE_FRAGMENT_VIDEO_STATUSES = frozenset(
     {"pending", "leased", "running", "awaiting_poll", "cancel_requested"}
 )
 _STALE_FRAGMENT_REASON = "分镜已变更，请重新生成"
 
 
-# 从任务列与 payload 解析关联分镜 id。
+# Phân tích ID bảng phân cảnh được liên kết với tải trọng từ danh sách tác vụ.
 def task_fragment_ids(task: TaskRun) -> list[int]:
     ids: list[int] = []
     if task.fragment_id:
@@ -309,15 +309,15 @@ def task_fragment_ids(task: TaskRun) -> list[int]:
     return ids
 
 
-# 判断分镜视频任务是否应作废；返回取消原因，None 表示保留。
+# Xác định xem có nên hủy tác vụ video trong bảng phân cảnh hay không; trả lại lý do hủy, Không có nghĩa là dành riêng.
 def stale_pending_fragment_video_reason(frags: list[Any], task: Any | None = None) -> str | None:
-    """分镜已删 → 作废；全有成片且无进行中 generation、且非替换成片 → 跳过重复；否则保留。"""
+    """Storyboard đã bị xóa → vô hiệu; tất cả đều đã hoàn thiện và không có thế hệ nào đang diễn ra, và chúng không phải là phim thay thế → bỏ qua việc sao chép; nếu không thì giữ lại."""
     from app.services.drama.generation import fragment_generation_status
 
     if not frags:
         return _STALE_FRAGMENT_REASON
     payload = getattr(task, "payload", None) if task is not None else None
-    # 重新生成会保留旧 video，调度器不能当成重复任务取消
+    # Tái tạo sẽ giữ lại video cũ và người lên lịch không thể hủy video đó như một tác vụ định kỳ
     if isinstance(payload, dict) and payload.get("replace_existing_video"):
         return None
     if not all((getattr(frag, "video", None) or "").strip() for frag in frags):
@@ -329,7 +329,7 @@ def stale_pending_fragment_video_reason(frags: list[Any], task: Any | None = Non
     return "分镜已生成完成，跳过重复任务"
 
 
-# 将任务标记为因分镜变更而取消（立即终态，不走 cancel_requested）。
+# Đánh dấu tác vụ là đã hủy do thay đổi bảng phân cảnh (trạng thái cuối cùng ngay lập tức, không có cancel_requested).
 async def _mark_task_cancelled_stale(db: AsyncSession, task: TaskRun, reason: str, now: datetime) -> None:
     task.status = "cancelled"
     task.cancel_requested = True
@@ -347,7 +347,7 @@ async def _mark_task_cancelled_stale(db: AsyncSession, task: TaskRun, reason: st
         phase=task.current_step_key,
         message=reason[:500],
     )
-    # 作废终态必须结算预扣，否则 frozen 余额悬挂（如 #3328）
+    # Trạng thái cuối cùng bị vô hiệu phải được giải quyết khấu trừ, nếu không số dư bị đóng băng sẽ bị treo (chẳng hạn như #3328)
     if str(task.billing_status or "") == "frozen":
         from app.services.billing.settlement import settle_task
 
@@ -357,7 +357,7 @@ async def _mark_task_cancelled_stale(db: AsyncSession, task: TaskRun, reason: st
             logger.exception("settle_task after stale cancel failed task_id=%s", task.id)
 
 
-# 分镜删除/重切时作废仍引用旧 id 的在途 fragment_video（含轮询中），勿重试旧任务。
+# Khi xóa/cắt lại các đoạn, đoạn_video đang chuyển tiếp (bao gồm cả việc bỏ phiếu) vẫn tham chiếu id cũ sẽ bị vô hiệu. Đừng thử lại nhiệm vụ cũ.
 async def cancel_fragment_video_tasks_for_fragments(
     db: AsyncSession,
     fragment_ids: list[int],
@@ -391,10 +391,10 @@ async def cancel_fragment_video_tasks_for_fragments(
     return changed
 
 
-# 取消 payload 中分镜已删除或已有成片（且非重新生成）的在途任务，避免假排队与上下文丢失。
-# 同时释放「finalizing 认领窗口异常过长」的卡死任务（历史 6h TTL / poller 取消后未释放）。
+# Hủy các tác vụ đang chuyển tiếp có bảng phân cảnh đã bị xóa hoặc hoàn thành (và không được tạo lại) trong tải trọng để tránh xếp hàng sai và mất ngữ cảnh.
+# Đồng thời, giải phóng nhiệm vụ bị mắc kẹt là "thời hạn xác nhận quyền sở hữu cuối cùng dài bất thường" (TTL lịch sử 6 giờ/người thăm dò không được phát hành sau khi hủy).
 async def reconcile_stale_pending_tasks(db: AsyncSession) -> int:
-    # 认领剩余 >12 分钟视为异常（正常收尾 TTL 为 10 分钟）
+    # Yêu cầu còn lại >12 phút được coi là bất thường (TTL kết thúc bình thường là 10 phút)
     finalize_stale_remaining = timedelta(minutes=12)
 
     stmt = select(TaskRun).where(
@@ -406,7 +406,7 @@ async def reconcile_stale_pending_tasks(db: AsyncSession) -> int:
     changed = 0
     now = datetime.now(UTC)
     for task in rows:
-        # finalizing 认领剩余过长：释放回 polling，让 Selector 立刻再查上游/重试落盘
+        # đang hoàn thiện Xác nhận quyền sở hữu còn lại quá dài: đưa nó trở lại chế độ bỏ phiếu và để Bộ chọn ngay lập tức kiểm tra ngược dòng/thử lại vị trí.
         if (
             task.status == "awaiting_poll"
             and (task.current_step_status or "") == "finalizing"
@@ -431,7 +431,7 @@ async def reconcile_stale_pending_tasks(db: AsyncSession) -> int:
 
         frag_ids = task_fragment_ids(task)
         if not frag_ids:
-            # fragment_id 已被 detach、payload 也无 id → 无法回写，直接作废
+            # Fragment_id đã được tách ra và tải trọng không có id → không thể ghi lại và sẽ bị vô hiệu trực tiếp
             if task.status in {"awaiting_poll", "running", "leased"}:
                 await _mark_task_cancelled_stale(db, task, _STALE_FRAGMENT_REASON, now)
                 changed += 1
@@ -456,8 +456,8 @@ async def reconcile_stale_pending_tasks(db: AsyncSession) -> int:
     return changed
 
 
-# 连续点各镜「生成」会各建一个 sequential batch，且 batch_index 都是 0。
-# 这种分镜视频不能按 batch 首镜激活，必须按分集镜序走 rebalance。
+# Nếu bạn nhấp liên tục vào "Tạo" trên mỗi máy nhân bản, một lô tuần tự sẽ được tạo và batch_index tất cả đều bằng 0.
+# Loại video phân cảnh này không thể kích hoạt theo cảnh quay đầu tiên của lô mà phải cân bằng lại theo thứ tự của các cảnh quay của tập.
 def sequential_fragment_video_needs_episode_rebalance(
     task_type: str | None,
     payload: dict | None,
@@ -468,7 +468,7 @@ def sequential_fragment_video_needs_episode_rebalance(
     return bool(data.get("sequential"))
 
 
-# 开启衔接时，每集只允许镜序最前的未完成任务占槽（在跑优先于排队）。
+# Khi kết nối được bật, chỉ tác vụ chưa hoàn thành ở đầu chuỗi phản chiếu mới được phép chiếm vị trí trong mỗi tập (việc chạy được ưu tiên hơn việc xếp hàng).
 def pick_sequential_episode_head(
     ep_tasks: list[TaskRun],
     sort_by_frag: dict[int, int],
@@ -488,7 +488,7 @@ def pick_sequential_episode_head(
     return None
 
 
-# 上一镜没有成片或尾帧时，后镜不能当队首（失败任务已离开队列）。
+# Khi cảnh quay trước chưa có phim hoặc khung hình cuối cùng hoàn chỉnh, cảnh quay phía sau không thể đứng đầu hàng đợi (tác vụ thất bại đã rời khỏi hàng đợi).
 def sequential_task_blocked_by_previous_fragment(
     task: TaskRun,
     episode_frags: list[DramaEpisodeFragment],
@@ -513,7 +513,7 @@ def sequential_task_blocked_by_previous_fragment(
     return not bool(read_fragment_last_frame_url(prev))
 
 
-# 从任务列或 payload 取出漫剧项目 id，供衔接重排按项目收口。
+# Lấy ID dự án truyện tranh ra khỏi thanh tác vụ hoặc tải trọng để sắp xếp lại và đóng kết nối theo dự án.
 def _sequential_fragment_video_project_id(task: TaskRun, payload: dict) -> int | None:
     raw = getattr(task, "drama_project_id", None)
     if raw is None:
@@ -526,8 +526,8 @@ def _sequential_fragment_video_project_id(task: TaskRun, payload: dict) -> int |
         return None
 
 
-# 修复串行 batch 中 next_action_at 为空导致永远排队的任务；并行 batch 按用户并发上限逐步激活。
-# 分镜视频开启尾帧衔接时，不把各点击的 batch_index=0 当成独立首镜。
+# Đã khắc phục sự cố next_action_at trong lô nối tiếp trống, khiến tác vụ bị xếp hàng đợi mãi mãi; lô song song được kích hoạt dần dần theo giới hạn đồng thời của người dùng.
+# Khi kết nối khung hình cuối cùng được bật trong video bảng phân cảnh, batch_index=0 của mỗi lần nhấp không được coi là cảnh quay đầu tiên độc lập.
 async def reconcile_sequential_batches(db: AsyncSession) -> int:
     from app.config import get_settings
     from app.services.drama.access import count_user_inflight_fragment_video_tasks
@@ -544,9 +544,9 @@ async def reconcile_sequential_batches(db: AsyncSession) -> int:
     batch_keys = [str(key) for key in (await db.execute(stmt)).scalars().all() if key]
     changed = 0
     limit = max(1, int(get_settings().drama_user_video_job_limit or 12))
-    # 同一 tick 内跨 batch 共享用户空位，避免重复超发
+    # Chia sẻ vị trí người dùng giữa các đợt trong cùng một đánh dấu để tránh phát hành quá mức lặp lại.
     user_slots: dict[int, int] = {}
-    # 开启衔接的分镜视频：按项目收集后统一重排，避免连续点击并发开跑
+    # Kích hoạt các video bảng phân cảnh được kết nối: thu thập chúng theo dự án và sắp xếp lại chúng theo cách thống nhất để tránh nhấp chuột liên tục và bắt đầu đồng thời.
     frag_video_projects: dict[int, int] = {}
     for batch_key in batch_keys:
         tasks = list(
@@ -560,7 +560,7 @@ async def reconcile_sequential_batches(db: AsyncSession) -> int:
             continue
         sample = tasks[0].payload if isinstance(tasks[0].payload, dict) else {}
         if not sample.get("sequential"):
-            # 并行：按用户 Seedance 在途上限激活排队中的 pending，避免超限提交后失败
+            # Song song: kích hoạt trạng thái chờ xử lý trong hàng đợi theo giới hạn trên của Seedance in-transit của người dùng để tránh lỗi sau khi vượt quá giới hạn gửi
             user_id = int(tasks[0].requested_by)
             if user_id not in user_slots:
                 inflight = await count_user_inflight_fragment_video_tasks(db, user_id)
@@ -633,7 +633,7 @@ async def reconcile_sequential_batches(db: AsyncSession) -> int:
             continue
 
         if uses_episode_rebalance:
-            # 无论能否登记项目，都不要把连续点击当成独立首镜点亮
+            # Bất kể bạn có thể đăng ký một dự án hay không, đừng coi những lần nhấp chuột liên tiếp là lần bắn đầu tiên độc lập.
             continue
 
         first = by_index.get(0)
@@ -668,7 +668,7 @@ async def reconcile_sequential_batches(db: AsyncSession) -> int:
     return changed
 
 
-# 镜间衔接开关切换后：只重排仍 pending 的分镜视频任务（已在跑的不动）。
+# Sau khi chuyển đổi công tắc kết nối giữa các gương: chỉ các tác vụ video bảng phân cảnh đang chờ xử lý (đã chạy và không thể di chuyển) mới được sắp xếp lại.
 async def rebalance_project_fragment_video_queue(
     db: AsyncSession,
     project_id: int,
@@ -696,7 +696,7 @@ async def rebalance_project_fragment_video_queue(
         if task.status in {"leased", "running", "awaiting_poll"} and not task.cancel_requested
     ]
 
-    # 先统一改写 pending 的串行标记，供后续调度器按新模式激活
+    # Đầu tiên hãy viết lại dấu nối tiếp đang chờ xử lý một cách thống nhất để kích hoạt bộ lập lịch tiếp theo theo chế độ mới.
     for task in pending:
         payload = dict(task.payload or {}) if isinstance(task.payload, dict) else {}
         if bool(payload.get("sequential")) == bool(sequential):
@@ -711,7 +711,7 @@ async def rebalance_project_fragment_video_queue(
     owner_id = int(user_id or (pending[0].requested_by if pending else tasks[0].requested_by))
 
     if not sequential:
-        # 关闭衔接：尽量把仍排队的 pending 激活到并发空位
+        # Đóng kết nối: thử kích hoạt các mục đang chờ xử lý vẫn được xếp vào các vị trí đồng thời
         inflight = await count_user_inflight_fragment_video_tasks(db, owner_id)
         slots = max(0, limit - inflight)
         deferred_pending = [task for task in pending if task.next_action_at is None]
@@ -734,7 +734,7 @@ async def rebalance_project_fragment_video_queue(
             await db.commit()
         return {"pending": len(pending), "activated": activated, "deferred": deferred}
 
-    # 开启衔接：按分集镜序，只允许“当前最前未完成镜”占槽；其余 pending 收回激活
+    # Mở kết nối: Theo trình tự tập phim, chỉ có "tấm gương chưa hoàn thiện nhất hiện tại" mới được chiếm slot; những cái đang chờ xử lý còn lại sẽ được rút và kích hoạt
     frag_ids = {
         int(task.fragment_id)
         for task in pending + active
@@ -761,7 +761,7 @@ async def rebalance_project_fragment_video_queue(
         ep_id = episode_by_frag.get(int(task.fragment_id)) or int(task.episode_id or 0)
         by_episode.setdefault(ep_id, []).append(task)
 
-    # 补齐同集全部分镜：上一镜失败后任务已不在队列，仍需挡住后镜
+    # Hoàn thành tất cả các gương trong cùng một tập: sau khi gương trước bị hỏng, nhiệm vụ không còn trong hàng đợi và gương sau vẫn cần phải chặn.
     siblings_by_ep: dict[int, list[DramaEpisodeFragment]] = {}
     episode_ids = [eid for eid in by_episode.keys() if eid]
     if episode_ids:
@@ -810,7 +810,7 @@ async def rebalance_project_fragment_video_queue(
             else:
                 deferred += 1
 
-    # 先 flush 收回后镜空位，再按并发上限激活各集当前首镜
+    # Đầu tiên, xả nước để thu hồi khoảng trống ở ống kính phía sau, sau đó kích hoạt ống kính đầu tiên hiện tại của mỗi tập theo giới hạn đồng thời.
     await db.flush()
     inflight = await count_user_inflight_fragment_video_tasks(db, owner_id)
     slots = max(0, limit - inflight)
@@ -844,7 +844,7 @@ async def rebalance_project_fragment_video_queue(
     return {"pending": len(pending), "activated": activated, "deferred": deferred}
 
 
-# 统计用户当前占用 Worker 槽位的任务数（NIO：awaiting_poll 注册项不占槽）。
+# Đếm số lượng nhiệm vụ hiện đang được người dùng đảm nhiệm trong vị trí Công nhân (NIO: mục đăng ký chờ_poll không chiếm vị trí).
 async def count_user_active_runtime_tasks(db: AsyncSession, user_id: int) -> int:
     stmt = select(func.count()).select_from(TaskRun).where(
         TaskRun.requested_by == int(user_id),

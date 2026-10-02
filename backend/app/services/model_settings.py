@@ -57,20 +57,20 @@ class RoutingSnapshot:
 _routing_snapshot = RoutingSnapshot(channels=[], logical_models=[], default_models=DefaultModels())
 
 
-# 从 secret_key 派生 Fernet 密钥
+# Lấy khóa Fernet từ secret_key
 def _fernet() -> Fernet:
     digest = hashlib.sha256(get_settings().secret_key.encode("utf-8")).digest()
     key = base64.urlsafe_b64encode(digest)
     return Fernet(key)
 
 
-# 加密敏感字段
+# Mã hóa các trường nhạy cảm
 def _encrypt_secret(value: str) -> str:
     token = _fernet().encrypt(value.encode("utf-8")).decode("utf-8")
     return f"{ENCRYPTED_PREFIX}{token}"
 
 
-# 解密敏感字段
+# Giải mã các trường nhạy cảm
 def _decrypt_secret(value: str) -> str:
     if not value:
         return ""
@@ -80,23 +80,23 @@ def _decrypt_secret(value: str) -> str:
     return _fernet().decrypt(token.encode("utf-8")).decode("utf-8")
 
 
-# 返回当前路由快照
+# Trả về ảnh chụp nhanh định tuyến hiện tại
 def get_routing_snapshot() -> RoutingSnapshot:
     return _routing_snapshot
 
 
-# 返回 flat overlay
+# Trả về lớp phủ phẳng
 def get_overlay_dict() -> dict[str, Any]:
     return dict(_overlay)
 
 
-# 刷新 flat overlay
+# Làm mới lớp phủ phẳng
 def _refresh_overlay(config: dict[str, Any]) -> None:
     global _overlay
     flat = config.get("flat") if isinstance(config.get("flat"), dict) else config
-    # 空串必须保留：它是管理端「清除密钥」写入的显式值，
-    # 若在此过滤，get_settings() 会回落 .env 中的旧密钥——界面显示已清除、请求仍带旧 Key。
-    # 仅 None（DB 未设置该字段）跳过，让 base Settings 默认值生效。
+    # Chuỗi trống phải được giữ lại: đó là giá trị rõ ràng được viết bởi "khóa rõ ràng" ở phía quản lý.
+    # Nếu được lọc ở đây, get_settings() sẽ quay trở lại khóa cũ trong .env - giao diện hiển thị bị xóa và yêu cầu vẫn mang khóa cũ.
+    # Chỉ Không có (trường không được DB đặt) bị bỏ qua, cho phép giá trị mặc định của Cài đặt cơ sở có hiệu lực.
     _overlay = {
         field: flat[field]
         for field in model_config_field_names()
@@ -104,7 +104,7 @@ def _refresh_overlay(config: dict[str, Any]) -> None:
     }
 
 
-# 刷新路由快照
+# Làm mới ảnh chụp nhanh định tuyến
 def _refresh_routing_snapshot(
     channels: list[SystemModelChannel],
     logical_models: list[LogicalModel],
@@ -118,7 +118,7 @@ def _refresh_routing_snapshot(
     )
 
 
-# 从 env 构建默认渠道（开源版仅 TokenFree）
+# Xây dựng kênh mặc định từ env (chỉ phiên bản mã nguồn mở TokenFree)
 def _bootstrap_channels_from_env(settings: Settings | None = None) -> list[SystemModelChannel]:
     from app.services.tokenfree_gateway import locked_tokenfree_channel
     from app.services.tokenfree_pricing import canonicalize_channel_models
@@ -139,7 +139,7 @@ def _bootstrap_channels_from_env(settings: Settings | None = None) -> list[Syste
 
 
 def _seedance_logical_meta(upstream: str) -> tuple[str, str]:
-    """按接入点 ID 推断 Seedance 逻辑模型（2.0 vs 2.5 vs Mini）。"""
+    """Suy luận mô hình logic Seedance theo ID điểm truy cập (2.0 so với 2.5 so với Mini)."""
     mid = (upstream or "").strip().lower()
     if "mini" in mid:
         return "seedance-2-0-mini", "Seedance 2.0 Mini"
@@ -178,7 +178,7 @@ def _merge_friendly_alias_models(
     synced: list[LogicalModel],
     aliases: list[LogicalModel],
 ) -> list[LogicalModel]:
-    """保留 seedance/seedream 友好别名；去掉与别名同上游的 raw endpoint 重复项。"""
+    """Giữ bí danh thân thiện với hạt giống/seedream; xóa các bản sao của điểm cuối thô từ cùng dòng ngược với bí danh."""
     from app.services.model_routing_config import normalize_model_name
 
     if not aliases:
@@ -214,7 +214,7 @@ def _merge_friendly_alias_models(
     return merged
 
 
-# 从 env 构建默认逻辑模型与默认模型 ID
+# Xây dựng mô hình logic mặc định và ID mô hình mặc định từ env
 def _bootstrap_logical_from_channels(channels: list[SystemModelChannel]) -> tuple[list[LogicalModel], DefaultModels]:
     logical_models = synchronize_logical_models_with_channels([], channels)
     settings = get_settings()
@@ -292,7 +292,7 @@ def _bootstrap_logical_from_channels(channels: list[SystemModelChannel]) -> tupl
     return merged, normalize_default_models(defaults, merged, channels)
 
 
-# ORM 行转领域模型（admin 视图，密钥打码）
+# Mô hình miền chuyển hàng ORM (chế độ xem quản trị viên, mã hóa khóa)
 def _channel_row_to_admin(row: SystemModelChannelRow) -> SystemModelChannel:
     api_key = _decrypt_secret(row.api_key_ciphertext or "")
     return SystemModelChannel(
@@ -312,7 +312,7 @@ def _channel_row_to_admin(row: SystemModelChannelRow) -> SystemModelChannel:
     )
 
 
-# 运行时渠道（含明文密钥）
+# Kênh thời gian chạy (bao gồm cả khóa văn bản gốc)
 def _channel_row_to_runtime(row: SystemModelChannelRow) -> SystemModelChannel:
     channel = _channel_row_to_admin(row)
     return channel.model_copy(update={"api_key": _decrypt_secret(row.api_key_ciphertext or "")})
@@ -375,7 +375,7 @@ async def _ensure_bootstrapped_channels(db: AsyncSession) -> list[SystemModelCha
 
 
 async def _ensure_tokenfree_channel(db: AsyncSession, existing: list[SystemModelChannelRow]) -> None:
-    """锁定唯一 TokenFree 渠道：固定 Base URL，其它渠道停用。"""
+    """Khóa kênh TokenFree duy nhất: sửa URL cơ sở và tắt các kênh khác."""
     from app.services.tokenfree_gateway import (
         TOKENFREE_BASE_URL,
         TOKENFREE_CHANNEL_ID,
@@ -415,7 +415,7 @@ async def _ensure_tokenfree_channel(db: AsyncSession, existing: list[SystemModel
     if not token_row.models:
         token_row.models = env_models
     else:
-        # 已有 DB 清单只折叠别名，不再把 .env 模型并回去
+        # Danh sách DB hiện tại chỉ thu gọn các bí danh và không còn hợp nhất lại mô hình .env nữa.
         merged = canonicalize_channel_models(token_row.models)
         if merged != list(token_row.models or []):
             token_row.models = merged
@@ -461,7 +461,7 @@ def _effective_flat(stored: dict[str, Any] | None) -> dict[str, Any]:
 
 
 async def _compose_runtime_state(db: AsyncSession) -> tuple[list[SystemModelChannel], list[LogicalModel], DefaultModels, dict[str, Any], AppSettings]:
-    """组装运行时路由：始终按渠道 models 同步逻辑模型，默认文字模型随可用上游回落。"""
+    """Định tuyến thời gian chạy hội: Luôn đồng bộ hóa các mô hình logic theo mô hình kênh, các mô hình chữ mặc định sẽ quay trở lại với dòng ngược dòng có sẵn."""
     app_row = await _get_or_create_app_row(db)
     await _ensure_bootstrapped_channels(db)
     channels = await _load_channels(db, runtime=True)
@@ -472,7 +472,7 @@ async def _compose_runtime_state(db: AsyncSession) -> tuple[list[SystemModelChan
         logical_models, default_models = _bootstrap_logical_from_channels(
             [_channel_row_to_admin(row) for row in (await db.execute(select(SystemModelChannelRow))).scalars().all()]
         )
-    # 渠道 models 变更后，丢弃失效绑定并补齐新上游（支持任意 OpenAI 兼容模型）
+    # Sau khi các mô hình kênh được thay đổi, hãy loại bỏ liên kết không hợp lệ và điền vào dòng ngược dòng mới (hỗ trợ mọi mô hình tương thích với OpenAI)
     logical_models = synchronize_logical_models_with_channels(logical_models, channels)
     boot_logical, boot_defaults = _bootstrap_logical_from_channels(
         [_channel_row_to_admin(row) for row in (await db.execute(select(SystemModelChannelRow))).scalars().all()]
@@ -501,7 +501,7 @@ async def _compose_runtime_state(db: AsyncSession) -> tuple[list[SystemModelChan
 
 
 async def load_model_settings_cache(db: AsyncSession) -> None:
-    """加载路由快照；若与渠道不同步则回写 healed 配置，避免默认仍钉死旧模型名。"""
+    """Tải ảnh chụp nhanh định tuyến; nếu không đồng bộ với kênh thì ghi lại cấu hình đã sửa để tránh mặc định ghi tên model cũ."""
     channels, logical_models, default_models, flat, app_row = await _compose_runtime_state(db)
     config = dict(app_row.config_json or {})
     old_ids = {(item or {}).get("id") for item in (config.get("logical_models") or [])}
@@ -621,7 +621,7 @@ async def patch_admin_model_settings(
 
 
 def _flat_from_env_settings() -> dict[str, Any]:
-    # 读取进程环境 / .env（不经 DB overlay）
+    # Đọc môi trường quy trình/.env (không có lớp phủ DB)
     env = Settings()
     return {field: getattr(env, field) for field in model_config_field_names()}
 
@@ -629,7 +629,7 @@ def _flat_from_env_settings() -> dict[str, Any]:
 async def import_admin_model_settings_from_env(
     db: AsyncSession,
 ) -> tuple[AdminModelSettingsOut, list[str], list[str]]:
-    """将 .env 中可管理字段写入 app_settings.flat（密钥加密存库）。"""
+    """Ghi các trường có thể quản lý trong .env vào app_settings.flat (kho lưu trữ mã hóa khóa)."""
     app_row = await _get_or_create_app_row(db)
     config = dict(app_row.config_json or {})
     current = _effective_flat(_decrypt_flat_config(config))
@@ -728,7 +728,7 @@ async def patch_admin_routing_settings(
         logical_models = body.logical_models
         applied.append("logical_models")
 
-    # 无论前端是否提交逻辑模型，最终都以渠道 models 为准同步（通用 OpenAI 兼容）
+    # Bất kể giao diện người dùng có gửi mô hình logic hay không, các mô hình kênh cuối cùng sẽ được đồng bộ hóa (thường tương thích với OpenAI)
     synced = synchronize_logical_models_with_channels(logical_models, channels_after)
     bootstrapped, boot_defaults = _bootstrap_logical_from_channels(channels_after)
     alias_ids = {"seedream-5.0", "seedream-4.5", "seedance-2.5", "seedance-2"}

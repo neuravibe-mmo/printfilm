@@ -1,4 +1,4 @@
-"""Async SQLAlchemy engine / session for API and task runtime（仅 PostgreSQL）。"""
+"""Công cụ/phiên Async SQLAlchemy dành cho API và thời gian chạy tác vụ (chỉ PostgreSQL)."""
 
 from __future__ import annotations
 
@@ -17,11 +17,11 @@ class Base(DeclarativeBase):
 
 
 def _require_postgres(url: str) -> None:
-    """拒绝非 Postgres 连接串，避免误连 SQLite。"""
+    """Từ chối các chuỗi kết nối không phải Postgres để tránh kết nối nhầm với SQLite."""
     if not (url or "").startswith("postgresql"):
         raise RuntimeError(
-            "仅支持 PostgreSQL。请设置 DATABASE_URL=postgresql+asyncpg://..."
-            f"（当前：{(url or '')[:48]!r}）"
+            "Chỉ hỗ trợ PostgreSQL. Vui lòng thiết lập DATABASE_URL=postgresql+asyncpg://..."
+            f" (Hiện tại: {(url or '')[:48]!r})"
         )
 
 

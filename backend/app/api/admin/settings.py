@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class AdminUpstreamModelsRequest(BaseModel):
-    """按渠道凭证拉取上游 /models 目录。"""
+    """Kéo thư mục ngược dòng /models dựa trên thông tin đăng nhập kênh."""
 
     channel_id: str | None = Field(default=None, max_length=64)
     protocol: str = Field(default="auto", max_length=32)
@@ -43,7 +43,7 @@ async def admin_get_routing_settings(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminRoutingSettingsOut:
-    # 读取渠道 + 逻辑模型 + 默认模型完整路由配置
+    # Đọc kênh + mô hình logic + cấu hình định tuyến hoàn chỉnh mô hình mặc định
     return await get_admin_routing_settings(db)
 
 
@@ -53,7 +53,7 @@ async def admin_patch_routing_settings(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminRoutingSettingsSaveOut:
-    # 保存渠道与逻辑路由；保存时自动 sync 逻辑模型绑定
+    # Lưu kênh và tuyến đường hợp lý; tự động đồng bộ liên kết mô hình logic khi lưu
     try:
         settings, applied = await patch_admin_routing_settings(db, body)
     except ValueError as exc:
@@ -66,7 +66,7 @@ async def admin_get_model_settings(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminModelSettingsOut:
-    # 读取当前生效的模型配置（DB 优先，env 兜底）
+    # Đọc cấu hình mô hình hiện có hiệu quả (DB trước, env trước)
     return await get_admin_model_settings(db)
 
 
@@ -76,7 +76,7 @@ async def admin_patch_model_settings(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminModelSettingsSaveOut:
-    # 部分更新模型配置；密钥留空表示不修改
+    # Cập nhật một phần cấu hình mô hình; để trống khóa để không sửa đổi nó
     try:
         settings, applied = await patch_admin_model_settings(db, body)
     except ValueError as exc:
@@ -89,7 +89,7 @@ async def admin_import_model_settings_from_env(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminModelSettingsImportEnvOut:
-    # 一键将 .env / 环境变量中的可管理项导入 DB（空密钥跳过，避免覆盖已有密文）
+    # Nhập các mục có thể quản lý trong các biến .env/environment vào DB chỉ bằng một cú nhấp chuột (các phím trống được bỏ qua để tránh ghi đè văn bản mã hóa hiện có)
     settings, imported, skipped = await import_admin_model_settings_from_env(db)
     return AdminModelSettingsImportEnvOut(
         settings=settings,
@@ -104,7 +104,7 @@ async def admin_list_upstream_models(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """按渠道协议拉取上游可用模型（TokenFree / OpenAI 兼容）。"""
+    """Kéo các mô hình ngược dòng có sẵn theo thỏa thuận kênh (tương thích TokenFree / OpenAI)."""
     try:
         models = await list_upstream_models(
             db,
@@ -123,7 +123,7 @@ async def admin_list_upstream_models(
 async def admin_billing_model_rates(
     _admin: User = Depends(get_current_admin),
 ) -> dict:
-    """拉取 TokenFree 官方价目，返回推荐文字/图/视频模型费率。"""
+    """Kéo bảng giá chính thức của TokenFree và trả về tỷ lệ mô hình văn bản/hình ảnh/video được đề xuất."""
     from app.services.tokenfree_pricing import billing_official_rate_rows, tokenfree_pricing_url
 
     items = await billing_official_rate_rows()
@@ -134,7 +134,7 @@ async def admin_billing_model_rates(
 async def admin_tokenfree_account_quota(
     _admin: User = Depends(get_current_admin),
 ) -> dict:
-    """查询 TokenFree / New API 账户剩余额度（与模型页同一把 Key）。"""
+    """Truy vấn số dư còn lại của tài khoản TokenFree/API mới (cùng khóa với trang mô hình)."""
     from app.services.tokenfree_usage import fetch_tokenfree_account, tokenfree_usage_configured
 
     if not tokenfree_usage_configured():

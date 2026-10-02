@@ -1,4 +1,4 @@
-/** 分镜字幕板：从分镜正文提取口播字幕，供预览与导出。 */
+/** Bảng phụ đề của bảng phân cảnh: Trích xuất phụ đề bằng giọng nói từ văn bản bảng phân cảnh để xem trước và xuất. */
 
 import type { DramaFragment } from '../api/drama'
 
@@ -13,12 +13,12 @@ export type DramaSubtitleCue = {
   text: string
 }
 
-// 判断当前字幕方式是否由模型直接出字幕。
+// Xác định xem chế độ phụ đề hiện tại có tạo phụ đề trực tiếp từ mô hình hay không.
 export function subtitleModeUsesModelOutput(mode: DramaSubtitleMode): boolean {
   return mode === 'model'
 }
 
-// 兼容历史布尔值，读取分集字幕方式；默认后期拼接字幕。
+// Tương thích với các giá trị Boolean lịch sử, đọc phụ đề tập phim; mặc định là ghép phụ đề sau.
 export function readEpisodeSubtitleMode(
   params: Record<string, unknown> | null | undefined,
 ): DramaSubtitleMode {
@@ -27,7 +27,7 @@ export function readEpisodeSubtitleMode(
   return readEpisodeSubtitleEnabled(params) ? 'model' : 'post'
 }
 
-// 兼容历史字符串/数字布尔值，默认关闭模型烧录字幕（后期拼接）。
+// Tương thích với các giá trị Boolean/chuỗi lịch sử, phụ đề ghi mô hình bị tắt theo mặc định (nối sau sản xuất).
 export function readEpisodeSubtitleEnabled(params: Record<string, unknown> | null | undefined): boolean {
   const value = params?.subtitleEnabled
   if (value == null) return false
@@ -41,7 +41,7 @@ export function readEpisodeSubtitleEnabled(params: Record<string, unknown> | nul
   return Boolean(value)
 }
 
-// 提取整集字幕 cue（按 @duration 顺序累计时间轴）。
+// Trích xuất toàn bộ tín hiệu phụ đề của tập (dòng thời gian tích lũy theo thứ tự @duration).
 export function buildDramaSubtitleBoard(fragments: DramaFragment[]): DramaSubtitleCue[] {
   const cues: DramaSubtitleCue[] = []
   let globalSec = 0
@@ -89,7 +89,7 @@ export function buildDramaSubtitleBoard(fragments: DramaFragment[]): DramaSubtit
   return cues
 }
 
-// 导出字幕板纯文本（预览用）。
+// Xuất văn bản thuần túy của bảng phụ đề (để xem trước).
 export function exportDramaSubtitleBoardText(fragments: DramaFragment[]): string {
   const cues = buildDramaSubtitleBoard(fragments)
   if (cues.length === 0) return '暂无可导出的字幕内容'
@@ -103,7 +103,7 @@ export function exportDramaSubtitleBoardText(fragments: DramaFragment[]): string
     .join('\n')
 }
 
-// 导出剪映可导入的 SRT（仅正文，不含说话人）。
+// Xuất các đoạn cắt và SRT có thể nhập được (chỉ văn bản, không bao gồm loa).
 export function exportDramaSubtitleBoardSrt(fragments: DramaFragment[]): string {
   const cues = buildDramaSubtitleBoard(fragments)
     .map((cue) => ({
@@ -121,7 +121,7 @@ export function exportDramaSubtitleBoardSrt(fragments: DramaFragment[]): string 
     .join('\n\n')
 }
 
-// 秒数格式化为 00:00。
+// Giây được định dạng là 00:00.
 export function formatSubtitleClock(totalSec: number): string {
   const sec = Math.max(0, Math.floor(totalSec))
   const minutes = Math.floor(sec / 60)
@@ -129,7 +129,7 @@ export function formatSubtitleClock(totalSec: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
-// 秒数格式化为 SRT 时间轴 00:00:00,000。
+// Giây được định dạng là dòng thời gian SRT 00:00:00.000.
 export function formatSrtTimestamp(totalSec: number): string {
   const msTotal = Math.max(0, Math.round(totalSec * 1000))
   const hours = Math.floor(msTotal / 3_600_000)
@@ -141,7 +141,7 @@ export function formatSrtTimestamp(totalSec: number): string {
   ).padStart(2, '0')},${String(millis).padStart(3, '0')}`
 }
 
-// 清理动作说明等括注，保留可上屏的口播正文。
+// Dọn sạch các dấu ngoặc đơn như mô tả hành động và giữ lại văn bản bằng miệng có thể hiển thị trên màn hình.
 function sanitizeSrtCaptionText(raw: string): string {
   return String(raw || '')
     .replace(/（[^）]*）/g, '')
@@ -196,7 +196,7 @@ const STRIP_PREFIX_MAP: Array<[string, string]> = [
   ['【Độc thoại nội tâm · Đồng bộ phụ đề】', '【Độc thoại nội tâm】'],
 ]
 
-// 判断是否为字幕 cue 行（含历史文案与多语言）。
+// Xác định xem đó có phải là dòng gợi ý phụ đề hay không (bao gồm bản sao lịch sử và đa ngôn ngữ).
 function isSubtitleCueLine(line: string): boolean {
   const trimmed = line.trim()
   if (
@@ -213,7 +213,7 @@ function isSubtitleCueLine(line: string): boolean {
   )
 }
 
-// 从单条分镜正文去掉模型字幕提示词，保留对白/旁白本身。
+// Xóa các từ gợi ý phụ đề mẫu khỏi văn bản bảng phân cảnh duy nhất và giữ lại đoạn hội thoại/tường thuật.
 export function stripSubtitlePromptsFromContent(content: string): string {
   const lines = String(content || '')
     .replace(/\r\n/g, '\n')
@@ -238,7 +238,7 @@ export function stripSubtitlePromptsFromContent(content: string): string {
   return next.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
 }
 
-// 为单条分镜正文补回模型字幕提示词（已有则不重复）。
+// Bổ sung từ nhắc phụ đề mẫu cho một văn bản trong bảng phân cảnh (nếu đã tồn tại thì sẽ không lặp lại).
 export function applySubtitlePromptsToContent(content: string): string {
   const source = String(content || '').replace(/\r\n/g, '\n')
   if (!source.trim()) return source
@@ -277,7 +277,7 @@ export function applySubtitlePromptsToContent(content: string): string {
   return next.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()
 }
 
-// 按字幕方式批量改写分镜正文。
+// Viết lại hàng loạt nội dung bảng phân cảnh theo phụ đề.
 export function applySubtitleModeToFragments<T extends { content?: string | null }>(
   fragments: T[],
   mode: DramaSubtitleMode,

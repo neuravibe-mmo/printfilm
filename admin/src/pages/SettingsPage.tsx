@@ -14,7 +14,7 @@ import { useI18n } from "@/i18n/useI18n";
 
 type SettingsTab = "routing" | "runtime" | "oss" | "payment" | "site";
 
-// 页头：标题 + 统一保存按钮
+// Tiêu đề: tiêu đề + nút lưu thống nhất
 function SettingsPageHeader() {
   const { t } = useI18n();
   const { action } = useSettingsSaveSlot();
@@ -39,7 +39,7 @@ function SettingsPageHeader() {
   );
 }
 
-// 系统设置内容区
+// Khu vực nội dung cài đặt hệ thống
 function SettingsPageInner() {
   const { t } = useI18n();
   const [tab, setTab] = useState<SettingsTab>("routing");

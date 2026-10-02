@@ -1,6 +1,6 @@
 import type { DramaProjectUsageStats } from '../api/drama'
 
-/** 空用量占位，避免列表未返回 usage 时崩溃 */
+/** Làm trống phần giữ chỗ sử dụng để tránh sự cố khi danh sách không trả về mức sử dụng */
 export const EMPTY_DRAMA_USAGE: DramaProjectUsageStats = {
   charge_fen: 0,
   charge_yuan: 0,
@@ -26,12 +26,12 @@ export function formatCreditsFen(fen: number | undefined | null, locale?: string
   return formatCredits((Number(fen) || 0) / 100, locale)
 }
 
-/** 格式化漫剧费用展示 */
+/** Hiển thị chi phí truyện tranh được định dạng */
 export function formatDramaChargeYuan(yuan: number | undefined | null, locale?: string): string {
   return formatCredits(yuan, locale)
 }
 
-/** 列表/工作台短文案：费用 · 生图 · 生视频 · 调用 */
+/** Danh sách/bản sao ngắn của bàn làm việc: chi phí · hình ảnh thô · video thô · cuộc gọi */
 export function formatDramaUsageBrief(usage?: DramaProjectUsageStats | null, locale?: string): string {
   const loc = locale || getActiveLocale()
   const u = usage || EMPTY_DRAMA_USAGE

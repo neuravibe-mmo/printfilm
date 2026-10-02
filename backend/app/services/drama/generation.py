@@ -52,11 +52,11 @@ from app.services.drama.voice_reference_audio import (
 
 logger = logging.getLogger(__name__)
 
-# 分镜视频前需要参考图的资产类型
+# Các loại nội dung yêu cầu hình ảnh tham khảo trước khi tạo video phân cảnh
 IMAGE_REF_ASSET_TYPES = frozenset({"character", "scene", "prop", "material", "none"})
 
 
-# 统一解析项目参数里的布尔值，兼容历史字符串/数字写法
+# Phân tích cú pháp thống nhất các giá trị Boolean trong các tham số dự án, tương thích với các phương pháp ghi chuỗi/số lịch sử
 def _coerce_project_bool(value: Any, default: bool) -> bool:
     if value is None:
         return default
@@ -73,7 +73,7 @@ def _coerce_project_bool(value: Any, default: bool) -> bool:
     return bool(value)
 
 
-# 读取分镜已落盘的尾帧 URL
+# Đọc URL của khung hình cuối cùng của ảnh đã hoàn thành
 def read_fragment_last_frame_url(fragment: DramaEpisodeFragment | None) -> str | None:
     if not fragment:
         return None
@@ -99,7 +99,7 @@ def read_fragment_last_frame_url(fragment: DramaEpisodeFragment | None) -> str |
     return None
 
 
-# 写入分镜尾帧 URL（生成完成后持久化，供下一镜衔接）
+# Viết URL của khung cuối cùng của bảng phân cảnh (lưu giữ sau khi quá trình tạo hoàn tất để cảnh tiếp theo kết nối)
 def write_fragment_last_frame_url(fragment: DramaEpisodeFragment, url: str | None) -> None:
     params = dict(fragment.params or {}) if isinstance(fragment.params, dict) else {}
     cleaned = (url or "").strip()
@@ -120,12 +120,12 @@ def write_fragment_last_frame_url(fragment: DramaEpisodeFragment, url: str | Non
     fragment.params = params
 
 
-# 成片已在、尾帧缺失时从视频补抽并写回（兼容旧 Kie 成片）
+# Phim thành phẩm đã có rồi, khi thiếu khung hình cuối cùng thì sẽ được trích xuất ra khỏi video và viết lại (tương thích với các phim thành phẩm cũ của Kie)
 async def ensure_fragment_last_frame_url(
     project: DramaProject,
     fragment: DramaEpisodeFragment | None,
 ) -> str | None:
-    """返回可用尾帧 URL；必要时从本地/远端成片抽取。"""
+    """Trả về URL khung cuối cùng có sẵn; trích xuất từ ​​​​các lát cục bộ/từ xa nếu cần thiết."""
     if not fragment:
         return None
     existing = read_fragment_last_frame_url(fragment)
@@ -176,7 +176,7 @@ async def ensure_fragment_last_frame_url(
     return url
 
 
-# 写入分镜成片输出规格（配置 + 实际像素），供前端展示与拼接校验
+# Viết thông số kỹ thuật đầu ra phân tách (cấu hình + pixel thực tế) để hiển thị giao diện người dùng và xác minh nối
 def write_fragment_video_output_meta(
     fragment: DramaEpisodeFragment,
     *,
@@ -221,7 +221,7 @@ def write_fragment_video_output_meta(
     fragment.params = params
 
 
-# 项目是否开启「上一镜尾帧 → 本镜首帧」衔接（默认开启）
+# Liệu dự án có bật kết nối "khung hình cuối cùng của ảnh chụp trước → khung hình đầu tiên của ảnh chụp này" hay không (được bật theo mặc định)
 def project_link_last_frame_enabled(project: DramaProject) -> bool:
     params = project.params if isinstance(project.params, dict) else {}
     raw = params.get("linkLastFrame")
@@ -230,7 +230,7 @@ def project_link_last_frame_enabled(project: DramaProject) -> bool:
     return _coerce_project_bool(raw, True)
 
 
-# 查找同集中 sort_order 更小的上一镜
+# Tìm cảnh trước đó có thứ tự sắp xếp nhỏ hơn trong cùng một tập
 async def find_previous_episode_fragment(
     db: AsyncSession,
     fragment: DramaEpisodeFragment,
@@ -248,7 +248,7 @@ async def find_previous_episode_fragment(
 
 
 def fragment_generation_status(fragment: DramaEpisodeFragment) -> dict[str, Any]:
-    """读取分镜片段生成状态（done / running / queued / failed / idle）。
+    """Đọc trạng thái tạo clip bảng phân cảnh (hoàn thành/đang chạy/đang xếp hàng/không thành công/không hoạt động).
 
     重新生成时旧 video 仍在，优先信任 params.generation 的进行中状态。
     失败时若表面是「重试超限」，优先露出 root_error（如参考图审核）。
@@ -277,7 +277,7 @@ def fragment_generation_status(fragment: DramaEpisodeFragment) -> dict[str, Any]
     return {"status": "idle"}
 
 
-# 是否为「重试超限」包装句（不含真实根因）
+# Đây có phải là câu đóng gói cho "thử lại vượt quá giới hạn" (không bao gồm nguyên nhân thực sự)
 def _is_retry_limit_error(text: str) -> bool:
     t = (text or "").strip()
     return bool(t) and (
@@ -287,7 +287,7 @@ def _is_retry_limit_error(text: str) -> bool:
     )
 
 
-# 组装失败态 generation：保留 root_error，避免被重试超限覆盖
+# Tạo trạng thái lỗi hội: giữ lại root_error để tránh bị ghi đè do lỗi thử lại
 def build_failed_generation_params(
     prev_gen: dict[str, Any] | None,
     error: str,
@@ -313,7 +313,7 @@ def build_failed_generation_params(
 
     display = msg
     if _is_retry_limit_error(msg) and root and not _is_retry_limit_error(root):
-        # 已拼过「上限：root」则不再二次拼接（_fail_task 会再走一遍）
+        # Nếu "giới hạn trên: root" đã được đánh vần, nó sẽ không được ghép lại (_fail_task sẽ được chạy lại)
         root_snip = root[:400]
         if msg.rstrip().endswith(root_snip) or f"：{root[:80]}" in msg:
             display = msg
@@ -325,7 +325,7 @@ def build_failed_generation_params(
         "error": display[:500],
         "root_error": root[:500],
     }
-    # attempts / attempt_limit：显式入参优先，否则保留 prev
+    # số lần thử / try_limit: các tham số đầu vào rõ ràng được ưu tiên, nếu không thì giữ lại prev
     if attempts is not None:
         out["attempts"] = attempts
     elif prev.get("attempts") is not None:
@@ -343,12 +343,12 @@ def build_failed_generation_params(
     return out
 
 
-# 分镜视频版本上限（归档的历史 take，不含「当前」）
+# Giới hạn phiên bản video bảng phân cảnh (lịch sử đã lưu trữ, ngoại trừ "hiện tại")
 FRAGMENT_VIDEO_VERSION_LIMIT = 8
 
 
 def _snapshot_version_media_url(url: str, *, label: str) -> str:
-    """把当前媒体复制为独立历史文件，避免下次覆盖同路径导致版本失效。
+    """Sao chép phương tiện hiện tại dưới dạng tệp lịch sử độc lập để tránh ghi đè lên cùng một đường dẫn vào lần sau và khiến phiên bản trở nên không hợp lệ.
 
     优先本地拷贝；本地缺失但为 http(s) 时尝试同步下载到 `_hist_` 文件再发布。
     """
@@ -367,7 +367,7 @@ def _snapshot_version_media_url(url: str, *, label: str) -> str:
     if path is not None:
         stem = path.stem
         suffix = path.suffix or ".png"
-        # 已是带时间戳/历史后缀的独立文件，无需再拷
+        # Nó đã là một tệp độc lập có hậu tố dấu thời gian/lịch sử, không cần sao chép lại
         if path.exists() and path.is_file() and ("_hist_" in stem or re.search(r"_\d{10,}$", stem)):
             published = storage_svc.republish_url(storage_svc.rel_static_url(path), sync=True)
             return published or storage_svc.rel_static_url(path)
@@ -377,7 +377,7 @@ def _snapshot_version_media_url(url: str, *, label: str) -> str:
                 copy2(path, dest)
             rel = storage_svc.rel_static_url(dest)
             return storage_svc.republish_url(rel, sync=True) or rel
-        # 映射到本地路径但文件不在：落到同目录 hist 名，下面尝试下载
+        # Bản đồ tới đường dẫn cục bộ nhưng tệp không có ở đó: nó rơi vào cùng tên lịch sử thư mục, hãy thử tải xuống bên dưới
         dest = path.with_name(f"{(stem or 'asset')}_hist_{label}{suffix}")
     else:
         parsed = urlparse(raw)
@@ -404,7 +404,7 @@ def _snapshot_version_media_url(url: str, *, label: str) -> str:
     return raw
 
 
-# 归档当前成片到 params.video_versions（覆盖前调用）
+# Lưu trữ video hiện tại vào params.video_versions (được gọi trước khi ghi đè)
 def archive_fragment_video_version(fragment: DramaEpisodeFragment) -> dict[str, Any] | None:
     video = (fragment.video or "").strip()
     if not video:
@@ -439,7 +439,7 @@ def archive_fragment_video_version(fragment: DramaEpisodeFragment) -> dict[str, 
     versions = params.get("video_versions")
     if not isinstance(versions, list):
         versions = []
-    # 保留全部历史 take；不再按 URL 去重（固定 shot_xxx.mp4 会被覆盖，URL 相同会误删版本）
+    # Giữ lại toàn bộ lịch sử; không còn xóa các bản sao theo URL (shot_xxx.mp4 đã sửa lỗi sẽ bị ghi đè và các phiên bản có cùng URL sẽ bị xóa do nhầm lẫn)
     cleaned: list[dict[str, Any]] = [v for v in versions if isinstance(v, dict)]
     cleaned.insert(0, entry)
     params["video_versions"] = cleaned[:FRAGMENT_VIDEO_VERSION_LIMIT]
@@ -447,7 +447,7 @@ def archive_fragment_video_version(fragment: DramaEpisodeFragment) -> dict[str, 
     return entry
 
 
-# 将历史版本切换为当前成片，并把原当前片压入版本列表
+# Chuyển phiên bản lịch sử sang phim hiện tại và đẩy phim gốc và phim hiện tại vào danh sách phiên bản
 def activate_fragment_video_version(
     fragment: DramaEpisodeFragment,
     version_id: str,
@@ -539,7 +539,7 @@ def activate_fragment_video_version(
     }
 
 
-# 资产生图版本上限（归档历史，不含当前）
+# Giới hạn trên của phiên bản ánh xạ nội dung (lịch sử lưu trữ, không bao gồm hiện tại)
 ASSET_IMAGE_VERSION_LIMIT = 8
 
 
@@ -551,7 +551,7 @@ def read_asset_image_versions(asset: DramaAsset) -> list[dict[str, Any]]:
     return [dict(v) for v in raw if isinstance(v, dict) and str(v.get("url") or v.get("cover") or "").strip()]
 
 
-# 归档当前形象图到 params.image_versions（覆盖前调用）
+# Lưu trữ hình ảnh hiện tại vào params.image_versions (được gọi trước khi ghi đè)
 def archive_asset_image_version(
     asset: DramaAsset,
     *,
@@ -590,7 +590,7 @@ def archive_asset_image_version(
     return entry
 
 
-# 将历史形象切换为当前，并把原当前图压入版本列表
+# Chuyển hình ảnh lịch sử sang hình ảnh hiện tại và đẩy hình ảnh gốc và hình ảnh hiện tại vào danh sách phiên bản
 def activate_asset_image_version(
     asset: DramaAsset,
     version_id: str,
@@ -648,7 +648,7 @@ def activate_asset_image_version(
     })
     params["generation"] = gen
     params["image_versions"] = remaining[:ASSET_IMAGE_VERSION_LIMIT]
-    # 还原时不强制改写提示词；若历史条目带 prompt 且当前为空则回填
+    # Từ nhắc không bị buộc phải viết lại khi khôi phục; nếu mục nhập lịch sử có lời nhắc và hiện đang trống thì nó sẽ được lấp đầy.
     hist_prompt = str(target.get("prompt") or "").strip()
     if hist_prompt and not str(params.get("visualPrompt") or "").strip():
         params["visualPrompt"] = hist_prompt
@@ -661,11 +661,11 @@ def activate_asset_image_version(
     }
 
 
-# 入队后、任务列表尚未可见时，保留 queued，避免被当成孤儿清掉
+# Sau khi tham gia hàng đợi và danh sách nhiệm vụ vẫn chưa hiển thị, hãy tiếp tục xếp hàng để tránh bị xóa thành trẻ mồ côi.
 _ORPHAN_QUEUE_GRACE_SEC = 60
 
 
-# 判断 generation.queued_at 是否仍在宽限期内
+# Xác định xem thế hệ.queued_at có còn trong thời gian gia hạn hay không
 def generation_queued_recently(gen: dict[str, Any] | None, *, now: datetime | None = None) -> bool:
     if not isinstance(gen, dict):
         return False
@@ -682,7 +682,7 @@ def generation_queued_recently(gen: dict[str, Any] | None, *, now: datetime | No
     return (current - ts).total_seconds() < _ORPHAN_QUEUE_GRACE_SEC
 
 
-# 无对应平台任务时，把 queued/running 分镜恢复为 idle，避免假排队
+# Khi không có tác vụ nền tảng tương ứng, hãy khôi phục bảng phân cảnh đã xếp hàng/đang chạy về chế độ chờ để tránh xếp hàng sai.
 async def reconcile_orphaned_fragment_generations(
     db: AsyncSession,
     fragments: list[DramaEpisodeFragment],
@@ -730,7 +730,7 @@ def collect_active_fragment_ids_from_tasks(tasks) -> set[int]:
     return active_ids
 
 
-# 进行中的平台任务态（用于覆盖分镜 params 滞后的 queued）
+# Trạng thái tác vụ nền tảng đang diễn ra (được sử dụng để bao gồm các thông số trong bảng phân cảnh bị trì hoãn)
 _ACTIVE_FRAGMENT_VIDEO_TASK_STATUSES = frozenset(
     {"pending", "leased", "running", "awaiting_poll", "awaiting_review"}
 )
@@ -740,7 +740,7 @@ def overlay_fragment_status_with_active_task(
     status: dict[str, Any],
     task_status: str | None,
 ) -> dict[str, Any]:
-    """分镜 params 仍标 queued，但任务已提交上游时，对外展示为生成中。"""
+    """Các thông số của bảng phân cảnh vẫn được đánh dấu ở hàng đợi, nhưng khi tác vụ đã được gửi lên thượng nguồn, nó sẽ hiển thị là đang được tạo."""
     raw_task = (task_status or "").strip().lower()
     if raw_task not in _ACTIVE_FRAGMENT_VIDEO_TASK_STATUSES:
         return status
@@ -764,7 +764,7 @@ def overlay_fragment_status_with_active_task(
     return out
 
 
-# 从分镜正文提取 @asset:id
+# Trích xuất @asset:id từ văn bản bảng phân cảnh
 def extract_asset_ids_from_content(content: str) -> list[int]:
     ids: list[int] = []
     seen: set[int] = set()
@@ -777,7 +777,7 @@ def extract_asset_ids_from_content(content: str) -> list[int]:
     return ids
 
 
-# Seedance / TokenFree 参考图仅接受常见位图；SVG 占位图会被上游拒绝
+# Hình ảnh tham chiếu Seedance / TokenFree chỉ chấp nhận các bitmap phổ biến; Hình ảnh giữ chỗ SVG sẽ bị từ chối bởi thượng nguồn
 _REF_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
 
 
@@ -788,7 +788,7 @@ def _is_bitmap_image_url(url: str | None) -> bool:
     return any(path.endswith(suffix) for suffix in _REF_IMAGE_SUFFIXES)
 
 
-# 判断资产是否缺参考图（SVG/非位图占位视为仍缺，避免视频提交才被上游拒）
+# Xác định xem nội dung có thiếu hình ảnh tham chiếu hay không (trình giữ chỗ SVG/không phải bitmap được coi là vẫn bị thiếu để tránh việc gửi video bị thượng nguồn từ chối)
 def asset_needs_reference_image(asset: DramaAsset) -> bool:
     kind = (asset.type or "").strip().lower()
     if kind not in IMAGE_REF_ASSET_TYPES:
@@ -801,7 +801,7 @@ def asset_needs_reference_image(asset: DramaAsset) -> bool:
     return not _is_bitmap_image_url(candidate)
 
 
-# 读取资产生图提示词（缺省时用名称兜底）
+# Đọc từ nhắc bản vẽ tài sản (mặc định là sử dụng tên để cung cấp chi tiết)
 def read_asset_visual_prompt(asset: DramaAsset) -> str:
     params = asset.params if isinstance(asset.params, dict) else {}
     stored = str(
@@ -821,7 +821,7 @@ async def _set_fragment_generation(
     fragment: DramaEpisodeFragment,
     payload: dict[str, Any],
 ) -> None:
-    # 写入分镜 generation 状态供前端轮询
+    # Viết trạng thái tạo bảng phân cảnh cho việc bỏ phiếu phía trước
     params = dict(fragment.params or {})
     params["generation"] = payload
     fragment.params = params
@@ -840,7 +840,7 @@ async def ensure_fragment_reference_images(
     分镜视频生成前：收集引用资产，对缺图的角色/场景/道具动态 Seedream 生图。
     返回刷新后的参考资产列表（含正文 @asset 与引用表）。
     """
-    # collected_ids 引用表 + 正文 @asset
+    # bảng tham chiếu thu thập_ids + văn bản @asset
     collected_ids: list[int] = []
     seen: set[int] = set()
 
@@ -902,7 +902,7 @@ async def ensure_fragment_reference_images(
         },
     )
 
-    # 补齐正文提到但引用表没有的关联
+    # Hoàn thành các mối quan hệ được đề cập trong văn bản nhưng không có trong bảng tham chiếu
     existing_ref_ids = {ref.asset_id for ref in refs}
     for asset in ordered:
         if asset.id in existing_ref_ids:
@@ -968,12 +968,12 @@ async def ensure_reference_assets_public_urls(
     db: AsyncSession,
     assets: list[DramaAsset],
 ) -> list[DramaAsset]:
-    """将引用资产的本地 cover/url 同步上传 OSS，供 Seedance 公网拉取。"""
+    """Tải đồng bộ bìa/url cục bộ của nội dung được tham chiếu lên OSS để Seedance lấy từ mạng công cộng."""
     from app.services import storage as storage_svc
 
     source_asset_cache: dict[int, DramaAsset | None] = {}
 
-    # 角色音色优先复用 source voice asset 的公网 URL；缺失时再尝试补传本地文件。
+    # URL công khai của nội dung giọng nói nguồn sẽ được sử dụng lại trước tiên cho giọng nói của nhân vật; nếu nó bị thiếu, hãy thử tải tệp cục bộ lên.
     async def _resolve_public_voice_url(asset: DramaAsset, params: dict[str, Any]) -> str | None:
         voice_url = read_asset_voice_audio_url(params)
         if not voice_url:
@@ -1032,7 +1032,7 @@ async def ensure_reference_assets_public_urls(
                     asset.id,
                     field,
                 )
-        # 角色音色需要公网 URL；若历史绑定仍是 /static，改指向 source voice asset 的 HTTPS。
+        # Giọng nói của nhân vật yêu cầu URL công khai; nếu liên kết lịch sử vẫn ở dạng/tĩnh, hãy thay đổi nó thành HTTPS trỏ đến nội dung giọng nói nguồn.
         params = dict(asset.params or {}) if isinstance(asset.params, dict) else {}
         current_voice_url = read_asset_voice_audio_url(params)
         public_voice_url = await _resolve_public_voice_url(asset, params)
@@ -1069,7 +1069,7 @@ def _character_voice_binding(params: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
-# 分镜视频提交前：过短的参考音色自动重新合成（Seedance ≥1.8s）
+# Trước khi gửi video storyboard: Âm thanh tham chiếu quá ngắn sẽ được tự động tổng hợp lại (Seedance ≥1.8s)
 async def ensure_fragment_reference_audios(
     db: AsyncSession,
     user: User,
@@ -1157,7 +1157,7 @@ async def ensure_fragment_reference_audios(
         )
         try:
             if voice_asset is None:
-                # 无独立 voice 资产：就地补足本地文件并回写绑定
+                # Không có nội dung giọng nói độc lập: bổ sung các tệp cục bộ tại chỗ và ghi lại ràng buộc
                 local = storage_svc.local_path_from_url(url)
                 if local is None:
                     dest = work_dir / f"char_{asset.id}_voice.mp3"
@@ -1189,7 +1189,7 @@ async def ensure_fragment_reference_audios(
                 asset.id,
             )
 
-    # 项目旁白音色
+    # Âm thanh tường thuật dự án
     proj_params = dict(project.params or {}) if isinstance(project.params, dict) else {}
     narrator = proj_params.get("narrationVoiceAudio")
     if isinstance(narrator, dict):
@@ -1279,18 +1279,18 @@ async def generate_asset_image(
     settings = get_settings()
     ark = get_ark()
 
-    # style_id 请求优先，否则回退项目 params
+    # style_id ưu tiên yêu cầu, nếu không các thông số dự án sẽ bị khôi phục
     style_id = (image_style_id or "").strip() or str(
         (project.params or {}).get("image_style_id") or ""
     ).strip() or None
-    # ratio 默认：角色 3:4，其它 16:9
+    # Tỷ lệ mặc định: ký tự 3:4, ký tự khác 16:9
     ratio = (aspect_ratio or "").strip() or (
         "3:4" if (kind or "").lower() == "character" else "16:9"
     )
     res = (resolution or "").strip() or "2K"
     model = resolve_seedream_model_endpoint(model_id)
     size = resolve_seedream_size(aspect_ratio=ratio, resolution=res, model_id=model)
-    # board 风格封面的公网 URL；没有栅格图时仍只靠提示词
+    # URL công khai của bìa kiểu bảng; khi không có hình ảnh raster, chỉ sử dụng các từ gợi ý
     board = resolve_image_style_board_url(style_id)
     full_prompt = build_generation_prompt(
         prompt, asset_type=kind, style_id=style_id, has_style_board=bool(board)
@@ -1315,7 +1315,7 @@ async def generate_asset_image(
         aspect_ratio=ratio,
         style_ref_urls=[board] if board else None,
     )
-    # 生图结果实时同步 OSS（禁止异步排队），Seedance 参考图需要公网 https
+    # Kết quả hình ảnh được tạo ra được đồng bộ hóa với OSS trong thời gian thực (cấm xếp hàng không đồng bộ) và hình ảnh tham chiếu Seedance yêu cầu mạng công cộng https
     from datetime import datetime, timezone
 
     from app.services import storage as storage_svc
@@ -1345,7 +1345,7 @@ async def generate_asset_image(
     )
 
     finished_at = datetime.now(timezone.utc).isoformat()
-    # gen_meta 写入资产 params，便于前端回显上次选项；同事务标记 done 以便轮询立刻换图
+    # gen_meta ghi các thông số nội dung để tạo điều kiện cho giao diện người dùng lặp lại tùy chọn cuối cùng; giống như dấu giao dịch được thực hiện để thuận tiện cho việc bỏ phiếu và thay đổi hình ảnh ngay lập tức
     gen_meta = {
         "prompt": prompt,
         "image_style_id": style_id,
@@ -1374,7 +1374,7 @@ async def generate_asset_image(
         )
         db.add(asset)
     else:
-        # 提交前刷新，避免与上传/保存并发时用陈旧 params 覆盖 image_versions
+        # Làm mới trước khi gửi để tránh ghi đè image_versions bằng các thông số cũ khi đồng thời tải lên/lưu
         await db.refresh(asset)
         archive_asset_image_version(asset, source="generate")
         asset.cover = url
@@ -1406,7 +1406,7 @@ async def generate_voice_asset_audio(
     speaker: str | None = None,
     character_asset: DramaAsset | None = None,
 ) -> DramaAsset:
-    """为 voice 类型资产按提示词合成参考音频。"""
+    """Tổng hợp âm thanh tham chiếu bằng lời nhắc cho nội dung loại giọng nói."""
     return await synthesize_voice_asset(
         db,
         user,
@@ -1420,7 +1420,7 @@ async def generate_voice_asset_audio(
     )
 
 
-# 组装分镜 Seedance 引用 payload（含全局旁白音色）
+# Tập hợp tải trọng tham chiếu Seedance của bảng phân cảnh (bao gồm giai điệu tường thuật chung)
 def build_fragment_ref_payloads(
     project: DramaProject,
     ref_assets: list[DramaAsset],
@@ -1457,12 +1457,12 @@ def build_fragment_ref_payloads(
 
 @dataclass
 class FragmentVideoPrepared:
-    """分镜视频提交前上下文（Worker 准备阶段产物，写入 task.payload）。"""
+    """Bối cảnh trước khi gửi video storyboard (sản phẩm của giai đoạn chuẩn bị Worker, được ghi vào task.payload)."""
 
     submit_mode: str
     seedance_body: dict[str, Any] | None = None
     image_url: str | None = None
-    # 多参考图（与 first_frame 互斥）
+    # Nhiều ảnh tham chiếu (loại trừ lẫn nhau với first_frame)
     reference_image_urls: list[str] | None = None
     reference_audio_urls: list[str] | None = None
     prompt: str = ""
@@ -1472,11 +1472,11 @@ class FragmentVideoPrepared:
     generate_audio: bool = True
     content_labels: list[str] | None = None
     model_id: str | None = None
-    # 旧 payload 字段，反序列化仍读取；新任务不再写入
+    # Trường tải trọng cũ vẫn được đọc trong quá trình khử lưu lượng; nhiệm vụ mới không còn viết nó nữa.
     kie_api_kind: str | None = None
 
 
-# Worker 准备阶段：参考图 / 衔接帧 / 请求体（可耗时，但不等待上游成片）。
+# Giai đoạn chuẩn bị của Worker: hình ảnh tham chiếu/khung kết nối/nội dung yêu cầu (có thể mất thời gian, nhưng không đợi hoàn thành upstream).
 async def prepare_fragment_video_for_submit(
     db: AsyncSession,
     user: User,
@@ -1498,7 +1498,7 @@ async def prepare_fragment_video_for_submit(
         episode.params if episode else None,
         project.params,
     )
-    # 分集未落库画幅时写入解析结果，避免 UI 默认 9:16 与 params 长期不一致
+    # Ghi kết quả phân tích cú pháp khi tập không có trong khung gốc để tránh sự mâu thuẫn lâu dài giữa giao diện người dùng mặc định 9:16 và các thông số
     if episode is not None:
         ep_params = dict(episode.params or {})
         changed = False
@@ -1538,7 +1538,7 @@ async def prepare_fragment_video_for_submit(
         ref_assets=ref_assets,
     )
     ref_assets = await ensure_reference_assets_public_urls(db, ref_assets)
-    # 音色难控：暂不合成/补齐 reference_audio
+    # Âm điệu khó kiểm soát: chưa tổng hợp/hoàn thiện reference_audio
     if SEEDANCE_ATTACH_REFERENCE_AUDIO:
         ref_assets = await ensure_fragment_reference_audios(
             db,
@@ -1550,7 +1550,7 @@ async def prepare_fragment_video_for_submit(
     ref_payloads = build_fragment_ref_payloads(project, ref_assets)
     style_id = str((project.params or {}).get("image_style_id") or "").strip() or None
     catalog = build_seedance_reference_catalog(ref_payloads)
-    # board 始终可用于静帧；视频参考图只在已有角色/场景图时挂上，避免封面被当成主体
+    # bảng luôn có thể được sử dụng cho khung hình tĩnh; hình ảnh tham khảo video chỉ được treo khi đã có hình ảnh nhân vật/cảnh để tránh việc lấy bìa làm chủ đề chính
     board_url = resolve_image_style_board_url(style_id)
     video_board_url = board_url if catalog.images else ""
 
@@ -1605,8 +1605,8 @@ async def prepare_fragment_video_for_submit(
 
     ark = get_ark()
     if not image_url:
-        # Seedance i2v 禁止传 ratio，输出跟首帧；静帧必须先按目标画幅生成
-        # 无主体参考时不把画风板当唯一 image，只靠风格文案
+        # Seedance i2v cấm tỷ lệ truyền và xuất khung hình đầu tiên; trước tiên, các khung hình tĩnh phải được tạo theo khung đích.
+        # Khi không có tài liệu tham khảo chính, đừng coi bảng kiểu là hình ảnh duy nhất mà chỉ dựa vào bản sao kiểu
         still_prompt = append_style_prompt(
             (prompt or "").strip()[:500] or "短剧分镜",
             style_id,
@@ -1632,7 +1632,7 @@ async def prepare_fragment_video_for_submit(
     )
 
 
-# Worker 提交阶段：仅 HTTP 创建上游任务，立即返回 provider_task_id（非阻塞）。
+# Giai đoạn gửi Worker: Chỉ HTTP tạo các tác vụ ngược dòng và trả về nhà cung cấp_task_id ngay lập tức (không chặn).
 async def submit_prepared_fragment_video(
     prepared: FragmentVideoPrepared,
     *,
@@ -1709,7 +1709,7 @@ def deserialize_fragment_video_prepared(raw: dict[str, Any]) -> FragmentVideoPre
     )
 
 
-# 将本地/上游视频落盘结果写回分镜并计费。
+# Ghi lại kết quả vị trí video cục bộ/ngược dòng vào bảng phân cảnh và lập hóa đơn cho chúng.
 async def apply_fragment_video_assets(
     db: AsyncSession,
     user: User,
@@ -1727,7 +1727,7 @@ async def apply_fragment_video_assets(
     from app.services.ffmpeg_compose import extract_video_last_frame, extract_video_poster_frame
 
     settings = get_settings()
-    # 覆盖前归档旧成片，供版本切换
+    # Lưu phim cũ trước khi ghi đè để chuyển phiên bản
     archive_fragment_video_version(fragment)
     video_url = storage_svc.republish_url(local_video, sync=True) or local_video
     cover_url = ""
@@ -1749,7 +1749,7 @@ async def apply_fragment_video_assets(
         last_frame_url = storage_svc.republish_url(local_last_frame, sync=True) or local_last_frame
         if not cover_url:
             cover_url = last_frame_url
-    # Kie 等渠道常不回传尾帧：从成片本地抽一帧，保证下一镜衔接门禁可用
+    # Các nền tảng như Kie thường không trả về khung hình cuối cùng: một khung hình được trích xuất từ phim để đảm bảo có sẵn kiểm soát truy cập kết nối cảnh quay tiếp theo
     if not last_frame_url and video_path and video_path.exists():
         frame_dest = (
             storage_svc.project_dir(project.id)
@@ -1804,7 +1804,7 @@ async def apply_fragment_video_assets(
     return fragment
 
 
-# 衔接用尾帧尽量走公网 URL（本地 /static 时尝试 republish）
+# Hãy thử sử dụng URL công khai làm khung cuối cùng cho kết nối (thử xuất bản lại khi cục bộ/tĩnh)
 def storage_svc_early_republish(url: str) -> str:
     from app.services import storage as storage_svc
 

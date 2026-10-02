@@ -10,14 +10,14 @@ from app.services.drama.script_summary_prompt import (
     build_script_summary_user_message,
 )
 
-# 正文过短阈值（汉字量近似用去空白后长度）
+# Văn bản có ngưỡng quá ngắn (độ dài của ký tự tiếng Trung được xấp xỉ bằng cách loại bỏ các khoảng trống)
 MIN_EPISODE_CONTENT_CHARS = 450
-# 短剧单集目标篇幅（约 1–1.5 分钟成片，对应 6–10 镜）
+# Độ dài mục tiêu của một tập phim truyền hình ngắn (khoảng 1–1,5 phút phim hoàn thành, tương ứng với 6–10 cảnh quay)
 TARGET_EPISODE_CONTENT_CHARS = 550
-EPISODE_SCENE_COUNT_HINT = "2-3 场"
-# 手动加集标记；自动流水线不会填这些空集
+EPISODE_SCENE_COUNT_HINT = "2-3 phân cảnh"
+# Thêm điểm đánh dấu theo cách thủ công; đường dẫn tự động sẽ không điền vào các bộ trống này
 MANUAL_EPISODE_ORIGIN = "manual"
-# 与创建项目上限对齐
+# Phù hợp với giới hạn trên của dự án đã tạo
 MAX_DRAMA_EPISODES = 120
 
 # Kế hoạch danh sách tập: Lên khung tập + tên tập
@@ -132,7 +132,7 @@ Bắt buộc xuất JSON chuẩn:
 
 
 def _format_neighbor_episode_briefs(episodes: list[dict[str, Any]], number: int, limit: int = 3) -> str:
-    """邻集标题/创意/摘要，作正文节选的补充。"""
+    """Tiêu đề/ý tưởng/tóm tắt của tình tiết liền kề để bổ sung cho đoạn trích của văn bản chính."""
     others = [
         item
         for item in episodes
@@ -148,11 +148,11 @@ def _format_neighbor_episode_briefs(episodes: list[dict[str, Any]], number: int,
         title = item.get("title") or f"第 {num} 集"
         creative = str(item.get("creative") or "").strip()
         summary = str(item.get("summary") or "").strip()
-        parts = [f"第 {num} 集《{title}》"]
+        parts = [f"Tập {num}《{title}》"]
         if creative:
-            parts.append(f"创意：{creative[:400]}")
+            parts.append(f"Ý tưởng: {creative[:400]}")
         if summary:
-            parts.append(f"摘要：{summary[:500]}")
+            parts.append(f"Tóm tắt: {summary[:500]}")
         blocks.append("\n".join(parts))
     return "\n\n".join(blocks)
 
@@ -162,7 +162,7 @@ def _format_neighbor_episode_bodies(
     number: int,
     limit: int = 3,
 ) -> str:
-    """与 batch 同级：取距当前集最近、且已有正文的若干集节选。"""
+    """Cùng cấp độ với batch: Lấy đoạn trích từ một số tập gần nhất với tập hiện tại và có văn bản."""
     others = [
         item
         for item in episodes
@@ -173,29 +173,29 @@ def _format_neighbor_episode_bodies(
     others.sort(key=lambda x: abs(int(x.get("episodeNumber") or 0) - number))
     picked = others[:limit]
     if not picked:
-        return "（暂无邻集正文）"
+        return "(Chưa có nội dung các tập lân cận)"
     blocks: list[str] = []
     for item in sorted(picked, key=lambda x: int(x.get("episodeNumber") or 0)):
         num = item.get("episodeNumber")
-        title = item.get("title") or f"第 {num} 集"
+        title = item.get("title") or f"Tập {num}"
         body = str(item.get("body") or item.get("content") or "").strip()
         if len(body) > 1800:
-            body = body[:1800] + "\n…（上文已截断）"
-        blocks.append(f"{num}.{title}：\n{body}")
+            body = body[:1800] + "\n…(Phần trên đã rút gọn)"
+        blocks.append(f"Tập {num}. {title}:\n{body}")
     return "\n\n".join(blocks)
 
 
 def format_character_asset_names_line(names: list[str] | None) -> str:
-    """定妆角色名一行，供单集 prompt 约束称呼。"""
+    """Một dòng tên nhân vật trang điểm cố định, được sử dụng để ràng buộc lời nhắc trong một tập phim."""
     cleaned: list[str] = []
     for raw in names or []:
         name = str(raw or "").strip()
         if name and name not in cleaned:
             cleaned.append(name)
     if not cleaned:
-        return "（暂无定妆角色资产；新角色须在出场人物行写清全名）"
-    joined = "、".join(cleaned[:80])
-    return f"须优先使用这些定妆名：{joined}；新角色须在出场人物行写清全名"
+        return "(Chưa có tài sản tạo hình nhân vật; nhân vật mới cần ghi rõ tên đầy đủ trong dòng nhân vật xuất hiện)"
+    joined = ", ".join(cleaned[:80])
+    return f"Ưu tiên sử dụng các tên nhân vật đã định hình này: {joined}; nhân vật mới cần ghi rõ tên đầy đủ trong dòng nhân vật xuất hiện"
 
 
 def build_single_episode_context(
@@ -206,14 +206,14 @@ def build_single_episode_context(
     project_source: str = "",
     character_asset_names: list[str] | None = None,
 ) -> list[str]:
-    """单集 summary/body/full/brief/optimize 共用的厚上下文块。"""
+    """Một khối ngữ cảnh dày được chia sẻ bởi tóm tắt/nội dung/đầy đủ/tóm tắt/tối ưu hóa cho một tập duy nhất."""
     return [
-        f"整剧原始创意：\n{(project_source or '').strip() or '（无）'}",
-        f"全剧剧本摘要：\n{format_summary_text(project_summary)}",
-        f"全剧分集规划：\n{_format_episode_title_list(existing)}",
-        f"邻集正文（近 {3} 集节选）：\n{_format_neighbor_episode_bodies(existing, number)}",
-        f"邻集创意/摘要补充：\n{_format_neighbor_episode_briefs(existing, number)}",
-        f"已有定妆角色名：\n{format_character_asset_names_line(character_asset_names)}",
+        f"Ý tưởng ban đầu toàn phim:\n{(project_source or '').strip() or '(Không có)'}",
+        f"Tóm tắt kịch bản toàn phim:\n{format_summary_text(project_summary)}",
+        f"Kế hoạch phân tập toàn phim:\n{_format_episode_title_list(existing)}",
+        f"Nội dung các tập lân cận (trích đoạn {3} tập gần nhất):\n{_format_neighbor_episode_bodies(existing, number)}",
+        f"Ý tưởng / Tóm tắt bổ sung của các tập lân cận:\n{_format_neighbor_episode_briefs(existing, number)}",
+        f"Tên các nhân vật đã có tạo hình:\n{format_character_asset_names_line(character_asset_names)}",
     ]
 
 
@@ -227,10 +227,10 @@ async def run_episode_summary_from_creative(
     title: str | None = None,
     character_asset_names: list[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """本集创意 → 集级 summary（可更新 title）。"""
+    """Sáng tạo của tập này → tóm tắt cấp độ tập (có thể cập nhật tiêu đề)."""
     brief = (creative or "").strip()
     if len(brief) < 20:
-        raise ValueError("本集原始创意至少 20 字")
+        raise ValueError("Ý tưởng ban đầu của tập này至少 20 字")
     title_text = (title or "").strip() or f"第 {number} 集"
     user_parts = [
         *build_single_episode_context(
@@ -240,10 +240,10 @@ async def run_episode_summary_from_creative(
             project_source=project_source,
             character_asset_names=character_asset_names,
         ),
-        f"当前集号：{number}",
-        f"当前集名：{title_text}",
-        f"本集原始创意：\n{brief}",
-        "请只输出本集 title 与 summary。",
+        f"Số tập hiện tại: Tập {number}",
+        f"Tên tập hiện tại: {title_text}",
+        f"Ý tưởng ban đầu của tập này:\n{brief}",
+        "Hãy chỉ xuất title và summary cho tập này.",
     ]
     data = await drama_chat_json(
         EPISODE_SUMMARY_FROM_CREATIVE_SYSTEM,
@@ -280,7 +280,7 @@ async def run_episode_body_from_brief(
     title: str | None = None,
     character_asset_names: list[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """本集创意+摘要 → 拍摄正文 body。"""
+    """Sáng tạo + tóm tắt của tập này → Bắn xác."""
     brief = (creative or "").strip()
     syn = (summary or "").strip()
     if len(brief) < 10 and len(syn) < 40:
@@ -294,11 +294,11 @@ async def run_episode_body_from_brief(
             project_source=project_source,
             character_asset_names=character_asset_names,
         ),
-        f"当前集号：{number}",
-        f"当前集名：{title_text}",
-        f"本集原始创意：\n{brief or '（无，以摘要为准）'}",
-        f"本集剧情摘要：\n{syn or '（无，以创意为准）'}",
-        "请撰写本集拍摄正文 content。",
+        f"Số tập hiện tại: Tập {number}",
+        f"Tên tập hiện tại: {title_text}",
+        f"Ý tưởng ban đầu của tập này:\n{brief or '(Không có, lấy theo tóm tắt)'}",
+        f"Tóm tắt kịch bản tập này:\n{syn or '(Không có, lấy theo ý tưởng)'}",
+        "Hãy viết kịch bản chi tiết content cho tập này.",
     ]
     data = await drama_chat_json(
         EPISODE_BODY_FROM_BRIEF_SYSTEM,
@@ -316,14 +316,14 @@ async def run_episode_body_from_brief(
     row["creative"] = brief or str(row.get("creative") or "")
     row["summary"] = syn or str(row.get("summary") or "")
     if _content_char_len(str(row.get("body") or "")) < MIN_EPISODE_CONTENT_CHARS:
-        # 短则再试一次强调长度
+        # Nếu nó ngắn, hãy thử lại và nhấn mạnh độ dài.
         retry = await drama_chat_json(
             EPISODE_BODY_FROM_BRIEF_SYSTEM,
             "\n\n".join(
                 user_parts
                 + [
-                    f"上一稿过短（不足 {MIN_EPISODE_CONTENT_CHARS} 字），请扩写至约 {TARGET_EPISODE_CONTENT_CHARS} 汉字，"
-                    f"含 {EPISODE_SCENE_COUNT_HINT}、每场 2-3 段 △ 与 2-3 句台词，仍只输出第 {number} 集。"
+                    f"Bản thảo trước quá ngắn (dưới {MIN_EPISODE_CONTENT_CHARS} từ), hãy viết mở rộng chi tiết đạt khoảng {TARGET_EPISODE_CONTENT_CHARS} từ tiếng Việt, "
+                    f"gồm {EPISODE_SCENE_COUNT_HINT}, mỗi phân cảnh có 2-3 đoạn hành động △ và 2-3 câu thoại, vẫn chỉ xuất Tập {number}."
                 ]
             ),
             max_tokens=8192,
@@ -347,7 +347,7 @@ async def run_episode_full_from_creative(
     title: str | None = None,
     character_asset_names: list[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """创意 → 摘要 → 正文（一键整集）。"""
+    """Sáng tạo → Tóm tắt → Văn bản (một cú nhấp chuột để hoàn thành tập phim)."""
     summary_rows = await run_episode_summary_from_creative(
         project_summary,
         existing,
@@ -385,7 +385,7 @@ async def run_episode_brief_from_body(
     title: str | None = None,
     character_asset_names: list[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """已有拍摄正文 → 反推本集 creative + summary（不改 body）。"""
+    """Đã quay văn bản rồi → Đảo ngược nội dung + tóm tắt của tập này (không thay đổi nội dung)."""
     script_body = (body or "").strip()
     if len(script_body) < 80:
         raise ValueError("本集剧本内容过短，无法反推创意与摘要")
@@ -398,10 +398,10 @@ async def run_episode_brief_from_body(
             project_source=project_source,
             character_asset_names=character_asset_names,
         ),
-        f"当前集号：{number}",
-        f"当前集名：{title_text}",
-        f"本集拍摄正文：\n{script_body[:12000]}",
-        "请只输出本集 title、creative、summary；不要改写正文。",
+        f"Số tập hiện tại: Tập {number}",
+        f"Tên tập hiện tại: {title_text}",
+        f"Kịch bản quay chi tiết của tập:\n{script_body[:12000]}",
+        "Hãy chỉ xuất title, creative, summary cho tập này; không viết lại kịch bản chi tiết.",
     ]
     data = await drama_chat_json(
         EPISODE_BRIEF_FROM_BODY_SYSTEM,
@@ -460,7 +460,7 @@ def resolve_episode_target(
     project_params: dict[str, Any] | None = None,
     script_params: dict[str, Any] | None = None,
 ) -> int:
-    # 解析目标总集数：优先项目创建时的集数，其次摘要 / 剧本参数
+    # Phân tích tổng số tập mục tiêu: Ưu tiên số tập tại thời điểm tạo dự án, theo sau là các tham số tóm tắt/tập lệnh
     candidates = [
         (project_params or {}).get("episode_count"),
         (summary or {}).get("episodeCount"),
@@ -481,7 +481,7 @@ def merge_episode_bodies(
     batch: list[dict[str, Any]],
     prefer_incoming: bool = False,
 ) -> list[dict[str, Any]]:
-    # 按集号合并；默认更长文本优先，prefer_incoming 时以后写入为准（空值回退保留旧值）
+    # Hợp nhất theo số đã đặt; văn bản dài hơn được ưu tiên theo mặc định và việc viết sau sẽ chiếm ưu thế khi Prefer_incoming (dự phòng giá trị null vẫn giữ nguyên giá trị cũ)
     by_number: dict[int, dict[str, Any]] = {}
     for item in existing + batch:
         if not isinstance(item, dict):
@@ -539,7 +539,7 @@ def merge_episode_bodies(
 
 
 def auto_missing_episode_numbers(existing: list[dict[str, Any]], total: int) -> list[int]:
-    """自动流水线待填集号：跳过手动加集且正文未达标的空集。"""
+    """Dây chuyền lắp ráp tự động điền số đã đặt: bỏ qua việc thêm thủ công các bộ trống và văn bản không đạt tiêu chuẩn."""
     by_num: dict[int, dict[str, Any]] = {}
     for item in existing:
         if not isinstance(item, dict):
@@ -570,7 +570,7 @@ def append_manual_episode(
     existing: list[dict[str, Any]],
     title: str | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
-    """在已有分集后追加一集空的手动集，返回 (新列表, 新集号)。"""
+    """Thêm một tập thủ công trống vào sau tập hiện có, quay lại (danh sách mới, số tập mới)."""
     max_number = 0
     for item in existing:
         if not isinstance(item, dict):
@@ -600,7 +600,7 @@ def append_manual_episode(
 
 
 def count_completed_episodes(episodes: list[dict[str, Any]], total: int) -> int:
-    # 统计 1..total 中正文达到质量阈值的集数
+    # Thống kê 1..Tổng số tập mà văn bản đạt đến ngưỡng chất lượng
     done = 0
     for item in episodes:
         try:
@@ -618,13 +618,13 @@ def _content_char_len(text: str) -> int:
 
 
 def normalize_series_title(raw: str | None) -> str:
-    """清洗 AI 输出的剧名，去掉书名号/引号与过长尾巴。"""
+    """Làm sạch đầu ra tiêu đề phim truyền hình bằng AI và xóa số/trích dẫn tiêu đề sách cũng như phần đuôi quá dài."""
     title = str(raw or "").strip()
     if not title:
         return ""
     title = title.strip("「」『』《》\"'“”‘’").strip()
     title = title.splitlines()[0].strip()
-    # 截到合理项目名长度（中文短剧名）
+    # Cắt theo độ dài tên dự án hợp lý (tên phim ngắn Trung Quốc)
     if len(title) > 24:
         title = title[:24].rstrip("，。；、…·-— ")
     return title
@@ -636,7 +636,7 @@ def pick_auto_project_title(
     creative: str,
     current_title: str,
 ) -> str | None:
-    """摘要完成后：优先用 AI 剧名覆盖「创意截断/过长」默认标题；用户已改名则不覆盖。"""
+    """Sau khi tóm tắt xong: sẽ ưu tiên ghi đè tiêu đề mặc định "cắt ngắn/quá dài" bằng tiêu đề phim truyền hình AI; nếu tên đã được người dùng thay đổi, nó sẽ không bị ghi đè."""
     series = normalize_series_title(
         summary.get("seriesTitle") or summary.get("title") or summary.get("projectTitle")
     )
@@ -659,23 +659,23 @@ def pick_auto_project_title(
 def format_summary_text(summary: dict[str, Any]) -> str:
     # Human-readable outline for UI / LLM context
     lines = [
-        f"剧名：{summary.get('seriesTitle', '')}",
-        f"集数：{summary.get('episodeCount', '')}",
-        f"类型：{summary.get('storyType', '')}",
-        f"受众：{summary.get('targetAudience', '')}",
-        f"钩子：{summary.get('coreHook', '')}",
-        f"一句话：{summary.get('oneLineStory', '')}",
+        f"Tên phim: {summary.get('seriesTitle', '')}",
+        f"Số tập: {summary.get('episodeCount', '')}",
+        f"Thể loại: {summary.get('storyType', '')}",
+        f"Khán giả mục tiêu: {summary.get('targetAudience', '')}",
+        f"Điểm thu hút chính (Hook): {summary.get('coreHook', '')}",
+        f"Câu chuyện một câu: {summary.get('oneLineStory', '')}",
         "",
-        "人物：",
+        "Nhân vật:",
     ]
     for c in summary.get("characters") or []:
         if isinstance(c, dict):
             lines.append(
-                f"- {c.get('name', '')}（{c.get('roleType', '')}/{c.get('title', '')}）："
-                f"{c.get('visualImage', '')}；标签：{c.get('coreTags', '')}；"
-                f"弧光：{c.get('growthArc', '')}"
+                f"- {c.get('name', '')} ({c.get('roleType', '')}/{c.get('title', '')}): "
+                f"{c.get('visualImage', '')}; Nhãn: {c.get('coreTags', '')}; "
+                f"Đường phát triển: {c.get('growthArc', '')}"
             )
-    lines.extend(["", "梗概：", str(summary.get("synopsis") or "")])
+    lines.extend(["", "Tóm tắt cốt truyện:", str(summary.get("synopsis") or "")])
     return "\n".join(lines)
 
 
@@ -683,13 +683,13 @@ def _format_episode_title_list(episodes: list[dict[str, Any]]) -> str:
     rows: list[str] = []
     for item in sorted(episodes, key=lambda x: int(x.get("episodeNumber") or 0)):
         num = item.get("episodeNumber")
-        title = item.get("title") or f"第 {num} 集"
-        rows.append(f"第 {num} 集：{title}")
-    return "\n".join(rows) if rows else "（暂无分集规划）"
+        title = item.get("title") or f"Tập {num}"
+        rows.append(f"Tập {num}: {title}")
+    return "\n".join(rows) if rows else "(Chưa có kế hoạch phân tập)"
 
 
 def _format_existing_episode_content(episodes: list[dict[str, Any]], limit: int = 3) -> str:
-    # 仅附最近若干集正文，控制上下文长度
+    # Chỉ đính kèm văn bản của các tập gần đây nhất để kiểm soát độ dài của bối cảnh
     completed = [
         item
         for item in episodes
@@ -697,17 +697,17 @@ def _format_existing_episode_content(episodes: list[dict[str, Any]], limit: int 
     ]
     completed.sort(key=lambda x: int(x.get("episodeNumber") or 0))
     if not completed:
-        return "（暂无，本批次从开篇写起）"
+        return "(Chưa có, đợt này bắt đầu viết từ mở đầu)"
     tail = completed[-limit:]
     blocks: list[str] = []
     for item in tail:
         num = item.get("episodeNumber")
-        title = item.get("title") or f"第 {num} 集"
+        title = item.get("title") or f"Tập {num}"
         body = str(item.get("body") or item.get("content") or "").strip()
-        # 过长时截断尾部摘要，避免挤占当前集生成空间
+        # Cắt bớt phần tóm tắt đuôi nếu nó quá dài để tránh chiếm không gian tạo tập hợp hiện tại
         if len(body) > 1800:
-            body = body[:1800] + "\n…（上文已截断）"
-        blocks.append(f"{num}.{title}：\n{body}")
+            body = body[:1800] + "\n…(Phần trên đã rút gọn)"
+        blocks.append(f"Tập {num}. {title}:\n{body}")
     return "\n\n".join(blocks)
 
 
@@ -719,7 +719,7 @@ def _titles_ready(existing: list[dict[str, Any]], total: int) -> bool:
         and str(item.get("title") or "").strip()
         and not str(item.get("title") or "").startswith("第 ")
     }
-    # 也接受「第 N 集」以外、或至少有 total 条带 title 的记录
+    # Cũng chấp nhận các bản ghi khác ngoài "Tập N" hoặc ít nhất là toàn bộ có tiêu đề
     with_title = [
         item
         for item in existing
@@ -728,7 +728,7 @@ def _titles_ready(existing: list[dict[str, Any]], total: int) -> bool:
         and str(item.get("title") or "").strip()
     ]
     if len(with_title) >= total:
-        # 若全是占位「第 N 集」则仍需重跑大纲
+        # Nếu “Tập N” đều là phần giữ chỗ, bạn vẫn cần chạy lại dàn ý
         placeholder_only = all(
             str(item.get("title") or "").strip() in {f"第 {item.get('episodeNumber')} 集", f"第{item.get('episodeNumber')}集"}
             for item in with_title
@@ -742,17 +742,17 @@ async def run_episode_outline(
     summary: dict[str, Any],
     episode_count: int,
 ) -> list[dict[str, Any]]:
-    # 生成全集集名大纲
+    # Tạo bản phác thảo của bộ sưu tập hoàn chỉnh
     summary_text = format_summary_text(summary)
     user = "\n".join(
         [
-            f"总集数：{episode_count} 集（episodes 数组必须恰好 {episode_count} 项）",
+            f"Tổng số tập: {episode_count} tập (mảng episodes bắt buộc có đúng {episode_count} phần tử)",
             "",
-            f"原始创意：\n{(creative or '').strip()}",
+            f"Ý tưởng ban đầu:\n{(creative or '').strip()}",
             "",
-            f"剧本摘要：\n{summary_text}",
+            f"Tóm tắt kịch bản:\n{summary_text}",
             "",
-            "请输出全部分集的 episodeNumber 与 title。",
+            "Hãy xuất episodeNumber và title cho toàn bộ các tập.",
         ]
     )
     data = await drama_chat_json(EPISODE_OUTLINE_SYSTEM, user, max_tokens=4096)
@@ -770,7 +770,7 @@ async def run_episode_outline(
         title = str(item.get("title") or "").strip() or f"第 {number} 集"
         result.append({"episodeNumber": number, "title": title, "body": ""})
     if len(result) < episode_count:
-        # 补齐缺失集号
+        # Hoàn thành số tập còn thiếu
         have = {int(x["episodeNumber"]) for x in result}
         for n in range(1, episode_count + 1):
             if n not in have:
@@ -785,7 +785,7 @@ async def ensure_episode_outline(
     existing: list[dict[str, Any]],
     total: int,
 ) -> tuple[list[dict[str, Any]], bool]:
-    """返回 (合并后分集列表, 是否实际调用 LLM 生成大纲)。"""
+    """Trả về (danh sách tập đã hợp nhất, liệu LLM có thực sự được gọi để tạo dàn ý hay không)."""
     if _titles_ready(existing, total):
         return existing, False
     outline = await run_episode_outline(creative, summary, total)
@@ -799,7 +799,7 @@ async def run_episode_script_batch(
     total: int | None = None,
     creative: str = "",
 ) -> list[dict[str, Any]]:
-    # 按缺失集号生成下一批正文（默认逐集）；手动空集不参与自动补写
+    # Tạo lô văn bản tiếp theo theo số tập bị thiếu (mặc định là từng tập); các bộ trống thủ công sẽ không tham gia viết lại tự động
     target = int(total or summary.get("episodeCount") or 12)
     missing = auto_missing_episode_numbers(existing, target)
     if not missing:
@@ -823,22 +823,22 @@ async def run_episode_script_batch(
     summary_text = format_summary_text(summary)
     user = "\n".join(
         [
-            f"当前任务：撰写第 {start} 集至第 {end} 集（共 {batch_size_n} 集）的完整剧本正文",
-            f"全剧共 {target} 集",
-            f"episodes 输出数组必须恰好 {batch_size_n} 项，episodeNumber 从 {start} 到 {end}",
-            f"每集 content 约 {TARGET_EPISODE_CONTENT_CHARS} 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词",
+            f"Nhiệm vụ hiện tại: Viết kịch bản chi tiết hoàn chỉnh từ Tập {start} đến Tập {end} (tổng cộng {batch_size_n} tập)",
+            f"Toàn bộ phim có {target} tập",
+            f"Mảng episodes đầu ra bắt buộc có đúng {batch_size_n} phần tử, episodeNumber từ {start} đến {end}",
+            f"Mỗi tập content khoảng {TARGET_EPISODE_CONTENT_CHARS} từ tiếng Việt (không dưới {MIN_EPISODE_CONTENT_CHARS} từ), gồm {EPISODE_SCENE_COUNT_HINT}, tinh giản hành động △ và lời thoại",
             "",
-            f"原始创意：\n{(creative or '').strip() or '（无额外创意，以摘要为准）'}",
+            f"Ý tưởng ban đầu:\n{(creative or '').strip() or '(Không có ý tưởng bổ sung, lấy theo tóm tắt)'}",
             "",
-            f"剧本摘要：\n{summary_text}",
+            f"Tóm tắt kịch bản:\n{summary_text}",
             "",
-            f"全剧分集规划：\n{_format_episode_title_list(existing)}",
+            f"Kế hoạch phân tập toàn phim:\n{_format_episode_title_list(existing)}",
             "",
-            f"本批次待撰写：\n{batch_titles}",
+            f"Các tập cần viết đợt này:\n{batch_titles}",
             "",
-            f"已有剧集正文：\n{_format_existing_episode_content(existing)}",
+            f"Nội dung các tập đã có trước đó:\n{_format_existing_episode_content(existing)}",
             "",
-            f"请输出第 {start}–{end} 集各集的 content 字段（可附带 title）。",
+            f"Hãy xuất trường content cho từng tập từ Tập {start}–{end} (có thể kèm theo title).",
         ]
     )
 
@@ -854,7 +854,7 @@ async def run_episode_script_batch(
         raise ValueError("分集剧本返回格式无效")
 
     normalized = _normalize_batch_episodes(episodes, start, end, title_by_num)
-    # 正文过短则带强调提示重试一次
+    # Nếu văn bản quá ngắn, hãy thử lại với dấu nhắc nhấn mạnh.
     too_short = [
         item
         for item in normalized
@@ -863,9 +863,9 @@ async def run_episode_script_batch(
     if too_short:
         retry_user = (
             user
-            + "\n\n上次输出过短。请重写本批次，每集 content 约 "
+            + "\n\nKết quả lần trước quá ngắn. Vui lòng viết lại đợt này, mỗi tập content khoảng "
             + str(TARGET_EPISODE_CONTENT_CHARS)
-            + f" 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词，不得压缩成梗概。"
+            + f" từ tiếng Việt (không dưới {MIN_EPISODE_CONTENT_CHARS} từ), gồm {EPISODE_SCENE_COUNT_HINT}, tinh giản hành động △ và lời thoại, không nén thành tóm tắt cốt truyện."
         )
         retry = await drama_chat_json(
             EPISODE_BATCH_CONTENT_SYSTEM,
@@ -890,7 +890,7 @@ async def run_episode_script_from_draft(
     creative: str = "",
     character_asset_names: list[str] | None = None,
 ) -> list[dict[str, Any]]:
-    """把用户草稿优化成指定集的拍摄正文。"""
+    """Tối ưu hóa bản nháp của người dùng thành văn bản chụp của bộ đã chỉ định."""
     number = int(episode_number)
     draft_text = (draft or "").strip()
     if number < 1:
@@ -913,13 +913,13 @@ async def run_episode_script_from_draft(
     )
     user = "\n\n".join(
         [
-            f"当前任务：把用户草稿优化为第 {number} 集完整拍摄剧本",
-            f"episodeNumber 必须为 {number}，episodes 数组必须恰好 1 项",
-            f"当前集名：{current_title}（可按草稿核心事件微调 title）",
-            f"每集 content 约 {TARGET_EPISODE_CONTENT_CHARS} 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词",
+            f"Nhiệm vụ hiện tại: Tối ưu bản thảo thô của người dùng thành kịch bản chi tiết hoàn chỉnh cho Tập {number}",
+            f"episodeNumber bắt buộc là {number}, mảng episodes phải có đúng 1 phần tử",
+            f"Tên tập hiện tại: {current_title} (có thể điều chỉnh nhẹ title theo diễn biến trọng tâm của bản thảo)",
+            f"Mỗi tập content khoảng {TARGET_EPISODE_CONTENT_CHARS} từ tiếng Việt (không dưới {MIN_EPISODE_CONTENT_CHARS} từ), gồm {EPISODE_SCENE_COUNT_HINT}, tinh giản hành động △ và lời thoại",
             *ctx,
-            f"用户提供的第 {number} 集草稿：\n{draft_text}",
-            f"请输出第 {number} 集的 title 与 content。",
+            f"Bản thảo Tập {number} do người dùng cung cấp:\n{draft_text}",
+            f"Hãy xuất title và content cho Tập {number}.",
         ]
     )
     data = await drama_chat_json(
@@ -940,11 +940,11 @@ async def run_episode_script_from_draft(
     if too_short:
         retry_user = (
             user
-            + "\n\n上次输出过短。请按用户草稿重写第 "
+            + "\n\nKết quả lần trước quá ngắn. Vui lòng dựa theo bản thảo viết lại Tập "
             + str(number)
-            + " 集，content 约 "
+            + ", content khoảng "
             + str(TARGET_EPISODE_CONTENT_CHARS)
-            + f" 汉字（不少于 {MIN_EPISODE_CONTENT_CHARS}），含 {EPISODE_SCENE_COUNT_HINT}、精简 △ 与台词。"
+            + f" từ tiếng Việt (không dưới {MIN_EPISODE_CONTENT_CHARS} từ), gồm {EPISODE_SCENE_COUNT_HINT}, tinh giản hành động △ và lời thoại."
         )
         retry = await drama_chat_json(
             EPISODE_OPTIMIZE_SYSTEM,

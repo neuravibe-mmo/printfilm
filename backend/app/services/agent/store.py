@@ -1,4 +1,4 @@
-"""Agent Skill 仓库：种子内置手册、列出可注入项、用户上传。"""
+"""Kho kỹ năng đại lý: Hướng dẫn sử dụng Seed tích hợp, danh sách các vật phẩm có thể tiêm, tải lên của người dùng."""
 
 from __future__ import annotations
 
@@ -13,16 +13,16 @@ from app.services.agent.parse import SkillParseError, parse_skill_markdown
 
 logger = logging.getLogger(__name__)
 
-# BUILTIN_SKILLS_DIR 内置 SKILL.md 目录
+# BUILTIN_SKILLS_DIR thư mục SKILL.md tích hợp
 BUILTIN_SKILLS_DIR = Path(__file__).resolve().parents[2] / "data" / "agent_skills"
-# MAX_UPLOAD_CHARS 用户上传正文上限
+# MAX_UPLOAD_CHARS Giới hạn trên của văn bản tải lên của người dùng
 MAX_UPLOAD_CHARS = 80000
-# MAX_USER_SKILLS 每用户自定义 skill 上限
+# MAX_USER_SKILLS Giới hạn kỹ năng tùy chỉnh của mỗi người dùng
 MAX_USER_SKILLS = 20
 
 
 def builtin_skill_files(root: Path | None = None) -> list[Path]:
-    # 扫描内置目录下各 skill 的 SKILL.md
+    # Quét SKILL.md của từng kỹ năng trong thư mục tích hợp
     base = root or BUILTIN_SKILLS_DIR
     if not base.exists():
         return []
@@ -30,7 +30,7 @@ def builtin_skill_files(root: Path | None = None) -> list[Path]:
 
 
 async def seed_builtin_skills(db: AsyncSession, root: Path | None = None) -> int:
-    """把内置 SKILL.md 同步进数据库（按 slug upsert，不覆盖用户改过的启用开关）。"""
+    """Đồng bộ hóa SKILL.md tích hợp vào cơ sở dữ liệu (nhấn slug upsert, nút bật do người dùng thay đổi sẽ không bị ghi đè)."""
     upserted = 0
     for path in builtin_skill_files(root):
         try:
@@ -70,7 +70,7 @@ async def seed_builtin_skills(db: AsyncSession, root: Path | None = None) -> int
 
 
 async def list_injectable_skills(db: AsyncSession, user_id: int | None) -> list[AgentSkill]:
-    # 启用中的内置 + 当前用户自己的 skill
+    # Đã kích hoạt tích hợp + kỹ năng riêng của người dùng hiện tại
     clauses = [AgentSkill.is_builtin.is_(True)]
     if user_id is not None:
         clauses.append(AgentSkill.user_id == int(user_id))
@@ -84,7 +84,7 @@ async def list_injectable_skills(db: AsyncSession, user_id: int | None) -> list[
 
 
 async def list_visible_skills(db: AsyncSession, user_id: int) -> list[AgentSkill]:
-    # 设置页：内置全部 + 自己上传的（含停用）
+    # Trang cài đặt: tích hợp tất cả + tự tải lên (bao gồm cả đã tắt)
     result = await db.execute(
         select(AgentSkill)
         .where(or_(AgentSkill.is_builtin.is_(True), AgentSkill.user_id == int(user_id)))
@@ -98,7 +98,7 @@ async def list_skills_by_ids(
     user_id: int | None,
     skill_ids: list[int],
 ) -> list[AgentSkill]:
-    # 按用户勾选的 id 取可见 skill（显式选择时不要求 is_active）
+    # Nhận kỹ năng hiển thị dựa trên id được người dùng kiểm tra (is_active không bắt buộc khi được chọn rõ ràng)
     wanted: list[int] = []
     seen: set[int] = set()
     for item in skill_ids:
@@ -124,7 +124,7 @@ async def list_skills_by_ids(
 
 
 async def get_visible_skill(db: AsyncSession, user_id: int, skill_id: int) -> AgentSkill | None:
-    # 仅能看内置或自己的
+    # Chỉ có thể xem tích hợp hoặc sở hữu
     result = await db.execute(select(AgentSkill).where(AgentSkill.id == int(skill_id)))
     row = result.scalar_one_or_none()
     if row is None:
@@ -142,7 +142,7 @@ async def count_user_skills(db: AsyncSession, user_id: int) -> int:
 
 
 async def create_user_skill(db: AsyncSession, user_id: int, markdown: str) -> AgentSkill:
-    """用户上传 markdown skill。"""
+    """Người dùng tải lên kỹ năng đánh dấu."""
     text = (markdown or "").strip()
     if len(text) > MAX_UPLOAD_CHARS:
         raise SkillParseError(f"Skill 不能超过 {MAX_UPLOAD_CHARS} 字")
@@ -177,7 +177,7 @@ async def update_user_skill(
     markdown: str | None = None,
     is_active: bool | None = None,
 ) -> AgentSkill:
-    # 内置只允许改启用开关；用户 skill 可改正文
+    # Tích hợp sẵn chỉ cho phép thay đổi công tắc bật; kỹ năng người dùng có thể thay đổi văn bản
     if is_active is not None:
         row.is_active = bool(is_active)
     if markdown is not None:

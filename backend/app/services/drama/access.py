@@ -78,7 +78,7 @@ async def detach_task_fragment_refs(
     db: AsyncSession,
     fragment_ids: list[int],
 ) -> None:
-    """保存或重切分镜前解除任务表对旧分镜 id 的引用，避免 DELETE 触发外键 500。"""
+    """Giải phóng tham chiếu của id bảng phân cảnh cũ trong bảng tác vụ trước khi lưu hoặc chia lại bảng phân cảnh để tránh DELETE kích hoạt khóa ngoại 500."""
     ids = [int(x) for x in fragment_ids if int(x) > 0]
     if not ids:
         return
@@ -92,7 +92,7 @@ async def replace_fragment_asset_refs(
     fragment: DramaEpisodeFragment,
     asset_ids: list[int],
 ) -> None:
-    """按目标 id 对齐分镜资产引用：只删多余、只补缺失，避免同键先 INSERT 后 DELETE。"""
+    """Căn chỉnh các tham chiếu nội dung bảng phân cảnh theo ID mục tiêu: chỉ xóa thừa, chỉ điền thiếu, tránh INSERT trước rồi DELETE cho cùng một khóa."""
     fragment_id = int(fragment.id)
     unique_ids: list[int] = []
     seen: set[int] = set()
@@ -105,7 +105,7 @@ async def replace_fragment_asset_refs(
     desired = set(unique_ids)
 
     if "asset_references" in inspect(fragment).unloaded:
-        # 未加载：SQL 清库后写入内存集合，避免 async lazy load
+        # Không được tải: SQL ghi vào bộ nhớ sau khi xóa cơ sở dữ liệu để tránh tải không đồng bộ
         await db.execute(
             delete(DramaFragmentAssetRef)
             .where(DramaFragmentAssetRef.fragment_id == fragment_id)
@@ -133,7 +133,7 @@ async def filter_valid_project_asset_ids(
     project_id: int,
     asset_ids: list[int],
 ) -> list[int]:
-    """仅保留仍属于当前漫剧项目的资产 id，忽略正文 @asset 指向的失效引用。"""
+    """Chỉ giữ lại id nội dung vẫn thuộc về dự án truyện tranh hiện tại, bỏ qua các tham chiếu cũ được chỉ ra bởi nội dung @asset."""
     ordered = [int(x) for x in asset_ids if int(x) > 0]
     if not ordered:
         return []
@@ -151,7 +151,7 @@ async def load_episode_fragments(
     db: AsyncSession,
     episode_id: int,
 ) -> list[DramaEpisodeFragment]:
-    """显式查询分集下全部分镜（含资产引用），避免 expire_on_commit=False 会话缓存旧集合。"""
+    """Truy vấn rõ ràng tất cả các bản sao (bao gồm cả tham chiếu nội dung) theo tính đa dạng để tránh Expision_on_commit=Bộ nhớ đệm phiên sai của các bộ sưu tập cũ."""
     result = await db.execute(
         select(DramaEpisodeFragment)
         .where(DramaEpisodeFragment.episode_id == episode_id)
@@ -166,7 +166,7 @@ def match_fragments_for_generate(
     all_frags: list[DramaEpisodeFragment],
     fragment_ids: list[int] | None,
 ) -> list[DramaEpisodeFragment]:
-    """按请求的分镜 id 筛选；未传 id 则生成全部。"""
+    """Lọc theo id bảng phân cảnh được yêu cầu; nếu không có id nào được thông qua, tất cả sẽ được tạo."""
     ordered = list(all_frags)
     if not fragment_ids:
         return ordered
@@ -175,7 +175,7 @@ def match_fragments_for_generate(
 
 
 async def count_user_active_fragment_video_jobs(db: AsyncSession, user_id: int) -> int:
-    """统计用户当前在途分镜视频数（queued/running/generating）。"""
+    """Đếm số lượng video bảng phân cảnh hiện đang được người dùng thực hiện (xếp hàng/chạy/tạo)."""
     from app.services.drama.generation import fragment_generation_status
 
     result = await db.execute(
@@ -194,14 +194,14 @@ async def count_user_active_fragment_video_jobs(db: AsyncSession, user_id: int) 
 
 
 async def count_user_inflight_fragment_video_tasks(db: AsyncSession, user_id: int) -> int:
-    """统计用户已占用 Seedance/Worker 槽位的分镜视频任务（含待领取）。"""
+    """Đếm các tác vụ video trong bảng phân cảnh (bao gồm cả những tác vụ sẽ được thu thập) mà người dùng đã chiếm giữ vị trí Seedance/Worker."""
     stmt = select(func.count()).select_from(TaskRun).where(
         TaskRun.requested_by == int(user_id),
         TaskRun.domain == "drama",
         TaskRun.task_type == "fragment_video",
         or_(
             TaskRun.status.in_(("leased", "running", "awaiting_poll")),
-            # 已激活、等待调度器领取的 pending 也占槽，避免超发
+            # Đang chờ xử lý đã được kích hoạt và đang chờ người lên lịch nhận cũng chiếm chỗ để tránh phát hành quá mức.
             (TaskRun.status == "pending") & (TaskRun.next_action_at.is_not(None)),
         ),
     )

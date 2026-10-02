@@ -1,4 +1,4 @@
-"""Agent Skill 存储：内置导演手册 + 用户上传的 markdown skill。"""
+"""Lưu trữ kỹ năng đặc vụ: hướng dẫn sử dụng tích hợp + kỹ năng đánh dấu do người dùng tải lên."""
 
 from __future__ import annotations
 
@@ -11,23 +11,23 @@ from app.database import Base
 
 
 class AgentSkill(Base):
-    """一条可注入 LLM 的 Agent Skill（规划镜头、生视频提示词等）。"""
+    """Một Kỹ năng đặc vụ có thể được đưa vào LLM (ảnh chụp lập kế hoạch, lời nhắc video, v.v.)."""
 
     __tablename__ = "agent_skills"
     __table_args__ = (UniqueConstraint("user_id", "slug", name="uq_agent_skill_user_slug"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    # slug 短名，如 cinedance-seedance
+    # tên ngắn của sên, chẳng hạn như cinedance-seedance
     slug: Mapped[str] = mapped_column(String(64), index=True)
     name: Mapped[str] = mapped_column(String(128))
     description: Mapped[str] = mapped_column(String(1024), default="")
-    # body 完整 markdown 正文（不含 YAML 头）
+    # body nội dung markdown đầy đủ (không bao gồm tiêu đề YAML)
     body: Mapped[str] = mapped_column(Text, default="")
-    # tasks 适用任务：shot_plan / video_prompt / all
+    # nhiệm vụ Nhiệm vụ áp dụng: shot_plan / video_prompt / all
     tasks: Mapped[list] = mapped_column(JSON, default=list)
     is_builtin: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    # user_id 为空表示系统内置；用户上传则绑定所有者
+    # Nếu user_id trống, nghĩa là hệ thống đã được tích hợp sẵn; nếu người dùng tải nó lên, nó sẽ bị ràng buộc với chủ sở hữu.
     user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=True,

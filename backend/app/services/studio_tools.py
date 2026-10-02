@@ -1,4 +1,4 @@
-"""独立创作工具：文生图 / 图生图 / 图生产品 / 文生视频 / 视频生视频 / 电商拼图。"""
+"""Các công cụ sáng tạo độc lập: Wen Sheng Tu / Tu Sheng Tu / Tu Sheng Product / Wen Sheng Video / Video Video Sheng Video / E-commerce Puzzle."""
 
 from __future__ import annotations
 
@@ -40,27 +40,27 @@ PRODUCT_PROMPTS = {
 ECOM_POSTER = "Ảnh poster quảng cáo điểm bán hàng bố cục dọc, chủ thể nổi bật, bố cục tinh tế sạch sẽ, không chữ, không phụ đề, không logo, không watermark. Vertical product showcase poster, prominent subject, clean composition, no text, no watermark"
 
 
-# 用户独立工具产出目录（挂在 p0/tools 下，不占用项目 id）
+# Thư mục đầu ra công cụ độc lập với người dùng (được treo trong p0/tools, không chiếm ID dự án)
 def tools_dir(user_id: int) -> Path:
     path = storage.project_dir(0) / "tools" / f"u{user_id}"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-# Seedream 需要公网 https 参考图，同步上传 OSS
+# Seedream yêu cầu hình ảnh tham chiếu https của mạng công cộng và tải chúng lên OSS đồng thời.
 def publish_public(path: Path) -> str:
     local = storage.publish_local(path, sync=True)
     return storage.republish_url(local, sync=True) or local
 
 
-# 结果 URL 尽量落到 OSS（本地 /static 同步上传）
+# URL kết quả phải được đặt trong OSS càng nhiều càng tốt (tải lên đồng bộ cục bộ/tĩnh)
 def ensure_public_url(url: str | None) -> str | None:
     if not url:
         return url
     return storage.republish_url(url, sync=True) or url
 
 
-# 批量把结果 URL 同步到 OSS
+# Đồng bộ hóa URL kết quả sang OSS theo đợt
 def ensure_public_urls(urls: list[str] | None) -> list[str]:
     out: list[str] = []
     for raw in urls or []:
@@ -72,12 +72,12 @@ def ensure_public_urls(urls: list[str] | None) -> list[str]:
     return out
 
 
-# 画幅文案转 Seedream size 像素
+# Chuyển đổi bản sao khung thành pixel kích thước Seedream
 def ratio_to_size(ratio: str | None) -> str:
     return RATIO_SIZE.get((ratio or "").strip(), RATIO_SIZE["1:1"])
 
 
-# 时长芯片（5s/10s/15s）转秒
+# Thời lượng chip (5s/10s/15s) đến giây
 def duration_seconds(raw: str | None) -> int:
     text = (raw or "5s").strip().lower().replace("s", "")
     try:
@@ -87,7 +87,7 @@ def duration_seconds(raw: str | None) -> int:
     return max(4, min(n, 15))
 
 
-# 图生图相似度：低=改动大，高=尽量贴近参考图
+# Độ tương tự giữa ảnh với ảnh: thấp = thay đổi lớn, cao = cố gắng càng gần với ảnh tham chiếu càng tốt
 def strength_hint(level: str | None) -> str:
     raw = (level or "").strip()
     if raw in ("低", "Thấp", "Low"):
@@ -97,7 +97,7 @@ def strength_hint(level: str | None) -> str:
     return "trong điều kiện giữ nguyên đặc trưng nhận diện của chủ thể, biến đổi phong cách ở mức độ vừa phải"
 
 
-# 视频运动强度提示，拼进 Seedance 文案
+# Video mẹo về cường độ tập luyện, được đánh vần trong Seedance copywriting
 def motion_hint(level: str | None) -> str:
     raw = (level or "").strip()
     if raw in ("弱", "Yếu", "Weak"):
@@ -107,7 +107,7 @@ def motion_hint(level: str | None) -> str:
     return "chuyển động máy quay vừa phải, bám theo chủ thể ổn định mượt mà"
 
 
-# 把上传文件落到用户工具目录
+# Thả file đã tải lên vào thư mục công cụ người dùng
 def save_upload(user_id: int, data: bytes, filename: str) -> Path:
     ext = Path(filename or "bin").suffix.lower() or ".bin"
     if ext not in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".mov", ".webm"}:
@@ -117,7 +117,7 @@ def save_upload(user_id: int, data: bytes, filename: str) -> Path:
     return dest
 
 
-# 用 ffmpeg 把多张图拼成一张（横向主图 / 纵向详情）
+# Sử dụng ffmpeg để kết hợp nhiều ảnh thành một (ảnh chính ngang/chi tiết dọc)
 def collage_images(paths: list[Path], dest: Path, *, vertical: bool) -> None:
     ffmpeg = shutil.which(get_settings().ffmpeg_path) or shutil.which("ffmpeg")
     if not ffmpeg:
@@ -139,7 +139,7 @@ def collage_images(paths: list[Path], dest: Path, *, vertical: bool) -> None:
         raise RuntimeError((proc.stderr or "拼接失败")[-800:])
 
 
-# 文生图 / 图生图 / 图生产品 / 电商拼图：同步调用 Seedream 或 ffmpeg
+# Vincent Picture / Picture Picture / Picture Picture / Câu đố thương mại điện tử: Gọi đồng bộ Seedream hoặc ffmpeg
 async def run_image_tool(
     db: AsyncSession,
     user: User,
@@ -214,14 +214,14 @@ async def run_image_tool(
 
 
 def _dispatch_tool_image(run_id: int) -> str:
-    """启动工具生图后台任务。"""
+    """Bắt đầu tác vụ nền vẽ công cụ."""
     import asyncio
 
     asyncio.create_task(execute_image_tool_run(run_id))
     return f"local-{run_id}"
 
 
-# 入队前同步校验余额（与 run_billed_ephemeral 预扣估算一致）
+# Đồng bộ hóa xác minh số dư trước khi tham gia nhóm (phù hợp với ước tính khấu trừ run_billed_ephemeral)
 async def _ensure_image_tool_balance(db: AsyncSession, user: User, tool_id: str) -> None:
     if not billing_active(user):
         return
@@ -232,7 +232,7 @@ async def _ensure_image_tool_balance(db: AsyncSession, user: User, tool_id: str)
         raise ValueError(f"余额不足：需要 ¥{need/100:.2f}，当前 ¥{available/100:.2f}，请先充值")
 
 
-# 提交生图任务：立即返回 task_id，实际生成在后台执行
+# Gửi tác vụ tạo hình ảnh: task_id được trả về ngay lập tức và quá trình tạo thực tế được thực thi ở chế độ nền
 async def enqueue_image_tool(
     db: AsyncSession,
     user: User,
@@ -274,7 +274,7 @@ async def enqueue_image_tool(
     }
 
 
-# 后台执行已入队的生图任务并回写 tool_runs
+# Thực thi tác vụ tạo hình ảnh được xếp hàng đợi ở chế độ nền và ghi lại tool_runs
 async def execute_image_tool_run(run_id: int) -> dict:
     from app.database import AsyncSessionLocal
 
@@ -340,7 +340,7 @@ async def execute_image_tool_run(run_id: int) -> dict:
             return {"ok": False, "run_id": run_id, "error": row.error}
 
 
-# 轮询工具生图任务状态。
+# Trạng thái tác vụ vẽ của công cụ thăm dò ý kiến.
 async def poll_image_tool_task(db: AsyncSession, user: User, task_id: str) -> dict:
     stmt = select(ToolRun).where(ToolRun.user_id == user.id, ToolRun.task_id == task_id)
     row = (await db.execute(stmt)).scalar_one_or_none()
@@ -361,7 +361,7 @@ async def poll_image_tool_task(db: AsyncSession, user: User, task_id: str) -> di
     return {"status": "running", "kind": "image", "urls": []}
 
 
-# 文生视频 / 视频生视频：先出静帧再提交 Seedance，返回 task_id
+# Wen Sheng Video/Video Sheng Video: Đầu tiên lấy khung hình tĩnh ra rồi gửi Seedance, quay lại task_id
 async def start_video_tool(
     db: AsyncSession,
     user: User,
@@ -442,7 +442,7 @@ async def start_video_tool(
     }
 
 
-# 单次查询视频任务；成功则下载并同步 OSS
+# Nhiệm vụ video truy vấn đơn; nếu thành công, hãy tải xuống và đồng bộ hóa OSS
 async def poll_video_task(user: User, task_id: str) -> dict:
     ark = get_ark()
     result = await ark.fetch_task_once(task_id)
@@ -478,7 +478,7 @@ async def poll_video_task(user: User, task_id: str) -> dict:
     return {"status": "running", "kind": "video", "urls": [], "usage": usage}
 
 
-# 把一次工具生成写入 tool_runs（结果 URL 优先 OSS）
+# Viết một thế hệ công cụ vào tool_runs (URL kết quả được ưu tiên trong OSS)
 async def persist_tool_run(
     db: AsyncSession,
     *,
@@ -507,7 +507,7 @@ async def persist_tool_run(
     return row
 
 
-# 按 Seedance task_id 回写视频结果（同步 OSS）
+# Nhấn Seedance task_id để ghi lại kết quả video (đồng bộ OSS)
 async def update_tool_run_task(db: AsyncSession, user_id: int, task_id: str, data: dict) -> None:
     stmt = select(ToolRun).where(ToolRun.user_id == user_id, ToolRun.task_id == task_id)
     row = (await db.execute(stmt)).scalar_one_or_none()
@@ -526,7 +526,7 @@ async def update_tool_run_task(db: AsyncSession, user_id: int, task_id: str, dat
     await db.flush()
 
 
-# 读取时把本地 URL 补传到 OSS，并回写库
+# Khi đọc, chuyển URL cục bộ tới OSS và ghi lại vào thư viện
 async def hydrate_tool_run_urls(db: AsyncSession, row: ToolRun) -> ToolRun:
     changed = False
     urls = ensure_public_urls(list(row.urls or []))
@@ -542,7 +542,7 @@ async def hydrate_tool_run_urls(db: AsyncSession, row: ToolRun) -> ToolRun:
     return row
 
 
-# 按 id 取当前用户的一条创作记录
+# Nhận bản ghi tạo của người dùng hiện tại theo id
 async def get_tool_run(db: AsyncSession, user_id: int, run_id: int) -> ToolRun | None:
     stmt = select(ToolRun).where(ToolRun.user_id == user_id, ToolRun.id == run_id)
     row = (await db.execute(stmt)).scalar_one_or_none()
@@ -551,7 +551,7 @@ async def get_tool_run(db: AsyncSession, user_id: int, run_id: int) -> ToolRun |
     return await hydrate_tool_run_urls(db, row)
 
 
-# 分页列出当前用户的工具创作记录
+# Liệt kê các bản ghi tạo công cụ của người dùng hiện tại trong các trang
 async def list_tool_runs(
     db: AsyncSession,
     user_id: int,

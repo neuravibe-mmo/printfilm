@@ -37,8 +37,8 @@ type KepuItem = {
 }
 
 /*
- * SIDE_ITEMS 侧栏导航项
- * TAB_IDS 合法 tab 集合（用于 URL 校验）
+ * SIDE_ITEMS mục điều hướng thanh bên
+ * TAB_IDS Bộ sưu tập tab pháp lý (dùng để xác minh URL)
  */
 const SIDE_ITEMS: { id: SettingsTab; soon?: boolean; group?: 'work' | 'account' }[] = [
   { id: 'account', group: 'account' },
@@ -55,13 +55,13 @@ const SIDE_ITEMS: { id: SettingsTab; soon?: boolean; group?: 'work' | 'account' 
 
 const TAB_IDS = new Set(SIDE_ITEMS.map((i) => i.id))
 
-// 解析 URL tab，非法时回落到账号信息
+// Phân tích tab URL, quay lại thông tin tài khoản khi không hợp lệ
 function parseTab(raw: string | null): SettingsTab {
   if (raw && TAB_IDS.has(raw as SettingsTab)) return raw as SettingsTab
   return 'account'
 }
 
-// 格式化相对时间展示
+// Định dạng hiển thị thời gian tương đối
 function formatWhen(iso: string | undefined, locale: Locale) {
   return formatDateTime(iso, locale)
 }
@@ -71,13 +71,13 @@ export default function SettingsPage() {
   const { t, locale } = useI18n()
   const [params, setParams] = useSearchParams()
   /*
-   * tab 当前侧栏分区
-   * user 当前登录用户
-   * wallet 钱包余额
-   * dramaItems 最近漫剧项目
-   * kepuItems 最近科普项目
-   * listError 列表加载错误
-   * listLoading 列表加载中
+   * tab phân vùng thanh bên hiện tại
+   * người dùng hiện đang đăng nhập người dùng
+   * ví Số dư ví
+   * dramaItems Các dự án phim truyền hình gần đây
+   * kepuItems Các dự án phổ biến khoa học gần đây
+   * listError lỗi tải danh sách
+   * listLoading Danh sách đang tải
    */
   const [tab, setTab] = useState<SettingsTab>(() => parseTab(params.get('tab')))
   const [user, setUser] = useState<User | null>(null)
@@ -133,7 +133,7 @@ export default function SettingsPage() {
     }
   }, [tab])
 
-  // 切换侧栏并同步到 URL
+  // Chuyển đổi thanh bên và đồng bộ hóa với URL
   function selectTab(next: SettingsTab) {
     setTab(next)
     const sp = new URLSearchParams(params)

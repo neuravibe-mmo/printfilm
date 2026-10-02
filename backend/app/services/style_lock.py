@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from urllib.parse import urlparse
 
-# Terms that cause 真人 / 动漫 / 3D drift across shots (for illustration templates)
+# Các thuật ngữ gây ra hành động trực tiếp/hoạt ảnh/3D trôi qua các cảnh quay (dành cho mẫu minh họa)
 _STYLE_DRIFT_ILLUS = re.compile(
     r"(写实照片|照片级真实|真人实拍|真实人脸|真人脸|摄影棚人像|电影真人剧照|"
     r"超写实皮肤|照片质感|live[\s-]?action|photoreal(?:istic)?|"
@@ -127,7 +127,7 @@ def merge_negative(
     parts = [p for p in (base, extra) if p]
     merged = "，".join(parts)
     if image_text and "文字" not in merged:
-        merged = f"{merged}，画面文字，字幕，水印，标题字"
+        merged = f"{merged}，画面文字，字幕，水印，Tiêu đề字"
     return merged
 
 
@@ -164,13 +164,13 @@ def template_is_photoreal(tpl) -> bool:
 
 
 def _seedream_cfg(tpl) -> dict:
-    """取出模板 seedream_config，缺省或类型不对时返回空 dict。"""
+    """Lấy mẫu seedream_config ra và trả về một lệnh trống theo mặc định hoặc nếu loại không chính xác."""
     cfg = getattr(tpl, "seedream_config", None) or {}
     return cfg if isinstance(cfg, dict) else {}
 
 
 def template_shot_range(tpl) -> tuple[int, int] | None:
-    """模板锁定的分镜数量区间；未配置则返回 None，走字数默认 6–10 镜。"""
+    """Phạm vi số lượng ảnh bị khóa theo mẫu; nếu không được định cấu hình, nó sẽ trả về Không có và số lượng ảnh chụp mặc định là 6–10 ảnh."""
     if tpl is None:
         return None
     cfg = _seedream_cfg(tpl)
@@ -184,7 +184,7 @@ def template_shot_range(tpl) -> tuple[int, int] | None:
 
 
 def template_allow_source_names(tpl) -> bool:
-    """获客类模板：旁白保留用户文案里的店名/产品名。"""
+    """Mẫu thu hút khách hàng: Lời tường thuật giữ nguyên tên cửa hàng/tên sản phẩm trong bản sao của người dùng."""
     if tpl is None:
         return False
     return bool(_seedream_cfg(tpl).get("allow_source_names"))
@@ -243,7 +243,7 @@ def split_seedream_subject_style_refs(
     *,
     max_total: int = 6,
 ) -> tuple[list[str], list[str]]:
-    """主体参考优先，但为画风板预留 1 个名额。"""
+    """Tài liệu tham khảo chính sẽ được ưu tiên nhưng 1 vị trí sẽ được dành cho bảng định kiểu."""
     cap = max(1, int(max_total))
     style_refs = seedream_ref_urls(*(style_urls or []), limit=1)
     budget = cap - len(style_refs)

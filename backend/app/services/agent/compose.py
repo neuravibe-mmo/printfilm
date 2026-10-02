@@ -1,4 +1,4 @@
-"""把启用的 Skill 拼进 LLM 系统提示。"""
+"""Đặt Kỹ năng đã kích hoạt vào lời nhắc của hệ thống LLM."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models_agent import AgentSkill
 from app.services.agent.store import list_injectable_skills, list_skills_by_ids
 
-# MAX_SKILL_INJECT_CHARS 单次注入上限，避免撑爆上下文
+# MAX_SKILL_INJECT_CHARS Giới hạn tiêm một lần để tránh làm nổ tung bối cảnh
 MAX_SKILL_INJECT_CHARS = 14000
-SKILL_HEADER = "\n\n## Agent Skill đã kích hoạt (Bắt buộc tuân thủ, không lặp lại tiêu đề này / 已启用 Agent Skill)\n"
+SKILL_HEADER = "\n\n## Agent Skill đã kích hoạt (Bắt buộc thủ thuật, không lặp lại tiêu đề này / Đã bật Agent Skill)\n"
 
 
 def skill_matches_task(skill: AgentSkill, task: str) -> bool:
-    # 任务标签匹配：all 或精确任务名
+    # Khớp nhãn tác vụ: tất cả hoặc tên tác vụ chính xác
     tasks = skill.tasks if isinstance(skill.tasks, list) else []
     labels = {str(item).strip() for item in tasks if str(item).strip()}
     if not labels or "all" in labels:
@@ -24,7 +24,7 @@ def skill_matches_task(skill: AgentSkill, task: str) -> bool:
 
 
 def render_skill_block(skills: list[AgentSkill], *, max_chars: int = MAX_SKILL_INJECT_CHARS) -> str:
-    # 按内置优先、再按名称拼接；超出上限截断靠后的 skill
+    # Ưu tiên cài sẵn rồi ghép theo tên; cắt bớt các kỹ năng vượt quá giới hạn trên.
     if not skills:
         return ""
     chunks: list[str] = [SKILL_HEADER]
@@ -37,14 +37,14 @@ def render_skill_block(skills: list[AgentSkill], *, max_chars: int = MAX_SKILL_I
             remain = max_chars - used - 24
             if remain < 200:
                 break
-            piece = f"\n### {title}\n\n{body[:remain].rstrip()}\n…（Phần sau đã được rút gọn / 后续已截断）\n"
+            piece = f"\n### {title}\n\n{body[:remain].rstrip()}\n…（Phần sau đã được rút gọn / Phần tiếp theo đã bị cắt ngắn)\n"
         chunks.append(piece)
         used += len(piece)
     return "".join(chunks) if len(chunks) > 1 else ""
 
 
 def parse_skill_ids(raw: Any) -> list[int] | None:
-    # None 表示未指定（用全部启用）；[] 表示本次不注入
+    # Không có nghĩa là không được chỉ định (bật tất cả); [] có nghĩa là lần này không tiêm
     if raw is None:
         return None
     if not isinstance(raw, list):
@@ -69,7 +69,7 @@ async def compose_task_skills(
     task: str,
     skill_ids: list[int] | None = None,
 ) -> str:
-    """加载 skill 拼成系统提示附录。
+    """Tải kỹ năng để tạo thành phụ lục nhắc nhở hệ thống.
 
     skill_ids 为 None：全部启用且匹配任务；为 []：不注入；为 id 列表：按勾选注入。
     """
@@ -84,7 +84,7 @@ async def compose_task_skills(
 
 
 def with_skill_system(base_system: str, skill_block: str) -> str:
-    # 基础系统提示 + skill 附录
+    # Mẹo hệ thống cơ bản + phụ lục kỹ năng
     extra = (skill_block or "").strip()
     if not extra:
         return base_system
@@ -92,7 +92,7 @@ def with_skill_system(base_system: str, skill_block: str) -> str:
 
 
 def skill_to_public_dict(skill: AgentSkill) -> dict[str, Any]:
-    # API 列表/详情字段
+    # Danh sách/trường chi tiết API
     return {
         "id": skill.id,
         "slug": skill.slug,

@@ -1,4 +1,4 @@
-/** 分集编辑顶栏：画幅/清晰度 / 视频风格 / 字幕 / 人物介绍 / 模型 / 镜间衔接 */
+/** Thanh trên cùng của trình chỉnh sửa tập: khung hình/độ nét/kiểu video/phụ đề/giới thiệu nhân vật/model/kết nối ống kính */
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 
@@ -47,7 +47,7 @@ type Props = {
   onSubtitleModeChange: (mode: DramaSubtitleMode) => void
   onCharacterIntroModeChange: (mode: DramaCharacterIntroMode) => void
   disabled?: boolean
-  /** 画幅/风格/字幕/介绍/衔接为项目全局，分镜页只展示不可改 */
+  /** Frame/style/subtitles/introduction/connection là dự án tổng thể, trang storyboard chỉ được hiển thị và không thể thay đổi. */
   globalSettingsReadOnly?: boolean
 }
 

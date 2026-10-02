@@ -1,4 +1,4 @@
-/** 分镜字幕板：预览整集口播字幕，支持折叠与导出。 */
+/** Bảng phụ đề Storyboard: Xem trước phụ đề nói của toàn bộ tập phim và hỗ trợ gấp và xuất. */
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { DramaFragment } from '../../api/drama'
@@ -20,7 +20,7 @@ type Props = {
   subtitleMode: DramaSubtitleMode
 }
 
-// 渲染可折叠的分集字幕板预览与导出按钮。
+// Kết xuất nút xem trước và xuất bảng phụ đề của tập có thể thu gọn.
 export function DramaSubtitleBoard({
   fragments,
   episodeName,
@@ -30,7 +30,7 @@ export function DramaSubtitleBoard({
   const displayEpisodeName = episodeName || t('drama.projectOutput.thisEpisode')
   const cues = buildDramaSubtitleBoard(fragments)
   const modelOutput = subtitleModeUsesModelOutput(subtitleMode)
-  // collapsed 默认折叠，减少右侧预览占位
+  // thu gọn Được gấp theo mặc định, giảm không gian xem trước ở bên phải
   const [collapsed, setCollapsed] = useState(true)
 
   return (
@@ -64,7 +64,7 @@ export function DramaSubtitleBoard({
             event.stopPropagation()
             const srt = exportDramaSubtitleBoardSrt(fragments)
             if (!srt) return
-            // 剪映桌面版可识别 UTF-8 BOM 的 .srt
+            // Phiên bản cắt xén dành cho máy tính để bàn có thể nhận dạng UTF-8 BOM .srt
             const blob = new Blob(['\uFEFF', srt], { type: 'application/x-subrip;charset=utf-8' })
             triggerBlobDownload(
               blob,

@@ -1,4 +1,4 @@
-/** 法律与联系页文案：用户协议、隐私政策、联系渠道 */
+/** Pháp lý và Trang liên hệ Viết quảng cáo: Thỏa thuận người dùng, Chính sách quyền riêng tư, Kênh liên hệ */
 import { getActiveLocale } from '../i18n/detect'
 
 export type LegalSection = {
@@ -27,7 +27,7 @@ export const LEGAL_DOCS: Record<'terms' | 'privacy', LegalDoc> = {
         title: '1. 服务说明',
         paragraphs: [
           'PRINTFILM 提供 AI 漫剧、AI短视频及创作工具（含文生图、图生图、文生视频等）相关服务。服务内容可能随产品迭代调整，我们将尽可能在页面或公告中说明重大变更。',
-          '本平台按实际上游模型用量计费，余额充值后永久有效，不设强制订阅。具体价格与赠送规则以定价页及下单时展示为准。',
+          '本平台按实际上游模型用量计费，余额充值后永久有效，不设强制Đăng ký。具体价格与赠送规则以定价页及下单时展示为准。',
         ],
       },
       {
@@ -423,7 +423,7 @@ export const LEGAL_DOCS_VI: Record<'terms' | 'privacy', LegalDoc> = {
 }
 
 
-// 按界面语言取用户协议 / 隐私政策
+// Nhận Thỏa thuận người dùng/Chính sách quyền riêng tư theo ngôn ngữ giao diện
 export function getLegalDoc(slug: 'terms' | 'privacy', locale: string): LegalDoc {
   const pack = locale === 'en' ? LEGAL_DOCS_EN : locale === 'vi' ? LEGAL_DOCS_VI : LEGAL_DOCS
   return pack[slug]

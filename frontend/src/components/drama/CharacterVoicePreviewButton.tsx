@@ -12,11 +12,11 @@ type Props = {
   onError?: (message: string) => void
 }
 
-/** 同一时刻只播一条试听，避免多卡片叠音 */
+/** Chỉ phát một lần thử giọng cùng lúc để tránh âm thanh chồng chéo từ nhiều thẻ */
 let sharedAudio: HTMLAudioElement | null = null
 let sharedStop: (() => void) | null = null
 
-// 点击播放已绑定音色的试听音频，再点暂停
+// Bấm để phát âm thanh thử giọng của âm giới hạn, sau đó bấm để tạm dừng
 export function CharacterVoicePreviewButton({
   url,
   label,

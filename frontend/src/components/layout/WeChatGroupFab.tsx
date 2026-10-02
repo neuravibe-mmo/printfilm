@@ -1,12 +1,12 @@
-/** 全站右下角：加微信号入群（展示微信号，可一键复制） */
+/** Góc dưới bên phải của trang web: Thêm ID WeChat để tham gia nhóm (hiển thị ID WeChat và có thể sao chép bằng một cú nhấp chuột) */
 import { useEffect, useRef, useState } from 'react'
 import { Check, Copy, X } from 'lucide-react'
 import { useI18n } from '../../i18n'
 
-/** 社区加群微信号（不加图片二维码） */
+/** Tài khoản WeChat của nhóm cộng đồng (không có mã QR hình ảnh) */
 const WECHAT_ID = 'gitpp88'
 
-/** 简易微信气泡图标 */
+/** Biểu tượng bong bóng WeChat đơn giản */
 function WeChatIcon({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden fill="currentColor">
@@ -19,14 +19,14 @@ function WeChatIcon({ size = 22 }: { size?: number }) {
 export default function WeChatGroupFab() {
   const { t } = useI18n()
   /*
-   * open 浮层是否展开
-   * copied 复制成功短暂态
+   * open Lớp nổi có được mở rộng không
+   * sao chép trạng thái tạm thời sao chép thành công
    */
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
-  // 点击浮层外 / Esc 关闭
+  // Nhấp vào bên ngoài lớp nổi / Esc để đóng
   useEffect(() => {
     if (!open) return
     function onPointerDown(e: PointerEvent) {
@@ -45,14 +45,14 @@ export default function WeChatGroupFab() {
     }
   }, [open])
 
-  // 复制微信号到剪贴板
+  // Sao chép ID WeChat vào khay nhớ tạm
   async function copyWechatId() {
     try {
       await navigator.clipboard.writeText(WECHAT_ID)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
     } catch {
-      /* 忽略剪贴板失败，用户仍可手动选中复制 */
+      /* Bỏ qua lỗi clipboard, người dùng vẫn có thể chọn và sao chép thủ công */
     }
   }
 

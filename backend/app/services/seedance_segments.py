@@ -14,11 +14,11 @@ SEGMENT_DURATION_MIN = 3
 SEGMENT_DURATION_MAX = 12
 SHOT_DURATION_MIN = 4
 SHOT_DURATION_MAX = 30
-# 科普 AI 视频单镜上限：避免 16–20s 一镜到底导致拖沓
+# Giới hạn trên của một lần quay video AI khoa học phổ biến: tránh 16–20 giây của một lần quay dẫn đến trì hoãn
 KEPU_FULL_SHOT_DURATION_MAX = 12
 
 DURATION_TOKEN_RE = re.compile(r"@duration:(\d+)")
-# 科普旁白：自然偏快；漫剧仍用慢速前缀（见 drama/build_fragments）
+# Tường thuật khoa học phổ biến: Nhanh hơn một cách tự nhiên; truyện tranh vẫn sử dụng tiền tố chậm (xem drama/build_fragments)
 NARRATION_PREFIX = "【旁白·自然语速·同步字幕】"
 LEGACY_NARRATION_PREFIX = "【旁白·慢速清晰·同步字幕】"
 DIALOGUE_PREFIX = "【对白·慢速清晰·同步字幕】"
@@ -50,7 +50,7 @@ EMPTY_SHOT_PREFIX = "【空镜·可仅环境音与 BGM】"
 SUBTITLE_CUE = "【字幕：后期叠旁白字幕，简体中文逐句同步】"
 DRAMA_SUBTITLE_CUE = "【字幕：底部居中·简体中文·逐句轮换·与口播同步】"
 DRAMA_SUBTITLE_CUE_VI = "【Phụ đề: Căn giữa phía dưới · Tiếng Việt · Luân chuyển từng câu · Đồng bộ lời thoại】"
-# 历史 cue，提交前统一替换为现行文案
+# Dấu hiệu lịch sử, thay thế thống nhất bằng bản hiện tại trước khi gửi
 LEGACY_KEPU_SUBTITLE_CUES = (
     "【字幕：全程简体中文字幕，旁白逐句同步烧录】",
 )
@@ -62,7 +62,7 @@ DEFAULT_BGM_MOOD = "贴合内容的轻量配乐，情绪平稳，不抢旁白"
 DEFAULT_BGM_MOOD_VI = "Nhạc nền nhẹ nhàng phù hợp nội dung, cảm xúc êm đềm, không lấn át lời dẫn"
 SEEDANCE_PRODUCTION_SECTION_HEADER = "【Ràng buộc bắt buộc: Âm thanh, Phụ đề và Nhạc nền / 强制约束：音频、字幕与配乐】"
 
-# 空镜/景别冒号标签：正文若以此开头则不得配音、不得烧字幕（支持多语言）
+# Thẻ dấu hai chấm trong gương/phong cảnh trống: Nếu văn bản bắt đầu bằng thẻ này thì không được phép lồng tiếng hoặc phụ đề (hỗ trợ nhiều ngôn ngữ)
 VISUAL_SHOT_LABEL_RE = re.compile(
     r"^(?:"
     r"空镜|画面|远景|近景|中景|全景|特写|大特写|"
@@ -79,12 +79,12 @@ VOICE_CUE_PREFIX_RE = re.compile(
     r"^【(?:对白|旁白|内心独白|Thoại|Lời dẫn|Độc thoại nội tâm|Dialogue|Narration|Monologue)[^】]*】\s*",
     re.IGNORECASE,
 )
-# 角色（vo，低落）。——只有舞台指示、没有台词
+# Vai trò (võ, xuống). ---Chỉ hướng dẫn sân khấu, không có lời thoại
 STAGE_ONLY_SPEAKER_RE = re.compile(
     r"^(?P<speaker>[^：:\n（(\s]{1,16})"
     r"[（(](?P<paren>[^）)]+)[）)]\s*[。．.…]?\s*$"
 )
-# 角色：台词 / 角色（vo）：台词
+# vai trò: dòng / vai trò (vo): dòng
 SPEAKER_DIALOGUE_RE = re.compile(
     r"^(?P<speaker>[^：:\n（(\s]{1,16})"
     r"(?P<paren>[（(][^）)]+[）)])?"
@@ -127,12 +127,12 @@ def is_production_meta_line(line: str) -> bool:
 
 
 def _strip_voice_cue_prefix(line: str) -> str:
-    # 去掉对白/旁白/内心独白前缀
+    # Bỏ tiền tố đối thoại/tường thuật/độc thoại nội tâm
     return VOICE_CUE_PREFIX_RE.sub("", (line or "").strip()).strip()
 
 
 def is_visual_description_body(text: str) -> bool:
-    # 判断正文是否为纯画面/空镜描写（不含配音意图，支持多语言标签）
+    # Xác định xem văn bản có phải là mô tả hình ảnh/cảnh trống thuần túy hay không (không bao gồm ý định lồng tiếng, hỗ trợ thẻ đa ngôn ngữ)
     body = _strip_voice_cue_prefix(text or "").strip()
     body = re.sub(r"^【(?:画面|空镜|Hình ảnh|Cảnh trống|Visual|Shot)[^】]*】\s*", "", body, flags=re.IGNORECASE).strip()
     if not body:
@@ -150,7 +150,7 @@ def is_visual_description_body(text: str) -> bool:
 
 
 def normalize_kepu_subtitle_cue(content: str) -> str:
-    """将科普历史字幕 cue 统一为「后期叠旁白字幕」。"""
+    """Hợp nhất các tín hiệu phụ đề lịch sử khoa học phổ biến thành "phụ đề tường thuật sau chồng"."""
     text = content or ""
     for old in LEGACY_KEPU_SUBTITLE_CUES:
         if old in text:
@@ -159,7 +159,7 @@ def normalize_kepu_subtitle_cue(content: str) -> str:
 
 
 def normalize_drama_subtitle_cue(content: str) -> str:
-    """将历史字幕 cue 统一为现行「逐句轮换」文案。"""
+    """Thống nhất các tín hiệu phụ đề lịch sử vào bản sao "xoay từng câu" hiện tại."""
     text = content or ""
     for old in LEGACY_DRAMA_SUBTITLE_CUES:
         if old in text:
@@ -168,8 +168,8 @@ def normalize_drama_subtitle_cue(content: str) -> str:
 
 
 def normalize_character_intro_cue(content: str) -> str:
-    """将历史人物介绍 cue 统一为「角色身旁」定位。"""
-    # 负向前瞻：已是「·角色身旁」的不二次替换
+    """Thống nhất các gợi ý giới thiệu nhân vật lịch sử vào vị trí “cạnh nhân vật”."""
+    # Nhìn về phía trước tiêu cực: Đây là sự thay thế thứ hai của "·Bên cạnh nhân vật"
     return re.sub(
         r"【人物介绍·画面叠字】(?!·角色身旁)",
         "【人物介绍·画面叠字·角色身旁】",
@@ -178,12 +178,12 @@ def normalize_character_intro_cue(content: str) -> str:
 
 
 def is_generic_narrator_name(name: str) -> bool:
-    """旁白/解说等第三人称声部名，不是出镜角色。"""
+    """Tên của giọng nói ngôi thứ ba như người kể chuyện/bình luận viên chứ không phải nhân vật xuất hiện trong cảnh."""
     return (name or "").strip().lower() in GENERIC_NARRATOR_NAMES
 
 
 def paren_voice_kind(paren: str) -> str:
-    """括号里的口播类型：os / vo / other。按逗号分词，避免 close-up 命中 os。"""
+    """Kiểu phát thanh trong ngoặc: os/vo/other. Phân tách các từ bằng dấu phẩy để tránh cận cảnh đánh os."""
     for part in re.split(r"[,，、/\s]+", (paren or "").strip()):
         token = part.strip().strip("（）()").lower()
         if token in {"os"}:
@@ -194,7 +194,7 @@ def paren_voice_kind(paren: str) -> str:
 
 
 def classify_voice_body(body: str) -> str:
-    """口播正文分类：visual / dialogue / inner / narration / keep。"""
+    """Phân loại văn bản truyền miệng: hình ảnh/đối thoại/nội tâm/tường thuật/lưu giữ."""
     text = (body or "").strip()
     if not text:
         return "keep"
@@ -219,14 +219,14 @@ def classify_voice_body(body: str) -> str:
 
 
 def _dialogue_prefix_like(src_prefix: str) -> str:
-    """按原前缀是否含「同步字幕」生成对白 cue。"""
+    """Tạo tín hiệu hội thoại dựa trên việc tiền tố gốc có chứa "phụ đề được đồng bộ hóa" hay không."""
     if "同步字幕" in (src_prefix or ""):
         return DIALOGUE_PREFIX
     return "【对白·慢速清晰】"
 
 
 def rewrite_character_vo_voice_lines(content: str) -> str:
-    """角色 VO 误标成旁白时改对白；纯（vo，情绪）舞台指示改画面；未打标台词补前缀。"""
+    """Thay đổi lời thoại khi ký tự VO bị đánh dấu nhầm là tường thuật; thay đổi màn hình theo hướng sân khấu thuần túy (vo, cảm xúc); thêm tiền tố vào các dòng không được đánh dấu."""
     out: list[str] = []
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
@@ -261,7 +261,7 @@ def rewrite_character_vo_voice_lines(content: str) -> str:
 
 
 def normalize_cues_for_seedance(content: str) -> str:
-    """将越南语/英语生产 cue 标签规范化为 ByteDance Seedance 识别的标准中文标签，
+    """Chuẩn hóa thẻ tín hiệu sản xuất tiếng Việt/tiếng Anh thành thẻ tiếng Trung tiêu chuẩn được ByteDance Seedance công nhận,
     保证 Seedance 2.5 模型精准识别【画面·无配音仅环境音】等指令，不把画面描写当口播念出。
     """
     if not content:
@@ -272,7 +272,7 @@ def normalize_cues_for_seedance(content: str) -> str:
         if not line:
             out.append(raw)
             continue
-        # 画面 cue
+        # tín hiệu màn hình
         if (
             line.startswith("【Hình ảnh")
             or line.startswith("【Visual")
@@ -286,7 +286,7 @@ def normalize_cues_for_seedance(content: str) -> str:
             ).strip()
             out.append(f"{VISUAL_PREFIX}{cue_body}")
             continue
-        # 对白 cue
+        # Gợi ý đối thoại
         if line.startswith("【Thoại") or line.startswith("【Dialogue"):
             cue_body = re.sub(
                 r"^【(?:Thoại|Dialogue)[^】]*】\s*",
@@ -296,7 +296,7 @@ def normalize_cues_for_seedance(content: str) -> str:
             ).strip()
             out.append(f"{DIALOGUE_PREFIX}{cue_body}")
             continue
-        # 旁白 cue
+        # Tín hiệu của người kể chuyện
         if line.startswith("【Lời dẫn") or line.startswith("【Narration"):
             cue_body = re.sub(
                 r"^【(?:Lời dẫn|Narration)[^】]*】\s*",
@@ -306,7 +306,7 @@ def normalize_cues_for_seedance(content: str) -> str:
             ).strip()
             out.append(f"{NARRATION_PREFIX}{cue_body}")
             continue
-        # 内心独白 cue
+        # Tín hiệu độc thoại nội tâm
         if line.startswith("【Độc thoại nội tâm") or line.startswith("【Monologue"):
             cue_body = re.sub(
                 r"^【(?:Độc thoại nội tâm|Monologue)[^】]*】\s*",
@@ -316,7 +316,7 @@ def normalize_cues_for_seedance(content: str) -> str:
             ).strip()
             out.append(f"【内心独白·同步字幕】{cue_body}")
             continue
-        # 字幕 cue
+        # tín hiệu phụ đề
         if line.startswith("【Phụ đề") or line.startswith("【Subtitle"):
             out.append(DRAMA_SUBTITLE_CUE)
             continue
@@ -335,7 +335,7 @@ def normalize_cues_for_seedance(content: str) -> str:
 
 def rewrite_misclassified_visual_voice_lines(content: str) -> str:
     """
-    纠正「空镜：…」等被误打成对白/旁白前缀的行。
+    纠正「空镜：…」等被误打成对白/Tiền tố tường thuật的行。
     供 Seedance 提交前兜底，使旧分镜也能按画面-only 约束生成。
     """
     text = normalize_character_intro_cue(normalize_drama_subtitle_cue(content))
@@ -358,7 +358,7 @@ def rewrite_misclassified_visual_voice_lines(content: str) -> str:
 
 
 def script_has_narration_cue(content: str) -> bool:
-    """检测脚本是否含旁白 cue（忽略字幕/BGM 等元数据行）。"""
+    """Phát hiện xem tập lệnh có chứa tín hiệu tường thuật hay không (bỏ qua các dòng siêu dữ liệu như phụ đề/BGM)."""
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
         if not line or line.startswith("@duration:") or is_production_meta_line(line):
@@ -376,7 +376,7 @@ def script_has_narration_cue(content: str) -> bool:
 
 
 def script_has_dialogue_cue(content: str) -> bool:
-    """检测脚本是否含对白 cue。"""
+    """Kiểm tra xem kịch bản có chứa tín hiệu hội thoại hay không."""
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
         if not line or line.startswith("@duration:") or is_production_meta_line(line):
@@ -394,7 +394,7 @@ def script_has_dialogue_cue(content: str) -> bool:
 
 
 def script_is_drama_mixed(segment_script: str) -> bool:
-    """漫剧混排：画面描述 + 对白/旁白分段，而非整镜旁白。"""
+    """Diễn tập kết hợp giữa truyện tranh và kịch: mô tả cảnh + phân đoạn hội thoại/tường thuật, thay vì tường thuật toàn cảnh."""
     content = segment_script or ""
     if script_has_visual_only_cue(content):
         return True
@@ -412,7 +412,7 @@ def script_is_drama_mixed(segment_script: str) -> bool:
 
 
 def script_has_visual_only_cue(content: str) -> bool:
-    """检测脚本是否含画面描述 cue（漫剧混排）。"""
+    """Kiểm tra xem tập lệnh có chứa tín hiệu mô tả cảnh hay không (kết hợp hài kịch)"""
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
         if (
@@ -445,8 +445,8 @@ class SegmentBeat:
 
 
 def suggested_kepu_shot_range(source_text: str, *, pipeline_mode: str = "full") -> tuple[int, int]:
-    """按文案字数给出科普分镜数量区间（完整模式偏多镜、短镜）。"""
-    # n 去掉空白后的字数，用于短/中/长文分档
+    """Đưa ra phạm vi số lượng bảng phân cảnh khoa học phổ biến dựa trên số từ trong bản sao (chế độ đầy đủ ưu tiên nhiều cảnh quay và cảnh quay ngắn)."""
+    # n Số lượng từ sau khi loại bỏ khoảng trắng, dùng để phân loại tài liệu ngắn/trung bình/dài
     n = len(re.sub(r"\s+", "", source_text or ""))
     if pipeline_mode == "image_text":
         if n < 180:
@@ -472,12 +472,12 @@ def clamp_shot_total(
 
 
 def estimate_narration_duration(text: str) -> int:
-    """约 4.5–5 字/秒（科普自然偏快口播）；钳到单段时长范围。"""
+    """Khoảng 4,5–5 từ/giây (khoa học đại chúng đương nhiên thích phát sóng nhanh hơn); được kẹp vào một phạm vi thời lượng phân đoạn duy nhất."""
     clean = re.sub(r"\s+", "", (text or "").strip())
     clean = re.sub(r"^【[^】]*】", "", clean).strip()
     if not clean:
         return SEGMENT_DURATION_MIN
-    # (n + 4) // 5 ≈ 5 字/秒，略留半拍呼吸
+    # (n + 4) // 5 ≈ 5 từ/giây, chừa lại nửa nhịp để thở
     secs = max(SEGMENT_DURATION_MIN, int((len(clean) + 4) // 5) + 1)
     return clamp_segment_duration(secs)
 
@@ -504,12 +504,12 @@ def infer_bgm_mood(*hints: str) -> str:
 
 
 def _strip_time_or_duration_prefix(line: str) -> str:
-    """去掉行首 @duration:N 或 00:00-00:07，便于识别【配乐】。"""
+    """Xóa @duration:N hoặc 00:00-00:07 ở đầu dòng để dễ dàng xác định [nhạc phim]."""
     return _TIME_OR_DURATION_PREFIX_RE.sub("", (line or "").strip()).strip()
 
 
 def parse_peiyue_mood(line: str) -> str:
-    """解析【配乐】｜木吉他… 或【配乐：…】。"""
+    """Phân tích [Nhạc phim]｜Guitar acoustic... hoặc [Nhạc phim:...]."""
     text = _strip_time_or_duration_prefix(line)
     if not text.startswith("【配乐"):
         return ""
@@ -522,7 +522,7 @@ def parse_peiyue_mood(line: str) -> str:
 
 
 def script_bgm_mood(segment_script: str) -> str:
-    """从【BGM：】、【Nhạc nền:】或【配乐】取配乐；没有则从正文推断。"""
+    """Lấy nhạc nền từ [BGM:], [Nhạc nền:] hoặc [Nhạc]; nếu không, hãy suy ra từ văn bản."""
     for raw in (segment_script or "").replace("\r\n", "\n").split("\n"):
         line = _strip_time_or_duration_prefix(raw)
         if line.startswith("【BGM：") or line.startswith("【BGM:"):
@@ -546,7 +546,7 @@ def build_production_cues(bgm_mood: str) -> list[str]:
     return [SUBTITLE_CUE, f"【BGM：后期混音 · {mood}】"]
 
 
-# 后期字幕模式：提交前去掉烧录 cue /「同步字幕」前缀，避免模型仍按字烧屏。
+# Chế độ hậu phụ đề: Loại bỏ tiền tố Cue/"phụ đề đồng bộ" trước khi gửi để tránh trường hợp mô hình vẫn cháy màn hình theo ký tự.
 _POST_SUBTITLE_PREFIX_MAP = (
     ("【对白·慢速清晰·同步字幕】", "【对白·慢速清晰】"),
     ("【旁白·慢速清晰·同步字幕】", "【旁白·慢速清晰】"),
@@ -556,7 +556,7 @@ _POST_SUBTITLE_PREFIX_MAP = (
 
 
 def strip_model_burn_subtitle_cues(content: str) -> str:
-    """去掉模型烧录字幕提示，保留对白/旁白本身（供后期叠字）。"""
+    """Xóa lời nhắc phụ đề để ghi mô hình và giữ lại đoạn hội thoại/tường thuật (để phủ lên sau)."""
     out: list[str] = []
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         stripped = raw.strip()
@@ -574,7 +574,7 @@ def strip_model_burn_subtitle_cues(content: str) -> str:
     return "\n".join(out).replace("\n\n\n", "\n\n").strip()
 
 
-# 关闭人物介绍模式：去掉角色身旁叠字 cue，避免模型仍按字卡烧屏
+# Tắt chế độ giới thiệu nhân vật: bỏ gợi ý chữ chồng bên cạnh nhân vật tránh trường hợp người mẫu vẫn ấn thẻ từ làm cháy màn hình
 def strip_character_intro_cues(content: str) -> str:
     out: list[str] = []
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
@@ -592,7 +592,7 @@ def build_seedance_production_section(
     burn_subtitles: bool = True,
     character_intro: bool = True,
 ) -> str:
-    """组装 Seedance 音频/字幕/BGM 强制约束（科普旁白 / 漫剧画面+对白混排）。
+    """Lắp ráp các ràng buộc bắt buộc về âm thanh/phụ đề/BGM của Seedance (tường thuật khoa học phổ biến/cảnh truyện tranh + sắp xếp hỗn hợp hội thoại).
 
     ambient_only：科普后期 TTS 模式——模型只出操作环境音，禁止口播与 BGM。
     burn_subtitles=False：成片后再烧 SRT——保留口播，禁止画面内字幕。
@@ -615,7 +615,7 @@ def build_seedance_production_section(
     if "âm lượng thấp hơn giọng người" not in bgm_mood and "音量低于人声" not in bgm_mood:
         bgm_mood = f"{bgm_mood}，âm lượng thấp hơn giọng người"
 
-    # 后期字幕：口播保留，画面禁止任何文字（字幕交给剪辑/导出 SRT）
+    # Phụ đề hậu kỳ: phát sóng bằng miệng được giữ lại và không được phép có văn bản trên màn hình (phụ đề được chuyển giao cho biên tập/xuất SRT)
     no_burn = (
         "Nghiêm cấm ghi phụ đề, tiêu đề, watermark, thẻ chữ hoặc chữ lời thoại vào trong hình ảnh; "
         "lời thoại chỉ phát ra tiếng, phần chữ phụ đề do khâu hậu kỳ thực hiện."
@@ -674,7 +674,7 @@ def build_seedance_production_section(
             )
         return f"{SEEDANCE_PRODUCTION_SECTION_HEADER}\n" + "\n".join(lines)
 
-    # 科普旁白模式：整镜以旁白段为主（语速自然偏快，避免拖沓）
+    # Chế độ tường thuật khoa học phổ biến: Toàn bộ khung cảnh bị chi phối bởi các phân đoạn tường thuật (tốc độ nói nhanh tự nhiên để tránh bị trì hoãn)
     lines = [
         "1. Tốc độ nói / 语速: Lời dẫn có tốc độ nói tự nhiên hơi nhanh, phát âm rõ ràng, nhịp điệu gọn gàng có nhịp thở; "
         "tránh cố ý nói quá chậm hoặc dừng quá lâu; không ép tốc độ đến mức nuốt chữ và không tăng tốc độ phát video.",
@@ -796,7 +796,7 @@ def first_visual_prompt(content: str) -> str:
 
 
 def _is_narration_script_line(line: str) -> bool:
-    """判断脚本行是否为旁白口播（含新旧前缀）；字幕 cue 里虽含「旁白」二字但不算。"""
+    """Xác định xem dòng kịch bản có phải là lời tường thuật hay không (bao gồm tiền tố cũ và tiền tố mới); mặc dù gợi ý phụ đề có chứa từ "tường thuật" nhưng nó không được tính."""
     stripped = (line or "").strip()
     if not stripped or stripped.startswith("【字幕") or stripped.startswith("【BGM"):
         return False
@@ -804,7 +804,7 @@ def _is_narration_script_line(line: str) -> bool:
 
 
 def replace_narration_in_script(content: str, narration: str) -> str:
-    """把编辑弹窗里的旁白写回脚本旁白段，配音与视频以脚本为准。"""
+    """Viết lời tường thuật trong cửa sổ bật lên chỉnh sửa quay lại phần tường thuật của kịch bản. Việc lồng tiếng và quay phim phải tuân theo kịch bản."""
     text = (narration or "").strip()
     lines = (content or "").replace("\r\n", "\n").split("\n")
     out: list[str] = []
@@ -826,14 +826,14 @@ def replace_narration_in_script(content: str, narration: str) -> str:
 
 
 def replace_first_visual_in_script(content: str, visual: str) -> str:
-    """把编辑弹窗里的首帧画面写回脚本第一段 visual。"""
+    """Viết khung hình đầu tiên trong cửa sổ bật lên chỉnh sửa trở lại đoạn trực quan đầu tiên của tập lệnh."""
     text = (visual or "").strip()
     if not text:
         return (content or "").strip()
     lines = (content or "").replace("\r\n", "\n").split("\n")
     out: list[str] = []
     replaced = False
-    # cue_end 字幕/BGM 行之后的插入点
+    # Cue_end Điểm chèn sau dòng phụ đề/BGM
     cue_end = 0
     for i, raw in enumerate(lines):
         stripped = raw.strip()
@@ -907,7 +907,7 @@ def parse_beats_from_llm_shot(item: dict[str, Any], narration_fallback: str = ""
                 continue
             raw_dur = seg.get("duration")
             if kind in {"narration", "vo", "旁白"}:
-                # est 按字数估时；LLM 值钳在 [est, est+1]，禁止把短句撑满镜长
+                # est được ước tính dựa trên số lượng từ; giá trị LLM được giới hạn ở [est, est+1] và không được phép điền toàn bộ câu ngắn.
                 est = estimate_narration_duration(text)
                 if raw_dur:
                     given = int(raw_dur)
@@ -941,7 +941,7 @@ def parse_beats_from_llm_shot(item: dict[str, Any], narration_fallback: str = ""
 
 
 def seedance_timeline_without_voice(segment_script: str) -> str:
-    """时间轴保留画面；旁白/字幕/BGM 行改成无口播的操作环境音，避免模型念稿。"""
+    """Dòng thời gian giữ nguyên màn hình; các dòng tường thuật/phụ đề/BGM được thay đổi thành âm thanh môi trường vận hành mà không phát giọng nói để tránh đọc mô hình."""
     last_visual = "工位操作，手部点击界面，保持主体稳定"
     out: list[str] = []
     for raw in (segment_script or "").replace("\r\n", "\n").split("\n"):

@@ -1,4 +1,4 @@
-/** 浏览器语言检测、本地覆盖与 html lang 同步 */
+/** Phát hiện ngôn ngữ trình duyệt, phủ sóng cục bộ và đồng bộ hóa lang html */
 
 export type Locale = 'vi' | 'en' | 'zh'
 
@@ -18,15 +18,15 @@ export const LOCALE_DATE: Record<Locale, string> = {
   zh: 'zh-CN',
 }
 
-// 当前生效语言（供非 React 工具函数读取）
+// Ngôn ngữ hiệu quả hiện tại (có thể đọc được bằng các chức năng của công cụ không phải React)
 let activeLocale: Locale = 'vi'
 
-// 是否为已支持的语言代码
+// Đây có phải là mã ngôn ngữ được hỗ trợ không?
 export function isLocale(value: unknown): value is Locale {
   return value === 'zh' || value === 'en' || value === 'vi'
 }
 
-// 从 Accept-Language / navigator 映射到 vi, en 或 zh
+// Ánh xạ từ Ngôn ngữ chấp nhận/điều hướng sang vi, en hoặc zh
 export function localeFromBrowser(lang?: string): Locale {
   const raw = (lang || '').trim().toLowerCase()
   if (raw.startsWith('zh')) return 'zh'
@@ -34,7 +34,7 @@ export function localeFromBrowser(lang?: string): Locale {
   return 'vi'
 }
 
-// 读取用户手动选择；无记录则返回 null（跟随浏览器）
+// Đọc lựa chọn hướng dẫn sử dụng của người dùng; nếu không có bản ghi, trả về null (theo trình duyệt)
 export function readStoredLocale(): Locale | null {
   try {
     const raw = localStorage.getItem(LOCALE_STORAGE_KEY)
@@ -44,7 +44,7 @@ export function readStoredLocale(): Locale | null {
   }
 }
 
-// 首次进入：有手动选择用手动，否则跟浏览器（默认优先 Tiếng Việt）
+// Vào lần đầu: Nếu có manual thì dùng manual, còn không thì theo trình duyệt (mặc định ưu tiên Tiếng Việt)
 export function detectLocale(): Locale {
   const stored = typeof window === 'undefined' ? null : readStoredLocale()
   if (stored) return stored
@@ -58,7 +58,7 @@ export function getActiveLocale(): Locale {
   return activeLocale
 }
 
-// 应用语言：写 html lang；persist 时才写入 localStorage
+// Ngôn ngữ ứng dụng: viết lang html; chỉ viết localStorage khi vẫn tồn tại
 export function applyLocale(locale: Locale, persist: boolean): void {
   activeLocale = locale
   if (persist) {
@@ -73,7 +73,7 @@ export function applyLocale(locale: Locale, persist: boolean): void {
   }
 }
 
-// 日期时间按当前语言格式化
+// Ngày và giờ được định dạng theo ngôn ngữ hiện tại
 export function formatDateTime(value?: string | Date | null, locale: Locale = activeLocale): string {
   if (!value) return '—'
   const d = value instanceof Date ? value : new Date(value)

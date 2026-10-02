@@ -128,7 +128,7 @@ export type VoicePreset = {
   speaker: string
 }
 
-/** 项目 voice_id / 模板别名 → 与音色列表一致的 speaker id */
+/** dự án voice_id / bí danh mẫu → id người nói phù hợp với danh sách giọng nói */
 export function resolveVoiceId(raw: string, voices: VoicePreset[]): string {
   const id = (raw || '').trim()
   if (!id) {
@@ -610,7 +610,7 @@ export const api = {
       payurl?: string
       img?: string
       qr_payload?: string
-      /** qr=原生扫码；redirect=新开易支付收银台 */
+      /** qr=mã quét gốc; redirect=nhân viên thu ngân thanh toán dễ dàng mới */
       pay_mode?: 'qr' | 'redirect' | string
       expire_seconds?: number
     }>('/api/billing/orders', {
@@ -626,7 +626,7 @@ export const api = {
       credit_fen: number
     }>(`/api/billing/orders/${encodeURIComponent(outTradeNo)}`)
   },
-  /** 关闭待支付订单 */
+  /** Đóng lệnh chờ thanh toán */
   closeBillingOrder(outTradeNo: string) {
     return request<{ out_trade_no: string; status: string }>(
       `/api/billing/orders/${encodeURIComponent(outTradeNo)}/close`,

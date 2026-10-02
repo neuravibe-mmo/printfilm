@@ -1,4 +1,4 @@
-/** 分集编辑：左侧资产栏（本集/全集 + 分类卡片） */
+/** Biên tập tập: Cột nội dung bên trái (tập này/tập đầy đủ + thẻ danh mục) */
 import { useI18n } from '../../i18n'
 import { Workflow } from 'lucide-react'
 import { resolveDramaAssetPreviewUrl, type DramaAsset } from '../../api/drama'
@@ -22,24 +22,24 @@ type Props = {
   onScopeChange: (scope: AssetScope) => void
   onTabChange: (tab: AssetTab | null) => void
   onOpenCanvas: () => void
-  /** 打开资产详情：编辑提示词 / 重新生成 / 上传 */
+  /** Mở chi tiết nội dung: Chỉnh sửa lời nhắc / Tạo lại / Tải lên */
   onOpenAsset: (asset: DramaAsset) => void
-  /** 插入 @asset 到当前分镜脚本 */
+  /** Chèn @asset vào bảng phân cảnh hiện tại */
   onMention: (asset: DramaAsset) => void
-  /** 取消当前分镜对该资产的关联（不删除资产） */
+  /** Hủy liên kết bảng phân cảnh hiện tại với nội dung (mà không xóa nội dung) */
   onUnlinkAsset?: (assetId: number) => void
   onGenerateVoice?: (asset: DramaAsset) => void
   voiceBusyIds?: ReadonlySet<number>
   onVoiceError?: (message: string) => void
-  /** 自定义新建当前分类资产 */
+  /** Tùy chỉnh và tạo nội dung mới trong danh mục hiện tại */
   onCreateAsset?: () => void
-  /** 从全局资产库导入 */
+  /** Nhập từ thư viện nội dung toàn cầu */
   onImportAsset?: () => void
 }
 
 
 
-// 渲染分集编辑左侧资产栏
+// Kết xuất tập chỉnh sửa cột nội dung bên trái
 export function EpisodeEditAssetPanel({
   scope,
   tab,

@@ -1,4 +1,4 @@
-"""Seedream 前端选项 → TokenFree model / size 解析。"""
+"""Tùy chọn giao diện người dùng Seedream → Phân tích mô hình/kích thước TokenFree."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ import re
 from app.config import get_settings
 from app.services.logical_model_router import resolve_logical_model_id, resolve_upstream_model
 
-# SeedreamAspectRatio 支持的比例
+# Tỷ lệ được hỗ trợ SeedreamAspectRatio
 SeedreamAspectRatio = str
-# SeedreamResolution 清晰度
+# SeedreamResolution rõ ràng
 SeedreamResolution = str
 
-# Seedream 5.0 Pro 自定义像素总面积上限（官方文档）
+# Seedream 5.0 Pro có thể tùy chỉnh tổng diện tích pixel (tài liệu chính thức)
 SEEDREAM_PRO_MAX_PIXELS = 4_624_220
 
-# 官方 1K / 2K 推荐像素（均落在 Pro 上限内）
+# Pixel được đề xuất 1K / 2K chính thức (tất cả đều nằm trong giới hạn Pro)
 SEEDREAM_SIZE_1K: dict[str, str] = {
     "auto": "1K",
     "1:1": "1024x1024",
@@ -39,7 +39,7 @@ SEEDREAM_SIZE_2K: dict[str, str] = {
     "2:3": "1664x2496",
     "21:9": "3136x1344",
 }
-# Lite / 4.5 可用的更高像素（超过 Pro 上限，仅非 Pro 模型使用）
+# Lite / có sẵn 4,5 pixel cao hơn (trên giới hạn Pro, chỉ khả dụng trên các mẫu không phải Pro)
 SEEDREAM_SIZE_3K: dict[str, str] = {
     "auto": "3K",
     "1:1": "3072x3072",
@@ -69,7 +69,7 @@ SEEDREAM_SIZE_MAP: dict[str, dict[str, str]] = {
 _PIXEL_SIZE_RE = re.compile(r"^(\d+)\s*[xX×]\s*(\d+)$")
 
 
-# 判断接入点是否为 Seedream 5.0 Pro（仅支持 1K/2K，像素面积 ≤ 4624220）
+# Xác định xem điểm truy cập có phải là Seedream 5.0 Pro hay không (chỉ hỗ trợ 1K/2K, vùng pixel 4624220)
 def is_seedream_pro_model(model: str | None) -> bool:
     mid = (model or "").strip().lower()
     if not mid:
@@ -84,11 +84,11 @@ def is_seedream_pro_model(model: str | None) -> bool:
         return True
     if "seedream-5" in mid or "seedream/5" in mid:
         return "lite" not in mid
-    # 默认项目主图模型为 Pro
+    # Mô hình hình ảnh chính của dự án mặc định là Pro
     return True
 
 
-# 将超限 WxH 等比缩到 max_pixels 内（偶数边）
+# Chia tỷ lệ WxH vượt quá giới hạn trong phạm vi max_pixels (các cạnh được đánh số chẵn)
 def clamp_seedream_pixel_size(
     size: str,
     *,
@@ -118,7 +118,7 @@ def clamp_seedream_pixel_size(
     return f"{new_w}x{new_h}"
 
 
-# 将前端模型 ID 解析为 TokenFree 上游模型名
+# Phân giải ID mô hình giao diện người dùng thành tên mô hình ngược dòng TokenFree
 def resolve_seedream_model_endpoint(model_id: str | None) -> str:
     raw = (model_id or "").strip()
     settings = get_settings()
@@ -134,7 +134,7 @@ def resolve_seedream_model_endpoint(model_id: str | None) -> str:
     return model_id or settings.model_image
 
 
-# 将清晰度 + 比例解析为 Ark size；Pro 自动降到 ≤2K
+# Giải quyết độ sắc nét + tỷ lệ với kích thước Ark; Pro tự động giảm xuống 2K
 def resolve_seedream_size(
     *,
     aspect_ratio: str | None = None,
@@ -145,7 +145,7 @@ def resolve_seedream_size(
     res = (resolution or "2K").strip().upper()
     if res not in SEEDREAM_SIZE_MAP:
         res = "2K"
-    # Pro 不支持 3K/4K 档与超大像素，统一钳到 2K
+    # Pro không hỗ trợ tệp 3K/4K và pixel siêu lớn và được giới hạn đồng đều ở 2K
     endpoint = resolve_seedream_model_endpoint(model_id) if model_id is not None else settings.model_image
     if is_seedream_pro_model(endpoint) and res in {"3K", "4K"}:
         res = "2K"

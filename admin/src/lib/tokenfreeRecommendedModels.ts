@@ -2,7 +2,7 @@ export type ModelCapability = "text" | "image" | "video" | "audio";
 
 export type UpstreamModelOption = { id: string; label: string; capability: string };
 
-/** 勾选推荐时补上的 TokenFree id；视频含 2.5 / 2.0 / Mini */
+/** Kiểm tra id TokenFree được thêm khi đề xuất; video bao gồm 2.5 / 2.0 / Mini */
 export const RECOMMENDED_MODEL_IDS: Record<ModelCapability, string[]> = {
   text: ["kimi-k2.6"],
   image: ["gpt-image-2-5"],
@@ -19,7 +19,7 @@ export const RECOMMENDED_MODEL_IDS: Record<ModelCapability, string[]> = {
 
 const CAPABILITY_ORDER: ModelCapability[] = ["text", "image", "video", "audio"];
 
-// 把 Seedance 接入点/短名收到 TokenFree 目录 id
+// Nhận điểm truy cập/tên viết tắt của Seedance vào id thư mục TokenFree
 export function canonicalChannelModelId(model: string): string {
   const mid = (model || "").trim();
   if (!mid) return "";
@@ -35,7 +35,7 @@ export function canonicalChannelModelId(model: string): string {
   return mid;
 }
 
-// 合并 Seedance 2.0 三档别名，保持原顺序
+// Hợp nhất ba bí danh của Seedance 2.0 và giữ nguyên thứ tự ban đầu
 export function canonicalizeChannelModels(models: string[]): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
@@ -48,7 +48,7 @@ export function canonicalizeChannelModels(models: string[]): string[] {
   return out;
 }
 
-// 目录里同款 Seedance 只留一条，优先展示规范 id
+// Chỉ có một Seedance của cùng một mẫu trong danh mục và ID thông số kỹ thuật được hiển thị đầu tiên.
 export function collapseCatalogModels(models: UpstreamModelOption[]): UpstreamModelOption[] {
   const map = new Map<string, UpstreamModelOption>();
   for (const model of models) {
@@ -66,7 +66,7 @@ export function collapseCatalogModels(models: UpstreamModelOption[]): UpstreamMo
   return Array.from(map.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// 上游目录里实际存在的推荐 id
+// Id đề xuất thực tế trong thư mục ngược dòng
 export function pickRecommendedModelIds(models: UpstreamModelOption[]): string[] {
   const ids = new Set(models.map((item) => canonicalChannelModelId(item.id)));
   const out: string[] = [];
@@ -78,7 +78,7 @@ export function pickRecommendedModelIds(models: UpstreamModelOption[]): string[]
   return out;
 }
 
-// 各能力默认项；视频写逻辑 id seedance-2.5，与下拉选项对齐
+// Các mục mặc định cho từng khả năng; logic viết video id Seedance-2.5, được căn chỉnh theo các tùy chọn thả xuống
 export function pickRecommendedDefaults(models: UpstreamModelOption[]): Record<ModelCapability, string> {
   const ids = new Set(models.map((item) => canonicalChannelModelId(item.id)));
   const out: Record<ModelCapability, string> = { text: "", image: "", video: "", audio: "" };
@@ -92,7 +92,7 @@ export function pickRecommendedDefaults(models: UpstreamModelOption[]): Record<M
   return out;
 }
 
-// 勾选推荐：canonicalize 后补上短名单，不删已选的 Seedance 2.0
+// Kiểm tra và đề xuất: chuẩn hóa rồi thêm danh sách rút gọn mà không xóa Seedance 2.0 đã chọn
 export function mergeRecommendedSelection(selected: string[], catalog: UpstreamModelOption[]): string[] {
   const recommended = pickRecommendedModelIds(catalog);
   return canonicalizeChannelModels([...selected, ...recommended]);

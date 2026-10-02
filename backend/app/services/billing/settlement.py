@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""任务级预扣与结算。"""
+"""Khấu trừ và quyết toán ở cấp độ nhiệm vụ."""
 from __future__ import annotations
 
 import logging
@@ -16,7 +16,7 @@ from app.services.billing.estimates import estimate_task_fen
 
 logger = logging.getLogger(__name__)
 
-# 仍占用余额承诺、尚未预扣冻结的进行中任务
+# Các nhiệm vụ đang thực hiện vẫn chiếm số dư cam kết và chưa bị giữ lại và đóng băng
 _PENDING_BILLING_TASK_STATUSES = frozenset(
     {
         "pending",
@@ -30,7 +30,7 @@ _PENDING_BILLING_TASK_STATUSES = frozenset(
 
 
 def billing_active(user: User | None = None, settings: Settings | None = None) -> bool:
-    """全局计费开关；user 参数保留兼容调用方，不再按用户跳过扣费。"""
+    """Chuyển đổi thanh toán toàn cầu; tham số người dùng vẫn tương thích với người gọi và các khoản khấu trừ không còn bị bỏ qua cho mỗi người dùng."""
     _ = user
     s = settings or get_settings()
     return bool(s.billing_enabled)
@@ -61,7 +61,7 @@ async def _ledger(
 
 
 async def _lock_user(db: AsyncSession, user_id: int) -> User | None:
-    """行锁用户钱包，避免并发预扣/结算透支；populate_existing 防止会话内过期余额。"""
+    """Line khóa ví của người dùng để tránh thấu chi thanh toán/giữ lại đồng thời; populate_being ngăn số dư hết hạn trong phiên."""
     return (
         await db.execute(
             select(User)
@@ -73,7 +73,7 @@ async def _lock_user(db: AsyncSession, user_id: int) -> User | None:
 
 
 async def _lock_task(db: AsyncSession, task_id: int) -> TaskRun | None:
-    """行锁 TaskRun，保证结算/预扣幂等；populate_existing 防止会话内过期 billing_status。"""
+    """Khóa hàng TaskRun, đảm bảo giải quyết/giữ lại tính bình thường; populate_being ngăn không cho trạng thái thanh toán hết hạn trong phiên."""
     return (
         await db.execute(
             select(TaskRun)
@@ -90,7 +90,7 @@ async def pending_task_commitment_fen(
     *,
     exclude_task_id: int | None = None,
 ) -> int:
-    """汇总用户进行中、尚未预扣冻结的任务估算占用（分）。"""
+    """Tóm tắt thời gian chiếm dụng ước tính (phút) của các nhiệm vụ mà người dùng đang thực hiện và chưa bị giữ lại và đóng băng."""
     stmt = select(TaskRun).where(
         TaskRun.requested_by == int(user_id),
         TaskRun.billing_status == "none",
@@ -109,13 +109,13 @@ async def pending_task_commitment_fen(
 
 
 async def ensure_balance_for_task(db: AsyncSession, user: User, task: TaskRun) -> int:
-    """入队前同步校验余额（含排队中未冻结估算），不足抛 ValueError；返回本任务估算分。"""
+    """Kiểm tra số dư đồng bộ trước khi tham gia hàng đợi (bao gồm cả ước tính chưa đóng băng trong hàng đợi). Nếu không đủ, ValueError sẽ được ném ra; số điểm ước tính của nhiệm vụ này sẽ được trả về."""
     if not billing_active(user):
         return 0
     locked = await _lock_user(db, int(user.id))
     if locked is None:
         raise ValueError("用户不存在")
-    # 同步调用方持有的 user 对象余额
+    # Đồng bộ hóa số dư của đối tượng người dùng do người gọi nắm giữ
     user.balance_fen = int(locked.balance_fen or 0)
     user.frozen_fen = int(locked.frozen_fen or 0)
     need = await estimate_task_fen(db, task)
@@ -138,7 +138,7 @@ async def ensure_balance_for_task_batch(
     task: TaskRun,
     count: int,
 ) -> dict[str, int]:
-    """批量入队前校验：pending + unit*count。不足抛 ValueError。"""
+    """Xác minh trước khi xếp hàng loạt: đang chờ xử lý + số lượng đơn vị. Nếu không đủ, hãy ném ValueError."""
     if not billing_active(user):
         return {"unit_estimate_fen": 0, "required_total_fen": 0}
     qty = max(1, int(count))
@@ -167,11 +167,11 @@ async def ensure_balance_for_task_batch(
 
 
 async def freeze_for_task(db: AsyncSession, task: TaskRun) -> int:
-    """任务开始前预扣估算；余额不足抛 ValueError。已 frozen 时幂等返回原估算。"""
+    """Ước tính được giữ lại trước khi nhiệm vụ bắt đầu; một ValueError được ném ra khi số dư không đủ. Nếu bị đóng băng, ước tính ban đầu sẽ được trả về bình thường."""
     locked_task = await _lock_task(db, int(task.id))
     if not locked_task:
         return 0
-    # 回写到调用方持有的 task 引用
+    # Viết lại tham chiếu tác vụ do người gọi nắm giữ
     if locked_task is not task:
         task.billing_status = locked_task.billing_status
         task.billing_estimate_fen = locked_task.billing_estimate_fen
@@ -188,7 +188,7 @@ async def freeze_for_task(db: AsyncSession, task: TaskRun) -> int:
     available = int(user.balance_fen or 0)
     if available < need:
         raise ValueError(f"余额不足：需要 ¥{need/100:.2f}，当前 ¥{available/100:.2f}，请先充值")
-    # 仅通过 _ledger 扣余额，避免双重扣款
+    # Chỉ trừ số dư qua _sổ cái để tránh bị trừ hai lần
     user.frozen_fen = int(user.frozen_fen or 0) + need
     task.billing_estimate_fen = need
     task.billing_status = "frozen"
@@ -206,7 +206,7 @@ async def freeze_for_task(db: AsyncSession, task: TaskRun) -> int:
 
 
 async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
-    """任务结束时按 usage_events 结算，多退少补冻结额。"""
+    """Khi kết thúc nhiệm vụ, việc thanh toán sẽ dựa trên sự kiện sử dụng và mọi khoản vượt quá sẽ được hoàn lại và số tiền còn lại sẽ được bồi thường cho số tiền bị đóng băng."""
     task = await _lock_task(db, task_id)
     if not task:
         return {"charged": 0, "refunded": 0}
@@ -216,7 +216,7 @@ async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
             "refunded": int(task.billing_refunded_fen or 0),
         }
 
-    # 钱包侧幂等：已有 unfreeze/settle 流水则只对齐状态，禁止二次退还
+    # Phía ví không có tác dụng: Nếu đã giải phóng/giải quyết, giao dịch sẽ chỉ ở trạng thái căn chỉnh và lợi nhuận thứ cấp bị cấm.
     if task.billing_status == "frozen":
         prior = (
             await db.execute(
@@ -252,7 +252,7 @@ async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
         )
     )
     events = list(result.scalars().all())
-    # 用量已结但状态仍 frozen（异常中断）：按已落账实扣对齐，禁止把整笔预扣当退款
+    # Việc sử dụng đã được giải quyết nhưng trạng thái vẫn bị đóng băng (gián đoạn bất thường): phù hợp với các khoản khấu trừ thực tế đã được đưa vào tài khoản và không được coi toàn bộ khoản khấu trừ là một khoản hoàn lại
     if (
         task.billing_status == "frozen"
         and not events
@@ -265,7 +265,7 @@ async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
             "refunded": int(task.billing_refunded_fen or 0),
         }
     if task.billing_status == "skipped" and not events:
-        # 全局关闭计费且无用量：结算完成，统一标 settled 便于管理端展示
+        # Tính năng thanh toán bị tắt trên toàn cầu và không có mục đích sử dụng: việc thanh toán đã hoàn tất, điểm thống nhất đã được giải quyết để dễ dàng hiển thị ở phía quản lý
         task.billing_status = "settled"
         task.billing_charged_fen = int(task.billing_charged_fen or 0)
         await db.flush()
@@ -278,7 +278,7 @@ async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
     for e in events:
         e.settled = True
 
-    # 全局关闭计费：标记用量已结算，不动钱包，任务标 settled
+    # Tắt tính năng thanh toán trên toàn cầu: đánh dấu việc sử dụng là đã giải quyết, giữ nguyên ví và đánh dấu nhiệm vụ là đã giải quyết
     if task.billing_status == "skipped":
         task.billing_charged_fen = charged
         task.billing_status = "settled"
@@ -287,7 +287,7 @@ async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
 
     user = await _lock_user(db, int(task.requested_by)) if task.requested_by else None
     if not user or task.billing_status != "frozen":
-        # 非 frozen（如 none）但已有用量：只落账用量，不碰钱包
+        # Không bị đóng băng (chẳng hạn như không có) nhưng đã được sử dụng: chỉ số tiền được ghi có và ví không được chạm vào
         task.billing_charged_fen = charged
         if events:
             task.billing_status = "settled"
@@ -351,15 +351,15 @@ async def settle_task(db: AsyncSession, task_id: int) -> dict[str, int]:
     return {"charged": charged, "refunded": refund}
 
 
-# 终态与结算之间的正常窗口：_complete/_fail/_mark_cancelled 都是先置终态再 settle，
-# 对账扫描须越过该窗口，避免与进行中的正常收尾竞争。
+# Cửa sổ bình thường giữa trạng thái cuối cùng và trạng thái xử lý: _complete/_fail/_mark_cancelled đều đặt trạng thái cuối cùng trước rồi mới xử lý.
+# Quá trình quét đối chiếu phải vượt ra ngoài cửa sổ này để tránh cạnh tranh với quá trình đóng thông thường.
 TERMINAL_FROZEN_RECONCILE_GRACE_SEC = 120
 
 _RECONCILABLE_TERMINAL_STATUSES = ("succeeded", "failed", "cancelled")
 
 
 async def reconcile_terminal_frozen_tasks(db: AsyncSession, *, limit: int = 100) -> int:
-    """对账补偿：终态但 billing_status 仍 frozen 的任务重新结算。
+    """Bồi thường hòa giải: Các nhiệm vụ có trạng thái cuối cùng nhưng trạng thái thanh toán vẫn bị đóng băng sẽ được giải quyết lại.
 
     来源是 settle_task 异常中断（如结算瞬间 DB 故障）的遗留行；不处理会造成
     冻结额长期不退、usage_events 悬空。settle_task 自带钱包流水幂等门闩，重复调用安全。
@@ -450,7 +450,7 @@ async def settle_usage_charge(
     ref_type: str = "api",
     ref_id: str = "",
 ) -> None:
-    """即时扣费（已由 task 结算覆盖时仅作兼容）。"""
+    """Khấu trừ ngay lập tức (chỉ tương thích khi được giải quyết trong nhiệm vụ)."""
     if not billing_active(user):
         return
     need = max(0, int(charge_fen))

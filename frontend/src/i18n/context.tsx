@@ -14,7 +14,7 @@ type I18nValue = {
 
 const I18nContext = createContext<I18nValue | null>(null)
 
-// 同步 document title / description
+// Đồng bộ hóa tiêu đề/mô tả tài liệu
 function syncDocumentMeta(m: Messages) {
   if (typeof document === 'undefined') return
   document.title = m.meta.title
@@ -22,7 +22,7 @@ function syncDocumentMeta(m: Messages) {
   if (desc) desc.setAttribute('content', m.meta.description)
 }
 
-/** 全站语言：浏览器自动识别，手动选择后写入 localStorage */
+/** Ngôn ngữ trang web đầy đủ: Được trình duyệt tự động nhận dạng, được chọn thủ công và ghi vào localStorage */
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     const next = detectLocale()

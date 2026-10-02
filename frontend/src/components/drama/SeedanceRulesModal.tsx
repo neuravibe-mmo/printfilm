@@ -1,4 +1,4 @@
-/** Seedance 传值与脚本规则说明弹窗（分集编辑页，对齐 docs/EPISODE_RULES.md） */
+/** Cửa sổ bật lên mô tả quy tắc tập lệnh và truyền giá trị Seedance (trang chỉnh sửa tập, được căn chỉnh theo docs/EPISODE_RULES.md) */
 import { useState } from 'react'
 import Modal from '../ui/Modal'
 import {

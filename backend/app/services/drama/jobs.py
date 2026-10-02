@@ -55,7 +55,7 @@ from app.services.drama.visual_prompt import resolve_visual_prompt_for_asset
 
 logger = logging.getLogger(__name__)
 
-# 分集视频取消标记（episode_id）
+# Đang bỏ đánh dấu tập video (episode_id)
 _video_cancelled_episodes: set[int] = set()
 ACTIVE_VIDEO_GEN_STATUSES = frozenset({"queued", "running", "generating"})
 
@@ -73,7 +73,7 @@ def _clear_episode_video_cancelled(episode_id: int) -> None:
 
 
 def clear_episode_video_cancelled(episode_id: int) -> None:
-    """新入队分镜视频前清除进程内取消标记，避免误把新任务立刻作废。"""
+    """Hãy xóa dấu hủy trong quá trình thực hiện trước khi tham gia cùng nhóm trong video bảng phân cảnh để tránh vô tình làm mất hiệu lực nhiệm vụ mới ngay lập tức."""
     _clear_episode_video_cancelled(episode_id)
 
 
@@ -87,7 +87,7 @@ async def _reset_fragment_video_generation(
     if episode_id is not None:
         q = q.where(DramaEpisodeFragment.episode_id == int(episode_id))
     if user_id is not None:
-        # 按项目归属收敛：禁止跨用户重置分镜
+        # Hội tụ theo quyền sở hữu dự án: Cấm việc người dùng chéo đặt lại bảng phân cảnh
         q = (
             q.join(DramaEpisode, DramaEpisodeFragment.episode_id == DramaEpisode.id)
             .join(DramaProject, DramaEpisode.project_id == DramaProject.id)
@@ -110,7 +110,7 @@ async def _reset_fragment_video_generation(
 
 
 async def cancel_episode_video_jobs(episode_id: int) -> dict[str, Any]:
-    """取消单集视频任务：标记取消并重置分镜生成状态。"""
+    """Hủy tác vụ video một tập: đánh dấu việc hủy và đặt lại trạng thái tạo bảng phân cảnh."""
     _mark_episode_video_cancelled(episode_id)
     async with AsyncSessionLocal() as db:
         fragments = await _reset_fragment_video_generation(db, episode_id=episode_id)
@@ -130,7 +130,7 @@ async def cancel_episode_video_jobs(episode_id: int) -> dict[str, Any]:
 
 
 async def cancel_all_episode_video_jobs(user_id: int) -> dict[str, Any]:
-    """取消指定用户的全部漫剧分镜视频任务，严禁波及其他用户。"""
+    """Hủy bỏ tất cả các nhiệm vụ video cốt truyện truyện tranh đối với người dùng được chỉ định và nghiêm cấm làm ảnh hưởng đến người dùng khác."""
     episode_ids: set[int] = set()
     async with AsyncSessionLocal() as db:
         frags = (
@@ -184,7 +184,7 @@ async def _enqueue_drama_task(
     fragment_id: int | None = None,
     commit: bool = True,
 ) -> int:
-    """通过统一任务平台入队漫剧任务，返回 task_run_id。"""
+    """Tham gia nhiệm vụ truyện tranh thông qua nền tảng nhiệm vụ thống nhất và trả về task_run_id."""
     from app.schemas_tasks import TaskCreateRequest, TaskTargetBind
     from app.services.tasks.service import create_task
 
@@ -208,7 +208,7 @@ async def _enqueue_drama_task(
 
 
 async def dispatch_script_summary_job(db: AsyncSession, user: User, project_id: int) -> int:
-    """入队剧本摘要任务。"""
+    """Tham gia nhiệm vụ tóm tắt kịch bản của nhóm."""
     task_id = await _enqueue_drama_task(
         db,
         user,
@@ -222,7 +222,7 @@ async def dispatch_script_summary_job(db: AsyncSession, user: User, project_id: 
 
 
 async def run_script_summary_job(project_id: int) -> dict[str, Any]:
-    # Worker：生成剧本摘要并写库
+    # Worker: Tạo thư viện tóm tắt script và viết
     async with AsyncSessionLocal() as db:
         project = await db.get(
             DramaProject,
@@ -304,7 +304,7 @@ async def dispatch_episode_scripts_job(
     draft: str | None = None,
     generate_mode: str | None = None,
 ) -> int:
-    """入队分集剧本任务；可指定单集优化或创意→摘要/正文。"""
+    """Tham gia nhóm thực hiện các nhiệm vụ viết kịch bản cho tập phim; bạn có thể chỉ định tối ưu hóa hoặc sáng tạo từng tập → tóm tắt/văn bản."""
     project = await db.get(DramaProject, project_id, options=[selectinload(DramaProject.script)])
     total = 1
     if episode_number:
@@ -346,7 +346,7 @@ async def run_episode_scripts_job(
     draft: str | None = None,
     generate_mode: str | None = None,
 ) -> dict[str, Any]:
-    # Worker：大纲 + 循环逐集直到完成；也可只优化指定集
+    # Worker: Outline + lặp lại từng tập cho đến khi hoàn thành; bạn cũng có thể chỉ tối ưu hóa tập được chỉ định
     logger.info(
         "开始生成分集剧本 project_id=%s force=%s task_id=%s episode_number=%s mode=%s",
         project_id,
@@ -422,7 +422,7 @@ async def run_episode_scripts_job(
             if force and existing:
                 params0 = dict(script.params or {})
                 status0 = str(params0.get("episode_content_status") or "")
-                # generating=本轮已开跑（含进程重启续跑），勿再因 force 清空已生成正文
+                # tạo=Vòng này đã bắt đầu (bao gồm cả quá trình khởi động lại và tiếp tục), không xóa văn bản được tạo do bị ép buộc.
                 if status0 != "generating":
                     existing = [
                         {
@@ -566,7 +566,7 @@ async def _run_single_episode_script_job(
     task_id: int | None = None,
     generate_mode: str = "optimize",
 ) -> dict[str, Any]:
-    """单集：草稿优化 / 创意→摘要 / 创意+摘要→正文 / 一键整集。"""
+    """Một tập: tối ưu hóa bản nháp/sáng tạo→tóm tắt/sáng tạo+tóm tắt→văn bản/một cú nhấp chuột cho toàn bộ tập."""
     mode = (generate_mode or "optimize").strip() or "optimize"
     logger.info(
         "开始单集剧本 project_id=%s episode_number=%s mode=%s draft_len=%s",
@@ -617,7 +617,7 @@ async def _run_single_episode_script_job(
         ep_title = str((current or {}).get("title") or "").strip() or f"第 {episode_number} 集"
         origin = str((current or {}).get("origin") or "")
 
-        # 已有定妆角色名，约束单集 LLM 称呼
+        # Đã có tên nhân vật trang điểm cố định và bị giới hạn ở tiêu đề LLM của một tập duy nhất
         char_name_rows = (
             await db.execute(
                 select(DramaAsset.name).where(
@@ -631,7 +631,7 @@ async def _run_single_episode_script_job(
         try:
             if mode == "summary":
                 if len(ep_creative) < 20:
-                    raise ValueError("请先填写本集原始创意（至少 20 字）")
+                    raise ValueError("请先填写Ý tưởng ban đầu của tập này（至少 20 字）")
                 batch = await run_episode_summary_from_creative(
                     summary,
                     existing,
@@ -654,7 +654,7 @@ async def _run_single_episode_script_job(
                 )
             elif mode == "full":
                 if len(ep_creative) < 20:
-                    raise ValueError("请先填写本集原始创意（至少 20 字）")
+                    raise ValueError("请先填写Ý tưởng ban đầu của tập này（至少 20 字）")
                 batch = await run_episode_full_from_creative(
                     summary,
                     existing,
@@ -691,11 +691,11 @@ async def _run_single_episode_script_job(
             if origin == "manual":
                 for item in batch:
                     item["origin"] = "manual"
-            # summary 模式不要用空 body 覆盖已有正文
+            # Không sử dụng nội dung trống để ghi đè văn bản hiện có ở chế độ tóm tắt
             if mode == "summary" and current:
                 for item in batch:
                     item["body"] = str(current.get("body") or "")
-            # 写回前刷新，避免覆盖用户在其他集的编辑
+            # Làm mới trước khi viết lại để tránh ghi đè các chỉnh sửa của người dùng ở bộ khác
             await db.refresh(script)
             fresh_content = script.episode_content
             if isinstance(fresh_content, dict) and isinstance(fresh_content.get("episodes"), list):
@@ -814,7 +814,7 @@ async def run_episode_fragment_plan_job(
     subtitle_enabled: bool | None = None,
     force: bool = False,
 ) -> dict[str, Any]:
-    # Worker：LLM 规划本集分镜并落库；失败可选回退规则切分
+    # Worker: LLM lên kế hoạch chia tập phim này và đưa nó vào thư viện; nếu thất bại, quy tắc dự phòng có thể được chọn để phân tách.
     from app.services.drama.build_fragments import build_fragments_from_episode_body
     from app.services.drama.fragment_plan import plan_fragments_with_llm
     from app.services.drama.llm import DramaLlmUnavailableError
@@ -857,7 +857,7 @@ async def run_episode_fragment_plan_job(
         )
         assets = list(assets_result.scalars().all())
 
-        # 本剧更早分集已介绍角色（跨集去重）
+        # Các nhân vật đã được giới thiệu trong các tập trước của bộ phim này (các tập trùng lặp sẽ được loại bỏ)
         from app.services.drama.build_fragments import collect_series_introduced_names
 
         siblings_result = await db.execute(
@@ -902,7 +902,7 @@ async def run_episode_fragment_plan_job(
             exclude_episode_id=episode.id,
         )
 
-        # force：覆盖本集全部分镜；否则锁定已有视频/手改分镜并续拆
+        # Force: Che hết các phần của tập này; nếu không thì khóa video hiện có/sửa đổi phần tách theo cách thủ công và tiếp tục chia tách
         from app.services.drama.build_fragments import extract_introduced_names_from_content
 
         protected_frags: list[DramaEpisodeFragment] = []
@@ -915,7 +915,7 @@ async def run_episode_fragment_plan_job(
             for frag in protected_frags:
                 for name in extract_introduced_names_from_content(frag.content or ""):
                     already_introduced.add(name)
-                # 摘要：去掉 cue 行后取前几行画面/对白
+                # Tóm tắt: Bỏ dòng gợi ý và lấy vài dòng hình ảnh/đoạn hội thoại đầu tiên
                 narr: list[str] = []
                 for raw in (frag.content or "").replace("\r\n", "\n").split("\n"):
                     line = raw.strip()
@@ -998,7 +998,7 @@ async def run_episode_fragment_plan_job(
             preserve_protected=not force,
             continuation=continuation,
         )
-        # 重新加载 params（replace 会写 fingerprint）
+        # Tải lại thông số (thay thế sẽ ghi dấu vân tay)
         params = dict(episode.params or {})
         params["fragment_plan_status"] = "completed"
         params["fragment_plan_mode"] = mode_used
@@ -1037,7 +1037,7 @@ async def run_episode_fragment_plan_job(
 
 # ---------- episode video (task platform) ----------
 
-# 任务平台（NIO）：Worker 短生命周期 — prepare → submit → 注册 awaiting_poll，由 Selector 轮询。
+# Nền tảng tác vụ (NIO): Vòng đời ngắn của công nhân - chuẩn bị → gửi → đăng ký chờ_poll, được thăm dò bởi Selector.
 async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
     from app.services.tasks.service import append_task_event, get_task_for_runtime, set_task_step_state
 
@@ -1086,12 +1086,12 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
             return {"ok": False, "cancelled": True}
 
         gen = frag.params.get("generation") if isinstance(frag.params, dict) else None
-        # 仅统计「同一次任务」内 prepare 被重新拉起的次数（中断重入等），
-        # 用户再次点生成 / 任务重试会清零 generation_attempts。
+        # Chỉ tính số lần chuẩn bị được bắt đầu lại trong "cùng một nhiệm vụ" (tái nhập lại bị gián đoạn, v.v.),
+        # Nếu người dùng nhấp vào Tạo/Thử lại tác vụ một lần nữa, thế hệ_attempts sẽ bị xóa.
         persisted_attempts = int((frag.params or {}).get("generation_attempts") or 0)
         prev_attempts = persisted_attempts
         if isinstance(gen, dict):
-            # queued 态不应继承上次失败的 attempts 展示值
+            # trạng thái xếp hàng không được kế thừa giá trị hiển thị của lần thử thất bại gần đây nhất
             if str(gen.get("status") or "") in {"queued", "idle", "cancelled", "done"}:
                 prev_attempts = persisted_attempts
             else:
@@ -1100,7 +1100,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
         attempts = prev_attempts + 1 if nio_phase == "prepare" else int(payload.get("generation_attempts") or prev_attempts + 1)
         if nio_phase == "prepare" and attempts > max_attempts:
             params = dict(frag.params or {})
-            # raise 用纯超限文案；展示拼接交给 build_failed_generation_params / _fail_task
+            # raise sử dụng copywriting vượt quá giới hạn thuần túy; nối màn hình được chuyển giao cho build_failed_Generation_params/_fail_task
             limit_msg = f"分镜内部自动重试超过上限（{max_attempts} 次）"
             params["generation"] = build_failed_generation_params(
                 gen if isinstance(gen, dict) else None,
@@ -1159,7 +1159,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
             await db.commit()
             return {"deferred": True, "nio_phase": "submit"}
 
-        # nio_phase == submit：仅 HTTP 注册上游，立即释放 Worker
+        # nio_phase == submit: Chỉ đăng ký HTTP ngược dòng, giải phóng Worker ngay lập tức
         prepared_raw = payload.get("prepared")
         if not isinstance(prepared_raw, dict):
             prepared = await prepare_fragment_video_for_submit(
@@ -1187,7 +1187,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
         provider_task_id = await submit_prepared_fragment_video(prepared, project_id=project.id)
         poll_interval = max(1.0, float(get_settings().ark_video_poll_interval or 8.0))
         now = datetime.now(UTC)
-        # 提交成功后立刻写成 running/polling，避免前端长期停在「排队」
+        # Viết chạy/bỏ phiếu ngay sau khi gửi thành công để tránh tình trạng giao diện người dùng bị kẹt trong "xếp hàng" trong một thời gian dài.
         params = dict(frag.params or {})
         params["generation"] = {
             "status": "running",
@@ -1226,11 +1226,11 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
         return {"awaiting_poll": True, "provider_task_id": provider_task_id}
 
 
-# 分镜视频收尾认领窗口：期内其它 poller 不得再入下载；需覆盖整段下载+OSS（常达数分钟）。
+# Cửa sổ yêu cầu kết thúc video bản minh họa: những người thăm dò ý kiến khác không được phép tải xuống lại trong thời gian này; toàn bộ quá trình tải xuống + OSS phải được bảo mật (thường lên tới vài phút).
 _FRAGMENT_FINALIZE_CLAIM_TTL = timedelta(minutes=10)
 
 
-# 统一解析 TaskRun.next_action_at 的时区，便于与 now 比较。
+# Phân tích thống nhất múi giờ của TaskRun.next_action_at để tạo điều kiện so sánh với bây giờ.
 def _aware_utc(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
@@ -1239,7 +1239,7 @@ def _aware_utc(dt: datetime | None) -> datetime | None:
     return dt
 
 
-# 分镜是否已落成片（崩溃恢复时可跳过重复下载）。
+# Liệu bảng phân cảnh đã được hoàn thành chưa (các lần tải xuống lặp lại có thể bị bỏ qua trong quá trình khôi phục sự cố).
 def _fragment_video_already_applied(frag: DramaEpisodeFragment | None) -> bool:
     if frag is None or not (frag.video or "").strip():
         return False
@@ -1248,7 +1248,7 @@ def _fragment_video_already_applied(frag: DramaEpisodeFragment | None) -> bool:
     return str(gen.get("status") or "").strip().lower() == "done"
 
 
-# 成片已 done 但任务仍 awaiting_poll：立刻补 complete（避免 UI 长期「生成中」）
+# Phim xong rồi nhưng nhiệm vụ vẫn đang chờ_poll: hoàn thành ngay lập tức (tránh trường hợp UI bị "tạo" lâu)
 async def reconcile_applied_fragment_video_tasks(
     db: AsyncSession,
     tasks: list[TaskRun],
@@ -1280,7 +1280,7 @@ async def reconcile_applied_fragment_video_tasks(
     return fixed
 
 
-# 行锁后补完成分镜视频任务；已非 awaiting_poll 则跳过，避免并发双 complete。
+# Hoàn thành nhiệm vụ video bảng phân cảnh sau khi khóa hàng; nếu nó không chờ_poll, hãy bỏ qua nó để tránh hoàn thành gấp đôi đồng thời.
 async def _recover_complete_fragment_video(
     db: AsyncSession,
     task_id: int,
@@ -1297,9 +1297,9 @@ async def _recover_complete_fragment_video(
     locked = await _lock_task(db, int(task_id))
     if not locked or locked.status != "awaiting_poll":
         return False
-    # 异步会话下 steps 懒加载会 MissingGreenlet，补完成前显式加载
+    # Việc tải các bước một cách lười biếng trong phiên không đồng bộ sẽ gây ra MissingGreenlet và nó sẽ được tải rõ ràng trước khi hoàn thành.
     await db.refresh(locked, attribute_names=["steps"])
-    # 先 complete（commit 后锁释放），再激活后续；避免 activate 提前 commit 导致并发双 complete
+    # Hoàn thành trước (cam kết và sau đó khóa phát hành), sau đó kích hoạt theo dõi; tránh kích hoạt và cam kết trước, gây ra việc hoàn thành gấp đôi đồng thời
     locked.progress_percent = 100
     result_payload: dict[str, Any] = {"ok": True, "fragment_id": int(fragment_id)}
     if recovered:
@@ -1320,7 +1320,7 @@ async def _recover_complete_fragment_video(
 
 
 async def _settle_cancelled_after_finalized(db: AsyncSession, task_id: int) -> bool:
-    """取消在 finalizing 窗口内生效、但成片已下载落盘：按实际用量结算，终态保持 cancelled。
+    """Việc hủy có hiệu lực trong thời gian hoàn thiện, nhưng phim hoàn thiện đã được tải xuống và đặt: việc giải quyết sẽ dựa trên mức sử dụng thực tế và trạng thái cuối cùng vẫn bị hủy.
 
     若不收敛，usage_events 会永久 settled=False、冻结额被 _mark_cancelled 全额退回，
     形成钱货两失。settle_task 对 frozen 任务按 events 多退少补，对已结算任务幂等。
@@ -1341,7 +1341,7 @@ async def _settle_cancelled_after_finalized(db: AsyncSession, task_id: int) -> b
     locked.next_action_at = None
     locked.lease_token = None
     locked.lease_until = None
-    # frozen：按已落账用量退差额；已 settled（竞态中先被结算）：幂等对齐
+    # bị đóng băng: số tiền chênh lệch sẽ được hoàn trả dựa trên mức sử dụng đã giải quyết; giải quyết (giải quyết đầu tiên trong cuộc đua): sự liên kết bình thường
     await settle_task(db, task_id)
     await append_task_event(
         db,
@@ -1355,7 +1355,7 @@ async def _settle_cancelled_after_finalized(db: AsyncSession, task_id: int) -> b
     return True
 
 
-# 任务平台：轮询 awaiting_poll 的分镜视频任务。
+# Nền tảng nhiệm vụ: Nhiệm vụ video bảng phân cảnh đang chờ thăm dò ý kiến.
 async def poll_fragment_video_task(task_id: int) -> None:
     from app.services.ark import get_ark
     from app.services.billing.context import billing_scope
@@ -1383,7 +1383,7 @@ async def poll_fragment_video_task(task_id: int) -> None:
                 await _fail_task(db, task, RuntimeError("分镜已变更，请重新生成"))
                 return
 
-            # 成片已落盘：优先补完成，不被 finalizing 认领窗口挡住
+            # Phim hoàn chỉnh đã được phát hành: sẽ được ưu tiên hoàn thành và sẽ không bị chặn bởi cửa sổ yêu cầu hoàn thiện
             if _fragment_video_already_applied(frag_probe):
                 await _recover_complete_fragment_video(
                     db,
@@ -1394,7 +1394,7 @@ async def poll_fragment_video_task(task_id: int) -> None:
                 )
                 return
 
-            # 收尾认领窗口未到期：跳过，避免并发下载双记费
+            # Thời hạn yêu cầu cuối cùng chưa hết hạn: bỏ qua để tránh bị tính phí gấp đôi khi tải xuống đồng thời
             if (task.current_step_status or "") == "finalizing":
                 na = _aware_utc(task.next_action_at)
                 if na is not None and na > now:
@@ -1437,7 +1437,7 @@ async def poll_fragment_video_task(task_id: int) -> None:
                 await _fail_task(db, task, RuntimeError("分镜已变更，请重新生成"))
                 return
 
-            # 行锁认领：仅第一个收尾者进入下载；窗口内其余看到 finalizing 后退出
+            # Yêu cầu khóa hàng: Chỉ người hoàn thiện đầu tiên mới tải xuống được; phần còn lại trong cửa sổ thoát ra sau khi xem xong
             locked = await _lock_task(db, int(task.id))
             if not locked or locked.status != "awaiting_poll":
                 return
@@ -1445,11 +1445,11 @@ async def poll_fragment_video_task(task_id: int) -> None:
                 na = _aware_utc(locked.next_action_at)
                 if na is not None and na > now:
                     return
-            # 等锁期间用户可能已取消：放弃下载，交由 executor 按未交付全额退款
+            # Người dùng có thể đã hủy trong khi chờ khóa: từ bỏ tải xuống và giao cho người thi hành để được hoàn lại tiền đầy đủ nếu không được giao.
             if locked.cancel_requested or _is_episode_video_cancelled(episode_id):
                 await _fail_task(db, locked, RuntimeError("任务已取消"))
                 return
-            # 认领前后成片已在：行锁后只补完成（避免 apply 后异常释放认领再二次下载）
+            # Các phần trước và sau khi xác nhận đều đã có sẵn: chỉ sau khi khóa hàng hoàn tất (để tránh phát hành bất thường sau khi áp dụng và yêu cầu và tải xuống lại)
             if _fragment_video_already_applied(frag):
                 await _recover_complete_fragment_video(
                     db,
@@ -1459,8 +1459,8 @@ async def poll_fragment_video_task(task_id: int) -> None:
                     batch_index=int(payload.get("batch_index", 0)),
                 )
                 return
-            # 置 finalizing 并写窗口截止：_mark_cancelled 在窗口内不做全额退款，
-            # 防止下载/落账与取消并发造成 usage 悬空、钱货两失
+            # Đặt thời hạn hoàn thiện và viết thời hạn: _mark_cancelled. Sẽ không có khoản hoàn trả đầy đủ nào được thực hiện trong thời gian đó.
+            # Ngăn chặn việc tải xuống/gửi tiền và hủy đồng thời khiến việc sử dụng bị bỏ trống và tiền bạc, hàng hóa bị thất lạc.
             finalizing_until = now + _FRAGMENT_FINALIZE_CLAIM_TTL
             final_payload = dict(locked.payload if isinstance(locked.payload, dict) else {})
             final_payload["finalizing_until"] = finalizing_until.isoformat()
@@ -1488,8 +1488,8 @@ async def poll_fragment_video_task(task_id: int) -> None:
                     task_result=result,
                     provider_task_id=task.provider_task_id,
                 )
-                # apply 已 commit：行锁复查。下载期间用户可能已取消（status=cancel_requested），
-                # 此时不能走常规 complete，也不能放任 frozen 全额退款，按实际用量结算为 cancelled。
+                # áp dụng cam kết: xem xét khóa hàng. Người dùng có thể đã hủy trong quá trình tải xuống (status=cancel_requested),
+                # Tại thời điểm này, chúng tôi không thể thực hiện quy trình hoàn chỉnh thông thường và cũng không thể cho phép hoàn trả toàn bộ số tiền đã đóng băng. Việc giải quyết sẽ bị hủy dựa trên việc sử dụng thực tế.
                 async with AsyncSessionLocal() as recheck_db:
                     rechecked = await _lock_task(recheck_db, int(task.id))
                     was_cancelled = bool(
@@ -1503,13 +1503,13 @@ async def poll_fragment_video_task(task_id: int) -> None:
                     async with AsyncSessionLocal() as cancel_db:
                         await _settle_cancelled_after_finalized(cancel_db, int(task.id))
                     return
-                # 未取消：立刻把 next_action 拉回现在，complete 失败时也能马上被 Selector 捞到
+                # Không bị hủy: Đưa ngay next_action về hiện tại. Khi hoàn thành không thành công, nó có thể được Selector chọn ngay lập tức.
                 async with AsyncSessionLocal() as nudge_db:
                     nudged = await nudge_db.get(TaskRun, int(task_id))
                     if nudged and nudged.status == "awaiting_poll":
                         nudged.next_action_at = datetime.now(UTC)
                         await nudge_db.commit()
-                # 与恢复路径同一套行锁 complete，避免 apply 后并发双 complete
+                # Hoàn thành bộ khóa hàng giống như đường dẫn khôi phục, để tránh hoàn thành kép đồng thời sau khi áp dụng
                 await _recover_complete_fragment_video(
                     db,
                     int(task_id),
@@ -1519,7 +1519,7 @@ async def poll_fragment_video_task(task_id: int) -> None:
                     recovered=False,
                 )
             except BaseException:
-                # 含 CancelledError：poller wait_for 超时会取消协程，必须释放认领，否则 next_action 卡数小时
+                # Chứa CancelledError: poller wait_for sẽ hủy coroutine khi hết thời gian và xác nhận quyền sở hữu phải được hủy bỏ, nếu không next_action sẽ bị kẹt trong vài giờ
                 from app.services.tasks.service import clear_finalizing_window
 
                 async with AsyncSessionLocal() as release_db:
@@ -1532,15 +1532,15 @@ async def poll_fragment_video_task(task_id: int) -> None:
                         frag_done = await release_db.get(DramaEpisodeFragment, fragment_id)
                         finalized = _fragment_video_already_applied(frag_done)
                         if finalized and stalled.cancel_requested:
-                            # 成片已落盘且用户在窗口内取消：按实结算（与成功路径同一收敛）
+                            # Mảnh hoàn chỉnh đã được đặt và người dùng hủy trong cửa sổ: Giải quyết dựa trên quyết toán thực tế (sự hội tụ giống như đường dẫn thành công)
                             await _settle_cancelled_after_finalized(release_db, int(task.id))
                         elif finalized:
-                            # 成片已落盘：只补 complete，勿退回 polling 以免误伤
+                            # Phim đã hoàn thành đã được đưa vào đĩa: chỉ hoàn thành, không trả lại phiếu để tránh hư hỏng do vô ý.
                             stalled.payload = clear_finalizing_window(stalled.payload)
                             stalled.next_action_at = datetime.now(UTC)
                             await release_db.commit()
                         else:
-                            # 未交付：退回 polling 并清窗口标记，取消可立即走全额退款
+                            # Chưa được gửi: Trả lại phiếu bầu và xóa dấu cửa sổ. Nếu bạn hủy, bạn có thể được hoàn lại tiền đầy đủ ngay lập tức.
                             stalled.payload = clear_finalizing_window(stalled.payload)
                             stalled.current_step_status = "polling"
                             stalled.next_action_at = datetime.now(UTC) + timedelta(seconds=poll_interval)
@@ -1566,7 +1566,7 @@ async def dispatch_asset_image_job(
     aspect_ratio: str | None = None,
     resolution: str | None = None,
 ) -> int:
-    """入队资产生图任务。"""
+    """Tham gia nhóm để tạo các tác vụ đồ họa."""
     task_id = await _enqueue_drama_task(
         db,
         user,
@@ -1718,7 +1718,7 @@ async def dispatch_asset_video_job(
     image_style_id: str | None = None,
     reference_asset_ids: list[int] | None = None,
 ) -> int:
-    """入队资产生视频任务。"""
+    """Thêm nội dung vào nhóm để tạo nhiệm vụ video."""
     task_id = await _enqueue_drama_task(
         db,
         user,
@@ -1834,7 +1834,7 @@ async def run_seed_assets_job(
     refresh_prompts: bool = False,
     reextract_props: bool = False,
 ) -> dict[str, Any]:
-    """从剧本抽取/刷新资产（含 LLM 提示词刷新）。"""
+    """Trích xuất/làm mới nội dung từ tập lệnh (bao gồm cả làm mới từ nhắc nhở LLM)."""
     from app.services.drama.seed import seed_assets_from_script
 
     logger.info(
@@ -1899,7 +1899,7 @@ async def dispatch_seed_assets_job(
     refresh_prompts: bool = False,
     reextract_props: bool = False,
 ) -> int:
-    """入队抽取漫剧资产任务。"""
+    """Tham gia nhóm vẽ nội dung truyện tranh."""
     task_id = await _enqueue_drama_task(
         db,
         user,

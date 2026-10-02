@@ -61,7 +61,7 @@ async def admin_task_stats(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminTaskStatsOut:
-    # 任务平台聚合统计 + 运行时摘要
+    # Thống kê tổng hợp nền tảng tác vụ + Tóm tắt thời gian chạy
     stats = await get_task_stats_admin(db)
     runtime = runtime_summary()
     settings = get_settings()
@@ -90,7 +90,7 @@ async def admin_list_tasks(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminTaskListOut:
-    # 分页列出全站 task_runs，支持领域/状态/用户筛选
+    # Liệt kê task_run của toàn bộ trang web trong các trang, hỗ trợ lọc tên miền/trạng thái/người dùng
     rows, total = await list_tasks_admin(
         db,
         page=page,
@@ -115,7 +115,7 @@ async def admin_get_task(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminTaskRunOut:
-    # 查看单条任务详情（含步骤与事件）
+    # Xem chi tiết của một nhiệm vụ (bao gồm các bước và sự kiện)
     try:
         task = await get_task_admin(db, task_id)
     except LookupError as exc:
@@ -133,7 +133,7 @@ async def admin_cancel_task(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> AdminTaskRunOut:
-    # 管理员取消任意进行中的任务
+    # Quản trị viên hủy mọi tác vụ đang diễn ra
     try:
         task = await cancel_task_admin(db, task_id)
     except LookupError as exc:

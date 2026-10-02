@@ -23,8 +23,8 @@ const RATIOS: { id: string; label: string; w: number; h: number }[] = [
   { id: '21:9', label: '21:9', w: 40, h: 17 },
 ]
 
-/** 画幅是否竖向（高 > 宽），用于预览卡与实时预览比例 */
-/** 音色卡片与 API 试听共用的 speaker 键 */
+/** Khung hình có dọc (chiều cao > chiều rộng) hay không, được sử dụng cho thẻ xem trước và tỷ lệ xem trước theo thời gian thực */
+/** Phím loa được chia sẻ bởi card âm thanh và khả năng nghe API */
 function voiceKey(v: VoicePreset): string {
   return v.speaker || v.id
 }
@@ -195,8 +195,8 @@ export default function StyleConfigPage() {
     try {
       const d = currentTpl ? defaultsFromTemplate(currentTpl) : null
       /*
-       * styleOut 风格提示词；与模板相同则留空，生成时读后台
-       * extraOut 额外提示词
+       * Từ nhắc kiểu styleOut; nếu nó giống với mẫu, hãy để trống và đọc thông tin cơ bản khi tạo
+       * extraOut thêm từ nhắc nhở
        */
       const styleOut = stylePrompt.trim()
       const extraOut = extraPrompt.trim()
@@ -233,7 +233,7 @@ export default function StyleConfigPage() {
     }
   }
 
-  // project 初始加载失败时不得穿透主页面（下方存在 project.xxx 非空访问，会白屏崩溃）
+  // Khi quá trình tải dự án ban đầu không thành công, nó không được xâm nhập vào trang chính (có quyền truy cập không trống vào project.xxx bên dưới, điều này sẽ gây ra lỗi màn hình trắng)
   if (!project) {
     return (
       <AppShell active="studio">

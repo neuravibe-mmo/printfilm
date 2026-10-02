@@ -2,12 +2,12 @@ import { dialog } from './dialog'
 
 export const PRICING_PATH = '/pricing'
 
-/** 是否为余额不足 / 计费拦截类错误 */
+/** Đây có phải là lỗi chặn số dư/thanh toán không đủ? */
 export function isBillingError(message: string) {
   return /余额不足|请先充值|402|insufficient_balance/i.test(message)
 }
 
-/** 跳转定价页充值 */
+/** Chuyển tới trang định giá để nạp tiền */
 export function goToTopup() {
   if (typeof window !== 'undefined') {
     window.location.assign(PRICING_PATH)
@@ -15,8 +15,8 @@ export function goToTopup() {
 }
 
 /**
- * 弹出余额不足提示；若用户选择去充值则跳转定价页。
- * @returns 是否已按计费错误处理
+ * Một thông báo nhắc nhở về số dư không đủ sẽ hiện lên; nếu người dùng chọn nạp tiền, trang định giá sẽ được chuyển hướng.
+ * @returns Liệu lỗi thanh toán đã được xử lý chưa
  */
 export async function handleBillingError(
   err: unknown,
@@ -39,7 +39,7 @@ export async function handleBillingError(
 }
 
 /**
- * API 层全局拦截：402 / 余额不足时弹出充值引导（不吞掉原错误）。
+ * Chặn toàn cầu lớp API: 402 / Hướng dẫn nạp tiền sẽ bật lên khi số dư không đủ (lỗi ban đầu sẽ không được nuốt).
  */
 export function notifyBillingErrorIfNeeded(status: number, message: string) {
   if (status === 402 || isBillingError(message)) {

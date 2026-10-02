@@ -20,7 +20,7 @@ from app.services.tasks.runtime import runtime_summary, start_task_runtime, stop
 from app.services.templates_seed import TEMPLATES
 
 settings = get_settings()
-# 业务日志 INFO；DEBUG=true 不再把根日志打成 DEBUG（避免 SQL 驱动刷屏）
+# THÔNG TIN nhật ký kinh doanh; DEBUG=true không còn gõ nhật ký gốc là DEBUG (để tránh làm mới màn hình trình điều khiển SQL)
 configure_logging(level="INFO", sql_echo=settings.sql_echo)
 logger = logging.getLogger("app.http")
 
@@ -48,14 +48,14 @@ app.add_middleware(
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    # 业务可读请求日志（跳过静态资源；高频轮询默认不打）
+    # Nhật ký yêu cầu có thể đọc được của doanh nghiệp (bỏ qua tài nguyên tĩnh; bỏ phiếu tần suất cao không được bật theo mặc định)
     path = request.url.path
     started = time.perf_counter()
     response = await call_next(request)
     elapsed_ms = (time.perf_counter() - started) * 1000
     if path.startswith("/static"):
         return response
-    # 高频轮询：成功且较快时静默，避免淹没业务日志
+    # Bỏ phiếu tần suất cao: im lặng khi thành công và nhanh chóng để tránh làm ngập nhật ký kinh doanh
     is_poll = (
         path.endswith("/generate_status")
         or (request.method == "GET" and path.startswith("/api/drama/scripts/"))
@@ -124,7 +124,7 @@ async def on_shutdown() -> None:
 
 
 async def _pg_columns(conn, table: str) -> set[str]:
-    """读取 information_schema 列名。"""
+    """Đọc tên cột information_schema."""
     result = await conn.execute(
         text(
             "SELECT column_name FROM information_schema.columns "
@@ -136,7 +136,7 @@ async def _pg_columns(conn, table: str) -> set[str]:
 
 
 async def _apply_schema_patches() -> None:
-    """Lightweight additive migrations（仅 PostgreSQL）。"""
+    """Di chuyển phụ gia nhẹ (chỉ PostgreSQL)."""
     async with engine.begin() as conn:
         scols = await _pg_columns(conn, "shots")
         if "segment_script" not in scols:
@@ -172,7 +172,7 @@ async def _apply_schema_patches() -> None:
 
         # User billing columns
         ucols = await _pg_columns(conn, "users")
-        # 早期库可能无 create_all 后缺此列（模型有、补丁曾遗漏）
+        # Các thư viện ban đầu có thể không có cột này sau create_all (mô hình có nó, nhưng bản vá đã bỏ sót)
         if "quota_left" not in ucols:
             await conn.execute(text("ALTER TABLE users ADD COLUMN quota_left INTEGER DEFAULT 5"))
         if "balance_fen" not in ucols:
@@ -270,7 +270,7 @@ async def bootstrap_admins() -> None:
 
 
 async def seed_agent_skills() -> None:
-    """启动时把内置导演 Skill 同步进数据库。"""
+    """Đồng bộ hóa Director Skill tích hợp vào cơ sở dữ liệu khi khởi động."""
     from app.services.agent.store import seed_builtin_skills
 
     async with AsyncSessionLocal() as db:
@@ -278,7 +278,7 @@ async def seed_agent_skills() -> None:
 
 
 def _publish_template_cover(cover: str, log: logging.Logger) -> str:
-    """把 /static 封面发到 OSS；失败则仍返回原路径。"""
+    """Gửi bìa /static tới OSS; nếu thất bại thì đường dẫn ban đầu vẫn được trả về."""
     from app.services import storage
 
     if not cover.startswith("/static/"):
@@ -295,7 +295,7 @@ def _publish_template_cover(cover: str, log: logging.Logger) -> str:
 
 
 async def seed_templates() -> None:
-    """只插入缺失的内置模板；已有记录以管理后台为准，启动不再覆盖文案与配置。"""
+    """Chỉ những mẫu dựng sẵn bị thiếu mới được chèn vào; các bản ghi hiện có phải tuân theo nền tảng quản lý và việc sao chép và cấu hình sẽ không còn được đề cập khi khởi động."""
     log = logging.getLogger("app.seed")
     async with AsyncSessionLocal() as db:
         for item in TEMPLATES:
@@ -303,7 +303,7 @@ async def seed_templates() -> None:
             existing = await db.get(Template, data["id"])
             cover = (data.get("preview_cover") or "").strip()
             if existing:
-                # 已有模板不覆盖后台配置；仅当封面仍是本地路径时按库内路径补发 OSS
+                # Mẫu hiện tại không ghi đè cấu hình nền; chỉ khi bìa vẫn là đường dẫn cục bộ thì OSS mới được cấp lại theo đường dẫn trong thư viện.
                 current = (existing.preview_cover or "").strip()
                 if not current.startswith(("http://", "https://")):
                     published = _publish_template_cover(current or cover, log)

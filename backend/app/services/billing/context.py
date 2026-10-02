@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""任务计费上下文：当前 task_run_id。"""
+"""Bối cảnh thanh toán tác vụ: task_run_id hiện tại."""
 from __future__ import annotations
 
 from contextlib import asynccontextmanager

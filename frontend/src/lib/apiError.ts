@@ -1,6 +1,6 @@
 import { notifyBillingErrorIfNeeded } from './billingError'
 
-/** 解析 FastAPI detail 并抛出；402 / 余额不足时弹出充值引导 */
+/** Phân tích chi tiết FastAPI và đưa ra; 402/ Hướng dẫn nạp tiền hiện lên khi số dư không đủ */
 export function throwApiError(status: number, detail: unknown, fallback = '请求失败'): never {
   const message =
     typeof detail === 'string'

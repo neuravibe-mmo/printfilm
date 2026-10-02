@@ -1,4 +1,4 @@
-"""管理端：按日财务对照（本地扣费/成本 vs 官方实际成本）。"""
+"""Bên quản lý: So sánh tài chính hàng ngày (khấu trừ địa phương/chi phí so với chi phí thực tế chính thức)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from app.services.tokenfree_usage import tokenfree_usage_configured
 
 
 def _utc_today() -> date:
-    """UTC 当天日期，与财务列表窗口对齐。"""
+    """Ngày hôm nay theo giờ UTC, căn chỉnh với cửa sổ danh sách tài chính."""
     return datetime.now(UTC).date()
 
 
@@ -23,7 +23,7 @@ async def _local_usage_daily(
     since: date,
     until: date,
 ) -> dict[str, dict[str, int]]:
-    """按日聚合全部 usage_events 的扣费、成本与 token。"""
+    """Tổng hợp các khoản khấu trừ, chi phí và mã thông báo của tất cả các sự kiện sử dụng hàng ngày."""
     day_expr = cast(UsageEvent.created_at, Date)
     rows = (
         await db.execute(
@@ -50,7 +50,7 @@ async def _local_usage_daily(
 
 
 def _profit_fen(*, charge_fen: int, cost_fen: int, actual_cost_fen: int) -> int:
-    """利润 = 本地扣费 - 实际成本；无官方数据时回退本地成本。"""
+    """Lợi nhuận = khấu trừ địa phương - chi phí thực tế; quay trở lại chi phí địa phương khi không có dữ liệu chính thức."""
     basis = actual_cost_fen if actual_cost_fen > 0 else cost_fen
     return int(charge_fen - basis)
 
@@ -60,7 +60,7 @@ async def build_finance_daily_list(
     *,
     days: int = 30,
 ) -> dict[str, Any]:
-    """返回近 N 日财务对照序列与汇总。"""
+    """Trả về trình tự so sánh tài chính và tóm tắt trong N ngày qua."""
     window_days = max(1, min(90, int(days)))
     today = _utc_today()
     start = today - timedelta(days=window_days - 1)

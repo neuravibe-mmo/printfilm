@@ -4,12 +4,12 @@ import AppShell from '../components/layout/AppShell'
 import { useI18n } from '../i18n'
 import { filterHelpFaq } from '../lib/helpContent'
 
-/** 帮助中心整页：分类入口、上手步骤、可搜索 FAQ */
+/** Toàn bộ trang của trung tâm trợ giúp: lối vào phân loại, các bước bắt đầu, câu hỏi thường gặp có thể tìm kiếm */
 export default function HelpPage() {
   const { t, m } = useI18n()
   /*
-   * q 搜索关键词
-   * openFaq 当前展开的 FAQ 下标
+   * q Từ khóa tìm kiếm
+   * openFaq Mục đăng ký Câu hỏi thường gặp hiện được mở rộng
    */
   const [q, setQ] = useState('')
   const [openFaq, setOpenFaq] = useState<number | null>(0)

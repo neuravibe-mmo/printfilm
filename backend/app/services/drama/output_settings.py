@@ -1,4 +1,4 @@
-"""漫剧输出规格：分集 params 优先，回退项目 params。"""
+"""Thông số đầu ra của loạt truyện tranh: thông số tập được ưu tiên, thông số dự án dự phòng."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ def _pick_resolution(raw: Any) -> str | None:
     return value if value in VALID_RESOLUTIONS else None
 
 
-# 解析分集画幅与清晰度（分集 → 项目 → 默认）
+# Phân tích khung và định nghĩa đa dạng (đa dạng → dự án → mặc định)
 def resolve_episode_video_output(
     episode_params: dict | None,
     project_params: dict | None,
@@ -34,7 +34,7 @@ def resolve_episode_video_output(
     return ratio, resolution
 
 
-# Seedance / 成片常用像素（偶数边）
+# Seedance / Các pixel thường được sử dụng trong phim (các cạnh được đánh số chẵn)
 _RATIO_RES_PIXELS: dict[tuple[str, str], tuple[int, int]] = {
     ("9:16", "480p"): (480, 854),
     ("9:16", "720p"): (720, 1280),
@@ -48,14 +48,14 @@ _RATIO_RES_PIXELS: dict[tuple[str, str], tuple[int, int]] = {
 }
 
 
-# 分集目标成片宽高（用于拼接时统一缩放）
+# Chiều rộng và chiều cao của màng mục tiêu đa dạng (được sử dụng để chia tỷ lệ thống nhất trong quá trình nối)
 def target_pixel_size(aspect_ratio: str, resolution: str) -> tuple[int, int]:
     key = (aspect_ratio if aspect_ratio in VALID_RATIOS else "9:16",
            resolution if resolution in VALID_RESOLUTIONS else "480p")
     return _RATIO_RES_PIXELS.get(key, (480, 854))
 
 
-# 根据像素尺寸推断最接近的标准画幅标签
+# Suy ra nhãn định dạng chuẩn gần nhất dựa trên kích thước pixel
 def infer_aspect_ratio_from_pixels(width: int, height: int) -> str:
     if width <= 0 or height <= 0:
         return "9:16"
@@ -67,7 +67,7 @@ def infer_aspect_ratio_from_pixels(width: int, height: int) -> str:
     return f"{width}×{height}"
 
 
-# i2v 兜底静帧：按目标画幅生成（Seedream 5.0 Pro 2K 像素，避免超 4624220 面积上限）
+# i2v Khung tĩnh không đáy: được tạo theo khung mục tiêu (Seedream 5.0 Pro 2K pixel, tránh vượt quá giới hạn diện tích 4624220)
 def seedream_still_size_for_video_ratio(aspect_ratio: str | None) -> str:
     from app.services.drama.seedream_options import SEEDREAM_SIZE_2K
 

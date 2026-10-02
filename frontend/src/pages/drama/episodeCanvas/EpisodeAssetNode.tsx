@@ -1,4 +1,4 @@
-/** 出境资产节点：缩略图卡片，可关联多个分镜 */
+/** Nút nội dung gửi đi: thẻ hình thu nhỏ, có thể liên kết với nhiều bảng phân cảnh */
 import { memo } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { X } from 'lucide-react'
@@ -9,7 +9,7 @@ type Props = NodeProps<Node<EpisodeAssetNodeData>> & {
   onUnlinkAsset?: (fragmentId: number, assetId: number) => void
 }
 
-// 渲染出境资产节点（同一资产全局只显示一张卡片）
+// Hiển thị các nút nội dung gửi đi (chỉ một thẻ được hiển thị trên toàn cầu cho cùng một nội dung)
 function EpisodeAssetNodeComponent({ data, selected, onUnlinkAsset }: Props) {
   const { t } = useI18n()
   const links = data.linkedFragments || []

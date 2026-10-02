@@ -1,4 +1,4 @@
-/** 分集脚本编辑器：inline 时长/资产标签渲染与序列化 */
+/** Trình chỉnh sửa tập lệnh tập: hiển thị và tuần tự hóa thẻ nội dung/thời lượng nội tuyến */
 export type DramaMentionChipData = {
   assetId: number
   label: string
@@ -9,15 +9,15 @@ export const DURATION_CHIP_SELECTOR = '[data-duration-sec]'
 export const MENTION_CHIP_SELECTOR = "[data-mention='true']"
 export const CONTENT_TOKEN_PATTERN = /@(asset:\d+|duration:\d+)/g
 export const DURATION_PRESET_OPTIONS = [3, 4, 5, 8, 10, 12, 15] as const
-/** 新分镜建议：镜内 @duration 合计上限（秒） */
+/** Đề xuất bảng phân cảnh mới: Tổng giới hạn trên trong @duration trong khung (giây) */
 export const FRAGMENT_CONTENT_DURATION_MAX = 15
-/** Seedance 单镜/API 硬上限（秒）；旧稿可高于建议值 */
+/** Giới hạn trên cứng của ống kính đơn Seedance/API (giây); bản nháp cũ có thể cao hơn giá trị đề xuất */
 export const DRAMA_SHOT_DURATION_HARD_MAX = 30
-/** 单段 @duration 下限（秒） */
+/** Phân đoạn đơn @duration giới hạn dưới (giây) */
 export const DRAMA_SEGMENT_DURATION_MIN = 3
-/** 新分镜建议：单段 @duration 上限（秒） */
+/** Đề xuất bảng phân cảnh mới: giới hạn trên @duration phân đoạn đơn (giây) */
 export const DRAMA_SEGMENT_DURATION_MAX = 15
-/** 单段 @duration API 硬上限（秒） */
+/** Giới hạn trên cứng của API @duration phân đoạn đơn (giây) */
 export const DRAMA_SEGMENT_DURATION_HARD_MAX = 30
 
 const BLOCK_ELEMENT_TAGS = new Set(['DIV', 'P'])
@@ -28,7 +28,7 @@ export type MentionCaretRect = {
   bottom: number
 }
 
-// 场记板图标（内联 SVG，避免依赖 react-dom/server）
+// Biểu tượng Slate (SVG nội tuyến, tránh phụ thuộc vào Reac-dom/server)
 function createClapperboardIconElement() {
   const iconWrap = document.createElement('span')
   iconWrap.className = 'drama-ep-chip-icon'
@@ -38,14 +38,14 @@ function createClapperboardIconElement() {
   return iconWrap
 }
 
-// 判断节点是否位于引用标签内部
+// Xác định xem nút có nằm trong nhãn tham chiếu hay không
 function isInsideMentionChip(node: Node | null) {
   if (!node) return false
   const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
   return Boolean(element?.closest(MENTION_CHIP_SELECTOR))
 }
 
-// 是否为资产/时长 chip 元素
+// Đó có phải là phần tử chip nội dung/thời lượng hay không
 function isEditorChipElement(node: Node | null): node is HTMLElement {
   return Boolean(
     node &&
@@ -54,20 +54,20 @@ function isEditorChipElement(node: Node | null): node is HTMLElement {
   )
 }
 
-// 可忽略的空文本 / 零宽字符
+// Đã bỏ qua văn bản trống/ký tự có độ rộng bằng 0
 function isIgnorableEditorText(node: Node | null) {
   if (!node || node.nodeType !== Node.TEXT_NODE) return false
   return !(node.textContent || '').replace(/[\u200b\uFEFF]/g, '')
 }
 
-// 仅含普通空格的文本节点（chip 后插入的分隔空格）
+// Các nút văn bản chỉ chứa khoảng trắng bình thường (phân định khoảng trắng được chèn sau chip)
 function isSpacerTextNode(node: Node | null): node is Text {
   if (!node || node.nodeType !== Node.TEXT_NODE) return false
   const text = node.textContent || ''
   return text.length > 0 && /^[\s\u00a0]+$/.test(text)
 }
 
-// 从节点向上找所属 chip
+// Tìm chip tương ứng từ nút trở lên
 function closestEditorChip(node: Node | null, root: HTMLElement): HTMLElement | null {
   if (!node || !root.contains(node)) return null
   const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
@@ -76,9 +76,9 @@ function closestEditorChip(node: Node | null, root: HTMLElement): HTMLElement | 
 }
 
 /**
- * 删除光标相邻的 contentEditable=false 标签。
- * 浏览器对不可编辑 chip 的 Backspace/Delete 常无效，需手动移除。
- * 返回 true 表示已处理。
+ * Xóa thẻ contentEditable=false liền kề với con trỏ.
+ * Các trình duyệt thường không có tác dụng Backspace/Xóa các chip không thể chỉnh sửa và cần phải xóa thủ công.
+ * Trả về true để cho biết nó đã được xử lý.
  */
 export function deleteAdjacentEditorChip(
   root: HTMLElement,
@@ -111,7 +111,7 @@ export function deleteAdjacentEditorChip(
           chip = prev
         }
       } else if (anchorOffset === text.length && isSpacerTextNode(anchorNode) && text.length <= 2) {
-        /* 光标在 chip 后的分隔空格末尾：一次删掉空格 + chip */
+        /* Con trỏ ở cuối khoảng cách ngăn cách sau chip: xóa dấu cách + chip cùng một lúc */
         const prev = anchorNode.previousSibling
         if (isEditorChipElement(prev)) {
           chip = prev
@@ -123,7 +123,7 @@ export function deleteAdjacentEditorChip(
         /^[\s\u00a0]$/.test(text.slice(anchorOffset - 1, anchorOffset)) &&
         isEditorChipElement(anchorNode.previousSibling)
       ) {
-        /* 光标紧挨分隔空格内：删空格与 chip */
+        /* Con trỏ gần đến khoảng cách ngăn cách: xóa dấu cách và chip */
         chip = anchorNode.previousSibling
         spacer = anchorNode
       }
@@ -173,7 +173,7 @@ export function deleteAdjacentEditorChip(
   return true
 }
 
-// 移除 chip（及可选分隔空格），光标落在原位置
+// Loại bỏ chip (và khoảng cách ngăn cách tùy chọn) và con trỏ sẽ được đặt ở vị trí ban đầu
 function placeCaretAndRemoveChip(
   selection: Selection,
   chip: HTMLElement,
@@ -188,7 +188,7 @@ function placeCaretAndRemoveChip(
   selection.addRange(caretRange)
 }
 
-// 将含换行符的文本追加为 Text + <br>
+// Nối văn bản có ngắt dòng dưới dạng Text + <br>
 function appendTextWithLineBreaks(root: HTMLElement, text: string) {
   const parts = text.split('\n')
   parts.forEach((part, index) => {
@@ -197,7 +197,7 @@ function appendTextWithLineBreaks(root: HTMLElement, text: string) {
   })
 }
 
-// 创建 inline 资产引用标签
+// Tạo thẻ tham chiếu nội dung nội tuyến
 export function createMentionChipElement(chip: DramaMentionChipData) {
   const chipEl = document.createElement('span')
   chipEl.className = 'drama-ep-mention-chip drama-ep-editor-chip'
@@ -226,7 +226,7 @@ export function createMentionChipElement(chip: DramaMentionChipData) {
   return chipEl
 }
 
-// 创建 inline 时长标签
+// Tạo thẻ thời lượng nội tuyến
 export function createDurationChipElement(seconds: number) {
   const chipEl = document.createElement('span')
   chipEl.className = 'drama-ep-duration-chip drama-ep-editor-chip'
@@ -244,7 +244,7 @@ export function createDurationChipElement(seconds: number) {
   return chipEl
 }
 
-// 更新已有时长标签秒数
+// Cập nhật nhãn thời lượng hiện có giây
 export function updateDurationChipElement(chipEl: HTMLElement, seconds: number) {
   chipEl.dataset.durationSec = String(seconds)
   chipEl.title = `时长 ${seconds}s，编辑时点击切换`
@@ -252,7 +252,7 @@ export function updateDurationChipElement(chipEl: HTMLElement, seconds: number) 
   if (labelEl) labelEl.textContent = `${seconds}s`
 }
 
-// 点击场记板时长标签时，在预设秒数间循环
+// Khi nhấp vào nhãn thời lượng phương tiện chặn, hãy chuyển qua các giây đặt trước
 export function nextDurationPresetSeconds(current: number) {
   const presets = DURATION_PRESET_OPTIONS
   const idx = presets.findIndex((sec) => sec === current)
@@ -263,7 +263,7 @@ export function nextDurationPresetSeconds(current: number) {
   return presets[(idx + 1) % presets.length]
 }
 
-// 在 Range 处插入时长标签
+// Chèn nhãn thời lượng tại Phạm vi
 export function insertDurationChipAtRange(range: Range, seconds: number) {
   const selection = window.getSelection()
   range.deleteContents()
@@ -279,7 +279,7 @@ export function insertDurationChipAtRange(range: Range, seconds: number) {
   selection.addRange(caretRange)
 }
 
-// 在 Range 处插入纯文本（运镜/景别前缀等）
+// Chèn văn bản thuần túy tại Phạm vi (tiền tố chuyển động/cảnh của camera, v.v.)
 export function insertPlainTextAtRange(range: Range, text: string) {
   const selection = window.getSelection()
   range.deleteContents()
@@ -293,7 +293,7 @@ export function insertPlainTextAtRange(range: Range, text: string) {
   selection.addRange(caretRange)
 }
 
-// 在 Range 处插入资产标签
+// Chèn thẻ nội dung tại Phạm vi
 export function insertMentionChipAtRange(range: Range, chip: DramaMentionChipData) {
   const selection = window.getSelection()
   range.deleteContents()
@@ -309,7 +309,7 @@ export function insertMentionChipAtRange(range: Range, chip: DramaMentionChipDat
   selection.addRange(caretRange)
 }
 
-// 将编辑器 DOM 序列化为 content 字符串
+// Tuần tự hóa DOM của trình soạn thảo thành chuỗi nội dung
 export function serializePromptEditorContent(root: HTMLElement) {
   let result = ''
 
@@ -345,7 +345,7 @@ export function serializePromptEditorContent(root: HTMLElement) {
   return result
 }
 
-// 根据 content 渲染编辑器 DOM
+// Kết xuất DOM của trình soạn thảo dựa trên nội dung
 export function renderPromptEditorContent(
   root: HTMLElement,
   content: string,
@@ -383,12 +383,12 @@ export function renderPromptEditorContent(
   }
 }
 
-// 已落盘的 @asset:id / @duration:n 不算正在输入的 @ 触发
+// @asset:id / @duration:n được đặt không được tính là trình kích hoạt @ đầu vào
 function isCompletedContentToken(token: string) {
   return /^@(asset|duration):\d+$/.test(token)
 }
 
-// 序列化「从编辑器开头到光标」的正文（chip 仍是 @asset:id）
+// Tuần tự hóa văn bản "từ đầu trình soạn thảo đến con trỏ" (chip vẫn là @asset:id)
 export function serializePromptEditorContentBeforeCaret(root: HTMLElement) {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return null
@@ -409,8 +409,8 @@ export function serializePromptEditorContentBeforeCaret(root: HTMLElement) {
 }
 
 /**
- * 解析当前是否在输入 @ 引用。
- * 优先用光标所在文本节点；否则用光标前序列化结果（去掉末尾空白，避免 chip 后的换行把匹配打掉）。
+ * Phân tích xem tham chiếu @ có đang được nhập hay không.
+ * Nút văn bản nơi đặt con trỏ được sử dụng đầu tiên; mặt khác, kết quả được tuần tự hóa trước khi con trỏ được sử dụng (xóa dấu trống ở cuối để tránh dòng mới sau chip phá hủy kết quả khớp).
  */
 export function detectActiveMentionTrigger(root: HTMLElement): {
   query: string
@@ -428,7 +428,7 @@ export function detectActiveMentionTrigger(root: HTMLElement): {
   return { query: match[1] || '', range: null }
 }
 
-// 从 selection 解析 @ 触发
+// Được kích hoạt bằng cách phân tích cú pháp @ từ vùng chọn
 export function detectMentionTriggerFromSelection(root: HTMLElement) {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return null
@@ -451,7 +451,7 @@ export function detectMentionTriggerFromSelection(root: HTMLElement) {
   return { query: match[1], range: triggerRange }
 }
 
-// 获取光标屏幕坐标
+// Lấy tọa độ màn hình con trỏ
 export function getCaretClientRect(): MentionCaretRect | null {
   const selection = window.getSelection()
   if (!selection || selection.rangeCount === 0) return null
@@ -472,7 +472,7 @@ export function getCaretClientRect(): MentionCaretRect | null {
   return { top: rect.top, left: rect.left, bottom: rect.bottom }
 }
 
-// 统计 content 中 @duration 合计秒数
+// Tổng số giây của @duration trong nội dung thống kê
 export function sumContentDurationSeconds(content: string) {
   let total = 0
   const re = /@duration:(\d+)/g
@@ -484,7 +484,7 @@ export function sumContentDurationSeconds(content: string) {
   return total
 }
 
-// 从 DramaAsset 构建 chip 数据
+// Xây dựng dữ liệu chip từ DramaAsset
 export function resolveChipFromAsset(
   asset: { id: number; name?: string | null; cover?: string | null; url?: string | null },
   previewUrl: string,

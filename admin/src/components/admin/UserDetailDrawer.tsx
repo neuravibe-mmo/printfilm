@@ -29,7 +29,7 @@ type UserDetailDrawerProps = {
   initialUser?: AdminUserRow | null;
 };
 
-/** 用户只读明细：基本信息 + 订单/流水/用量聚合 */
+/** Chi tiết chỉ đọc của người dùng: thông tin cơ bản + tổng hợp đơn hàng/giao dịch/cách sử dụng */
 export function UserDetailDrawer({ userId, open, onOpenChange, initialUser }: UserDetailDrawerProps) {
   const { t, locale } = useI18n();
   const [user, setUser] = useState<AdminUserRow | null>(initialUser ?? null);

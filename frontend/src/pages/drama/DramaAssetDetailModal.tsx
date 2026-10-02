@@ -1,4 +1,4 @@
-/** 资产详情操作框：预览图、上传/生图提示词编辑、生成/音色、形象历史版本 */
+/** Hộp thao tác chi tiết nội dung: xem trước hình ảnh, tải lên/tạo hình ảnh, chỉnh sửa từ nhắc nhở, tạo/màu âm thanh, phiên bản lịch sử hình ảnh */
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { dramaApi, resolveDramaAssetPreviewUrl, type DramaAsset } from '../../api/drama'
@@ -26,7 +26,7 @@ type Props = {
   onError: (message: string) => void
 }
 
-// 将编辑后的提示词写回 params.visualPrompt
+// Viết lại lời nhắc đã chỉnh sửa vào params.visualPrompt
 function buildPromptParams(asset: DramaAsset, prompt: string): Record<string, unknown> {
   const prev = (asset.params || {}) as Record<string, unknown>
   const kind = (asset.type || '').toLowerCase()
@@ -40,7 +40,7 @@ function buildPromptParams(asset: DramaAsset, prompt: string): Record<string, un
   return next
 }
 
-// 渲染资产详情操作弹窗
+// Cửa sổ bật lên hoạt động chi tiết nội dung kết xuất
 export function DramaAssetDetailModal({
   asset,
   open,
@@ -57,11 +57,11 @@ export function DramaAssetDetailModal({
   const genLabel = genLabelProp || t('drama.assetDetail.genLabel')
 
   /*
-   * promptDraft 提示词草稿
-   * saving 保存中
-   * uploading 上传图片中
-   * restoringVersionId 正在还原的版本
-   * lightboxSrc 放大预览图 URL
+   * nhắcDraft bản nháp từ nhắc nhở
+   * tiết kiệm Tiết kiệm
+   * đang tải lên Đang tải ảnh lên
+   * khôi phụcVersionId Phiên bản đang được khôi phục
+   * lightboxSrc Phóng to URL xem trước
    */
   const [promptDraft, setPromptDraft] = useState('')
   const [saving, setSaving] = useState(false)
@@ -91,7 +91,7 @@ export function DramaAssetDetailModal({
     setRestoringVersionId(null)
   }, [open, asset])
 
-  // 保存提示词到资产 params
+  // Lưu các từ nhắc nhở vào thông số nội dung
   async function savePrompt() {
     const text = promptDraft.trim()
     if (!text) {
@@ -111,7 +111,7 @@ export function DramaAssetDetailModal({
     }
   }
 
-  // 先保存脏提示词再触发生图
+  // Lưu từ nhắc bẩn trước rồi kích hoạt bản vẽ
   async function handleGenerate() {
     if (dirty) {
       const text = promptDraft.trim()
@@ -136,7 +136,7 @@ export function DramaAssetDetailModal({
     onGenerate(asset)
   }
 
-  // 本地上传图片，视为已出图
+  // Tải ảnh lên cục bộ và nó sẽ được coi là đã được xuất bản
   async function handleUpload(file: File) {
     setUploading(true)
     try {
@@ -150,7 +150,7 @@ export function DramaAssetDetailModal({
     }
   }
 
-  // 将历史形象还原为当前
+  // Khôi phục hình ảnh lịch sử về hiện tại
   async function handleRestoreVersion(versionId: string) {
     setRestoringVersionId(versionId)
     try {

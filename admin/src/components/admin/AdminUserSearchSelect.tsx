@@ -13,7 +13,7 @@ type AdminUserSearchSelectProps = {
   className?: string;
 };
 
-/** 远程搜索用户（账号 ID + 邮箱） */
+/** Tìm kiếm người dùng từ xa (ID tài khoản + email) */
 export function AdminUserSearchSelect({
   value,
   onChange,

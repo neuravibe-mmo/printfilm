@@ -16,14 +16,14 @@ class Settings(BaseSettings):
 
     app_name: str = "PRINTFILM"
     debug: bool = True
-    # 是否打印 SQLAlchemy 原始 SQL（默认关，避免刷屏；需要排查 SQL 时设 SQL_ECHO=true）
+    # Có in SQL gốc SQLAlchemy hay không (tắt theo mặc định để tránh vuốt màn hình; đặt SQL_ECHO=true khi bạn cần khắc phục sự cố SQL)
     sql_echo: bool = False
     secret_key: str = "dev-secret-change-me"
     access_token_expire_minutes: int = 60 * 24 * 7
 
     database_url: str = "postgresql+asyncpg://printfilm:change-me-strong-db-password@127.0.0.1:15432/printfilm"
     database_url_sync: str = "postgresql+psycopg2://printfilm:change-me-strong-db-password@127.0.0.1:15432/printfilm"
-    # Postgres 连接池（统一任务平台 / API 共用）
+    # Nhóm kết nối Postgres (nền tảng tác vụ/API chung thống nhất)
     db_pool_size: int = 5
     db_max_overflow: int = 5
     db_pool_recycle_sec: int = 1800
@@ -32,33 +32,33 @@ class Settings(BaseSettings):
 
     ark_api_key: str = ""
     ark_base_url: str = "https://www.tokenfree.com/v1"
-    # 文字模型：开源版固定 TokenFree New API，后台选模型
+    # Mô hình văn bản: Phiên bản mã nguồn mở đã sửa lỗi API mới TokenFree, mô hình được chọn ở chế độ nền
     openai_api_key: str = ""
     openai_base_url: str = "https://www.tokenfree.com/v1"
-    # 默认示例为 kimi；实际以后台渠道 models + 默认定稿为准，可改为 deepseek-chat 等
+    # Ví dụ mặc định là kimi; phiên bản cuối cùng thực tế tuân theo các mô hình kênh phụ trợ + mặc định và có thể được thay đổi thành trò chuyện tìm kiếm sâu, v.v.
     model_llm: str = "kimi-k2.6"
     model_image: str = "doubao-seedream-5-0-260128"
-    # Seedream 4.5 接入点（可选；未配则回退 model_image）
+    # Điểm truy cập Seedream 4.5 (tùy chọn; nếu không được định cấu hình, hãy chuyển sang model_image)
     model_image_45: str = ""
     model_video: str = "doubao-seedance-2-5-260628"
-    # Seedance 2.0 接入点（可选；未配则仅使用 MODEL_VIDEO）
+    # Điểm truy cập Seedance 2.0 (tùy chọn; nếu không được định cấu hình, chỉ MODEL_VIDEO sẽ được sử dụng)
     model_video_2: str = ""
-    # Seedance 2.5 官方范围约 4–30 秒
+    # Seedance 2.5 Phạm vi chính thức ~4–30 giây
     seedance_duration_min: int = 4
     seedance_duration_max: int = 30
     model_audio: str = "qwen-tts-2025-05-22"
-    # 豆包语音（openspeech）— 与方舟 ARK_API_KEY 不同产品线
+    # Doubao Voice (openspeech) - một dòng sản phẩm khác với ARK_API_KEY
     volc_tts_app_id: str = ""
     volc_tts_access_key: str = ""
     volc_tts_resource_id: str = "seed-tts-2.0"
     volc_tts_speaker: str = "zh_female_cancan_uranus_bigtts"
     volc_tts_url: str = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
-    # 新版控制台 API Key（与 app_id/access_key 二选一，优先 api_key）
+    # Phiên bản mới của Khóa API bảng điều khiển (chọn một từ app_id/access_key, api_key được ưu tiên)
     volc_tts_api_key: str = ""
-    # 音色设计：控制台购买的 S_ 槽位，逗号分隔；配了且鉴权齐全则漫剧走 voice_design
+    # Thiết kế âm thanh: Khe S_ mua trên console được phân tách bằng dấu phẩy; nếu nó được định cấu hình và xác thực hoàn tất, truyện tranh sẽ chuyển sang voice_design
     volc_tts_voice_design_url: str = "https://openspeech.bytedance.com/api/v3/tts/voice_design"
     volc_tts_voice_design_speaker_ids: str = ""
-    # Seedream: 2k|3k|4k or WIDTHxHEIGHT，且总像素 >= 3686400（约 2560x1440）
+    # Seedream: 2k|3k|4k hoặc WIDTHxHEIGHT và tổng số pixel >= 3686400 (khoảng 2560x1440)
     ark_image_size: str = "2k"
     ark_video_resolution: str = "480p"
     ark_video_ratio: str = "16:9"
@@ -66,34 +66,34 @@ class Settings(BaseSettings):
     ark_video_poll_timeout: float = 900.0
     # Parallel generation concurrency (per project)
     pipeline_image_concurrency: int = 3
-    # TokenFree / New API 同时观察的生图任务上限（超出会 429）
+    # TokenFree / API mới Giới hạn trên của việc quan sát đồng thời các tác vụ tạo hình ảnh (vượt quá giới hạn sẽ là 429)
     tokenfree_image_concurrency: int = 1
-    # Seedance 2.5 官方并发上限约 10
+    # Giới hạn đồng thời chính thức của Seedance 2.5 là khoảng 10
     pipeline_video_concurrency: int = 10
     pipeline_audio_concurrency: int = 4
-    # 单用户漫剧视频并发上限（同时 submit/awaiting_poll）；超出部分保持 pending 排队
+    # Giới hạn trên của video truyện tranh đồng thời dành cho một người dùng (gửi/đang chờ_poll cùng lúc); phần vượt quá vẫn còn trong hàng đợi chờ xử lý
     drama_user_video_job_limit: int = 12
-    # 单个分镜视频最大尝试次数；超过后直接失败，避免长时间卡在同一镜
+    # Số lần thử tối đa cho một video bảng phân cảnh; nếu vượt quá sẽ trực tiếp thất bại và tránh bị mắc kẹt trong cùng một cảnh quay trong thời gian dài.
     drama_fragment_max_attempts: int = 3
-    # 科普 Seedance 仍出音轨：只要操作/环境音效，不要口播与 BGM
+    # Khoa học phổ thông Seedance vẫn có bản âm thanh: chỉ có hiệu ứng âm thanh vận hành/môi trường, không có lời nói và BGM
     kepu_seedance_sfx_audio: bool = True
 
     ark_mock: bool = False
-    # 内置任务平台的进程内并发上限（全站 Worker 槽位）。
+    # Giới hạn trên của tính đồng thời trong quá trình của nền tảng tác vụ tích hợp sẵn (các vị trí công nhân trong toàn bộ trang web).
     task_runtime_max_concurrency: int = 4
-    # 单用户同时进行中的 Worker 槽位（不含 awaiting_poll 注册项）。
+    # Các vị trí công nhân đang được tiến hành bởi một người dùng cùng lúc (không bao gồm mục đăng ký chờ_poll).
     task_user_max_concurrency: int = 4
-    # Selector 每轮并发非阻塞查询上游的上限（类似 NIO select 就绪 channel 批处理）。
+    # Bộ chọn Giới hạn trên của các truy vấn không chặn đồng thời ngược dòng trong mỗi vòng (tương tự như xử lý hàng loạt kênh sẵn sàng chọn NIO).
     task_poll_max_concurrency: int = 20
-    # 孤儿恢复：leased/running 超过该秒数无更新、且本进程无执行协程时重排队。
+    # Khôi phục mồ côi: Đã thuê/đang chạy được yêu cầu xếp hàng đợi khi không có bản cập nhật nào dài hơn số giây này và không có coroutine nào được thực thi trong quy trình này.
     task_runtime_recover_grace_sec: int = 30
-    # 运行中每隔多少秒扫描一次孤儿任务（调度 tick 内执行）。
+    # Cần quét các tác vụ đơn lẻ trong bao nhiêu giây trong quá trình hoạt động (được thực hiện trong thời gian đánh dấu đã lên lịch).
     task_runtime_orphan_check_sec: int = 30
-    # 调度 tick 心跳超过该秒数未刷新 → 看门狗软重启调度循环。
+    # Đánh dấu lập lịch Nhịp tim vượt quá số giây này và không được làm mới → Phần mềm Watchdog khởi động lại chu kỳ lập lịch.
     task_runtime_tick_stale_sec: int = 60
-    # Selector 心跳超过该秒数未刷新 → 看门狗软重启 poller。
+    # Nhịp tim của Bộ chọn chưa được làm mới quá số giây này → Phần mềm Watchdog khởi động lại bộ thăm dò.
     task_poll_stale_sec: int = 600
-    # 看门狗检查间隔（秒）。
+    # Khoảng thời gian kiểm tra của cơ quan giám sát (giây).
     task_runtime_watchdog_interval_sec: float = 5.0
 
     max_shot_duration: int = 30
@@ -102,10 +102,10 @@ class Settings(BaseSettings):
     # Legacy flag; prefer billing_enabled
     quota_enabled: bool = False
 
-    # Token 计费：用户扣费 = TokenFree 官方成本（billing_markup 保留兼容，不再乘）
+    # Thanh toán bằng mã thông báo: khoản khấu trừ của người dùng = chi phí chính thức của TokenFree (billing_markup vẫn tương thích và sẽ không được nhân lên)
     billing_enabled: bool = False
     billing_markup: float = 1.0
-    # token / 视频时长估价缓冲；按张生图官价不再乘此系数（否则 5 元赠金冻不住一张图）
+    # bộ đệm định giá mã thông báo / thời lượng video; theo giá chính thức của bức tranh Zhang Sheng, hệ số này sẽ không được nhân lên (nếu không tiền thưởng 5 nhân dân tệ không thể đóng băng một bức tranh)
     billing_estimate_buffer: float = 1.2
     # Yuan per million tokens (provider cost)
     billing_seedance_video0: float = 46.0
@@ -113,24 +113,24 @@ class Settings(BaseSettings):
     billing_llm_per_m: float = 5.0
     billing_seedream_per_m: float = 8.0
     billing_tts_per_m: float = 2.0
-    # Kie：1 credit 折合人民币分（约 $0.005 ≈ ¥0.035 → 3.5）
+    # Kie: 1 tín chỉ tương đương với điểm RMB (khoảng $0,005 ≈ ¥0,035 → 3,5)
     billing_kie_fen_per_credit: float = 3.5
-    # TokenFree / New API：quota→USD→人民币（500000 quota = 1 USD）
+    # TokenFree / API mới: hạn ngạch→USD→RMB (500000 hạn ngạch = 1 USD)
     billing_usd_cny: float = 7.0
     # Fallback tokens when API omits usage
     billing_est_llm_tokens: int = 80_000
-    # Seedream / gpt-image 无 quota 时按张价结算，不再用 4.5 万 token × 8 元/百万
+    # Seedream / gpt-image Khi không có hạn ngạch, việc thanh toán sẽ dựa trên giá mỗi sản phẩm, không còn 45.000 token × 8 nhân dân tệ/triệu
     billing_est_seedream_tokens: int = 45_000
     billing_est_tts_tokens: int = 5_000
     billing_est_seedance_tokens_per_sec: int = 32_000
     # Signup grant (fen)
     billing_signup_grant_fen: int = 500
 
-    # 用户消费里程碑弹窗（累计扣费每达 interval 分提醒一次；默认 10000 = ¥100）
+    # Cửa sổ bật lên về mốc tiêu dùng của người dùng (nhắc nhở mỗi phút khấu trừ tích lũy một lần; mặc định 10000 = ¥100)
     billing_user_alert_enabled: bool = True
     billing_user_alert_interval_fen: int = 10000
 
-    # 平台总费用邮件告警（按上游 cost_fen 聚合）
+    # Thông báo qua email về tổng chi phí của nền tảng (được tổng hợp bởi cost_fen ngược dòng)
     billing_admin_cost_alert_enabled: bool = False
     billing_admin_cost_alert_threshold_fen: int = 0
     billing_admin_cost_alert_emails: str = ""
@@ -138,7 +138,7 @@ class Settings(BaseSettings):
     billing_admin_cost_alert_last_period_key: str = ""
     billing_admin_cost_alert_last_level: int = 0
 
-    # SMTP（管理员费用告警邮件）
+    # SMTP (email cảnh báo phí quản trị viên)
     smtp_enabled: bool = False
     smtp_host: str = ""
     smtp_port: int = 587
@@ -164,7 +164,7 @@ class Settings(BaseSettings):
     tos_secret_key: str = ""
     cdn_base: str = "http://localhost:8001/static"
 
-    # Aliyun OSS — 成片/分镜上传；FFmpeg 仍读本地文件
+    # Aliyun OSS — Tải lên phim/bảng phân cảnh đã hoàn thành; FFmpeg vẫn đọc các tập tin cục bộ
     oss_enabled: bool = False
     oss_endpoint: str = "oss-cn-beijing.aliyuncs.com"
     oss_region: str = "cn-hangzhou"
@@ -172,9 +172,9 @@ class Settings(BaseSettings):
     oss_folder: str = "kepu"
     oss_access_key_id: str = ""
     oss_access_key_secret: str = ""
-    # 可选自定义域名；空则用 https://{bucket}.{endpoint}
+    # Tên miền tùy chỉnh tùy chọn; nếu trống, hãy sử dụng https://{bucket}.{endpoint}
     oss_public_base: str = ""
-    # 生成链路：先落盘返回 /static，再入队异步上传并回填 OSS URL
+    # Tạo liên kết: đầu tiên đặt đĩa và quay lại /static, sau đó xếp hàng để tải lên không đồng bộ và chèn lấp URL OSS
     oss_upload_async: bool = True
     oss_upload_queue: str = "oss"
 

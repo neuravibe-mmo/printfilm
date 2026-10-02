@@ -1,4 +1,4 @@
-"""科普镜间衔接：后镜出图参考上一镜静帧，出视频参考上一镜尾帧。"""
+"""Kết nối giữa các gương khoa học phổ biến: Gương sau đề cập đến khung hình tĩnh của ống kính trước khi xuất hình ảnh và đề cập đến khung hình cuối cùng của ống kính trước khi xuất video."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from app.services.style_lock import seedream_ref_urls
 
 
 def previous_shot(shots: list[Any], shot_no: int) -> Any | None:
-    """按 shot_no 取上一镜（不含本镜）。"""
+    """Nhấn shot_no để chụp ảnh trước (không bao gồm ảnh này)."""
     prev = None
     for shot in sorted(shots, key=lambda item: int(getattr(item, "shot_no", 0) or 0)):
         no = int(getattr(shot, "shot_no", 0) or 0)
@@ -20,7 +20,7 @@ def previous_shot(shots: list[Any], shot_no: int) -> Any | None:
 
 
 def previous_usable_shot(shots: list[Any], shot_no: int) -> Any | None:
-    """向前找到最近一镜有静帧或尾帧的镜头。"""
+    """Tìm ảnh gần đây nhất có khung hình tĩnh hoặc khung hình cuối cùng."""
     prev = None
     for shot in sorted(shots, key=lambda item: int(getattr(item, "shot_no", 0) or 0)):
         no = int(getattr(shot, "shot_no", 0) or 0)
@@ -32,7 +32,7 @@ def previous_usable_shot(shots: list[Any], shot_no: int) -> Any | None:
 
 
 def _usable_seedream_url(raw: str | None, *, allow_republish: bool = False) -> str | None:
-    """只返回 Seedream 能拉的公网地址；TokenFree 产物地址不可作参考。"""
+    """Chỉ những địa chỉ công khai mà Seedream có thể lấy mới được trả lại; Địa chỉ sản phẩm TokenFree không thể được sử dụng để tham khảo."""
     url = str(raw or "").strip()
     if not url:
         return None
@@ -51,7 +51,7 @@ def _usable_seedream_url(raw: str | None, *, allow_republish: bool = False) -> s
 
 
 def shot_image_ref(shot: Any | None) -> str | None:
-    """优先已是公网的 image_url，其次 ark CDN；本地 /static 尝试同步上 OSS。"""
+    """Ưu tiên là image_url của mạng công cộng, tiếp theo là ark CDN; local /static cố gắng đồng bộ hóa với OSS."""
     if shot is None:
         return None
     candidates = (getattr(shot, "image_url", None), getattr(shot, "image_ark_url", None))
@@ -67,7 +67,7 @@ def shot_image_ref(shot: Any | None) -> str | None:
 
 
 def _any_shot_image(shot: Any) -> str | None:
-    """静帧任意可用地址（含本地 /static）；TokenFree 产物跳过。优先本地路径。"""
+    """Khung tĩnh bất kỳ địa chỉ có sẵn nào (bao gồm cả cục bộ/tĩnh); Sản phẩm TokenFree bị bỏ qua. Thích đường dẫn địa phương."""
     for raw in (getattr(shot, "image_url", None), getattr(shot, "image_ark_url", None)):
         url = _usable_video_ref(raw)
         if url:
@@ -76,7 +76,7 @@ def _any_shot_image(shot: Any) -> str | None:
 
 
 def shot_last_frame_ref(shot: Any | None) -> str | None:
-    """上一镜尾帧；TokenFree 任务 URL 跳过，避免下游无鉴权拉不到。"""
+    """Khung hình cuối cùng của cảnh cuối; URL tác vụ TokenFree bị bỏ qua để tránh không thể kéo xuôi dòng mà không cần xác thực."""
     if shot is None:
         return None
     last = str(getattr(shot, "last_frame_url", None) or "").strip()
@@ -86,7 +86,7 @@ def shot_last_frame_ref(shot: Any | None) -> str | None:
 
 
 def _usable_video_ref(raw: str | None) -> str | None:
-    """本地路径或公网图可作下一镜参考；TokenFree 产物地址不行。"""
+    """Đường dẫn cục bộ hoặc bản đồ mạng công cộng có thể được sử dụng làm tài liệu tham khảo cho bước tiếp theo; địa chỉ sản phẩm TokenFree không thể."""
     url = str(raw or "").strip()
     if not url:
         return None
@@ -99,7 +99,7 @@ def _usable_video_ref(raw: str | None) -> str | None:
 
 
 def image_refs_for_shot(prev: Any | None, base_refs: list[str] | None = None) -> list[str]:
-    """本镜 Seedream 参考：上一镜静帧 + 模板底图。"""
+    """Tham chiếu Seedream của cảnh này: khung hình tĩnh của cảnh trước + hình ảnh cơ sở mẫu."""
     bases = list(base_refs or [])
     prev_url = shot_image_ref(prev)
     if prev_url:
@@ -108,7 +108,7 @@ def image_refs_for_shot(prev: Any | None, base_refs: list[str] | None = None) ->
 
 
 def video_extra_refs_for_shot(prev: Any | None) -> list[str]:
-    """本镜视频额外参考：上一镜尾帧（或静帧）。"""
+    """Tham khảo bổ sung cho video này: khung hình cuối cùng (hoặc khung hình tĩnh) của cảnh trước."""
     url = shot_last_frame_ref(prev)
     return [url] if url else []
 
@@ -119,7 +119,7 @@ def persist_last_frame_from_video(
     video_url: str,
     preferred_url: str | None = None,
 ) -> str | None:
-    """优先已落盘/公网尾帧；TokenFree 任务 URL 不当公网尾帧，改从成片抽。"""
+    """Ưu tiên dành cho khung cuối cùng của đĩa/mạng công cộng; URL tác vụ TokenFree không phải là khung cuối cùng của mạng công cộng và thay vào đó được lấy từ lát cắt."""
     from app.services import storage
     from app.services.ffmpeg_compose import extract_video_last_frame
 

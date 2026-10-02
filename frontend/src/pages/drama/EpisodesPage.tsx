@@ -16,7 +16,7 @@ export default function EpisodesPage() {
   )
 }
 
-// 加载后跳转首集编辑，不再展示中间页
+// Chuyển đến tập đầu tiên sau khi tải và không còn hiển thị trang giữa nữa
 function EpisodesRedirect() {
   const { t } = useI18n()
   const { projectId } = useParams()

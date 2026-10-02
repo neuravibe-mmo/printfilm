@@ -1,4 +1,4 @@
-"""根据角色设定生成音色描述提示词（供 TTS / Seedance reference_audio）。"""
+"""Tạo các từ nhắc mô tả âm sắc dựa trên cài đặt ký tự (đối với TTS / Seedance reference_audio)."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ Yêu cầu:
 WHITESPACE_PATTERN = re.compile(r"\s+")
 
 
-# 从剧本摘要中按名称查找角色
+# Tìm ký tự theo tên trong tóm tắt kịch bản
 def find_summary_character(summary: dict[str, Any] | None, name: str) -> dict[str, Any] | None:
     if not summary or not name:
         return None
@@ -35,7 +35,7 @@ def find_summary_character(summary: dict[str, Any] | None, name: str) -> dict[st
     return None
 
 
-# 合并资产 params 与摘要字段，组装 LLM 输入
+# Hợp nhất các thông số nội dung và trường tóm tắt để tập hợp đầu vào LLM
 def build_character_voice_context(
     asset: DramaAsset,
     summary_char: dict[str, Any] | None = None,
@@ -72,7 +72,7 @@ def build_character_voice_context(
     return "\n".join(lines)
 
 
-# 清洗 LLM 输出的音色描述
+# Làm sạch mô tả âm sắc của đầu ra LLM
 def normalize_voice_prompt_text(raw: str) -> str:
     text = (raw or "").strip()
     text = re.sub(r"^[\"'「『]|[\"'」』]$", "", text).strip()
@@ -80,7 +80,7 @@ def normalize_voice_prompt_text(raw: str) -> str:
     return text[:200]
 
 
-# 无 LLM 时的规则兜底
+# Quy tắc không có LLM
 def fallback_voice_prompt(asset: DramaAsset, summary_char: dict[str, Any] | None = None) -> str:
     params = asset.params if isinstance(asset.params, dict) else {}
     summary = summary_char or {}
@@ -117,7 +117,7 @@ async def suggest_voice_prompt_for_character(
     asset: DramaAsset,
     project: DramaProject,
 ) -> tuple[str, str, str]:
-    """根据角色资产与剧本摘要生成音色描述、推荐 speaker 与试听台词。"""
+    """Tạo mô tả âm sắc, lời thoại của diễn giả và lời thử giọng được đề xuất dựa trên nội dung nhân vật và tóm tắt kịch bản."""
     summary = None
     if project.script and isinstance(project.script.summary, dict):
         summary = project.script.summary

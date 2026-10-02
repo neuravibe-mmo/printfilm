@@ -17,7 +17,7 @@ type Props = {
   active?: NavActive
 }
 
-// 将旧 active 别名归一到新 IA
+// Thống nhất bí danh hoạt động cũ với IA mới
 function normalizeActive(active: NavActive | undefined, pathname: string): NavActive | undefined {
   if (active === 'studio' || active === 'templates' || active === 'history') return 'kepu'
   if (active) return active
@@ -42,9 +42,9 @@ export default function SiteNav({ active }: Props) {
   const location = useLocation()
   const { t } = useI18n()
   /*
-   * user 当前用户
-   * menuOpen 移动端抽屉
-   * createOpen 开始创作选择弹层
+   * người dùng người dùng hiện tại
+   * menuMở ngăn kéo di động
+   * createOpen Bắt đầu tạo và chọn lớp đàn hồi
    */
   const [user, setUser] = useState<User | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -70,7 +70,7 @@ export default function SiteNav({ active }: Props) {
     setMenuOpen(false)
   }, [location.pathname])
 
-  // 未登录去登录；已登录弹出漫剧/科普选择
+  // Nếu bạn chưa đăng nhập, vui lòng đăng nhập; nếu bạn đã đăng nhập, lựa chọn truyện tranh/khoa học đại chúng sẽ bật lên.
   function goCreate() {
     if (!user && !localStorage.getItem('token')) {
       nav('/auth?next=/')

@@ -1,4 +1,4 @@
-"""LLM 补齐人物介绍叠字（stub 角色 / 摘要缺小传时）。"""
+"""LLM Hoàn thành việc sao chép giới thiệu nhân vật (khi nhân vật sơ khai/tóm tắt thiếu tiểu sử)."""
 
 from __future__ import annotations
 
@@ -140,7 +140,7 @@ async def llm_enrich_character_intros(
     episode_bodies: list[str] | None = None,
     story_type: str | None = None,
 ) -> dict[str, str]:
-    """批量 LLM 生成人物介绍叠字；失败时返回空 dict。"""
+    """Batch LLM tạo ra các từ trùng nhau để giới thiệu nhân vật; trả về một lệnh trống nếu thất bại."""
     unique: list[str] = []
     seen: set[str] = set()
     for name in names:
@@ -177,7 +177,7 @@ def collect_names_needing_intro(
     summary: dict[str, Any] | None = None,
     episode_bodies: list[str] | None = None,
 ) -> list[str]:
-    """规则链路仍缺介绍文案的角色名（保序）。"""
+    """Link quy tắc vẫn thiếu tên vai trò của bản giới thiệu (bảo quản đơn hàng)."""
     lookup = build_summary_character_lookup(summary)
     missing: list[str] = []
     seen: set[str] = set()
@@ -203,7 +203,7 @@ async def prepare_character_intro_overrides(
     episode_bodies: list[str] | None = None,
     story_type: str | None = None,
 ) -> dict[str, str]:
-    """先规则推断，缺的再一次性 LLM 补齐。"""
+    """Trước tiên hãy suy ra các quy tắc và điền vào những phần còn thiếu bằng LLM một lần."""
     names = collect_names_needing_intro(
         character_assets,
         summary=summary,

@@ -1,4 +1,4 @@
-"""独立创作工具请求 / 响应。"""
+"""Yêu cầu/phản hồi của công cụ soạn thảo độc lập."""
 
 from __future__ import annotations
 

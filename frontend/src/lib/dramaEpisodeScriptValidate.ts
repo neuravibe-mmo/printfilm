@@ -1,6 +1,6 @@
 /**
- * 漫剧分镜脚本校验（对齐 docs/EPISODE_RULES.md §3 / §9）
- * 用于生成前告警：时长、空镜误标对白、资产缺图/缺音色
+ * Xác minh kịch bản bảng phân cảnh truyện tranh (tài liệu căn chỉnh/EPISODE_RULES.md §3 / §9)
+ * Được sử dụng để tạo cảnh báo trước: thời lượng, cảnh trống với đoạn hội thoại bị gắn nhãn sai, thiếu hình ảnh/thiếu âm thanh cho nội dung
  */
 import type { DramaAsset, DramaFragment } from '../api/drama'
 import {
@@ -13,24 +13,24 @@ import {
 import { extractDurations, sumDuration } from './segmentDuration'
 import { DRAMA_VOICE_BINDING_ENABLED } from './dramaVoiceBinding'
 
-/** 漫剧字幕 cue（与后端 DRAMA_SUBTITLE_CUE 一致） */
+/** Tín hiệu phụ đề truyện tranh (phù hợp với phần phụ trợ DRAMA_SUBTITLE_CUE) */
 export const DRAMA_SUBTITLE_CUE = '【字幕：底部居中·简体中文·逐句轮换·与口播同步】'
 export const DRAMA_SUBTITLE_CUE_VI =
   '【Phụ đề: Căn giữa phía dưới · Tiếng Việt · Luân chuyển từng câu · Đồng bộ lời thoại】'
 
-/** 画面无配音前缀 */
+/** Màn hình không có tiền tố lồng tiếng */
 export const VISUAL_PREFIX = '【画面·无配音仅环境音】'
 export const VISUAL_PREFIX_VI = '【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】'
 
-/** 对白前缀 */
+/** Tiền tố hội thoại */
 export const DIALOGUE_PREFIX = '【对白·慢速清晰·同步字幕】'
 export const DIALOGUE_PREFIX_VI = '【Thoại · Chậm rõ · Đồng bộ phụ đề】'
 
-/** 旁白前缀 */
+/** Tiền tố tường thuật */
 export const DRAMA_NARRATION_PREFIX = '【旁白·慢速清晰·同步字幕】'
 export const DRAMA_NARRATION_PREFIX_VI = '【Lời dẫn · Chậm rõ · Đồng bộ phụ đề】'
 
-// 空镜 / 景别冒号标签（与后端 VISUAL_SHOT_LABEL_RE 对齐，支持中越英多语言）
+// Nhãn dấu hai chấm trong gương / cảnh trống (căn chỉnh với phần phụ trợ VISUAL_SHOT_LABEL_RE, hỗ trợ tiếng Trung, tiếng Việt và tiếng Anh)
 export const VISUAL_SHOT_LABEL_RE =
   /^(?:空镜|画面|远景|近景|中景|全景|特写|大特写|跟拍|俯拍|仰拍|航拍|推镜|拉镜|摇镜|环境|镜头|动作|转场|闪回|建立镜头|气氛镜头|Cảnh|Cảnh trống|Toàn cảnh|Cận cảnh|Trung cảnh|Đặc tả|Đại đặc tả|Góc quay|Góc rộng|Góc nhìn|Theo dõi|Từ trên xuống|Từ dưới lên|Quay trên không|Đẩy máy|Kéo máy|Lướt máy|Môi trường|Hành động|Chuyển cảnh|Hồi tưởng|Khung hình|Visual|Shot|Wide shot|Close-up|Medium shot|Extreme close-up|Pan|Tilt|Zoom)\s*[：:]/i
 
@@ -64,12 +64,12 @@ export type DramaScriptIssue = {
   message: string
 }
 
-// 去掉对白/旁白生产前缀
+// Xóa tiền tố sản xuất hội thoại/tường thuật
 function stripVoiceCuePrefix(line: string): string {
   return (line || '').replace(VOICE_CUE_PREFIX_RE, '').trim()
 }
 
-// 角色是否已绑定可提交的参考音频
+// Liệu nhân vật có âm thanh tham chiếu ràng buộc có thể được gửi hay không
 function assetHasVoiceBinding(asset: DramaAsset): boolean {
   const params = (asset.params || {}) as Record<string, unknown>
   const raw = params.voiceAudio
@@ -94,7 +94,7 @@ function assetHasVoiceBinding(asset: DramaAsset): boolean {
   return false
 }
 
-// 合并正文 @asset 与 asset_ids
+// Hợp nhất nội dung @asset và assets_ids
 function listFragmentAssetIds(frag: DramaFragment): number[] {
   const seen = new Set<number>()
   const out: number[] = []
@@ -114,7 +114,7 @@ function listFragmentAssetIds(frag: DramaFragment): number[] {
   return out
 }
 
-// 判断正文是否为纯画面 / 空镜描写
+// Xác định xem văn bản có phải là mô tả hình ảnh thuần túy/gương trống không
 export function isVisualDescriptionBody(text: string): boolean {
   let body = stripVoiceCuePrefix((text || '').trim())
   body = body.replace(/^【(?:画面|空镜|Hình ảnh|Cảnh trống|Visual|Shot)[^】]*】\s*/i, '').trim()
@@ -131,7 +131,7 @@ export function isVisualDescriptionBody(text: string): boolean {
   return false
 }
 
-// 脚本是否含真实口播意图（排除空镜冒号）
+// Liệu kịch bản có chứa ý định truyền miệng thực sự hay không (loại trừ dấu hai chấm trống)
 function scriptLikelyNeedsVoice(content: string): boolean {
   for (const raw of (content || '').replace(/\r\n/g, '\n').split('\n')) {
     const line = raw.trim()
@@ -151,7 +151,7 @@ function scriptLikelyNeedsVoice(content: string): boolean {
   return false
 }
 
-// 校验单镜脚本：时长 + 空镜误标
+// Xác minh tập lệnh nhân bản đơn: thời lượng + lỗi nhân bản trống
 export function validateDramaFragmentScript(content: string): DramaScriptIssue[] {
   const issues: DramaScriptIssue[] = []
   const durations = extractDurations(content || '')
@@ -206,7 +206,7 @@ export function validateDramaFragmentScript(content: string): DramaScriptIssue[]
   return issues
 }
 
-// 校验本镜关联资产：缺图 / 说话角色缺音色（警告级，可继续生成）
+// Xác minh nội dung được liên kết với gương này: thiếu hình ảnh/thiếu giọng nói của nhân vật đang nói (mức cảnh báo, có thể tiếp tục được tạo)
 export function validateDramaFragmentAssets(
   frag: DramaFragment | null | undefined,
   assets: DramaAsset[],
@@ -254,7 +254,7 @@ export function validateDramaFragmentAssets(
   return issues
 }
 
-// 合并脚本与资产问题；有 error 则不可直接生成
+// Sự cố khi hợp nhất tập lệnh và nội dung; nếu có lỗi thì không thể tạo trực tiếp được
 export function collectDramaGenerateGateIssues(
   frag: DramaFragment | null | undefined,
   assets: DramaAsset[],
@@ -268,7 +268,7 @@ export function collectDramaGenerateGateIssues(
   }
 }
 
-// 把问题列表拼成确认框文案
+// Bỏ danh sách câu hỏi vào ô xác nhận copy
 export function formatDramaGateMessage(
   blocking: DramaScriptIssue[],
   warnings: DramaScriptIssue[],

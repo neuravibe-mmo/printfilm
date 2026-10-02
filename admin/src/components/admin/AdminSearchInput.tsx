@@ -10,7 +10,7 @@ type AdminSearchInputProps = {
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 };
 
-// 管理端搜索框（带图标）
+// Ô tìm kiếm quản lý (có biểu tượng)
 export function AdminSearchInput({
   value,
   onChange,

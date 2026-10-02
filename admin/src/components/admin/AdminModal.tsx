@@ -23,7 +23,7 @@ const SIZE_CLASS: Record<AdminModalSize, string> = {
   full: "admin-modal--full",
 };
 
-// 管理端统一弹窗壳（标题 / 内容 / 底栏）
+// Quản lý kết thúc trình bao bật lên hợp nhất (tiêu đề/nội dung/thanh dưới cùng)
 export function AdminModal({
   open,
   onOpenChange,

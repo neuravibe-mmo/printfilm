@@ -1,4 +1,4 @@
-/** 画布布局脏标记 → 防抖自动保存 */
+/** Dấu bẩn bố cục canvas → Lưu tự động chống rung */
 import { useCallback, useEffect, useRef } from 'react'
 import type { Edge, Node } from '@xyflow/react'
 import { dramaApi } from '../../../api/drama'
@@ -15,7 +15,7 @@ type UseCanvasAutoSaveArgs = {
   onError: (message: string) => void
 }
 
-/** 脏数据防抖保存到 drama canvas API */
+/** Ổn định dữ liệu bẩn được lưu vào API canvas kịch */
 export function useCanvasAutoSave({
   projectId,
   nodes,
@@ -30,7 +30,7 @@ export function useCanvasAutoSave({
   const latestRef = useRef({ nodes, edges, projectId })
   latestRef.current = { nodes, edges, projectId }
 
-  /** 立刻保存；可传入覆盖节点/边（删除后未等一轮渲染时用） */
+  /** Lưu ngay; bạn có thể chuyển vào các nút/cạnh lớp phủ (được sử dụng sau khi xóa mà không cần chờ một vòng hiển thị) */
   const flush = useCallback(
     async (override?: {
       nodes: Node<CanvasAssetNodeData>[]

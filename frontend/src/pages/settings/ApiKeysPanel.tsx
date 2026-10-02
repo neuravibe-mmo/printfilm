@@ -3,7 +3,7 @@ import { apiKeysApi, getPublicApiBase, type ApiKeyItem } from '../../api/apiKeys
 import { dialog } from '../../lib/dialog'
 import { useI18n } from '../../i18n'
 
-/** 格式化时间 */
+/** Định dạng thời gian */
 function formatWhen(iso?: string | null) {
   if (!iso) return '—'
   const d = new Date(iso)
@@ -16,7 +16,7 @@ function formatWhen(iso?: string | null) {
   })
 }
 
-/** 设置页 API：Key 管理与调用文档 */
+/** API trang cài đặt: Quản lý khóa và tài liệu gọi điện */
 export default function ApiKeysPanel() {
   const { t } = useI18n()
   const [keys, setKeys] = useState<ApiKeyItem[]>([])

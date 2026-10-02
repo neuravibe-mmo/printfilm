@@ -1,4 +1,4 @@
-/** PRINTFILM 官网首页：产品主张、漫剧/科普入口、成片流程与工具 */
+/** Trang chủ trang web chính thức của PRINTFILM: đề xuất sản phẩm, truyện tranh/khoa học đại chúng, quy trình và công cụ sản xuất phim */
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
@@ -19,7 +19,7 @@ export default function HomePage() {
   const KepuIcon = PRODUCT_ICONS.kepu
   const tools = localizeToolDefs(m)
 
-  // 未登录去登录；已登录弹出产品选择
+  // Nếu bạn chưa đăng nhập, vui lòng đăng nhập; Nếu bạn đã đăng nhập, lựa chọn sản phẩm sẽ bật lên.
   function goCreate() {
     if (!loggedIn) {
       nav('/auth?next=/')
@@ -28,7 +28,7 @@ export default function HomePage() {
     setCreateOpen(true)
   }
 
-  // 产品入口：未登录带 next 回跳
+  // Lối vào sản phẩm: Chưa đăng nhập ở lần nhảy tiếp theo
   function goAuthOr(path: string) {
     nav(loggedIn ? path : `/auth?next=${encodeURIComponent(path)}`)
   }

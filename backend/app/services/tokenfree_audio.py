@@ -1,4 +1,4 @@
-"""TokenFree / New API 语音：Qwen-TTS 的 /audio/speech 未实现，改走 Omni 流式 chat。"""
+"""TokenFree / Bài phát biểu API mới: /audio/speech của Qwen-TTS không được triển khai và trò chuyện trực tuyến Omni được sử dụng thay thế."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ from typing import Any
 
 from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID
 
-# 管理端逻辑名仍是 qwen-tts；真正发请求时改打 Omni（Ali ConvertAudioRequest 未实现）
+# Tên logic của bên quản lý vẫn là qwen-tts; khi thực sự gửi yêu cầu, hãy sử dụng Omni (Ali ConvertAudioRequest không được triển khai)
 TOKENFREE_DEFAULT_TTS_MODEL = "qwen-tts-2025-05-22"
 TOKENFREE_OMNI_TTS_MODEL = "qwen3-omni-flash"
 
-# 配音时按顺序试：管理端默认模型优先，其余作同渠道兜底
+# Hãy thử theo thứ tự khi lồng tiếng: model mặc định bên quản lý được ưu tiên, các kênh khác giống nhau.
 TOKENFREE_TTS_FALLBACKS: tuple[str, ...] = (
     "qwen-tts-2025-05-22",
     "qwen3-omni-flash",
@@ -24,16 +24,16 @@ TOKENFREE_TTS_FALLBACKS: tuple[str, ...] = (
     "elevenlabs/text-to-speech-multilingual-v2",
 )
 
-# Omni 流式口播：禁止改写原文
+# Phát sóng trực tuyến Omni: cấm viết lại văn bản gốc
 TOKENFREE_OMNI_TTS_SYSTEM = "Bạn là bộ tổng hợp giọng nói. Chỉ đọc to nguyên văn văn bản do người dùng cung cấp, tuyệt đối không viết lại, không giải thích và không thêm bất kỳ câu từ nào khác."
-# Omni 流式 PCM 实测为 24 kHz / 16-bit / mono
+# PCM phát trực tuyến Omni được đo ở 24 kHz / 16-bit / mono
 TOKENFREE_OMNI_PCM_RATE = 24000
 
 _SEED_TTS_MARKERS = ("seed-tts",)
 
 
 def uses_tokenfree_audio(*, base_url: str = "", channel_id: str = "") -> bool:
-    """判断 TTS 是否应走 TokenFree（与视频、LLM 同一 Base URL / Key）。"""
+    """Xác định xem TTS có nên sử dụng TokenFree (URL/Khóa cơ sở giống như video và LLM hay không)."""
     if (channel_id or "").strip().lower() == TOKENFREE_CHANNEL_ID:
         return True
     raw = (base_url or "").strip().lower()
@@ -45,7 +45,7 @@ def uses_tokenfree_audio(*, base_url: str = "", channel_id: str = "") -> bool:
 
 
 def resolve_tokenfree_tts_model(model: str | None) -> str:
-    """把已下线的 seed-tts 换成目录内默认 Qwen TTS。"""
+    """Thay thế các hạt giống ngoại tuyến bằng TTS Qwen mặc định trong thư mục."""
     mid = (model or "").strip()
     low = mid.lower()
     if not mid or any(mark in low for mark in _SEED_TTS_MARKERS):
@@ -54,7 +54,7 @@ def resolve_tokenfree_tts_model(model: str | None) -> str:
 
 
 def tokenfree_tts_chat_model(model: str) -> str:
-    """qwen-tts 在 TokenFree 阿里渠道上 /audio/speech 未实现，改打 Omni 流式 chat。"""
+    """qwen-tts /audio/speech không được triển khai trên kênh TokenFree Ali và trò chuyện trực tuyến Omni được sử dụng thay thế."""
     low = (model or "").casefold()
     if "qwen-tts" in low:
         return TOKENFREE_OMNI_TTS_MODEL
@@ -62,7 +62,7 @@ def tokenfree_tts_chat_model(model: str) -> str:
 
 
 def iter_tokenfree_tts_models(preferred: str | None) -> list[str]:
-    """默认语音模型 + TokenFree 目录里其它 TTS，去重保序；qwen-tts 折叠成 Omni。"""
+    """Mô hình giọng nói mặc định + TTS khác trong thư mục TokenFree, chống trùng lặp và bảo toàn trật tự; qwen-tts được xếp vào Omni."""
     seen: set[str] = set()
     out: list[str] = []
     for raw in (preferred, *TOKENFREE_TTS_FALLBACKS):
@@ -76,7 +76,7 @@ def iter_tokenfree_tts_models(preferred: str | None) -> list[str]:
 
 
 def tokenfree_tts_uses_chat_audio(model: str) -> bool:
-    """Gemini TTS / Qwen-TTS / Qwen-Omni 都走 chat 出音频，不要打 /audio/speech。"""
+    """Gemini TTS / Qwen-TTS / Qwen-Omni đều sử dụng trò chuyện để xuất âm thanh, không gõ /audio/speech."""
     low = (model or "").casefold()
     if "gemini" in low and "tts" in low:
         return True
@@ -86,29 +86,29 @@ def tokenfree_tts_uses_chat_audio(model: str) -> bool:
 
 
 def tokenfree_tts_uses_omni_stream(model: str) -> bool:
-    """Qwen-Omni 必须 stream + modalities audio，非流式会缺 input.text 或不出声。"""
+    """Qwen-Omni yêu cầu âm thanh truyền phát + phương thức. Nếu nó không được phát trực tuyến, input.text sẽ bị thiếu hoặc không có âm thanh."""
     low = (model or "").casefold()
     return "omni" in low or "qwen-tts" in low
 
 
-# qwen-tts 实际认的音色名；豆包 zh_* / S_ 不在此列
+# qwen-tts Tên âm thanh thực tế được nhận dạng; Beanbao zh_* / S_ không được đưa vào đây
 _TOKENFREE_NATIVE_VOICES = frozenset({"Cherry", "Serena", "Ethan", "Chelsie", "alloy"})
 _TOKENFREE_NATIVE_VOICES_FOLD = {v.casefold(): v for v in _TOKENFREE_NATIVE_VOICES}
 
 
 def tokenfree_speech_honors_speaker(speaker: str) -> bool:
-    """qwen-tts 只接受少数英文音色；豆包 id 会被压成 Ethan/Cherry。"""
+    """qwen-tts chỉ chấp nhận một vài âm tiếng Anh; id túi đậu sẽ được ép vào Ethan/Cherry."""
     return (speaker or "").strip().casefold() in _TOKENFREE_NATIVE_VOICES_FOLD
 
 
 def _speaker_is_male(speaker: str) -> bool:
-    """豆包 speaker id / 英文音色名是否按男声映射。"""
+    """ID người nói Doubao / Liệu tên âm sắc tiếng Anh có được ánh xạ tới giọng nam hay không."""
     low = (speaker or "").strip().lower()
     return low.startswith("zh_male") or "_male_" in low
 
 
 def tokenfree_speech_voice(speaker: str, model: str = "") -> str:
-    """豆包 speaker id → 当前 TTS 模型能认的音色。"""
+    """ID loa Doubao → Âm thanh được nhận dạng bởi mẫu TTS hiện tại."""
     raw = (speaker or "").strip()
     native = _TOKENFREE_NATIVE_VOICES_FOLD.get(raw.casefold())
     mid = (model or "").casefold()
@@ -125,7 +125,7 @@ def tokenfree_speech_voice(speaker: str, model: str = "") -> str:
 
 
 def extract_chat_audio_bytes(payload: dict[str, Any]) -> bytes | None:
-    """从 chat/completions 或 DashScope 包里取出音频字节。"""
+    """Nhận byte âm thanh từ gói trò chuyện/hoàn thành hoặc gói DashScope."""
     if not isinstance(payload, dict):
         return None
     choices = payload.get("choices")
@@ -147,7 +147,7 @@ def extract_chat_audio_bytes(payload: dict[str, Any]) -> bytes | None:
 
 
 def _audio_bytes_from_obj(raw: Any) -> bytes | None:
-    """解析 base64 / data URL / 嵌套 data 字段。"""
+    """Phân tích base64/URL dữ liệu/trường dữ liệu lồng nhau."""
     if isinstance(raw, str) and raw.strip():
         text = raw.strip()
         if text.startswith("data:") and "," in text:
@@ -166,7 +166,7 @@ def _audio_bytes_from_obj(raw: Any) -> bytes | None:
 
 
 def _decode_audio_chunk(raw: Any) -> bytes:
-    """SSE 分片可能远小于 1KB，这里不按整段音频门槛丢弃。"""
+    """Các đoạn SSE có thể nhỏ hơn 1KB rất nhiều và không bị loại bỏ theo toàn bộ ngưỡng âm thanh tại đây."""
     if isinstance(raw, str) and raw.strip():
         text = raw.strip()
         if text.startswith("data:") and "," in text:
@@ -184,7 +184,7 @@ def _decode_audio_chunk(raw: Any) -> bytes:
 
 
 def extract_sse_audio_bytes(raw: str) -> bytes | None:
-    """从 Omni / chat SSE 里拼接 delta.audio.data。"""
+    """Ghép delta.audio.data từ Omni/chat SSE."""
     chunks: list[bytes] = []
     for line in (raw or "").splitlines():
         line = line.strip()
@@ -214,12 +214,12 @@ def extract_sse_audio_bytes(raw: str) -> bytes | None:
 
 
 def _looks_like_mpeg(raw: bytes) -> bool:
-    """识别无 ID3 的 MP3 帧头（含 \\xff\\xfa 等）。"""
+    """Nhận dạng tiêu đề khung MP3 không có ID3 (bao gồm \\xff\\xfa, v.v.)."""
     return len(raw) >= 2 and raw[0] == 0xFF and (raw[1] & 0xE0) == 0xE0
 
 
 def wrap_pcm_s16le_wav(pcm: bytes, *, sample_rate: int = TOKENFREE_OMNI_PCM_RATE, channels: int = 1) -> bytes:
-    """把 Omni 流式 PCM 包成 WAV；已是 RIFF/MP3 则原样返回。"""
+    """Gói Omni phát trực tiếp PCM sang WAV; nếu là RIFF/MP3, hãy trả lại nguyên trạng."""
     if len(pcm) < 1000:
         return b""
     if pcm[:4] == b"RIFF" or pcm[:3] == b"ID3" or _looks_like_mpeg(pcm):
@@ -245,7 +245,7 @@ def wrap_pcm_s16le_wav(pcm: bytes, *, sample_rate: int = TOKENFREE_OMNI_PCM_RATE
 
 
 def build_omni_tts_chat_body(text: str, voice: str, model: str) -> dict[str, Any]:
-    """构造 Qwen-Omni 流式配音请求体。"""
+    """Xây dựng nội dung yêu cầu lồng tiếng phát trực tuyến Qwen-Omni."""
     return {
         "model": model,
         "messages": [

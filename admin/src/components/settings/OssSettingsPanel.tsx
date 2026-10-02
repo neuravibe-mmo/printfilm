@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
 import { useI18n } from "@/i18n/useI18n";
 
-// 阿里云 OSS 存储配置
+// Cấu hình lưu trữ Alibaba Cloud OSS
 export function OssSettingsPanel() {
   const { t } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();

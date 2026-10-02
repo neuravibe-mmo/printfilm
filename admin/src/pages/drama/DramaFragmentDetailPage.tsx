@@ -11,7 +11,7 @@ import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/useI18n";
 
-/** 漫剧分镜详情 */
+/** Chi tiết cốt truyện truyện tranh */
 export function DramaFragmentDetailPage() {
   const { m } = useI18n();
   const { fragmentId } = useParams<{ fragmentId: string }>();

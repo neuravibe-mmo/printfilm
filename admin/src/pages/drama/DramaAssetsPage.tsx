@@ -18,7 +18,7 @@ type ListRes = { items: AdminDramaAsset[]; meta: PageMeta };
 
 const ASSET_TYPES = ["character", "scene", "prop", "material", "none"] as const;
 
-/** 全站漫剧资产库列表 */
+/** Danh sách thư viện truyện tranh trên toàn trang web */
 export function DramaAssetsPage() {
   const { m, locale } = useI18n();
   const [searchParams] = useSearchParams();

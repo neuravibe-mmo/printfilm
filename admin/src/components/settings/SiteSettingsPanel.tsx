@@ -8,7 +8,7 @@ import {
 import { useAdminModelSettings } from "@/hooks/useAdminModelSettings";
 import { useI18n } from "@/i18n/useI18n";
 
-/** 站点公网地址与媒体工具路径 */
+/** Địa chỉ mạng công cộng và đường dẫn công cụ truyền thông của trang web */
 export function SiteSettingsPanel() {
   const { t } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();

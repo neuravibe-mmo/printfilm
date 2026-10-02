@@ -16,7 +16,7 @@ type AdminSelectProps = {
   onChange: (value: string) => void;
 };
 
-// 管理端下拉选择（统一样式）
+// Lựa chọn thả xuống bên quản lý (kiểu thống nhất)
 export function AdminSelect({
   label,
   hint,

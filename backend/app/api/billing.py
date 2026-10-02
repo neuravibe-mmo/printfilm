@@ -67,7 +67,7 @@ async def billing_preflight(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """入队前余额预检：返回单项估算与批量总需求。"""
+    """Kiểm tra trước số dư trước khi tham gia nhóm: Trả về ước tính từng mặt hàng và tổng nhu cầu theo lô."""
     if not billing_active(user):
         return {
             "ok": True,
@@ -127,7 +127,7 @@ async def create_order(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    # 下单前先清理该用户已过期的待支付单
+    # Xóa các lệnh thanh toán đang chờ xử lý đã hết hạn của người dùng trước khi đặt hàng.
     await billing.close_expired_pending_orders(db, user_id=user.id)
     sku = billing.sku_by_id(body.sku_id)
     if not sku:
@@ -185,7 +185,7 @@ async def usage_summary(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """本月 token / 费用汇总，供历史页侧栏展示。"""
+    """Tóm tắt token/phí của tháng này được hiển thị trong thanh bên của trang lịch sử."""
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     result = await db.execute(
@@ -219,7 +219,7 @@ async def billing_alerts_pending(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """待展示的用户额度告警（弹窗）。"""
+    """Cảnh báo hạn ngạch người dùng sẽ được hiển thị (cửa sổ bật lên)."""
     from app.services.billing.alerts import list_pending_user_alerts
 
     rows = await list_pending_user_alerts(db, user.id)
@@ -262,7 +262,7 @@ async def usage_events(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ) -> dict:
-    """分页返回当前用户的按次扣费记录（新→旧）。"""
+    """Trả về bản ghi trả tiền cho mỗi lần xem của người dùng hiện tại (mới → cũ) trong phân trang."""
     from app.models_drama import DramaProject
 
     count_stmt = select(func.count()).select_from(UsageEvent).where(UsageEvent.user_id == user.id)
@@ -318,7 +318,7 @@ async def list_orders(
     user: User = Depends(get_current_user),
     limit: int = Query(50, ge=1, le=100),
 ) -> dict:
-    """充值订单列表（新→旧）；返回前自动关闭过期待支付单。"""
+    """Danh sách lệnh nạp tiền (mới → cũ); tự động chốt các lệnh thanh toán quá hạn trước khi quay trở lại."""
     await billing.close_expired_pending_orders(db, user_id=user.id)
     result = await db.execute(
         select(Order)
@@ -374,7 +374,7 @@ async def close_order(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """用户主动取消支付时关闭待支付订单（过期订单由系统自动关闭）。"""
+    """Lệnh thanh toán đang chờ xử lý sẽ bị đóng khi người dùng chủ động hủy thanh toán (các lệnh đã hết hạn sẽ được hệ thống tự động đóng)."""
     result = await db.execute(select(Order).where(Order.out_trade_no == out_trade_no))
     order = result.scalar_one_or_none()
     if not order or order.user_id != user.id:
@@ -391,7 +391,7 @@ async def close_order(
 
 
 def _notify_success(params: dict) -> bool:
-    """判断易支付回调是否支付成功（兼容 trade_status/status 两种字段）。"""
+    """Xác định xem khoản thanh toán trong lệnh gọi lại Yipay có thành công hay không (tương thích với các trường trạng thái/trạng thái giao dịch)."""
     status = str(params.get("trade_status") or params.get("status") or "").strip().upper()
     return status in {"TRADE_SUCCESS", "SUCCESS", "1"}
 
@@ -417,8 +417,8 @@ async def epay_notify(request: Request, db: AsyncSession = Depends(get_db)) -> P
     if not out_trade_no:
         return PlainTextResponse("fail", status_code=400)
 
-    # 行锁串行化同一订单的并发回调：第二个回调在锁释放后读到 paid 即幂等返回，
-    # 避免重复入账（易支付会对同一笔支付重发多次 notify）。
+    # Khóa hàng tuần tự hóa các cuộc gọi lại đồng thời theo cùng một thứ tự: cuộc gọi lại thứ hai sẽ đọc được thanh toán sau khi khóa được giải phóng, đây là lợi nhuận bình thường.
+    # Tránh trùng lặp các mục nhập (Easy Pay sẽ gửi lại thông báo nhiều lần cho cùng một khoản thanh toán).
     result = await db.execute(
         select(Order).where(Order.out_trade_no == out_trade_no).with_for_update()
     )

@@ -1,4 +1,4 @@
-/** 帮助中心共用文案：分类、上手步骤、常见问题 */
+/** Trung tâm trợ giúp bản chia sẻ: phân loại, các bước bắt đầu, câu hỏi thường gặp */
 import { getActiveLocale } from '../i18n/detect'
 
 export type HelpFaqItem = {
@@ -180,11 +180,11 @@ const HELP_FAQ_ITEMS_ZH: HelpFaqItem[] = [
   },
   {
     q: '个人中心有哪些内容？',
-    a: '包含账号信息、漫剧项目、AI短视频历史、工具创作记录、资产管理入口，以及订阅与余额。团队、API、通知偏好等能力仍在建设中。',
+    a: '包含账号信息、漫剧项目、AI短视频历史、工具创作记录、资产管理入口，以及Đăng ký与余额。团队、API、通知偏好等能力仍在建设中。',
   },
   {
     q: '如何充值？余额怎么扣？',
-    a: '打开「定价」选择充值档位，支持支付宝与微信支付；未登录会先引导登录。按实际调用量扣费，余额永久有效，无强制订阅。用量可在定价页或个人中心「订阅与余额」查看。',
+    a: '打开「定价」选择充值档位，支持支付宝与微信支付；未登录会先引导登录。按实际调用量扣费，余额永久有效，无强制Đăng ký。用量可在定价页或个人中心「Đăng ký与余额」查看。',
   },
   {
     q: '生成失败或画面不符合预期怎么办？',
@@ -295,7 +295,7 @@ export const HELP_FAQ_ITEMS: HelpFaqItem[] = new Proxy([] as HelpFaqItem[], {
   },
 })
 
-// 按关键词过滤常见问题
+// Lọc Câu hỏi thường gặp theo từ khóa
 export function filterHelpFaq(items: HelpFaqItem[], raw: string): HelpFaqItem[] {
   const needle = raw.trim().toLowerCase()
   if (!needle) return items

@@ -1,4 +1,4 @@
-/** Drama project workflow steps: 剧情大纲 → 分镜 → 生成视频 */
+/** Các bước trong quy trình làm việc của dự án phim truyền hình: Phác thảo cốt truyện → Bản phân cảnh → Tạo video */
 
 export type ProjectStepKey = 'outline' | 'storyboard' | 'video'
 export type WorkspaceViewKey = ProjectStepKey | 'assets' | 'episodes'
@@ -14,7 +14,7 @@ export type WorkspaceLocationState = {
   returnStep?: ProjectStepKey | 'episodes'
 }
 
-// 有剧本走大纲；无剧本直接分镜（分集列表）
+// Nếu có kịch bản thì làm theo dàn ý; nếu không có kịch bản thì vào thẳng storyboard (danh sách tập)
 export function buildProjectSteps(hasScript: boolean): ProjectStepItem[] {
   const steps: Array<{ key: ProjectStepKey; label: string }> = hasScript
     ? [
@@ -37,7 +37,7 @@ export function isProjectStepKey(value: string | undefined): value is ProjectSte
   return value === 'outline' || value === 'storyboard' || value === 'video'
 }
 
-/** 旧 state activeStep=episodes 映射到分镜 */
+/** Trạng thái cũ activeStep=episodes ánh xạ tới bảng phân cảnh */
 export function normalizeWorkspaceStep(value: string | undefined): ProjectStepKey | 'assets' | null {
   if (value === 'assets') return 'assets'
   if (value === 'episodes' || value === 'storyboard' || value === 'video') {
@@ -56,7 +56,7 @@ export function getNextProjectStep(
   return steps[currentIndex + 1].key
 }
 
-/** 分镜 / 生成视频都进分集路由 */
+/** Tất cả các video được tạo/tạo kịch bản phân cảnh đều được chuyển sang định tuyến đa dạng */
 export function isEpisodesRouteStep(step: ProjectStepKey | string | undefined): boolean {
   return step === 'storyboard' || step === 'video' || step === 'episodes'
 }

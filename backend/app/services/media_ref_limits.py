@@ -1,13 +1,13 @@
-"""TokenFree 视频参考图张数上限（与漫剧分镜资产规则解耦）。"""
+"""TokenFree Giới hạn trên của số lượng hình ảnh tham chiếu video (tách rời khỏi quy tắc nội dung bảng phân cảnh truyện tranh)."""
 
 from __future__ import annotations
 
-# 下游插件硬上限：一次提交最多 9 张参考图
+# Giới hạn trên cứng cho các plug-in xuôi dòng: có thể gửi tối đa 9 hình ảnh tham chiếu cùng một lúc
 MAX_REFERENCE_IMAGES = 9
 
 
 def cap_url_list(urls: list[str] | None, *, limit: int = MAX_REFERENCE_IMAGES) -> list[str]:
-    """去重并截到上游可上传张数。"""
+    """Loại bỏ các ảnh trùng lặp và cắt bỏ số lượng ảnh có thể upload lên upstream."""
     out: list[str] = []
     seen: set[str] = set()
     for raw in urls or []:
@@ -22,7 +22,7 @@ def cap_url_list(urls: list[str] | None, *, limit: int = MAX_REFERENCE_IMAGES) -
 
 
 def subject_image_budget(*, has_style_board: bool = False, has_continuity: bool = False) -> int:
-    """主体参考图名额：总张数减去画风板与衔接尾帧。"""
+    """Số lượng ảnh tham khảo chính: tổng số ảnh trừ bảng kiểu và khung kết nối cuối cùng."""
     n = MAX_REFERENCE_IMAGES
     if has_style_board:
         n -= 1

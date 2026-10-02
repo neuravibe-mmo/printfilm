@@ -1,4 +1,4 @@
-/** 分集编辑：带分镜分段进度条的视频播放器（客户端顺序连播） */
+/** Chỉnh sửa tập: trình phát video có thanh tiến trình bảng phân cảnh (phát sóng tuần tự phía máy khách) */
 import { Download, Maximize, Minimize, MonitorPlay, Pause, Play, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
@@ -20,12 +20,12 @@ type Props = {
   playingFragmentId: number | null
   onPlayingFragmentChange: (fragmentId: number) => void
   aspectRatio: string
-  /** 预览历史版本时覆盖当前镜视频地址 */
+  /** Ghi đè địa chỉ video nhân bản hiện tại khi xem trước các phiên bản lịch sử */
   overrideVideoUrl?: string | null
   overridePosterUrl?: string | null
 }
 
-// 渲染带分镜分段进度条的视频播放器
+// Kết xuất trình phát video với thanh tiến trình phân đoạn bảng phân cảnh
 export function DramaFragmentSegmentedVideoPlayer({
   fragments,
   playingFragmentId,
@@ -35,45 +35,45 @@ export function DramaFragmentSegmentedVideoPlayer({
   overridePosterUrl = null,
 }: Props) {
   const { t } = useI18n()
-  // videoRef 视频元素引用
+  // tham chiếu phần tử video videoRef
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  // screenRef 预览画面容器（全屏目标）
+  // screenRef vùng chứa màn hình xem trước (mục tiêu toàn màn hình)
   const screenRef = useRef<HTMLDivElement | null>(null)
-  // trackRef 分段进度条容器引用
+  // trackRef tham chiếu vùng chứa thanh tiến trình được phân đoạn
   const trackRef = useRef<HTMLDivElement | null>(null)
-  // isSeeking 是否正在拖动进度条
+  // đang tìm kiếm Thanh tiến trình có đang được kéo hay không
   const isSeekingRef = useRef(false)
-  // autoLinkNextRef 是否自动衔接下一片段
+  // autoLinkNextRef Có tự động kết nối với phân đoạn tiếp theo hay không
   const autoLinkNextRef = useRef(true)
-  // playingFragmentIdRef 当前播放分镜 ID
+  // playFragmentIdRef ID đoạn phát hiện tại
   const playingFragmentIdRef = useRef(playingFragmentId)
-  // timelineSegmentsRef 时间轴分段缓存
+  // dòng thời gianSegmentsRef bộ đệm phân đoạn dòng thời gian
   const timelineSegmentsRef = useRef(buildEpisodeVideoTimelineSegments(fragments))
-  // shouldResumePlayRef 切换分镜后是否继续播放
+  // nênResumePlayRef Có nên tiếp tục chơi sau khi chuyển bảng phân cảnh hay không
   const shouldResumePlayRef = useRef(false)
-  // pendingSeekTimeRef 切换分镜后待跳转的本地时间
+  // đang chờ xử lýSeekTimeRef Giờ địa phương sẽ được nhảy sau khi chuyển bảng phân cảnh
   const pendingSeekTimeRef = useRef<number | null>(null)
-  // autoPlayAttemptedRef 当前视频是否已尝试自动播放
+  // autoPlayAttemptedRef Video hiện tại đã cố gắng phát tự động hay chưa
   const autoPlayAttemptedRef = useRef(false)
-  // playingSegmentRef 当前播放区间（供事件回调读取，避免轮询刷新 fragments 重绑事件）
+  // playSegmentRef phần phát hiện tại (để đọc lệnh gọi lại sự kiện, để tránh các đoạn làm mới thăm dò liên kết lại các sự kiện)
   const playingSegmentRef = useRef<DramaEpisodeVideoTimelineSegment | null>(null)
-  // prevPlayingFragmentIdRef 上次已处理的分镜切换
+  // prevPlayingFragmentIdRef Công tắc chuyển đổi bảng phân cảnh được xử lý cuối cùng
   const prevPlayingFragmentIdRef = useRef<number | null>(playingFragmentId)
-  // isPlaying 是否正在播放
+  // đang phát Có đang phát hay không
   const [isPlaying, setIsPlaying] = useState(false)
-  // globalCurrentTime 全局时间轴当前位置（秒）
+  // GlobalCurrentTime vị trí hiện tại của dòng thời gian toàn cầu (giây)
   const [globalCurrentTime, setGlobalCurrentTime] = useState(0)
-  // autoLinkNext 当前片段播完后自动播放下一片段
+  // autoLinkNext tự động phát đoạn tiếp theo sau khi phát đoạn hiện tại.
   const [autoLinkNext, setAutoLinkNext] = useState(true)
-  // muted 是否静音
+  // bị tắt tiếng Có tắt tiếng hay không
   const [muted, setMuted] = useState(false)
-  // isFullscreen 预览是否处于全屏
+  // isFullscreen Liệu bản xem trước có ở chế độ toàn màn hình hay không
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   playingFragmentIdRef.current = playingFragmentId
   autoLinkNextRef.current = autoLinkNext
 
-  // timelineSegments 分集全部分镜时间轴分段
+  // dòng thời gianPhân đoạn Tất cả các phân đoạn dòng thời gian của các tập
   const timelineSegments = useMemo(
     () => buildEpisodeVideoTimelineSegments(fragments),
     [fragments],
@@ -81,19 +81,19 @@ export function DramaFragmentSegmentedVideoPlayer({
 
   timelineSegmentsRef.current = timelineSegments
 
-  // totalDuration 分集时间轴总时长
+  // tổng thời lượng Tổng thời lượng của dòng thời gian của tập
   const totalDuration = useMemo(
     () => resolveEpisodeVideoTimelineTotalDuration(timelineSegments),
     [timelineSegments],
   )
 
-  // playingFragment 当前播放分镜
+  // đang phát Đoạn đoạn đang phát
   const playingFragment = useMemo(
     () => fragments.find((fragment) => fragment.id === playingFragmentId) ?? null,
     [fragments, playingFragmentId],
   )
 
-  // playingSegment 当前播放分镜在时间轴上的区间
+  // playSegment Khoảng thời gian trên dòng thời gian của bảng phân cảnh phát lại hiện tại
   const playingSegment = useMemo(
     () => timelineSegments.find((segment) => segment.fragmentId === playingFragmentId) ?? null,
     [playingFragmentId, timelineSegments],
@@ -101,23 +101,23 @@ export function DramaFragmentSegmentedVideoPlayer({
 
   playingSegmentRef.current = playingSegment
 
-  // videoUrl 当前分镜视频地址（可被历史版本预览覆盖）
+  // videoUrl địa chỉ video bảng phân cảnh hiện tại (có thể được ghi đè bằng bản xem trước phiên bản lịch sử)
   const videoUrl =
     overrideVideoUrl ||
     (playingFragment?.video ? resolveDramaMediaUrl(playingFragment.video) : null)
-  // posterUrl 当前分镜封面地址
+  // posterUrl địa chỉ bìa bảng phân cảnh hiện tại
   const posterUrl =
     overridePosterUrl ||
     (playingFragment?.cover ? resolveDramaMediaUrl(playingFragment.cover) : null)
-  // hasCurrentVideo 当前分镜是否可播放
+  // hasCurrentVideo Liệu có thể phát bảng phân cảnh hiện tại hay không
   const hasCurrentVideo = Boolean(videoUrl)
-  // hasAnyVideo 是否存在任一分镜视频
+  // hasAnyVideo Có video phân cảnh hay không
   const hasAnyVideo = timelineSegments.some((segment) => segment.hasVideo)
 
-  // ratioClass 画幅 CSS 类名
+  // rateClass Frame Tên lớp CSS
   const ratioClass = `ratio-${aspectRatio.replace(':', 'x')}`
 
-  // 切换播放或暂停
+  // Chuyển phát hoặc tạm dừng
   const handleTogglePlay = useCallback(() => {
     const video = videoRef.current
 
@@ -133,7 +133,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     video.pause()
   }, [hasCurrentVideo])
 
-  // 跳转到全局时间轴位置
+  // Chuyển đến vị trí dòng thời gian toàn cầu
   const seekToGlobalTime = useCallback(
     (globalTimeSec: number) => {
       const playback = resolveFragmentPlaybackFromGlobalTime(timelineSegments, globalTimeSec)
@@ -166,7 +166,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     [hasCurrentVideo, isPlaying, onPlayingFragmentChange, timelineSegments],
   )
 
-  // 根据点击位置跳转播放进度
+  // Chuyển tới tiến trình phát lại dựa trên vị trí nhấp chuột
   const seekByClientX = useCallback(
     (clientX: number) => {
       const track = trackRef.current
@@ -184,7 +184,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     [seekToGlobalTime, totalDuration],
   )
 
-  // 绑定视频事件（仅在当前视频地址变化时重置）
+  // Liên kết sự kiện video (chỉ đặt lại khi địa chỉ video hiện tại thay đổi)
   useEffect(() => {
     const video = videoRef.current
 
@@ -297,7 +297,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     }
   }, [onPlayingFragmentChange, videoUrl])
 
-  // 仅在用户切换分镜时重置到该分镜起点（生成轮询刷新 fragments 不应打断播放）
+  // Chỉ đặt lại về điểm bắt đầu của bảng phân cảnh khi người dùng chuyển bảng phân cảnh (việc tạo các đoạn làm mới thăm dò không được làm gián đoạn quá trình phát lại)
   useEffect(() => {
     if (playingFragmentId === prevPlayingFragmentIdRef.current) {
       return
@@ -335,7 +335,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     video.muted = muted
   }, [muted])
 
-  // 同步浏览器全屏状态
+  // Đồng bộ trạng thái toàn màn hình trình duyệt
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(document.fullscreenElement === screenRef.current)
@@ -345,7 +345,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
-  // 切换预览画面全屏
+  // Chuyển màn hình xem trước sang toàn màn hình
   const handleToggleFullscreen = useCallback(async () => {
     const screen = screenRef.current
 
@@ -361,11 +361,11 @@ export function DramaFragmentSegmentedVideoPlayer({
 
       await screen.requestFullscreen()
     } catch {
-      /* 浏览器可能拒绝全屏 */
+      /* Trình duyệt có thể từ chối toàn màn hình */
     }
   }, [hasCurrentVideo])
 
-  // 下载当前分镜视频
+  // Tải xuống video cốt truyện hiện tại
   const handleDownloadVideo = useCallback(() => {
     if (!videoUrl) {
       return
@@ -380,7 +380,7 @@ export function DramaFragmentSegmentedVideoPlayer({
     link.click()
   }, [videoUrl])
 
-  // playheadLeft 播放指针横向位置百分比
+  // playheadLeft Chơi phần trăm vị trí ngang của con trỏ
   const playheadLeft = totalDuration > 0 ? (globalCurrentTime / totalDuration) * 100 : 0
 
   return (

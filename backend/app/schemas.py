@@ -119,7 +119,7 @@ class ShotOut(BaseModel):
 
 
 class ShotReorderIn(BaseModel):
-    """按 id 顺序重排分镜号。"""
+    """Sắp xếp lại số bảng phân cảnh theo thứ tự id."""
 
     shot_ids: list[int] = Field(min_length=1)
 
@@ -296,7 +296,7 @@ class ProjectListOut(BaseModel):
 
 
 class AdminUsageBucketOut(BaseModel):
-    """按 capability / domain 聚合桶。"""
+    """Nhóm tổng hợp theo khả năng/miền."""
 
     key: str
     calls: int = 0
@@ -320,7 +320,7 @@ class AdminTopUserOut(BaseModel):
 
 
 class AdminUpstreamUsageDayOut(BaseModel):
-    """官方与本地上游成本对照（单日）。"""
+    """So sánh chi phí thượng nguồn chính thức và địa phương (trong một ngày)."""
 
     date: str
     local_cost_fen: int = 0
@@ -346,7 +346,7 @@ class AdminUpstreamUsageSyncOut(BaseModel):
 
 
 class AdminFinanceDailyRowOut(BaseModel):
-    """单日财务对照行。"""
+    """Dòng so sánh tài chính trong một ngày."""
 
     date: str
     charge_fen: int = 0
@@ -375,7 +375,7 @@ class AdminFinanceDailyOut(BaseModel):
 
 
 class AdminProjectUsageOut(BaseModel):
-    """项目级用量摘要。"""
+    """Tóm tắt mức sử dụng ở cấp dự án."""
 
     charge_fen: int = 0
     cost_fen: int = 0
@@ -388,7 +388,7 @@ class AdminProjectUsageOut(BaseModel):
 
 
 class AdminTaskBriefOut(BaseModel):
-    """关联任务简要行。"""
+    """Dòng ngắn gọn về các nhiệm vụ liên quan."""
 
     id: int
     domain: str

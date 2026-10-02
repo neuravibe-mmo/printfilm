@@ -1,4 +1,4 @@
-/** 登录/注册表单校验：跨浏览器统一提示，不依赖原生 email bubble。 */
+/** Xác minh biểu mẫu đăng nhập/đăng ký: lời nhắc thống nhất trên các trình duyệt, không dựa vào bong bóng email gốc. */
 export function isValidEmailInput(value: string): boolean {
   const trimmed = value.trim()
   if (!trimmed.includes('@')) return false

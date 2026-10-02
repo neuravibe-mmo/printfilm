@@ -1,4 +1,4 @@
-"""独立创作工具 API：/api/tools/*"""
+"""API công cụ soạn thảo độc lập: /api/tools/*"""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ IMAGE_TOOLS = {"t2i", "i2i", "i2p", "ecom"}
 VIDEO_TOOLS = {"t2v", "v2v"}
 
 
-# 提交独立工具生成（生图走统一任务平台；生视频返回 Seedance task_id 供轮询）
+# Gửi công cụ tạo công cụ độc lập (hình ảnh được tạo trên nền tảng tác vụ thống nhất; việc tạo video trả về Seedance task_id để bỏ phiếu)
 @router.post("/run", response_model=ToolRunOut)
 async def run_tool(
     tool_id: str = Form(...),
@@ -127,7 +127,7 @@ async def run_tool(
     return ToolRunOut.model_validate(data)
 
 
-# 查询工具异步任务（生图任务平台 / 生视频 Seedance），并回写创作记录
+# Các tác vụ không đồng bộ của công cụ truy vấn (nền tảng tác vụ tạo hình ảnh / Seedance tạo video) và ghi lại các bản ghi tạo
 @router.get("/tasks/{task_id}", response_model=ToolTaskOut)
 async def get_tool_task(
     task_id: str,
@@ -143,8 +143,8 @@ async def get_tool_task(
         )
     ).scalar_one_or_none()
     billing_task_id: int | None = None
-    # 本地无归属记录即拒绝：上游 task_id 可被持有者之外的人猜测传递，
-    # 不能在没有归属凭据时代理查上游（视频 URL 会被拖走）。
+    # Nếu không có hồ sơ quyền sở hữu cục bộ, nó sẽ bị từ chối: task_id ngược dòng có thể được đoán và chuyển bởi những người không phải là chủ sở hữu.
+    # Không thể truy vấn ngược dòng mà không có thông tin xác thực ghi công (URL video sẽ được kéo).
     if not row:
         raise HTTPException(status_code=404, detail="任务不存在")
     if isinstance(row.params, dict):
@@ -174,7 +174,7 @@ async def get_tool_task(
     return ToolTaskOut.model_validate(data)
 
 
-# 把 ORM 记录转成列表/详情项（时间用 ISO）
+# Chuyển đổi bản ghi ORM thành danh sách/chi tiết (ISO được sử dụng cho thời gian)
 def _record_out(row: ToolRun) -> ToolRunRecordOut:
     created = row.created_at.isoformat() if row.created_at else ""
     return ToolRunRecordOut(
@@ -192,7 +192,7 @@ def _record_out(row: ToolRun) -> ToolRunRecordOut:
     )
 
 
-# 个人中心：当前用户的工具创作记录（服务端分页）
+# Trung tâm cá nhân: Bản ghi tạo công cụ của người dùng hiện tại (phân trang phía máy chủ)
 @router.get("/runs", response_model=ToolRunListOut)
 async def list_runs(
     page: int = Query(1, ge=1),
@@ -210,7 +210,7 @@ async def list_runs(
     )
 
 
-# 个人中心：单条创作详情（含 OSS 结果地址）
+# Trung tâm cá nhân: Chi tiết tạo đơn lẻ (bao gồm địa chỉ kết quả OSS)
 @router.get("/runs/{run_id}", response_model=ToolRunRecordOut)
 async def get_run(
     run_id: int,

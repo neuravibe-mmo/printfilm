@@ -21,7 +21,7 @@ type SettingsSaveContextValue = {
 
 const SettingsSaveContext = createContext<SettingsSaveContextValue | null>(null);
 
-// 设置页：子 Tab 注册保存动作，页头渲染统一「保存」按钮
+// Trang cài đặt: Tab phụ đăng ký hành động lưu và tiêu đề hiển thị nút "Lưu" thống nhất
 export function SettingsSaveProvider({ children }: { children: ReactNode }) {
   const [action, setAction] = useState<SettingsSaveAction | null>(null);
   const registerSave = useCallback((next: SettingsSaveAction | null) => {
@@ -33,7 +33,7 @@ export function SettingsSaveProvider({ children }: { children: ReactNode }) {
         prev.saving === next.saving &&
         (prev.label ?? "保存") === (next.label ?? "保存")
       ) {
-        // 同步最新 onSave，避免闭包过期；不触发无意义重渲染依赖
+        // Đồng bộ hóa onSave mới nhất để tránh hết hạn đóng; không kích hoạt các phụ thuộc kết xuất lại vô nghĩa
         prev.onSave = next.onSave;
         return prev;
       }
@@ -52,7 +52,7 @@ export function useSettingsSaveSlot() {
   return ctx;
 }
 
-// Tab 挂载时注册保存；卸载时清空
+// Tab Đăng ký và lưu khi gắn kết; rõ ràng khi gỡ cài đặt
 export function useRegisterSettingsSave(action: SettingsSaveAction | null) {
   const { registerSave } = useSettingsSaveSlot();
   useEffect(() => {

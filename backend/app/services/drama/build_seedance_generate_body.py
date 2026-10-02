@@ -1,4 +1,4 @@
-"""组装漫剧分镜提交 Seedance 的多模态请求体。"""
+"""Tập hợp nội dung yêu cầu đa phương thức để gửi bảng phân cảnh truyện tranh cho Seedance."""
 
 from __future__ import annotations
 
@@ -30,15 +30,15 @@ from app.services.seedance_segments import (
 )
 
 ASSET_MENTION_TOKEN_PATTERN = re.compile(r"@asset:(\d+)")
-# 仅压缩行内空白，保留换行以便 Seedance 按时间轴段落演绎
+# Chỉ nén khoảng trắng trong dòng và giữ lại các ngắt dòng để Seedance có thể thực hiện theo các đoạn dòng thời gian
 INLINE_WHITESPACE_PATTERN = re.compile(r"[^\S\n]+")
 
 SEEDANCE_VISUAL_STYLE_SECTION_INTRO = (
     "【Ràng buộc bắt buộc: Phong cách hình ảnh video / 强制约束：视频画面风格】Toàn bộ hình ảnh video phải tuân thủ nghiêm ngặt mô tả phong cách sau, "
     "nghiêm cấm đi chệch hướng, làm suy yếu hoặc pha trộn phong cách nghệ thuật và thẩm mỹ máy quay khác:"
 )
-# 音色难控：暂不提交 reference_audio、不写音色约束；口播由 Seedance generate_audio 自发挥。
-# 恢复绑定/提交时改回 True。
+# Âm sắc khó kiểm soát: reference_audio sẽ không được gửi và các ràng buộc về âm sắc sẽ không được viết vào lúc này; việc phát sóng bằng miệng được thực hiện bởi Seedance generate_audio.
+# Đã thay đổi về True khi khôi phục ràng buộc/cam kết.
 SEEDANCE_ATTACH_REFERENCE_AUDIO = False
 SEEDANCE_CHARACTER_VOICE_SECTION_HEADER = (
     "【Ràng buộc bắt buộc: Giọng nhân vật / 强制约束：角色音色】Giọng nói, ngữ điệu, nhịp điệu và chất âm của các nhân vật sau phải khớp chính xác với âm thanh tham chiếu tương ứng, "
@@ -70,17 +70,17 @@ class BuildSeedanceGenerateBodyInput(TypedDict, total=False):
     resolution: str | None
     video_style_id: str | None
     duration_fallback: int | None
-    # 上一镜尾帧公网/本地 URL；有参考媒体时作 reference_image（不可与 first_frame 混用）
+    # URL công khai/cục bộ của khung cuối cùng; khi có phương tiện tham chiếu, hãy sử dụng nó làm reference_image (không thể trộn lẫn với first_frame)
     continuity_first_frame_url: str | None
-    # 画风板公网 URL（角色/场景图之后、衔接尾帧之前）
+    # URL trang web công khai của bảng định kiểu (sau biểu đồ nhân vật/cảnh và trước khi kết nối với khung cuối cùng)
     style_board_url: str | None
-    # True=模型烧录字幕；False=后期叠字（禁止画面内字幕）
+    # True=Đốt mô hình phụ đề; Sai=Chồng chồng sau (cấm phụ đề trên màn hình)
     burn_subtitles: bool
-    # True=角色身旁人物介绍叠字；False=禁止人物介绍字卡
+    # True=Thẻ giới thiệu nhân vật có các từ trùng nhau đều bị cấm; Sai=Thẻ từ giới thiệu nhân vật bị cấm
     character_intro: bool
 
 
-# 兼容历史布尔 / 字符串，解析分集 params 开关
+# Tương thích với lịch sử Boolean/chuỗi, chuyển đổi thông số đa dạng phân tích cú pháp
 def _resolve_episode_bool_flag(
     params: dict[str, Any] | None,
     *,
@@ -106,7 +106,7 @@ def _resolve_episode_bool_flag(
     return bool(enabled)
 
 
-# 从分集 params 解析是否由模型烧录字幕（默认后期拼接 → False）
+# Phân tích cú pháp từ các thông số của tập xem phụ đề có bị mô hình ghi hay không (ghép nối sau mặc định → Sai)
 def resolve_episode_burn_subtitles(params: dict[str, Any] | None) -> bool:
     return _resolve_episode_bool_flag(
         params,
@@ -118,7 +118,7 @@ def resolve_episode_burn_subtitles(params: dict[str, Any] | None) -> bool:
     )
 
 
-# 从分集 params 解析是否注入人物介绍叠字（默认关闭 → False）
+# Phân tích xem có chèn phần giới thiệu nhân vật trùng lặp từ thông số tập hay không (mặc định là tắt → Sai)
 def resolve_episode_character_intro(params: dict[str, Any] | None) -> bool:
     return _resolve_episode_bool_flag(
         params,
@@ -144,7 +144,7 @@ class SeedanceReferenceCatalog:
     audio_index_by_asset_id: dict[int, int] = field(default_factory=dict)
 
 
-# 将 ORM 资产转为 Seedance 引用 payload
+# Chuyển đổi nội dung ORM thành tải trọng tham chiếu Seedance
 def drama_asset_to_payload(asset: DramaAsset) -> dict[str, Any]:
     return {
         "id": asset.id,
@@ -157,7 +157,7 @@ def drama_asset_to_payload(asset: DramaAsset) -> dict[str, Any]:
     }
 
 
-# 读取角色绑定的参考音频 URL（兼容 voiceAudio 与 canvas.voiceAudio）
+# Đọc URL âm thanh tham chiếu của liên kết ký tự (tương thích với voiceAudio và canvas.voiceAudio)
 def read_asset_voice_audio_url(params: Any) -> str | None:
     if not isinstance(params, dict):
         return None
@@ -180,7 +180,7 @@ def read_asset_voice_audio_url(params: Any) -> str | None:
     return None
 
 
-# 解析资产可用的图片 URL
+# Phân tích URL hình ảnh có sẵn cho nội dung
 def resolve_reference_image_url(asset: dict[str, Any]) -> str | None:
     cover = (asset.get("cover") or "").strip()
     url = (asset.get("url") or "").strip()
@@ -193,7 +193,7 @@ def resolve_reference_image_url(asset: dict[str, Any]) -> str | None:
     return cover or None
 
 
-# 解析写入提示词的资产名称
+# Phân tích tên tài sản được viết trong từ nhắc
 def resolve_asset_prompt_name(asset: dict[str, Any], fallback: str) -> str:
     params = asset.get("params") if isinstance(asset.get("params"), dict) else {}
     entity = ""
@@ -219,7 +219,7 @@ def resolve_other_asset_prompt_name(asset: dict[str, Any]) -> str:
 
 
 def _prepare_voice_script(content: str | None) -> str:
-    """提交前脚本：拆舞台指示、纠正空镜误标、角色 VO 改对白。"""
+    """Kịch bản trước khi gửi: bỏ hướng dẫn sân khấu, sửa các cảnh trống, lời thoại của nhân vật thay đổi."""
     normalized = rewrite_dialogue_action_lines(content or "")
     return rewrite_misclassified_visual_voice_lines(normalized)
 
@@ -228,7 +228,7 @@ def collect_speaking_character_names(
     script: str,
     reference: list[dict[str, Any]] | None,
 ) -> set[str]:
-    """从对白/旁白/独白行收集本镜开口的角色名（含 @asset 引用）。"""
+    """Thu thập tên nhân vật (bao gồm cả tài liệu tham khảo @asset) của phần mở đầu của cảnh này từ các dòng đối thoại/tường thuật/độc thoại."""
     names_by_id: dict[int, str] = {}
     aliases: list[str] = []
     for asset in reference or []:
@@ -270,7 +270,7 @@ def _should_attach_reference_audio(
     speaking: set[str],
     has_narration: bool,
 ) -> bool:
-    """未开口角色不挂音色；无第三人称旁白则不挂旁白音色。"""
+    """Nhân vật chưa nói sẽ không có giọng nói; nếu không có người thứ ba kể thì giọng kể sẽ không có âm điệu."""
     if not filter_audio:
         return True
     kind = asset.get("type")
@@ -283,7 +283,7 @@ def _should_attach_reference_audio(
     return True
 
 
-# 从引用资产构建参考图/音频目录
+# Xây dựng danh mục hình ảnh/âm thanh tham chiếu từ nội dung tham chiếu
 def build_seedance_reference_catalog(
     reference: list[dict[str, Any]] | None,
     script: str | None = None,
@@ -306,7 +306,7 @@ def build_seedance_reference_catalog(
             seen_image_asset_ids.add(asset_id)
             catalog.images.append(SeedanceReferenceFile(asset_id=asset_id, url=image_url))
 
-        # 已绑定的试听暂不挂进 content[]，避免 reference_audio 抢模型口播
+        # Hiện tại, buổi thử giọng bị ràng buộc sẽ không được liên kết với nội dung[] để tránh reference_audio lấy mô hình để phát sóng bằng miệng.
         if SEEDANCE_ATTACH_REFERENCE_AUDIO and asset.get("type") in {"character", "narration"}:
             if not _should_attach_reference_audio(
                 asset,
@@ -337,7 +337,7 @@ _KIND_ZH = {
 }
 
 
-# 按 content[] 下标生成可读标签（与 build_seedance_content_items 顺序一致）
+# Tạo các thẻ có thể đọc được theo chỉ số dưới content[] (cùng thứ tự với build_seedance_content_items)
 def describe_seedance_content_slots(
     reference: list[dict[str, Any]] | None,
     continuity_first_frame_url: str | None = None,
@@ -375,7 +375,7 @@ def describe_seedance_content_slots(
     return labels
 
 
-# 正文中的 @asset 替换文案
+# @bản sao thay thế nội dung trong văn bản
 def format_body_asset_mention(name: str, image_index: int | None) -> str:
     if image_index is not None:
         return f"{name}（参考图{image_index}）"
@@ -383,7 +383,7 @@ def format_body_asset_mention(name: str, image_index: int | None) -> str:
 
 
 def _asset_prompt_name_for_mention(asset: dict[str, Any] | None) -> str:
-    """按资产类型解析写入提示词的显示名。"""
+    """Phân tích cú pháp và viết tên hiển thị của từ nhắc theo loại nội dung."""
     if not asset:
         return ""
     category = asset.get("type")
@@ -398,7 +398,7 @@ _NAME_TOKEN_BOUNDARIES = frozenset(" \t，,、；;：:。．.!！?？）)]】」
 
 
 def _name_is_token_suffix(text: str, name: str) -> bool:
-    """text 是否以独立的 name 结尾（避免 大禹 吃掉 禹）。"""
+    """Liệu văn bản có kết thúc bằng một tên độc lập hay không (để tránh Dayu ăn Yu)."""
     if not name or not text.endswith(name):
         return False
     prefix = text[: -len(name)]
@@ -406,14 +406,14 @@ def _name_is_token_suffix(text: str, name: str) -> bool:
 
 
 def _name_is_token_prefix(text: str, name: str) -> bool:
-    """text 是否以独立的 name 开头（避免 禹王 被当成 禹）。"""
+    """Liệu văn bản có bắt đầu bằng một tên độc lập hay không (để tránh việc Vua Yu bị coi là Yu)."""
     if not name or not text.startswith(name):
         return False
     rest = text[len(name) :]
     return (not rest) or rest[0] in _NAME_TOKEN_BOUNDARIES
 
 
-# 将单个 @asset 占位符替换为正文描述
+# Thay thế phần giữ chỗ @asset bằng phần mô tả nội dung
 def replace_asset_mention_token(
     asset_id: int,
     asset_by_id: dict[int, dict[str, Any]],
@@ -432,7 +432,7 @@ def replace_asset_mentions_without_duplicate_names(
     asset_by_id: dict[int, dict[str, Any]],
     catalog: SeedanceReferenceCatalog,
 ) -> str:
-    """把 @asset:id 换成「名称（参考图N）」，吞掉前后已经写过的同名。"""
+    """Thay thế @asset:id bằng "name (tham khảo Hình N)" và nuốt cùng tên đã được viết trước và sau."""
     pieces: list[str] = []
     pos = 0
     for match in ASSET_MENTION_TOKEN_PATTERN.finditer(text):
@@ -458,7 +458,7 @@ def replace_asset_mentions_without_duplicate_names(
     return "".join(pieces)
 
 
-# 组装画面风格声明块；有画风板时强调只借气质、禁止抄主体
+# Lắp ráp khối tuyên bố kiểu hình ảnh; khi có bảng phong cách thì nhấn mạnh chỉ mượn khí chất và cấm sao chép đề tài.
 def build_visual_style_section(
     video_style_id: str | None,
     *,
@@ -497,7 +497,7 @@ def build_reference_index_section(
     return "\n".join([header, *lines])
 
 
-# 将分镜脚本转为正文提示词
+# Chuyển bảng phân cảnh thành lời nhắc bằng văn bản
 def _normalize_body_whitespace(text: str) -> str:
     lines = [
         INLINE_WHITESPACE_PATTERN.sub(" ", raw).strip()
@@ -511,7 +511,7 @@ def build_seedance_body_text(
     reference: list[dict[str, Any]] | None,
     catalog: SeedanceReferenceCatalog,
 ) -> str:
-    # 拆分对白内舞台指示，并纠正误标为对白/旁白的空镜画面行
+    # Tách hướng sân khấu trong đoạn hội thoại và sửa những dòng cảnh trống bị gắn nhãn sai thành đoạn hội thoại/tường thuật
     normalized = rewrite_dialogue_action_lines(content or "")
     normalized = rewrite_misclassified_visual_voice_lines(normalized)
     asset_by_id = {int(asset["id"]): asset for asset in (reference or [])}
@@ -530,11 +530,11 @@ def build_seedance_prompt_text(
     character_intro: bool = True,
     has_style_board: bool = False,
 ) -> str:
-    # 提交前拆分对白舞台指示并纠正空镜误标，保证强制约束与正文一致
+    # Tách hướng dẫn giai đoạn hội thoại trước khi gửi và sửa lỗi gắn nhãn sai cho các cảnh trống để đảm bảo các ràng buộc bắt buộc nhất quán với văn bản
     normalized = rewrite_dialogue_action_lines(content or "")
     normalized = rewrite_misclassified_visual_voice_lines(normalized)
     if not burn_subtitles:
-        # 后期模式：去掉字幕 cue /「同步字幕」前缀，避免模型仍按字烧屏
+        # Chế độ hậu kỳ: Xóa tiền tố phụ đề/"phụ đề được đồng bộ hóa" để ngăn mô hình vẫn làm cháy màn hình có chữ.
         normalized = strip_model_burn_subtitle_cues(normalized)
     if not character_intro:
         normalized = strip_character_intro_cues(normalized)
@@ -597,7 +597,7 @@ def build_seedance_prompt_text(
     return "\n\n".join(section for section in sections if section)
 
 
-# 从引用资产组装 Seedance content 多模态数组
+# Tập hợp mảng đa phương thức nội dung Seedance từ nội dung tham chiếu
 def build_seedance_content_items(
     content: str | None,
     reference: list[dict[str, Any]] | None,
@@ -609,7 +609,7 @@ def build_seedance_content_items(
     style_board_url: str | None = None,
 ) -> list[dict[str, Any]]:
     catalog = build_seedance_reference_catalog(reference, script=content)
-    # 无角色/场景图时不挂画风板，避免板子变成唯一画面参考
+    # Không treo bảng kiểu khi không có hình ảnh nhân vật/cảnh để tránh việc bảng trở thành hình ảnh tham khảo duy nhất
     board = (style_board_url or "").strip() if catalog.images else ""
     prompt_text = build_seedance_prompt_text(
         content,
@@ -626,7 +626,7 @@ def build_seedance_content_items(
     has_reference_media = bool(catalog.images or catalog.audios)
 
     if continuity and prompt_text:
-        # Seedance：first/last_frame 不能与 reference_* 混用；有角色/场景参考时改挂 reference_image
+        # Seedance: không thể trộn lẫn first/last_frame với reference_*; thay vào đó, khi có tham chiếu nhân vật/cảnh, hãy treo reference_image
         if has_reference_media:
             prompt_text = (
                 "【Ràng buộc bắt buộc: Nối tiếp cảnh quay / 强制约束：镜头衔接】Đính kèm thêm khung hình cuối của cảnh trước làm ảnh tham chiếu (ảnh cuối cùng trong chuỗi ảnh tham chiếu). "
@@ -668,7 +668,7 @@ def build_seedance_content_items(
                 }
             )
         else:
-            # 无参考媒体时可用 first_frame，并在外层省略 ratio
+            # first_frame có thể được sử dụng khi không có phương tiện tham chiếu và tỷ lệ bị bỏ qua ở lớp bên ngoài
             items.append(
                 {
                     "type": "image_url",
@@ -698,7 +698,7 @@ def resolve_seedance_model_endpoint(model_id: str | None) -> str:
 
 
 def resolve_seedance_ratio(aspect_ratio: str | None) -> str:
-    # 与漫剧默认竖屏一致；缺失时不得回落到横屏 16:9
+    # Phù hợp với màn hình dọc mặc định trong truyện tranh; thiếu thì không quay về màn hình ngang 16:9 được
     return (aspect_ratio or "9:16").strip() or "9:16"
 
 
@@ -706,14 +706,14 @@ def resolve_seedance_resolution(resolution: str | None) -> str:
     return (resolution or "480p").strip() or "480p"
 
 
-# 将分镜参数转为 Seedance 请求体
+# Chuyển đổi các tham số của bảng phân cảnh thành nội dung yêu cầu Seedance
 def build_seedance_generate_body(input_params: BuildSeedanceGenerateBodyInput) -> dict[str, Any]:
     content = input_params.get("content")
     fallback = int(input_params.get("duration_fallback") or 8)
     continuity = (input_params.get("continuity_first_frame_url") or "").strip() or None
     reference = input_params.get("reference")
     catalog = build_seedance_reference_catalog(reference, script=content)
-    # 仅「纯首帧、无参考媒体」时省略 ratio；混用参考时必须保留 ratio、且尾帧用 reference_image
+    # Bỏ qua tỷ lệ khi chỉ "khung hình đầu tiên thuần túy, không có phương tiện tham chiếu"; tỷ lệ phải được giữ lại khi sử dụng tham chiếu hỗn hợp và tham chiếu_image được sử dụng cho khung cuối cùng
     style_board_url = (input_params.get("style_board_url") or "").strip() or None
     if not catalog.images:
         style_board_url = None
@@ -739,7 +739,7 @@ def build_seedance_generate_body(input_params: BuildSeedanceGenerateBodyInput) -
         "duration": resolve_seedance_duration_from_content(content, fallback=fallback),
         "resolution": resolve_seedance_resolution(input_params.get("resolution")),
         "watermark": False,
-        # Seedance 原生配音；字幕/人物介绍叠字由对应开关控制提示词
+        # Bản lồng tiếng gốc của Seedance; các từ chồng chéo giới thiệu phụ đề/nhân vật được điều khiển bằng các công tắc tương ứng.
         "generate_audio": True,
         "return_last_frame": True,
     }

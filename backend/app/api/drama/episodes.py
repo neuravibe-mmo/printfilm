@@ -116,7 +116,7 @@ def _episode_out(ep: DramaEpisode) -> DramaEpisodeOut:
 
 
 def _expand_episode_task_items(active_tasks: list) -> list[dict]:
-    """把平台任务展开成分集页可直接消费的任务摘要。"""
+    """Mở rộng các nhiệm vụ nền tảng thành các bản tóm tắt nhiệm vụ mà các trang bộ sưu tập có thể sử dụng trực tiếp."""
     items: list[dict] = []
     for task in active_tasks:
         target_fragments = [
@@ -174,7 +174,7 @@ def _expand_episode_task_items(active_tasks: list) -> list[dict]:
     return items
 
 
-# 给分集挂上统一任务中心活动任务，便于查询侧逐步切换
+# Đính kèm các nhiệm vụ hoạt động thống nhất của trung tâm tác vụ vào các tập để tạo điều kiện chuyển đổi dần dần ở phía truy vấn
 async def _episode_out_with_tasks(
     db: AsyncSession,
     user: User,
@@ -185,7 +185,7 @@ async def _episode_out_with_tasks(
         user.id,
         drama_project_id=ep.project_id,
     )
-    # 单集详情只挂本集任务；勿把全项目活跃任务混入，否则其他集生成中会误锁「重新分镜」
+    # Chi tiết một tập chỉ bao gồm các nhiệm vụ của tập này; không trộn lẫn các nhiệm vụ đang hoạt động của toàn bộ dự án, nếu không "bảng phân cảnh lại" sẽ vô tình bị khóa trong quá trình tạo các tập khác.
     ep.active_tasks = _expand_episode_task_items(
         [task for task in active_tasks if int(task.episode_id or 0) == int(ep.id)]
     )
@@ -201,7 +201,7 @@ async def list_episodes(
     await get_owned_drama_project(db, project_id, user)
     from app.services.drama.seed import merge_duplicate_episodes_by_number
 
-    # 打开分镜页时顺手合并同号重复行
+    # Hợp nhất các dòng trùng lặp có cùng số khi mở bảng phân cảnh.
     merged = await merge_duplicate_episodes_by_number(db, project_id)
     if merged:
         await db.commit()
@@ -283,7 +283,7 @@ async def confirm_episode_from_script(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DramaConfirmEpisodeOut:
-    """确认一集剧本：增量抽取资产并只切该集分镜。"""
+    """Xác nhận kịch bản của một tập: trích xuất nội dung dần dần và chỉ cắt bảng phân cảnh cho tập đó."""
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     if not project.script:
         raise HTTPException(status_code=400, detail="缺少剧本")
@@ -424,14 +424,14 @@ async def plan_episode_fragments(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DramaEpisodeOut:
-    # 入队单集 LLM 分镜；前端轮询 episode.params.fragment_plan_status
+    # Tham gia nhóm để xây dựng bảng phân cảnh LLM một tập; tập bỏ phiếu phía trước.params.fragment_plan_status
     req = body or DramaPlanFragmentsRequest()
     ep = await get_owned_episode(db, episode_id, user)
     await get_owned_drama_project(db, ep.project_id, user)
 
     params = dict(ep.params or {})
     existing = str(params.get("fragment_plan_status") or "")
-    # force 时允许重入队（避免旧任务异常后卡在 generating）
+    # Cho phép vào lại hàng đợi khi sử dụng vũ lực (để tránh các tác vụ cũ bị kẹt khi tạo sau ngoại lệ)
     if existing == "generating" and not req.force:
         logger.info("单集分镜已在进行中 episode_id=%s", episode_id)
         return await _episode_out_with_tasks(db, user, ep)
@@ -439,7 +439,7 @@ async def plan_episode_fragments(
         logger.warning("单集分镜强制重入队 episode_id=%s prev_status=generating", episode_id)
 
     if not req.force:
-        # 非 force：有保护分镜则拒绝
+        # Non-force: Từ chối nếu có bảng phân cảnh được bảo vệ
         protected = any(
             (f.video or "").strip()
             or (isinstance(f.params, dict) and f.params.get("user_edited"))
@@ -496,7 +496,7 @@ async def plan_episode_fragments(
         req.force,
         task.id,
     )
-    # 再取一次带 fragments 的 episode
+    # Quay thêm một tập nữa có phân đoạn
     ep = await get_owned_episode(db, episode_id, user)
     return await _episode_out_with_tasks(db, user, ep)
 
@@ -508,7 +508,7 @@ async def save_fragments(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DramaEpisodeOut:
-    """按 id 更新已有分镜、新增无 id 项、删除未提交项；删除时作废旧视频任务，避免 ID 轮转导致上下文丢失。"""
+    """Cập nhật bảng phân cảnh hiện có theo ID, thêm các mục không có ID và xóa các mục chưa gửi; vô hiệu hóa các tác vụ video cũ khi xóa để tránh mất ngữ cảnh do xoay ID."""
     ep = await get_owned_episode(db, episode_id, user)
     existing = {int(f.id): f for f in (ep.fragments or [])}
     keep_ids: set[int] = set()
@@ -517,7 +517,7 @@ async def save_fragments(
         item_id = int(item.id) if item.id else 0
         frag = existing.get(item_id) if item_id > 0 else None
         if frag is None:
-            # 先挂上空集合，flush 后不要再 lazy load asset_references
+            # Hãy treo bộ sưu tập trống trước và đừng lười tải assets_references sau khi xóa
             frag = DramaEpisodeFragment(episode_id=ep.id)
             frag.asset_references = []
             ep.fragments.append(frag)
@@ -571,7 +571,7 @@ async def activate_video_version(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """将分镜历史成片版本切换为当前预览/导出所用视频。"""
+    """Chuyển phiên bản hoàn thiện lịch sử của bảng phân cảnh sang video được sử dụng để xem trước/xuất hiện tại."""
     result = await db.execute(
         select(DramaEpisodeFragment).where(DramaEpisodeFragment.id == fragment_id)
     )
@@ -598,7 +598,7 @@ async def generate_episode(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    # 入队统一任务平台，前端用 generate_status 轮询
+    # Tham gia nền tảng tác vụ hợp nhất và sử dụng generate_status để thăm dò giao diện người dùng
     ep = await get_owned_episode(db, episode_id, user)
     project = await get_owned_drama_project(db, ep.project_id, user)
     all_frags = await load_episode_fragments(db, episode_id)
@@ -615,7 +615,7 @@ async def generate_episode(
             detail="没有可生成的分镜（保存后分镜已更新，请再点一次生成）",
         )
 
-    # 已在排队/生成的分镜跳过；其余按镜序入队（衔接时后一镜等上一镜尾帧）
+    # Các bảng phân cảnh đã được xếp hàng/được tạo sẽ bị bỏ qua; phần còn lại được xếp theo thứ tự ảnh (khi kết nối, ảnh tiếp theo sẽ đợi khung hình cuối cùng của ảnh trước)
     idle_frags = [
         f
         for f in frags
@@ -628,7 +628,7 @@ async def generate_episode(
             detail="所选分镜正在生成，请等待完成后再试",
         )
 
-    # 尾帧衔接：上一镜在生成/排队时可先入队本镜，由任务队列按镜序等待；未开上一镜则仍拒绝
+    # Kết nối khung hình cuối cùng: Ống kính trước có thể được xếp hàng đầu tiên khi tạo/xếp hàng ống kính này và hàng đợi tác vụ sẽ đợi theo thứ tự ống kính; nếu ống kính trước đó không được mở, nó vẫn sẽ bị từ chối.
     if project_link_last_frame_enabled(project):
         all_sorted = sorted(all_frags, key=lambda f: (int(f.sort_order or 0), int(f.id or 0)))
         index_by_id = {int(f.id): i for i, f in enumerate(all_sorted) if f.id is not None}
@@ -654,10 +654,10 @@ async def generate_episode(
                     detail="已开启尾帧衔接：请先生成上一镜并等待尾帧就绪后，再点本镜生成",
                 )
 
-    # 清除进程内「本集已取消」标记，避免旧取消态把新入队任务立刻作废
+    # Xóa dấu "Tập này đã bị hủy" trong quy trình để ngăn trạng thái hủy cũ vô hiệu hóa ngay lập tức các tác vụ mới được thêm vào.
     clear_episode_video_cancelled(episode_id)
 
-    # 全部入队；超过单用户并发上限的镜保持 pending 排队，由调度器按空位激活
+    # Tất cả đều đang xếp hàng; các máy nhân bản vượt quá giới hạn đồng thời của một người dùng vẫn ở trong hàng chờ chờ xử lý và được bộ lập lịch kích hoạt theo các vị trí có sẵn.
     limit = max(1, int(get_settings().drama_user_video_job_limit or 12))
     inflight = await count_user_inflight_fragment_video_tasks(db, user.id)
     activate_slots = max(0, limit - inflight)
@@ -668,7 +668,7 @@ async def generate_episode(
     queued_at = datetime.now(UTC).isoformat()
     for f in idle_frags:
         params = dict(f.params or {})
-        # 用户主动点生成：清零内部重试计数（上限只约束同一次任务内的自动重试）
+        # Tạo điểm sáng kiến của người dùng: xóa số lần thử lại nội bộ (giới hạn trên chỉ hạn chế số lần thử lại tự động trong cùng một tác vụ)
         params.pop("generation_attempts", None)
         params["generation"] = {"status": "queued", "queued_at": queued_at, "message": "已入队"}
         f.params = params
@@ -676,7 +676,7 @@ async def generate_episode(
     created_tasks: list[int] = []
     deferred_count = 0
     for index, f in enumerate(idle_frags):
-        # 串行：先入队再由 rebalance 按镜序激活；并行：仅前 activate_slots 镜立即执行
+        # Serial: xếp hàng đầu tiên và sau đó được kích hoạt bằng cách tái cân bằng theo thứ tự phản chiếu; song song: chỉ bản sao activate_slots đầu tiên được thực thi ngay lập tức
         if sequential:
             defer_activation = True
         else:
@@ -770,7 +770,7 @@ async def generate_status(
     )
     episode_tasks = [task for task in active_tasks if task.episode_id == episode_id]
     await reconcile_applied_fragment_video_tasks(db, episode_tasks)
-    # 补完成后刷新本集仍活跃任务，避免前端继续看到僵尸 awaiting_poll
+    # Sau khi bổ sung xong, hãy làm mới tập này và vẫn còn các nhiệm vụ đang hoạt động để ngăn chặn giao diện người dùng tiếp tục thấy zombie đang chờ_poll
     active_tasks = await list_active_tasks_for_owner(
         db,
         user.id,
@@ -782,7 +782,7 @@ async def generate_status(
         list(ep.fragments or []),
         collect_active_fragment_ids_from_tasks(episode_tasks),
     )
-    # 附带本集近期终态分镜视频任务，供队列点开详情（含失败原因）
+    # Đính kèm là nhiệm vụ video bảng phân cảnh cuối cùng gần đây của tập này để người xếp hàng nhấp vào để biết chi tiết (bao gồm cả lý do thất bại)
     from app.models_tasks import TaskRun
     from app.services.tasks.service import TERMINAL_TASK_STATUSES, task_detail_options
 
@@ -806,7 +806,7 @@ async def generate_status(
         .unique()
         .all()
     )
-    # 分镜 params 可能仍停在 queued，而任务已 awaiting_poll：用任务态校正对外状态
+    # Các thông số của bảng phân cảnh vẫn có thể dừng trong hàng đợi, nhưng tác vụ đang chờ_poll: sử dụng trạng thái tác vụ để sửa trạng thái bên ngoài
     task_status_by_frag: dict[int, str] = {}
     for task in episode_tasks:
         if getattr(task, "task_type", None) != "fragment_video":
@@ -856,7 +856,7 @@ async def compose_episode(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """统一画幅重编码后拼接本集分镜，供浏览器无损失败时回退。"""
+    """Các storyboard của tập này được ghép lại sau khi mã hóa lại theo định dạng thống nhất, để trình duyệt có thể quay lại mà không bị mất."""
     from app.services.drama.episode_compose import compose_episode_video, load_episode_for_compose
 
     ep = await get_owned_episode(db, episode_id, user)
@@ -886,7 +886,7 @@ async def cancel_generate_episode(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """取消本集全部分镜视频生成（排队/进行中）。"""
+    """Hủy quá trình tạo tất cả video phản chiếu cho tập này (đang xếp hàng/đang xử lý)."""
     ep = await get_owned_episode(db, episode_id, user)
     await get_owned_drama_project(db, ep.project_id, user)
     await cancel_tasks_for_scope(
@@ -912,7 +912,7 @@ async def cancel_all_video_jobs(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """取消当前用户触发的全部漫剧分镜视频任务。"""
+    """Hủy tất cả tác vụ video trong bảng phân cảnh truyện tranh do người dùng hiện tại kích hoạt."""
     await cancel_tasks_for_scope(db, user.id, domain="drama", task_type="fragment_video")
     result = await cancel_all_episode_video_jobs(user.id)
     logger.info("已取消全部视频任务 user_id=%s result=%s", user.id, result)

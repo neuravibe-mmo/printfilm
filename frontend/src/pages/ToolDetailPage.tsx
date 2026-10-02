@@ -11,7 +11,7 @@ import { useI18n } from '../i18n'
 
 const VIDEO_POLL_MS = 3000
 
-/** 独立工具工作台：表单生成、结果预览、视频任务轮询 */
+/** Bàn làm việc công cụ độc lập: tạo biểu mẫu, xem trước kết quả, thăm dò nhiệm vụ video */
 export default function ToolDetailPage() {
   const { toolId } = useParams()
   const tool = useMemo(() => getToolDef(toolId), [toolId])
@@ -24,21 +24,21 @@ export default function ToolDetailPage() {
   return <ToolWorkspace tool={tool} />
 }
 
-/** 已登录后的工具表单与结果区 */
+/** Công cụ biểu mẫu và vùng kết quả sau khi đăng nhập */
 function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
   const { t, m } = useI18n()
   const tool = useMemo(() => localizeToolDef(baseTool, m), [baseTool, m])
   /*
-   * text 文本框
-   * chips 画幅/时长等选项
-   * files 待上传文件
-   * previews 本地预览 URL
-   * busy 生成中
-   * error 错误文案
-   * resultUrls 结果媒体
-   * previewUrl 视频静帧预览
-   * taskId 视频任务
-   * status 任务状态
+   * hộp văn bản văn bản
+   * khung/thời lượng chip và các tùy chọn khác
+   * các tập tin sẽ được tải lên
+   * xem trước URL xem trước cục bộ
+   * đang bận Đang tạo
+   * lỗi lỗi sao chép
+   * phương tiện kết quả resultUrls
+   * PreviewUrl Xem trước khung hình tĩnh của video
+   * nhiệm vụ video taskId
+   * trạng thái trạng thái nhiệm vụ
    */
   const [text, setText] = useState<Record<string, string>>({})
   const [chips, setChips] = useState(() => defaultToolChips(tool))
@@ -102,7 +102,7 @@ function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
     }
   }, [taskId, status])
 
-  // 替换上传文件并刷新本地预览
+  // Thay thế tệp đã tải lên và làm mới bản xem trước cục bộ
   function applyFiles(next: File[]) {
     setPreviews((prev) => {
       for (const url of prev) URL.revokeObjectURL(url)
@@ -111,7 +111,7 @@ function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
     setFiles(next)
   }
 
-  // 选择本地文件并生成缩略预览
+  // Chọn tệp cục bộ và tạo bản xem trước hình thu nhỏ
   function onPick(event: ChangeEvent<HTMLInputElement>) {
     const list = Array.from(event.target.files || [])
     event.target.value = ''
@@ -119,7 +119,7 @@ function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
     applyFiles(list)
   }
 
-  // 拖拽上传
+  // Kéo và thả để tải lên
   function onDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault()
     const list = Array.from(event.dataTransfer.files || [])
@@ -127,7 +127,7 @@ function ToolWorkspace({ tool: baseTool }: { tool: ToolDef }) {
     applyFiles(list)
   }
 
-  // 提交生成；视频任务进入轮询
+  // Gửi thế hệ; nhiệm vụ video bước vào cuộc bỏ phiếu
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     if (busy) return

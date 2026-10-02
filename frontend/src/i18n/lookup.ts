@@ -1,8 +1,8 @@
-/** 按点路径取文案，并用 {name} 做插值 */
+/** Lấy bản sao dựa trên đường dẫn điểm và sử dụng {name} để nội suy */
 
 export type TVars = Record<string, string | number>
 
-// 从嵌套对象按 "nav.home" 取字符串
+// Nhận chuỗi từ đối tượng lồng nhau bằng "nav.home"
 export function lookupMessage(source: unknown, path: string): string | undefined {
   const parts = path.split('.')
   let cur: unknown = source
@@ -13,7 +13,7 @@ export function lookupMessage(source: unknown, path: string): string | undefined
   return typeof cur === 'string' ? cur : undefined
 }
 
-// 将模板中的 {key} 替换为 vars
+// Thay thế {key} trong mẫu bằng vars
 export function interpolate(template: string, vars?: TVars): string {
   if (!vars) return template
   return template.replace(/\{(\w+)\}/g, (match, key: string) =>

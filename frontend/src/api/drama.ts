@@ -12,12 +12,12 @@ const _viteApiBase = import.meta.env.VITE_API_BASE
 const API_BASE =
   _viteApiBase === undefined || _viteApiBase === null ? defaultApiBase() : String(_viteApiBase)
 
-/** 导出 API 根地址，供静态资源 URL 拼接 */
+/** Xuất địa chỉ gốc API để nối URL tài nguyên tĩnh */
 export function getDramaApiBase() {
   return API_BASE
 }
 
-/** 将 /static 相对路径补全为可访问的绝对 URL；可选 cacheBust 强制刷新缩略图 */
+/** Hoàn thành đường dẫn tương đối /static tới URL tuyệt đối có thể truy cập được; tùy chọn cacheBust buộc làm mới hình thu nhỏ */
 export function resolveDramaMediaUrl(
   url?: string | null,
   cacheBust?: string | number | null,
@@ -32,7 +32,7 @@ export function resolveDramaMediaUrl(
   return `${resolved}${sep}v=${encodeURIComponent(String(cacheBust))}`
 }
 
-/** 资产生图/上传后的预览 URL（用 updated_at 或 generation 时间戳破缓存） */
+/** URL xem trước sau khi tạo/tải lên nội dung (sử dụng update_at hoặc dấu thời gian tạo để phá bộ đệm) */
 export function resolveDramaAssetPreviewUrl(asset: {
   cover?: string | null
   url?: string | null
@@ -77,9 +77,9 @@ export type DramaScript = {
 export type DramaEpisodeBody = {
   episodeNumber?: number
   title?: string
-  /** 本集原始创意 */
+  /** Ý tưởng ban đầu của tập này */
   creative?: string
-  /** 本集剧情摘要（集级，非全剧 summary） */
+  /** Tóm tắt cốt truyện của tập này (cấp tập, không phải tóm tắt toàn bộ phim) */
   summary?: string
   body?: string
   origin?: 'auto' | 'manual'
@@ -399,13 +399,13 @@ export const dramaApi = {
       `/api/drama/episodes/seed_from_script?project_id=${projectId}${force ? '&force=true' : ''}`,
       { method: 'POST' },
     ),
-  /** 确认一集：增量抽取资产并只切该集分镜 */
+  /** Xác nhận một tập: Trích xuất nội dung dần dần và chỉ cắt bảng phân cảnh của tập */
   confirmEpisodeFromScript: (body: { project_id: number; episode_number: number }) =>
     request<DramaConfirmEpisodeResult>('/api/drama/episodes/confirm_from_script', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  /** 单集 AI（LLM）重新分镜；轮询 episode.params.fragment_plan_status */
+  /** Bản phân cảnh lại một tập AI (LLM); tập bỏ phiếu.params.fragment_plan_status */
   planEpisodeFragments: (
     episodeId: number,
     body?: { force?: boolean; fallback_rules?: boolean; skill_ids?: number[]; subtitle_enabled?: boolean },
@@ -459,7 +459,7 @@ export const dramaApi = {
       fragments: Array<{ fragment_id: number; status: string; video?: string; cover?: string }>
     }>(`/api/drama/episodes/${episodeId}/generate_status`),
 
-  /** 服务端统一重编码拼接本集（浏览器无损失败时回退） */
+  /** Phía server mã hóa lại và ghép tập này một cách thống nhất (trình duyệt sẽ quay lại khi không bị mất) */
   composeEpisode: (episodeId: number, fragmentIds?: number[]) =>
     request<{ ok: boolean; video_url: string; episode_id: number }>(
       `/api/drama/episodes/${episodeId}/compose`,

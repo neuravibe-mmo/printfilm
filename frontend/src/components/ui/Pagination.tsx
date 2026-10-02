@@ -6,20 +6,20 @@ type Props = {
   page: number
   pageCount: number
   onChange: (page: number) => void
-  /** 总条数，传入后显示摘要 */
+  /** Tổng số mục, bản tóm tắt sẽ được hiển thị sau khi nhập */
   total?: number
-  /** 当前每页条数 */
+  /** Số mục hiện tại trên mỗi trang */
   pageSize?: number
-  /** 每页条数选项；配合 onPageSizeChange 显示切换器 */
+  /** Tùy chọn số mục trên mỗi trang; trình chuyển đổi hiển thị với onPageSizeChange */
   pageSizeOptions?: readonly number[]
   onPageSizeChange?: (pageSize: number) => void
   className?: string
   ariaLabel?: string
-  /** 是否显示「第 x / y 页 · 共 z 条」摘要 */
+  /** Có hiển thị tóm tắt "Tổng cộng trang x / y · z mục" hay không */
   showSummary?: boolean
 }
 
-// 生成带省略号的页码序列
+// Tạo chuỗi số trang bằng dấu chấm lửng
 function buildPageItems(page: number, pageCount: number): Array<number | '…'> {
   if (pageCount <= 7) {
     return Array.from({ length: pageCount }, (_, i) => i + 1)
@@ -34,7 +34,7 @@ function buildPageItems(page: number, pageCount: number): Array<number | '…'> 
   return items
 }
 
-/** 统一分页控件：页码导航 + 可选每页条数 + 摘要 */
+/** Kiểm soát phân trang thống nhất: điều hướng trang + số mục tùy chọn trên mỗi trang + tóm tắt */
 export default function Pagination({
   page,
   pageCount,

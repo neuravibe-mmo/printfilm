@@ -1,4 +1,4 @@
-"""Agent Skill：列表、上传、启用、删除。"""
+"""Kỹ năng đặc vụ: liệt kê, tải lên, kích hoạt, xóa."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ async def list_skills(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AgentSkillListOut:
-    # 内置 + 当前用户上传的 skill
+    # Tích hợp + kỹ năng được người dùng hiện tại tải lên
     rows = await list_visible_skills(db, user.id)
     return AgentSkillListOut(items=[_out(row) for row in rows])
 
@@ -52,7 +52,7 @@ async def optimize_prompt(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AgentSkillOptimizeOut:
-    # 用勾选 Skill 改写提示词，保留 @asset 引用
+    # Viết lại lời nhắc bằng cách chọn Skill và giữ tham chiếu @asset
     task_name = (body.task or "video_prompt").strip() or "video_prompt"
     skill_ids = list(body.skill_ids or [])
     if not skill_ids:
@@ -107,7 +107,7 @@ async def upload_skill_markdown(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AgentSkillOut:
-    # JSON 上传完整 markdown
+    # Đánh dấu hoàn tất quá trình tải lên JSON
     try:
         row = await create_user_skill(db, user.id, body.markdown)
     except SkillParseError as exc:
@@ -121,10 +121,10 @@ async def upload_skill_file(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AgentSkillOut:
-    # 上传 .md 文件
+    # Tải lên tệp .md
     filename = (file.filename or "").lower()
     if filename and not filename.endswith((".md", ".markdown", ".txt")):
-        raise HTTPException(status_code=400, detail="请上传 .md 文件")
+        raise HTTPException(status_code=400, detail="请Tải lên tệp .md")
     raw = await file.read()
     if len(raw) > 200 * 1024:
         raise HTTPException(status_code=400, detail="文件不能超过 200KB")

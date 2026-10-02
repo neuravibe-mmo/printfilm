@@ -1,4 +1,4 @@
-/** 全局漫剧资产库：按角色 / 场景 / 道具 / 音色分类，音色可试听 */
+/** Thư viện tài sản truyện tranh toàn cầu: được phân loại theo nhân vật/cảnh/prop/giọng điệu, âm sắc có thể được thử giọng */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pause, Play } from 'lucide-react'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
@@ -45,7 +45,7 @@ export default function AssetLibraryPage() {
   )
 }
 
-// 按资产 type 归入角色 / 场景 / 道具 / 音色
+// Theo loại nội dung, nó được phân loại thành vai trò/cảnh/đạo cụ/âm thanh
 function assetKind(asset: DramaAsset): AssetTabKey | 'other' {
   if (!isDramaLibraryAsset(asset)) return 'other'
   const t = (asset.type || '').toLowerCase()
@@ -69,7 +69,7 @@ function fileMeta(asset: DramaAsset): string {
   return asset.type || 'file'
 }
 
-// 音色资产或角色已绑定音色的试听地址
+// Địa chỉ thử giọng của nội dung âm thanh hoặc âm thanh giới hạn ký tự
 function voicePreviewUrl(asset: DramaAsset): string {
   if (assetKind(asset) === 'voice') return asset.url || ''
   return readAssetVoiceBinding(asset)?.url || ''
@@ -83,15 +83,15 @@ function isImageLike(asset: DramaAsset): boolean {
 function AssetLibraryInner() {
   const { t } = useI18n()
   /*
-   * assets 当前项目范围下的资产
-   * projects 项目列表（筛选用）
-   * projectId 选中的项目 id，空串表示全部
-   * tab 角色/场景/道具/音色
-   * query 搜索词
-   * page 当前页
-   * playingId 正在试听的资产 id
-   * error 错误文案
-   * loading 加载中
+   * tài sản thuộc phạm vi dự án hiện tại
+   * dự án danh sách dự án (để lọc)
+   * projectId đã chọn id dự án, chuỗi trống có nghĩa là tất cả
+   * tab nhân vật/cảnh/prop/âm thanh
+   * truy vấn cụm từ tìm kiếm
+   * trang trang hiện tại
+   * playId Id nội dung đang được nghe
+   * lỗi lỗi sao chép
+   * đang tải đang tải
    */
   const [assets, setAssets] = useState<DramaAsset[]>([])
   const [projects, setProjects] = useState<DramaProjectListItem[]>([])
@@ -185,7 +185,7 @@ function AssetLibraryInner() {
     setPage(1)
   }, [tab, query, projectId, pageSize])
 
-  // 卡片缩略图上试听 / 暂停音色
+  // Nghe/tạm dừng âm thanh trên hình thu nhỏ của thẻ
   function toggleVoice(asset: DramaAsset) {
     const src = resolveDramaMediaUrl(voicePreviewUrl(asset))
     if (!src) {

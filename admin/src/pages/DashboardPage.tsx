@@ -75,7 +75,7 @@ function domainChartLabel(key: string, m: Messages, t: TFunction): string {
   return taskDomainLabel(key, t);
 }
 
-/** 管理端仪表盘：板块切换 + 渐变 KPI + 可筛选用量图表 */
+/** Bảng thông tin quản lý: chuyển đổi phần + KPI gradient + biểu đồ sử dụng có thể lọc */
 export function DashboardPage() {
   const { t, m, locale } = useI18n();
   const [section, setSection] = useState<DashboardSection>("overview");

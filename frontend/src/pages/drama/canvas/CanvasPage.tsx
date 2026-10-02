@@ -1,10 +1,10 @@
-/** 自由画布页：全屏 React Flow 无限画布（无应用壳布局） */
+/** Trang canvas miễn phí: canvas vô hạn toàn màn hình React Flow (không có bố cục shell ứng dụng) */
 import { useParams } from 'react-router-dom'
 import RequireAuth from '../RequireAuth'
 import { CanvasWorkspace } from './CanvasWorkspace'
 import { useI18n } from '../../../i18n'
 
-/** 鉴权后渲染全屏自由画布 */
+/** Hiển thị canvas miễn phí toàn màn hình sau khi xác thực */
 export default function CanvasPage() {
   return (
     <RequireAuth>
@@ -13,7 +13,7 @@ export default function CanvasPage() {
   )
 }
 
-/** 从路由读取 projectId 并挂载工作区 */
+/** Đọc projectId từ tuyến đường và gắn kết không gian làm việc */
 function CanvasPageInner() {
   const { t } = useI18n()
   const { projectId } = useParams()

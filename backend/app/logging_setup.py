@@ -1,4 +1,4 @@
-"""统一应用日志：可读业务日志，默认不刷 SQL DEBUG。"""
+"""Nhật ký ứng dụng hợp nhất: nhật ký nghiệp vụ có thể đọc được, DEBUG SQL không bị xóa theo mặc định."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ _configured = False
 
 
 def configure_logging(*, level: str = "INFO", sql_echo: bool = False) -> None:
-    # 配置根日志；可重复调用以刷新级别（reload 后仍可生效）
+    # Định cấu hình nhật ký gốc; có thể được gọi nhiều lần để làm mới cấp độ (vẫn có thể có hiệu lực sau khi tải lại)
     global _configured
 
     root = logging.getLogger()
@@ -23,11 +23,11 @@ def configure_logging(*, level: str = "INFO", sql_echo: bool = False) -> None:
         )
         root.addHandler(handler)
 
-    # 根级别用 INFO：DEBUG=true 也不刷第三方库
+    # Sử dụng INFO ở cấp độ gốc: DEBUG=true và không sử dụng thư viện của bên thứ ba.
     root.setLevel(logging.INFO)
     logging.getLogger("app").setLevel(getattr(logging, level.upper(), logging.INFO))
 
-    # SQLAlchemy 驱动默认关闭
+    # Trình điều khiển SQLAlchemy bị tắt theo mặc định
     for name in (
         "sqlalchemy",
         "sqlalchemy.engine",
@@ -42,7 +42,7 @@ def configure_logging(*, level: str = "INFO", sql_echo: bool = False) -> None:
     else:
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
-    # 其他噪音
+    # Tiếng ồn khác
     for name in ("uvicorn.access", "httpx", "httpcore", "celery", "asyncio", "multipart"):
         logging.getLogger(name).setLevel(
             logging.INFO if name == "uvicorn.access" else logging.WARNING

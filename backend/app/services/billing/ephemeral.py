@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""轻量 TaskRun：同步执行并计费（聊天、API、工具）。"""
+"""Nhẹ TaskRun: thực thi và thanh toán đồng bộ (trò chuyện, API, công cụ)."""
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
@@ -37,7 +37,7 @@ async def create_ephemeral_task_row(
     asset_id: int | None = None,
     episode_id: int | None = None,
 ) -> TaskRun:
-    """创建并立即执行的轻量任务行（不经过调度器排队）。"""
+    """Một dòng tác vụ nhẹ được tạo và thực thi ngay lập tức (không bị bộ lập lịch xếp hàng)."""
     handler = get_task_handler(domain, task_type)
     planned = handler.plan_steps(TaskCreateRequest(domain=domain, task_type=task_type)) if handler else []
     first = planned[0] if planned else None
@@ -120,7 +120,7 @@ async def run_billed_ephemeral(
         task.status = "failed"
         task.error_code = "insufficient_balance"
         task.error_message = "余额不足"
-        # 未预扣成功，保持 none，勿标 skipped（skipped 表示全局关闭计费）
+        # Nếu việc khấu lưu không thành công, hãy giữ nguyên là không và không đánh dấu là đã bỏ qua (bỏ qua có nghĩa là tắt tính năng thanh toán trên toàn cầu)
         task.billing_status = "none"
         await db.flush()
         raise
@@ -177,7 +177,7 @@ async def run_billed_ephemeral(
 
 
 def _extract_provider_task_id(result: Any) -> str:
-    """从 executor 返回值解析上游 task_id。"""
+    """Phân tích cú pháp task_id ngược dòng từ giá trị trả về của người thực thi."""
     if isinstance(result, dict):
         raw = result.get("task_id") or result.get("provider_task_id") or ""
         return str(raw).strip()
@@ -295,7 +295,7 @@ async def settle_deferred_video_poll(
     raw_usage: dict | None = None,
     billing_key: str | None = None,
 ) -> None:
-    """轮询终态后结算轻量视频任务：成功才记 seedance 用量。
+    """Giải quyết tác vụ video nhẹ sau khi thăm dò trạng thái cuối cùng: việc sử dụng hạt giống sẽ chỉ được ghi lại nếu thành công.
 
     用行锁 + billing_status==frozen 门闩，避免客户端轮询与后台 poller 并发双记用量。
     """
@@ -325,7 +325,7 @@ async def settle_deferred_video_poll(
     if task_id is None:
         return
 
-    # 原子门闩：仅 frozen 任务可进入结算；并发第二次拿到 settled 后直接返回
+    # Chốt nguyên tử: chỉ những nhiệm vụ bị đóng băng mới có thể tham gia giải quyết; đồng thời trở về trực tiếp sau khi giải quyết lần 2
     task = await _lock_task(db, task_id)
     if not task or task.billing_status != "frozen":
         return

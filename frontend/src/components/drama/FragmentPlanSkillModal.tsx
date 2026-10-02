@@ -13,7 +13,7 @@ type FragmentPlanSkillModalProps = {
   onConfirm: (skillIds: number[]) => void
 }
 
-/** 覆盖分镜前让用户勾选 Skill */
+/** Để người dùng kiểm tra Kỹ năng trước khi ghi đè bảng phân cảnh */
 export function FragmentPlanSkillModal({
   open,
   title,

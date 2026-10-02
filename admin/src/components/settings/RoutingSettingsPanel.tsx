@@ -32,7 +32,7 @@ const TOKENFREE_CONSOLE_URL = "https://www.tokenfree.com/channels";
 
 const DEFAULT_KEYS = ["text_model", "image_model", "video_model", "audio_model"] as const;
 
-// 与后端 infer_model_capability 对齐
+// Phù hợp với phần phụ trợ infer_model_capability
 function inferCapability(model: string): Capability {
   const mid = (model || "").trim().toLowerCase().replace(/\s+/g, "");
   if (!mid) return "text";
@@ -55,7 +55,7 @@ function inferCapability(model: string): Capability {
   return "text";
 }
 
-// 优先用上游声明的能力，否则按模型 id 推断
+// Ưu tiên các khả năng được khai báo bởi thượng nguồn, nếu không thì suy luận dựa trên id mô hình
 function modelCapability(model: UpstreamModelOption): Capability {
   const cap = (model.capability || "").trim().toLowerCase();
   if (cap === "text" || cap === "image" || cap === "video" || cap === "audio") {
@@ -64,7 +64,7 @@ function modelCapability(model: UpstreamModelOption): Capability {
   return inferCapability(model.id);
 }
 
-// 渠道已选模型收到规范 id，避免 Seedance 2.0 三档并存
+// Mô hình kênh đã chọn sẽ nhận được ID chuẩn để tránh sự tồn tại chung của ba tệp của Seedance 2.0
 function canonicalizeRoutingSettings(settings: AdminRoutingSettings): AdminRoutingSettings {
   return {
     ...settings,
@@ -76,7 +76,7 @@ function canonicalizeRoutingSettings(settings: AdminRoutingSettings): AdminRouti
   };
 }
 
-// 开源版模型配置：固定 TokenFree，只填 Key、拉取并选择模型
+// Cấu hình model phiên bản mã nguồn mở: cố định TokenFree, chỉ điền Key, kéo và chọn model
 export function RoutingSettingsPanel() {
   const { t } = useI18n();
   const [data, setData] = useState<AdminRoutingSettings | null>(null);
@@ -177,7 +177,7 @@ export function RoutingSettingsPanel() {
     ];
   }, [capabilityLabels, data?.default_models, hasKey, t]);
 
-  // 勾选短名单，并把 Seedance 2.0 三档别名收成 2.5 / 2.0 Mini
+  // Kiểm tra danh sách ngắn và nhận bí danh cấp ba Seedance 2.0 2.5 / 2.0 Mini
   function applyRecommendedSelection(models: UpstreamModelOption[]) {
     const picks = pickRecommendedDefaults(models);
     setSelectedModels(mergeRecommendedSelection(selectedModels, models));

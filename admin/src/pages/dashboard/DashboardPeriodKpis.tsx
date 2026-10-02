@@ -12,7 +12,7 @@ type DashboardPeriodKpisProps = {
   loading: boolean;
 };
 
-/** 第二行 KPI：随筛选时间窗变化的调用/扣费/毛利/项目规模 */
+/** Hàng thứ hai của KPI: cuộc gọi/khấu trừ/lợi nhuận gộp/quy mô dự án thay đổi theo khung thời gian sàng lọc */
 export function DashboardPeriodKpis({ stats, filters, loading }: DashboardPeriodKpisProps) {
   const { m, t, locale } = useI18n();
   const placeholder = loading ? "…" : "—";

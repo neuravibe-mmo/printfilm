@@ -1,4 +1,4 @@
-"""OpenAI 兼容文字模型客户端（任意兼容上游：Kimi / DeepSeek / OpenAI 等）。"""
+"""Ứng dụng khách mô hình văn bản tương thích OpenAI (bất kỳ ứng dụng ngược dòng tương thích nào: Kimi / DeepSeek / OpenAI, v.v.)."""
 
 from __future__ import annotations
 
@@ -13,15 +13,15 @@ from app.services.logical_model_router import resolve_logical_model, resolve_log
 
 logger = logging.getLogger(__name__)
 
-# DEFAULT_MAX_TOKENS 分集正文等结构化输出需要足够 completion 空间
+# DEFAULT_MAX_TOKENS Đầu ra có cấu trúc như nội dung tập yêu cầu đủ không gian hoàn thành
 DEFAULT_MAX_TOKENS = 32768
 
 
 class LlmUnavailableError(RuntimeError):
-    """文字 LLM 未配置或不可用。"""
+    """LLM theo nghĩa đen chưa được định cấu hình hoặc không khả dụng."""
 
 
-# 解析 LLM API Key（对齐 manju resolveOpenaiApiKey）
+# Giải quyết Khóa API LLM (căn chỉnh với manju ResolveOpenaiApiKey)
 def resolve_llm_api_key() -> str:
     key = (get_settings().openai_api_key or "").strip()
     if not key:
@@ -32,7 +32,7 @@ def resolve_llm_api_key() -> str:
     return key
 
 
-# 解析 OpenAI 兼容 Base URL
+# Phân tích URL cơ sở tương thích với OpenAI
 def resolve_llm_base_url() -> str:
     base = (get_settings().openai_base_url or "").strip().rstrip("/")
     if base:
@@ -40,7 +40,7 @@ def resolve_llm_base_url() -> str:
     return "https://api.openai.com/v1"
 
 
-# kimi / deepseek-v4 默认 thinking 会占满 token、content 常为空；结构化产出统一关闭
+# kimi / deepseek-v4 suy nghĩ mặc định sẽ chiếm mã thông báo, nội dung thường trống; đầu ra có cấu trúc bị tắt đồng đều
 def _llm_extra_body(model: str) -> dict[str, Any]:
     mid = (model or "").strip().lower()
     if mid.startswith("kimi") or mid.startswith("deepseek"):
@@ -48,7 +48,7 @@ def _llm_extra_body(model: str) -> dict[str, Any]:
     return {}
 
 
-# 从 chat/completions 响应提取正文
+# Trích xuất nội dung từ phản hồi trò chuyện/hoàn thành
 def _message_content(data: dict[str, Any]) -> str:
     choices = data.get("choices") or []
     if not choices:
@@ -57,12 +57,12 @@ def _message_content(data: dict[str, Any]) -> str:
     content = message.get("content")
     if content:
         return str(content)
-    # 部分兼容网关把结果放在 reasoning_content
+    # Một số cổng tương thích đưa kết quả vào Reason_content
     reasoning = message.get("reasoning_content")
     return str(reasoning or "")
 
 
-# 调用 OpenAI 兼容 chat/completions
+# Gọi trò chuyện/hoàn thành tương thích với OpenAI
 async def chat_completions(
     system: str,
     user: str,
@@ -87,7 +87,7 @@ async def chat_completions(
         raise LlmUnavailableError(
             "未解析到可用文字模型。请在管理后台填写 TokenFree API Key，拉取并选择文本模型。"
         )
-    # kimi 系列仅允许 temperature=0.6，其它值会 400
+    # dòng kimi chỉ cho phép nhiệt độ = 0,6, các giá trị khác sẽ là 400
     effective_temperature = 0.6 if model.lower().startswith("kimi") else temperature
 
     payload: dict[str, Any] = {
@@ -125,18 +125,18 @@ async def chat_completions(
             raise RuntimeError(f"LLM error {res.status_code}: {res.text[:800]}")
         body = (res.text or "").strip()
         if not body:
-            raise RuntimeError(f"LLM 返回空响应体 (HTTP {res.status_code})")
+            raise RuntimeError(f"LLM trả về phản hồi rỗng (HTTP {res.status_code})")
         lowered = body[:256].lower()
         if lowered.startswith("<!doctype") or lowered.startswith("<html"):
             raise RuntimeError(
-                f"LLM 渠道 Base URL 配置错误（返回了网页 HTML 而非 API JSON）。"
-                f"当前 base={base}，请检查管理后台「模型渠道」的 Base URL 是否为 OpenAI 兼容 API 地址"
-                f"（如 https://api.deepseek.com 或 https://api.moonshot.cn/v1），而非网站首页。"
+                f"Cấu hình Base URL kênh LLM bị sai (trả về trang web HTML thay vì JSON API). "
+                f"Hiện tại base={base}, vui lòng kiểm tra Base URL trong trang quản trị 'Kênh mô hình' xem có phải là địa chỉ API tương thích OpenAI "
+                f"(ví dụ https://api.deepseek.com hoặc https://api.moonshot.cn/v1), không phải trang chủ của website."
             )
         try:
             data = res.json()
         except json.JSONDecodeError as exc:
-            raise RuntimeError(f"LLM 响应不是合法 JSON: {body[:200]}") from exc
+            raise RuntimeError(f"Phản hồi LLM không phải JSON hợp lệ: {body[:200]}") from exc
     content = _message_content(data)
-    logger.info("文字 LLM 返回 content_len=%s", len(content))
+    logger.info("LLM văn bản trả về content_len=%s", len(content))
     return content

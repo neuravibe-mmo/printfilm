@@ -1,4 +1,4 @@
-/** 分集分镜 → 共享资产节点连线到各分镜视频节点 */
+/** Bảng phân cảnh đa dạng → Kết nối nút tài sản được chia sẻ với từng nút video bảng phân cảnh */
 import type { Edge, Node } from '@xyflow/react'
 import {
   resolveDramaMediaUrl,
@@ -44,31 +44,31 @@ export const EPISODE_FRAGMENT_NODE_WIDTH = 220
 export const EPISODE_ASSET_NODE_WIDTH = 148
 export const EPISODE_FRAGMENT_COL_GAP = 36
 export const EPISODE_FRAGMENT_ROW_GAP = 36
-/** 分镜节点预估高度（网格排布间距） */
+/** Chiều cao ước tính của các nút trong bảng phân cảnh (khoảng cách bố cục lưới) */
 export const EPISODE_FRAGMENT_NODE_EST_HEIGHT = 400
 export const EPISODE_ASSET_NODE_EST_HEIGHT = 196
 export const EPISODE_ASSET_ROW_GAP = 14
 export const EPISODE_ASSET_POOL_GAP = 40
 export const EPISODE_GRID_START_Y = 32
 
-// 分镜视频节点 id
+// Id nút video của bảng phân cảnh
 export function episodeFragmentNodeId(fragmentId: number): string {
   return `frag-${fragmentId}`
 }
 
-// 出境资产节点 id（全局按 assetId 唯一，跨分镜复用）
+// ID nút nội dung gửi đi (duy nhất trên toàn cầu theo assetsId, được ghép kênh trên các máy nhân bản)
 export function episodeAssetNodeId(assetId: number): string {
   return `asset-${assetId}`
 }
 
-// 按分镜数量计算网格列数（左→右、上→下，避免单列过长）
+// Tính số lượng cột lưới dựa trên số lần chụp (trái → phải, trên → dưới, để tránh làm một cột quá dài)
 export function episodeGridColumns(count: number): number {
   if (count <= 3) return Math.max(1, count)
   if (count <= 8) return 3
   return 4
 }
 
-// 分镜在网格中的坐标
+// Tọa độ của storyboard trong lưới
 export function episodeFragmentGridPosition(
   index: number,
   cols: number,
@@ -82,7 +82,7 @@ export function episodeFragmentGridPosition(
   }
 }
 
-// 分镜顺序连线：同行向右，换行向下
+// Kết nối trình tự bảng phân cảnh: dòng bên phải, ngắt dòng ở cuối
 export function episodeSequenceHandles(fromIndex: number, toIndex: number, cols: number) {
   const fromCol = fromIndex % cols
   const toCol = toIndex % cols
@@ -94,7 +94,7 @@ export function episodeSequenceHandles(fromIndex: number, toIndex: number, cols:
   return { sourceHandle: 'seq-out-b', targetHandle: 'seq-in-t' }
 }
 
-// 构建：左侧共享资产池 → 曲线连到右侧分镜网格
+// Xây dựng: Nhóm tài sản chung ở bên trái → đường cong được kết nối với lưới bảng phân cảnh ở bên phải
 export function buildEpisodeFragmentFlow(
   fragments: DramaFragment[],
   assets: DramaAsset[] = [],
@@ -116,7 +116,7 @@ export function buildEpisodeFragmentFlow(
     fragIndexById.set(frag.id, index)
   })
 
-  // assetId → 关联分镜 id 列表（保序）
+  // assetsId → danh sách id bảng phân cảnh được liên kết (giữ nguyên thứ tự)
   const assetToFragments = new Map<number, number[]>()
   ordered.forEach((frag) => {
     for (const assetId of collectFragmentAssetIds(frag)) {

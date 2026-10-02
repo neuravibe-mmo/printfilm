@@ -1,4 +1,4 @@
-/** 选中节点底部：AI 提示词浮动面板（生图 / 生视频） */
+/** Chọn phần cuối của nút: Bảng nổi từ nhắc nhở AI (hình ảnh thô/video thô) */
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import { ArrowUp, CircleHelp, Loader2, Sparkles, Wand2 } from 'lucide-react'
 import { SeedanceRulesModal } from '../../../../components/drama/SeedanceRulesModal'
@@ -25,17 +25,17 @@ type CanvasNodeGeneratePanelProps = {
   kind: CanvasNodeKind
   generating?: boolean
   defaultPrompt?: string
-  /** 节点展示名，用于过滤弱占位提示词 */
+  /** Tên hiển thị nút, dùng để lọc các từ nhắc giữ chỗ yếu */
   label?: string
-  /** 是否已有参考图（资产库/上传） */
+  /** Bạn đã có ảnh tham khảo chưa (thư viện nội dung/tải lên) */
   hasMedia?: boolean
-  /** 视频节点已保存的 Seedance 参数 */
+  /** Tham số Seedance đã lưu của nút video */
   videoOptions?: Record<string, unknown>
 }
 
 import { useI18n } from '../../../../i18n'
 
-/** 按节点类型返回面板文案 */
+/** Trả về bản sao bảng điều khiển theo loại nút */
 function panelCopy(kind: CanvasNodeKind, hasMedia: boolean, t: (k: string) => string) {
   if (kind === 'video') {
     return {
@@ -67,7 +67,7 @@ function panelCopy(kind: CanvasNodeKind, hasMedia: boolean, t: (k: string) => st
 
 const PLACEHOLDER_PROMPT = /^(character|scene|prop|material|none|image|audio|video)\s+\S+$/i
 
-/** 清洗默认提示词：只去掉「video 新视频」这类占位，保留用户短描述与 @ 引用 */
+/** Làm sạch các từ nhắc nhở mặc định: chỉ xóa các phần giữ chỗ như "video video mới" và giữ lại mô tả ngắn gọn cũng như tham chiếu @ của người dùng */
 function sanitizePrompt(raw: string, kind: CanvasNodeKind, label: string): string {
   const text = (raw || '').trim()
   if (!text) return ''
@@ -76,7 +76,7 @@ function sanitizePrompt(raw: string, kind: CanvasNodeKind, label: string): strin
   return text
 }
 
-/** 渲染 AI 提示词编辑面板 */
+/** Hiển thị bảng chỉnh sửa từ nhắc nhở AI */
 export function CanvasNodeGeneratePanel({
   nodeId,
   kind,
@@ -98,21 +98,21 @@ export function CanvasNodeGeneratePanel({
   const { t } = useI18n()
   const [prompt, setPrompt] = useState(() => sanitizePrompt(defaultPrompt, kind, label))
   /*
-   * busy 正在提交生成
-   * rulesOpen Seedance 规则弹窗
-   * optimizing Skill 改写进行中
+   * đang bận gửi thế hệ
+   * quy tắcMở cửa sổ bật lên quy tắc Seedance
+   * Việc tối ưu hóa Kỹ năng đang được viết lại
    */
   const [busy, setBusy] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [optimizing, setOptimizing] = useState(false)
   const { skills, selectedIds, toggleSkill, selectAll, selectNone, uploadSkill, uploading, uploadError } =
     useAgentSkillSelection()
-  // imageOptions 生图风格/模型/画幅
+  // imageOptions Kiểu/mô hình/khung hình ảnh thô
   const [imageOptions, setImageOptions] = useState<ImageGenerationOptions>(() => ({
     ...defaultOptionsForAssetKind(kind),
     image_style_id: projectImageStyleId || undefined,
   }))
-  // videoOpts Seedance 时长/比例/清晰度
+  // videoOpts Thời lượng/tỷ lệ/định nghĩa Seedance
   const [videoOpts, setVideoOpts] = useState<VideoGenerationOptions>(() => {
     const saved = readVideoGenerationOptions(savedVideoOptions)
     return {
@@ -125,7 +125,7 @@ export function CanvasNodeGeneratePanel({
   const allowMention = kind === 'video' || kind === 'image'
   const isVideo = kind === 'video'
 
-  /* 可引用：排除当前节点自身 */
+  /* Có thể trích dẫn: loại trừ chính nút hiện tại */
   const mentionItems = useMemo(
     () => mentionableNodes.filter((n) => n.nodeId !== nodeId),
     [mentionableNodes, nodeId],
@@ -133,7 +133,7 @@ export function CanvasNodeGeneratePanel({
 
   const lastNodeIdRef = useRef(nodeId)
 
-  /* 换节点时强制同步；同一节点不要用空默认值清掉用户正文 */
+  /* Buộc đồng bộ hóa khi thay đổi nút; không sử dụng giá trị mặc định trống để xóa văn bản người dùng trên cùng một nút */
   useEffect(() => {
     const switched = lastNodeIdRef.current !== nodeId
     lastNodeIdRef.current = nodeId
@@ -145,7 +145,7 @@ export function CanvasNodeGeneratePanel({
     setPrompt((prev) => next || prev)
   }, [defaultPrompt, nodeId, kind, label])
 
-  /* 节点类型或项目风格变化时同步默认选项 */
+  /* Đồng bộ hóa các tùy chọn mặc định khi loại nút hoặc kiểu dự án thay đổi */
   useEffect(() => {
     setImageOptions((prev) => ({
       ...defaultOptionsForAssetKind(kind),
@@ -162,7 +162,7 @@ export function CanvasNodeGeneratePanel({
       ...saved,
       image_style_id: saved.image_style_id || projectImageStyleId || undefined,
     })
-    // 仅切换节点时恢复已保存参数，避免编辑选项时被回写覆盖
+    // Chỉ khôi phục các tham số đã lưu khi chuyển nút để tránh bị ghi đè bởi ghi đè khi chỉnh sửa tùy chọn
   }, [nodeId, projectImageStyleId])
 
   const isBusy = busy || generating || optimizing
@@ -200,7 +200,7 @@ export function CanvasNodeGeneratePanel({
     void submit()
   }
 
-  // 按勾选 Skill 改写当前提示词，保留 @asset 引用
+  // Nhấp để chọn Kỹ năng để viết lại từ nhắc hiện tại và giữ lại tham chiếu @asset.
   const optimizePrompt = async () => {
     if (!canOptimize) return
     setOptimizing(true)

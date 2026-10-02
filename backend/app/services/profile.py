@@ -11,11 +11,11 @@ _PHONE_KEEP = re.compile(r"[^\d+]")
 
 
 class ProfileError(ValueError):
-    """用户可见的资料校验错误。"""
+    """Lỗi xác minh dữ liệu do người dùng nhìn thấy."""
 
 
 def normalize_phone(raw: str | None) -> str:
-    """去掉空格/横线，+86 / 86 前缀收成 11 位国内号；空则表示未绑定。"""
+    """Xóa dấu cách/dấu gạch nối và tiền tố +86/86 sẽ tạo ra số nội địa gồm 11 chữ số; trống có nghĩa là nó không bị ràng buộc."""
     if raw is None:
         return ""
     compact = _PHONE_KEEP.sub("", raw.strip())
@@ -29,7 +29,7 @@ def normalize_phone(raw: str | None) -> str:
 
 
 def prepare_profile_update(*, nickname: str, email: str, phone: str | None) -> dict[str, str]:
-    """校验并规范化用户名、邮箱、手机号（手机号只记录，不验证码）。"""
+    """Xác minh và chuẩn hóa tên người dùng, email và số điện thoại di động (chỉ ghi số điện thoại di động chứ không ghi mã xác minh)."""
     name = (nickname or "").strip()
     if not name:
         raise ProfileError("用户名不能为空")

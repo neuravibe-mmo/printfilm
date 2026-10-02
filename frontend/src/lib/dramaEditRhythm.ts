@@ -1,6 +1,6 @@
 /**
- * 短剧剪辑节奏公式（社区 Skill 六式，用于分镜时长建议 / 整集导出规划）
- * 对齐 docs/EPISODE_RULES.md §10 P3
+ * Công thức nhịp điệu để chỉnh sửa vở kịch ngắn (sáu loại kỹ năng cộng đồng, được sử dụng để đề xuất thời lượng của bảng phân cảnh/lập kế hoạch xuất tập đầy đủ)
+ * Tài liệu căn chỉnh/EPISODE_RULES.md §10 P3
  */
 
 export type DramaEditRhythmId =
@@ -15,7 +15,7 @@ export type DramaEditRhythmPreset = {
   id: DramaEditRhythmId
   label: string
   hint: string
-  /** 相对节拍权重，会归一化到目标总秒数 */
+  /** Trọng lượng nhịp tương đối, sẽ được chuẩn hóa thành tổng số giây mục tiêu */
   weights: number[]
 }
 
@@ -61,7 +61,7 @@ export const DRAMA_EDIT_RHYTHM_PRESETS: DramaEditRhythmPreset[] = [
 const SEGMENT_MIN = 3
 const SEGMENT_MAX = 15
 
-// 按节奏公式为 N 段分配秒数（钳制 3–15，合计贴近 targetTotal）
+// Gán giây cho N đoạn theo công thức nhịp độ (kẹp 3–15, tổng gần bằng targetTotal)
 export function suggestRhythmDurations(
   segmentCount: number,
   rhythmId: DramaEditRhythmId,
@@ -77,7 +77,7 @@ export function suggestRhythmDurations(
   const sumW = weights.reduce((a, b) => a + b, 0) || 1
   const raw = weights.map((w) => (w / sumW) * Math.max(SEGMENT_MIN * count, targetTotal))
   const clamped = raw.map((v) => Math.max(SEGMENT_MIN, Math.min(SEGMENT_MAX, Math.round(v))))
-  // 微调合计：过短则从最大段加，过长则从最大段减
+  // Tinh chỉnh tổng: nếu quá ngắn thì thêm từ đoạn tối đa; nếu nó quá dài, hãy trừ nó khỏi đoạn lớn nhất.
   let total = clamped.reduce((a, b) => a + b, 0)
   const goal = Math.max(SEGMENT_MIN * count, Math.min(15, Math.round(targetTotal)))
   let guard = 0
@@ -100,11 +100,11 @@ export function suggestRhythmDurations(
   return clamped
 }
 
-// 整集导出规划：为每镜建议时长（D-2 / 已有分镜条数）
+// Kế hoạch xuất toàn tập: Thời lượng đề xuất cho mỗi cảnh quay (D-2 / số cảnh hiện có)
 export function suggestEpisodeFragmentDurations(
   fragmentCount: number,
   rhythmId: DramaEditRhythmId,
-  /** 单镜目标时长均值 */
+  /** Thời lượng mục tiêu trung bình của ống kính đơn */
   perFragmentTarget = 10,
 ): number[] {
   const count = Math.max(1, Math.floor(fragmentCount))

@@ -1,4 +1,4 @@
-"""带 Skill 注入的 Agent LLM 调用。"""
+"""Cuộc gọi Đặc vụ LLM có tính năng tiêm Kỹ năng."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ async def run_task_json(
     max_tokens: int | None = None,
     skill_ids: list[int] | None = None,
 ) -> Any:
-    """按任务注入启用 Skill 后调用 JSON LLM。"""
+    """Gọi JSON LLM sau khi bật tính năng chèn Kỹ năng bằng tác vụ."""
     skill_block = await compose_task_skills(db, user_id, task, skill_ids=skill_ids)
     kwargs: dict[str, Any] = {"temperature": temperature}
     if max_tokens is not None:
@@ -40,7 +40,7 @@ async def run_task_text(
     max_tokens: int = 8192,
     skill_ids: list[int] | None = None,
 ) -> str:
-    """按任务注入启用 Skill 后调用文本 LLM。"""
+    """Gọi tin nhắn LLM sau khi bật tính năng chèn Kỹ năng bằng tác vụ."""
     skill_block = await compose_task_skills(db, user_id, task, skill_ids=skill_ids)
     return await drama_chat_text(
         with_skill_system(system, skill_block),

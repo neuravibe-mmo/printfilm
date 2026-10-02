@@ -1,4 +1,4 @@
-/** 安全页：当前密码 + 新密码确认后提交修改 */
+/** Trang bảo mật: Mật khẩu hiện tại + mật khẩu mới. Gửi thay đổi sau khi xác nhận. */
 import { useState, type FormEvent } from 'react'
 import { api } from '../../api'
 import { useI18n } from '../../i18n'
@@ -7,16 +7,16 @@ type Props = {
   email: string
 }
 
-// 渲染修改密码表单
+// Hiển thị form đổi mật khẩu
 export default function ChangePasswordCard({ email }: Props) {
   const { t } = useI18n()
   /*
-   * currentPassword 当前密码
-   * newPassword 新密码
-   * confirmPassword 确认新密码
-   * busy 提交中
-   * error 错误文案
-   * ok 成功提示
+   * currentPassword mật khẩu hiện tại
+   * newPassword mật khẩu mới
+   * confirmPassword Xác nhận mật khẩu mới
+   * bận gửi bài
+   * lỗi lỗi sao chép
+   * ok lời nhắc thành công
    */
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -32,7 +32,7 @@ export default function ChangePasswordCard({ email }: Props) {
     newPassword.length <= 64 &&
     newPassword === confirmPassword
 
-  // 校验并提交修改密码
+  // Xác minh và gửi thay đổi mật khẩu
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (busy) return

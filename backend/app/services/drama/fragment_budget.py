@@ -1,4 +1,4 @@
-"""整集分镜数量/时长预算：合并过碎草稿，控制单集成片长度。"""
+"""Số lượng bảng phân cảnh/ngân sách thời lượng cho toàn bộ tập: Hợp nhất các bản nháp rời rạc để kiểm soát độ dài của một tập duy nhất."""
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ def _merge_unique_names(left: list[str], right: list[str]) -> list[str]:
 
 
 def _strip_leading_cues(content: str) -> str:
-    """合并时去掉后续块重复片头 cue，保留 @duration 正文。"""
+    """Khi hợp nhất, hãy xóa gợi ý tiêu đề trùng lặp khỏi các khối tiếp theo và giữ lại văn bản @duration."""
     lines = (content or "").replace("\r\n", "\n").split("\n")
     i = 0
     while i < len(lines):
@@ -87,7 +87,7 @@ def _proportional_int_durations(
     min_d: int = FRAGMENT_DURATION_MIN,
     max_d: int = FRAGMENT_DURATION_MAX,
 ) -> list[int]:
-    """按原比例分配整数秒数，合计尽量等于 target。"""
+    """Phân bổ số nguyên giây theo tỷ lệ ban đầu và tổng số phải bằng mục tiêu càng nhiều càng tốt."""
     if not raw or target <= 0:
         return raw
     if len(raw) == 1:
@@ -116,7 +116,7 @@ def _proportional_int_durations(
 
 
 def _rescale_fragment_duration_tags(content: str, target_sec: int) -> str:
-    """合并/压缩后保留多段 @duration，仅按比例缩放使合计等于 target_sec。"""
+    """Giữ nhiều phân đoạn @duration sau khi hợp nhất/nén, chỉ chia tỷ lệ sao cho tổng bằng target_sec."""
     header, blocks = parse_fragment_timed_blocks(content)
     if not blocks:
         return content
@@ -151,7 +151,7 @@ def merge_fragment_drafts(
     dur_a = draft_duration_sec(a)
     dur_b = draft_duration_sec(b)
     if compress:
-        # 超预算压缩：合并后时长取较大者（如 15+15→15），实质删去一条成片时间
+        # Nén vượt quá ngân sách: Thời lượng kết hợp sẽ lớn hơn (chẳng hạn như 15+15→15) và một phần thời gian làm phim về cơ bản sẽ bị xóa.
         duration = min(FRAGMENT_TOTAL_MAX, max(dur_a, dur_b, 1))
     else:
         duration = min(FRAGMENT_TOTAL_MAX, max(dur_a + dur_b, 1))
@@ -195,7 +195,7 @@ def _pick_merge_index(drafts: list[dict[str, Any]], *, compress: bool = False) -
                 continue
         else:
             raw = dur_a + dur_b
-            # 合并后时长封顶到单镜硬上限（如 8+8→15），仍应允许压缩镜数
+            # Sau khi hợp nhất, thời lượng được giới hạn ở giới hạn trên cứng của một gương đơn (chẳng hạn như 8+8→15) và số lượng gương vẫn phải được phép nén
             combined = min(raw, FRAGMENT_TOTAL_MAX)
             if raw > FRAGMENT_TOTAL_MAX and combined <= max(dur_a, dur_b):
                 continue
@@ -219,7 +219,7 @@ def trim_episode_fragment_drafts(
     max_count: int = EPISODE_FRAGMENT_MAX,
     max_total_sec: int = EPISODE_DURATION_BUDGET_SEC,
 ) -> list[dict[str, Any]]:
-    """合并相邻短镜，使条数与总时长贴近短剧预算。"""
+    """Hợp nhất các cảnh ngắn liền kề để làm cho số lượng và tổng thời lượng gần với ngân sách phát ngắn."""
     if not drafts:
         return drafts
     merged = [dict(d) for d in drafts]
@@ -238,7 +238,7 @@ def trim_episode_fragment_drafts(
         merged[idx] = merge_fragment_drafts(merged[idx], merged[idx + 1], compress=True)
         merged.pop(idx + 1)
 
-    # 合并后若单条仍超硬上限，按 @duration 再拆（极少见）
+    # Sau khi hợp nhất, nếu một dòng vẫn vượt quá giới hạn cứng, hãy nhấn @duration để tách lại (hiếm khi)
     expanded: list[dict[str, Any]] = []
     for draft in merged:
         content = repair_fragment_timed_layout(
@@ -267,7 +267,7 @@ def trim_episode_fragment_drafts(
 
 
 def cap_llm_fragment_items(items: list[Any], max_items: int = EPISODE_FRAGMENT_MAX) -> list[Any]:
-    """LLM 返回过多条时，先合并 lines 再规范化，避免一集碎成十几镜。"""
+    """Khi LLM trả về nhiều dòng, hãy hợp nhất các dòng trước rồi chuẩn hóa chúng để tránh chia một tập thành hàng chục cảnh."""
     if len(items) <= max_items:
         return items
     merged: list[dict[str, Any]] = [dict(x) for x in items if isinstance(x, dict)]

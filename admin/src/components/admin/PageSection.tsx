@@ -10,7 +10,7 @@ type PageSectionProps = {
   bodyClassName?: string;
 };
 
-// 带标题的内容区块（白底卡片）
+// Khối nội dung có tiêu đề (thẻ nền trắng)
 export function PageSection({
   title,
   description,

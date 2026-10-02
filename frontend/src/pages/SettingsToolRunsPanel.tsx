@@ -46,7 +46,7 @@ function downloadName(item: ToolRunRecord, url: string): string {
   return `${title}_${item.id}.${ext}`
 }
 
-/** 个人中心「工具创作」列表 */
+/** Danh sách "Tạo công cụ" của Trung tâm cá nhân */
 export default function SettingsToolRunsPanel() {
   const { t } = useI18n()
   const [page, setPage] = useState(1)

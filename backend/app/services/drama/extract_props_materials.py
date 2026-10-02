@@ -1,4 +1,4 @@
-"""从剧本摘要与分集正文抽取道具（对齐 manju extractPropsMaterials，已停用素材）。"""
+"""Trích xuất đạo cụ từ văn bản tóm tắt kịch bản và tập phim (căn chỉnh với manju extractPropsMaterials, tài liệu bị vô hiệu hóa)."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ Yêu cầu xuất ra:
 """
 
 
-# 按名称去重（保留首次）
+# Xóa trùng lặp theo tên (giữ lại lần đầu)
 def _dedupe_by_name(items: list[dict[str, Any]]) -> list[dict[str, str]]:
     seen: set[str] = set()
     result: list[dict[str, str]] = []
@@ -41,7 +41,7 @@ def _dedupe_by_name(items: list[dict[str, Any]]) -> list[dict[str, str]]:
     return result
 
 
-# 规范化 LLM 返回
+# Lợi nhuận LLM được chuẩn hóa
 def _normalize_payload(raw: Any) -> dict[str, list[dict[str, Any]]]:
     if not isinstance(raw, dict):
         return {"props": [], "materials": []}
@@ -64,7 +64,7 @@ async def extract_props_materials(
     summary: dict[str, Any] | None,
     episode_bodies: list[str],
 ) -> dict[str, list[dict[str, str]]]:
-    """调用 LLM 抽取道具（materials 恒为空，兼容旧调用方）。
+    """Call LLM để lấy props (tài liệu luôn trống, tương thích với người gọi cũ).
 
     Returns:
         {"props": [{"name","visualPrompt"}], "materials": []}

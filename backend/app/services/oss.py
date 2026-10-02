@@ -34,7 +34,7 @@ def _bucket():
 
 
 def reset_oss_client() -> None:
-    """后台改 OSS 密钥后丢掉缓存的 Bucket，避免继续用已禁用的旧 Key。"""
+    """Loại bỏ Bộ đệm đã lưu trong bộ nhớ cache sau khi thay đổi khóa OSS ở chế độ nền để tránh tiếp tục sử dụng Khóa cũ đã bị vô hiệu hóa."""
     _bucket.cache_clear()
 
 
@@ -53,7 +53,7 @@ def folder_prefix() -> str:
 
 
 def public_base() -> str:
-    """浏览器可访问的公网基址；内网上传 endpoint 不能出现在返回 URL 里。"""
+    """Địa chỉ cơ sở mạng công cộng mà trình duyệt có thể truy cập; điểm cuối tải lên mạng nội bộ không thể xuất hiện trong URL trả về."""
     s = get_settings()
     if s.oss_public_base.strip():
         return s.oss_public_base.rstrip("/")
@@ -78,7 +78,7 @@ def ensure_browser_cors() -> None:
         for o in (s.cors_origins or "").split(",")
         if o.strip()
     ]
-    # Production site + common local/dev（主站 www 优先）
+    # Trang web sản xuất + local/dev chung (ưu tiên trang web chính www)
     for extra in (
         "https://www.printfilm.com",
         "http://www.printfilm.com",
@@ -158,7 +158,7 @@ def upload_bytes(data: bytes, object_key: str, *, content_type: str = "applicati
     return public_url(key)
 
 
-# 直接将文件对象流式上传到 OSS，避免先整文件读入内存。
+# Truyền trực tiếp đối tượng tệp tới OSS để tránh đọc toàn bộ tệp vào bộ nhớ trước.
 def upload_fileobj(fileobj: BufferedIOBase, object_key: str, *, content_type: str = "application/octet-stream") -> str:
     key = object_key.lstrip("/")
     headers = {"Content-Type": content_type, "x-oss-object-acl": "public-read"}

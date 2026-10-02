@@ -16,7 +16,7 @@ class DramaProjectCreate(BaseModel):
     source: str = Field(default="", description="原始创意文案")
     episode_count: int = Field(default=12, ge=1, le=120)
     image_style_id: str = Field(default="")
-    # script=大纲分集流程；canvas=自由画布
+    # script=phác thảo quá trình đa dạng; canvas=vải miễn phí
     workflow: str = Field(default="script", description="script | canvas")
     params: dict[str, Any] | None = None
 
@@ -56,7 +56,7 @@ class DramaAssetOut(BaseModel):
 
 
 class DramaProjectUsageStats(BaseModel):
-    """单部漫剧累计用量：费用与生图/生视频次数。"""
+    """Mức sử dụng tích lũy của một truyện tranh: chi phí và số lượng hình ảnh/video."""
 
     charge_fen: int = 0
     charge_yuan: float = 0.0
@@ -69,7 +69,7 @@ class DramaProjectUsageStats(BaseModel):
 
 
 class SeedAssetsFromScriptOut(BaseModel):
-    """从剧本抽取/刷新资产的结果统计。"""
+    """Thống kê kết quả trích xuất/làm mới nội dung từ tập lệnh."""
 
     assets: list[DramaAssetOut] = Field(default_factory=list)
     created_count: int = 0
@@ -158,16 +158,16 @@ class DramaScriptSummaryRequest(BaseModel):
 
 class DramaEpisodeScriptRequest(BaseModel):
     project_id: int
-    # 与原项目一致：默认逐集生成，降低超时/截断导致「只出一半」的风险
+    # Phù hợp với dự án ban đầu: được tạo theo từng tập theo mặc định, giảm nguy cơ "chỉ một nửa sản lượng" do hết thời gian/cắt ngắn
     batch_size: int = Field(default=1, ge=1, le=12)
-    # 强制重写：清空已有正文（保留集名），再按新提示词生成
+    # Buộc viết lại: xóa văn bản hiện có (giữ lại tên bộ sưu tập), sau đó tạo một từ nhắc mới
     force: bool = False
-    # 只优化/生成这一集；与 draft 一起用于「粘贴剧本 → AI 优化」
+    # Chỉ tối ưu hóa/tạo tập này; được sử dụng với bản nháp cho "Dán tập lệnh → Tối ưu hóa AI"
     episode_number: int | None = Field(default=None, ge=1, le=120)
     draft: str | None = Field(default=None, max_length=50000)
-    # optimize=草稿优化；summary=创意→摘要；body=创意+摘要→正文；full=一键摘要+正文；brief=正文→创意+摘要
+    # tối ưu hóa=tối ưu hóa dự thảo; tóm tắt=sáng tạo → trừu tượng; nội dung=sáng tạo + tóm tắt → văn bản chính; đầy đủ = tóm tắt bằng một cú nhấp chuột + văn bản chính; tóm tắt = văn bản chính → sáng tạo + tóm tắt
     generate_mode: str | None = Field(default=None, max_length=32)
-    # 可选：生成前写入本集创意（并保存）
+    # Tùy chọn: Viết ý tưởng sáng tạo cho tập này trước khi tạo (và lưu)
     creative: str | None = Field(default=None, max_length=20000)
     title: str | None = Field(default=None, max_length=40)
 
@@ -213,13 +213,13 @@ class DramaImageGenerateRequest(BaseModel):
     prompt: str
     name: str | None = None
     asset_type_kind: str = "character"
-    # 内置风格 ID（可缺省，回退项目/剧本 params.image_style_id）
+    # ID kiểu tích hợp (có thể được mặc định, dự án/tập lệnh dự phòng params.image_style_id)
     image_style_id: str | None = None
-    # 前端模型 ID：seedream-5.0 / seedream-4.5
+    # ID mô hình giao diện người dùng: seedream-5.0 / seedream-4.5
     model_id: str | None = None
-    # 输出比例，角色默认 3:4
+    # Tỷ lệ đầu ra, ký tự mặc định 3:4
     aspect_ratio: str | None = None
-    # 清晰度 3K / 4K
+    # Độ phân giải 3K / 4K
     resolution: str | None = None
 
 
@@ -227,13 +227,13 @@ class DramaVideoGenerateRequest(BaseModel):
     project_id: int
     asset_id: int
     prompt: str
-    # 前端短名 seedance-2.5 / seedance-1.5，或完整接入点
+    # Frontend tên ngắn hạt giống-2.5 / hạt giống-1.5 hoặc điểm truy cập đầy đủ
     model_id: str | None = None
     aspect_ratio: str | None = None
     resolution: str | None = None
     duration_sec: int | None = None
     image_style_id: str | None = None
-    # 画布连线带入的参考资产（与正文 @asset:id 合并）
+    # Nội dung tham chiếu được đưa vào bởi kết nối canvas (được hợp nhất với văn bản @asset:id)
     reference_asset_ids: list[int] = Field(default_factory=list)
 
 
@@ -272,33 +272,33 @@ class DramaSaveFragmentsRequest(BaseModel):
 
 class DramaGenerateRequest(BaseModel):
     fragment_ids: list[int] | None = None
-    # 视频模型：后台 TokenFree 目录 id
+    # Model video: Id thư mục Backend TokenFree
     model_id: str | None = Field(default=None, max_length=64)
 
 
 class DramaComposeEpisodeRequest(BaseModel):
-    # fragment_ids 仅拼接指定分镜；None 表示本集全部已有视频的分镜
+    # Fragment_ids Chỉ ghép các đoạn phim được chỉ định; Không có nghĩa là tất cả cảnh quay từ các video hiện có trong tập này
     fragment_ids: list[int] | None = None
 
 
 class DramaPlanFragmentsRequest(BaseModel):
-    # force 是否覆盖已有视频/手改分镜（单集 AI 重切默认 true）
+    # buộc Có ghi đè các video/bảng phân cảnh được sửa đổi bằng tay hiện có hay không (mặc định việc cắt lại AI một tập là đúng)
     force: bool = True
-    # fallback_rules LLM 失败时是否回退规则切分
+    # fallback_rules Có quay lại phân đoạn quy tắc khi LLM không thành công hay không
     fallback_rules: bool = True
-    # skill_ids 本次注入的 Agent Skill；None 表示全部启用，[] 表示不注入
+    # Skill_ids Kỹ năng đặc vụ được đưa vào lần này; Không có nghĩa là tất cả đều được bật, [] có nghĩa là không được tiêm
     skill_ids: list[int] | None = None
-    # subtitle_enabled 是否为本次分镜注入字幕提示；None 表示沿用分集当前设置
+    # subtitle_enabled Có thêm lời nhắc phụ đề vào tập này hay không; Không có nghĩa là cài đặt hiện tại của tập sẽ được sử dụng.
     subtitle_enabled: bool | None = None
 
 
 class DramaActivateVideoVersionRequest(BaseModel):
-    # version_id 历史成片版本 id（params.video_versions[].id）
+    # version_id Id phiên bản phim lịch sử (params.video_versions[].id)
     version_id: str = Field(..., min_length=1, max_length=128)
 
 
 class DramaActivateImageVersionRequest(BaseModel):
-    # version_id 资产形象历史版本 id（params.image_versions[].id）
+    # version_id id phiên bản lịch sử hình ảnh nội dung (params.image_versions[].id)
     version_id: str = Field(..., min_length=1, max_length=128)
 
 

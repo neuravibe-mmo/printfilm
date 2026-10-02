@@ -1,4 +1,4 @@
-/** 资产库步骤：首次无资产时自动 seed，分类 Tab + 生图队列 + 角色音色绑定 */
+/** Các bước của thư viện nội dung: Tự động khởi tạo khi không có nội dung lần đầu tiên, Tab phân loại + hàng đợi tạo hình ảnh + liên kết tông màu ký tự */
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { Link } from 'react-router-dom'
@@ -44,7 +44,7 @@ type AssetTabKey = 'character' | 'scene' | 'prop' | 'voice'
 const PAGE_SIZE_DEFAULT = 12
 const PAGE_SIZE_OPTIONS = [12, 24, 36] as const
 
-// 跨 StrictMode 重挂载共享，避免空库并发 seed
+// Kể lại phần chia sẻ trên StrictMode để tránh việc gieo hạt đồng thời các thư viện trống
 const seedingProjectIds = new Set<number>()
 
 type AssetsStepProps = {
@@ -52,17 +52,17 @@ type AssetsStepProps = {
   onError: (m: string) => void
 }
 
-// 将接口返回规范为资产数组，避免 undefined.filter 崩溃
+// Chuẩn hóa giao diện trả về dưới dạng mảng nội dung để tránh sự cố không xác định.filter
 function normalizeAssetList(value: unknown): DramaAsset[] {
   return filterDramaLibraryAssets(Array.isArray(value) ? (value as DramaAsset[]) : [])
 }
 
-// 判断资产是否尚未出图（无有效封面/主图，上传或 AI 生成均视为已出图）
+// Xác định xem tài sản chưa được xuất bản hay không (không có ảnh bìa/ảnh chính hợp lệ, việc tải lên hoặc tạo AI sẽ được coi là đã xuất bản)
 function needsImageGeneration(asset: DramaAsset): boolean {
   return dramaAssetNeedsImageGeneration(asset)
 }
 
-// 渲染资产库步骤
+// Hiển thị các bước thư viện nội dung
 export function AssetsStep({ projectId, onError }: AssetsStepProps) {
   const { t } = useI18n()
   const ASSET_TABS: Array<{ key: AssetTabKey; label: string }> = [
@@ -73,18 +73,18 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
   ]
 
   /*
-   * assets 项目资产
-   * tab 当前分类
-   * loading 首次加载
-   * batchBusy 一键入队中
-   * genOptions 生图选项
-   * voiceAsset 打开音色弹窗的角色
-   * detailAsset 打开详情操作框的资产
-   * lightbox 图片放大预览
-   * batchVoiceBusy 批量生成音色中
-   * page 当前页码
-   * pageSize 每页条数
-   * genQueue 全局生图队列
+   * tài sản tài sản dự án
+   * tab danh mục hiện tại
+   * đang tải lần tải đầu tiên
+   * batchBusy Một cú nhấp chuột để vào hàng đợi
+   * genOptions Tùy chọn tạo hình ảnh
+   * voiceAsset Vai trò mở cửa sổ bật lên bằng giọng nói
+   * chi tiếtAsset mở nội dung của hộp thao tác chi tiết
+   * xem trước phóng to hình ảnh hộp đèn
+   * batchVoiceBusy đang tạo âm thanh theo đợt
+   * trang số trang hiện tại
+   * trangKích thước Số mục trên mỗi trang
+   * genQueue hàng đợi tạo biểu đồ toàn cầu
    */
   const [assets, setAssets] = useState<DramaAsset[]>([])
   const [tab, setTab] = useState<AssetTabKey>('character')
@@ -125,7 +125,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
         let list = normalizeAssetList(
           await dramaApi.listAssets(projectId, { libraryOnly: true }),
         )
-        // 仅首次（资产库为空且已有剧本摘要）自动从剧本抽取；之后需手动点「重新抽取资产」
+        // Chỉ lần đầu tiên (thư viện nội dung trống và có tóm tắt tập lệnh), nó sẽ tự động được trích xuất từ tập lệnh; sau đó, bạn cần nhấp vào "Trích xuất lại tài sản" theo cách thủ công
         if (list.length === 0 && p?.script?.summary && !seedingProjectIds.has(projectId)) {
           seedingProjectIds.add(projectId)
           try {
@@ -177,7 +177,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     setPage(1)
   }, [pageSize])
 
-  // 队列完成时把最新封面写回卡片
+  // Ghi lại bìa mới nhất vào thẻ khi xếp hàng xong
   useEffect(() => {
     const projectJobs = genQueue.filter((j) => j.projectId === projectId)
     const doneIds = new Set(
@@ -225,7 +225,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
       )
       .map((j) => j.assetId),
   )
-  // 未出图：无有效 cover/url，且当前未在队列中
+  // Chưa được xuất bản: Không có bìa/url hợp lệ và nó hiện không có trong hàng đợi.
   const pending = filtered.filter((a) => needsImageGeneration(a) && !busyAssetIds.has(a.id))
   const queueBusy = busyAssetIds.size > 0
   const pageCount = pageCountOf(filtered.length, pageSize)
@@ -235,7 +235,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     return filtered.slice(start, start + pageSize)
   }, [filtered, safePage, pageSize])
 
-  // 持久化项目画面风格
+  // Kiểu màn hình dự án liên tục
   async function persistStyle(styleId: string) {
     try {
       await dramaApi.updateScript(projectId, { image_style_id: styleId })
@@ -244,7 +244,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 入队前校验余额（批量/单项共用）；成功时返回预检明细（含单张估算）
+  // Xác minh số dư trước khi tham gia nhóm (chung cho lô/mặt hàng đơn lẻ); trả lại chi tiết kiểm tra trước (bao gồm cả ước tính đơn lẻ) nếu thành công
   async function ensureImageGenBalance(count: number): Promise<BillingPreflight | null> {
     try {
       return await api.billingPreflight({
@@ -277,7 +277,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     onError(view.message || message || t('drama.assetsStep.genImageFailed'))
   }
 
-  // 加入全局生图队列（不互相顶掉）
+  // Tham gia hàng đợi tạo hình ảnh toàn cầu (không đẩy nhau)
   function enqueueOne(asset: DramaAsset, options = genOptions) {
     if (busyAssetIds.has(asset.id)) return
     void (async () => {
@@ -301,7 +301,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     })()
   }
 
-  // 一键只入队「当前分类下尚未出图」的资产（已有图 / 排队中跳过）
+  // Chỉ những nội dung "chưa được xuất bản trong danh mục hiện tại" mới được thêm vào hàng đợi chỉ bằng một cú nhấp chuột (đã có ảnh / bị bỏ qua trong hàng đợi)
   async function batchGenerate() {
     const targets = filtered.filter(
       (a) => needsImageGeneration(a) && !busyAssetIds.has(a.id),
@@ -354,7 +354,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     })
   }
 
-  // 音色绑定成功后刷新列表项
+  // Làm mới các mục danh sách sau khi âm sắc được liên kết thành công.
   function handleVoiceBound(updated: DramaAsset) {
     setAssets((prev) => (prev ?? []).map((a) => (a.id === updated.id ? updated : a)))
   }
@@ -367,7 +367,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     })
   }
 
-  // 一键 AI 生成音色并绑定（各角色独立 busy，互不阻塞）
+  // AI chỉ bằng một cú nhấp chuột sẽ tạo ra âm thanh và liên kết chúng (mỗi nhân vật bận độc lập và không chặn lẫn nhau)
   async function handleGenerateCharacterVoice(asset: DramaAsset) {
     if (characterVoiceBusyIds.has(asset.id) || batchVoiceBusy) return
     setCharacterVoiceBusyIds((prev) => new Set(prev).add(asset.id))
@@ -386,7 +386,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 批量按角色设定生成音色
+  // Tạo âm thanh theo nhóm dựa trên cài đặt ký tự
   async function batchGenerateCharacterVoices() {
     if (batchVoiceBusy || selectedCharacterAssets.length === 0) return
     const ok = await dialog.confirm({
@@ -420,7 +420,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 从全局资产库导入到当前项目
+  // Nhập từ thư viện tài sản toàn cầu vào dự án hiện tại
   async function handleImportFromLibrary(source: DramaAsset) {
     const dup = assetList.some(
       (a) =>
@@ -439,7 +439,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     setAssets((prev) => [...(prev ?? []), created])
   }
 
-  // 新增音色资产
+  // Đã thêm nội dung âm thanh
   async function handleAddVoice() {
     const name = await dialog.prompt({
       title: t('drama.assetsStep.addVoiceTitle'),
@@ -463,14 +463,14 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 保存音色描述到资产 params
+  // Lưu mô tả âm sắc vào thông số nội dung
   async function persistVoicePrompt(asset: DramaAsset, prompt: string) {
     const nextParams = { ...(asset.params || {}), voicePrompt: prompt.trim() }
     const updated = await dramaApi.updateAsset(asset.id, { params: nextParams })
     setAssets((prev) => (prev ?? []).map((a) => (a.id === updated.id ? updated : a)))
   }
 
-  // 按提示词合成 voice 资产试听
+  // Tổng hợp thử nội dung giọng nói theo lời nhắc
   async function handleSynthVoice(asset: DramaAsset) {
     const prompt = (voicePromptDrafts[asset.id] ?? readVoicePrompt(asset)).trim()
     if (!prompt) {
@@ -493,7 +493,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 删除音色资产
+  // Xóa nội dung âm thanh
   async function handleDeleteVoice(asset: DramaAsset) {
     const ok = await dialog.confirm({
       title: t('drama.assetsStep.deleteVoiceTitle'),
@@ -510,7 +510,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 新增角色
+  // Vai trò mới
   async function handleAddCharacter() {
     const name = await dialog.prompt({
       title: t('drama.assetsStep.addCharTitle'),
@@ -533,7 +533,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 删除角色
+  // Xóa vai trò
   async function handleDeleteCharacter(asset: DramaAsset) {
     const ok = await dialog.confirm({
       title: t('drama.assetsStep.deleteCharTitle'),
@@ -554,7 +554,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 重新从剧本抽取资产并 AI 刷新全部生图提示词
+  // Trích xuất lại nội dung từ tập lệnh và làm mới tất cả lời nhắc vẽ bằng AI
   async function handleReseedAssets() {
     if (reseedBusy || batchBusy) return
     const ok = await dialog.confirm({
@@ -646,7 +646,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // 卡片按钮文案（已有图时显示「重新生成形象」）
+  // Sao chép nút thẻ ("Tạo lại hình ảnh" sẽ được hiển thị khi có hình ảnh)
   function genButtonLabel(asset: DramaAsset): string {
     const job = genQueue.find(
       (j) =>

@@ -1,4 +1,4 @@
-"""分镜脚本内 @duration 标签解析（与前端 episodeFragmentDuration 一致）。"""
+"""@duration phân tích cú pháp thẻ trong tập lệnh bảng phân cảnh (phù hợp với EpisodeFragmentDuration ở giao diện người dùng)."""
 
 from __future__ import annotations
 
@@ -6,16 +6,16 @@ import re
 
 from app.services.drama.build_fragments import FRAGMENT_TOTAL_MAX
 
-# 新分镜规划建议上限（重新分镜 / 规则切分）
+# Giới hạn trên được đề xuất cho việc lập kế hoạch bảng phân cảnh mới (viết lại bảng phân cảnh/tách quy tắc)
 FRAGMENT_CONTENT_DURATION_MAX = FRAGMENT_TOTAL_MAX
-# Seedance 单次生成 API 上限（旧稿落库脚本仍可按此提交）
+# Giới hạn trên của API thế hệ đơn Seedance (các tập lệnh cũ vẫn có thể được gửi tại đây)
 SEEDANCE_DURATION_MIN = 4
 SEEDANCE_DURATION_MAX = 30
 
 DURATION_MENTION_TOKEN_PATTERN = re.compile(r"@duration:(\d+)")
 
 
-# 统计 content 中时长标签合计秒数
+# Đếm tổng số giây của thẻ thời lượng trong nội dung
 def sum_fragment_content_duration_seconds(content: str) -> int:
     total = 0
     for match in DURATION_MENTION_TOKEN_PATTERN.finditer(content or ""):
@@ -25,12 +25,12 @@ def sum_fragment_content_duration_seconds(content: str) -> int:
     return total
 
 
-# 将秒数格式化为 MM:SS 时间戳
+# Định dạng giây thành dấu thời gian MM:SS
 def format_duration_timestamp(seconds: int) -> str:
     return f"{seconds // 60:02d}:{seconds % 60:02d}"
 
 
-# 将 @duration 标签替换为渐进时间区间
+# Thay thế thẻ @duration bằng khoảng thời gian lũy tiến
 def replace_duration_mentions_with_time_ranges(content: str) -> str:
     elapsed_seconds = 0
 
@@ -48,7 +48,7 @@ def replace_duration_mentions_with_time_ranges(content: str) -> str:
     return DURATION_MENTION_TOKEN_PATTERN.sub(replace, content or "")
 
 
-# 解析提交 Seedance 的 duration；无标签时用 fallback
+# Phân tích thời lượng của Seedance đã gửi; sử dụng dự phòng khi không có nhãn
 def resolve_seedance_duration_from_content(content: str | None, fallback: int = 8) -> int:
     total = sum_fragment_content_duration_seconds(content or "")
     if total <= 0:

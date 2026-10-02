@@ -20,12 +20,12 @@ CAPABILITY_DEFAULT_KEYS: dict[LogicalModelCapability, str] = {
 }
 
 
-# 规范化模型名用于比较
+# Tên model được chuẩn hóa để so sánh
 def normalize_model_name(value: str) -> str:
     return re.sub(r"\s+", "", (value or "").strip()).lower()
 
 
-# 从模型名推断能力类型
+# Suy ra loại khả năng từ tên model
 def infer_model_capability(model: str) -> LogicalModelCapability:
     mid = normalize_model_name(model)
     if not mid:
@@ -63,19 +63,19 @@ def infer_model_capability(model: str) -> LogicalModelCapability:
     return "text"
 
 
-# 判断渠道是否具备连接信息
+# Xác định xem kênh có thông tin kết nối hay không
 def channel_connection_ready(channel: SystemModelChannel) -> bool:
     if not channel.enabled:
         return False
     if channel.protocol == "volc_tts":
         return bool(channel.has_api_key or channel.base_url)
     if channel.protocol == "kie":
-        # Base URL 可缺省为官方默认
+        # URL cơ sở có thể mặc định là mặc định chính thức
         return bool(channel.has_api_key or (channel.api_key or "").strip())
     return bool(channel.base_url and channel.has_api_key)
 
 
-# 判断渠道是否包含指定上游模型
+# Xác định xem kênh có chứa mô hình ngược dòng được chỉ định hay không
 def channel_supports_model(channel: SystemModelChannel, upstream_model: str) -> bool:
     from app.services.tokenfree_pricing import canonicalize_channel_model_id
 
@@ -89,7 +89,7 @@ def channel_supports_model(channel: SystemModelChannel, upstream_model: str) -> 
     )
 
 
-# 解析渠道下单模型的能力
+# Khả năng phân tích mô hình đặt hàng kênh
 def resolve_channel_model_capability(channel: SystemModelChannel, upstream_model: str) -> LogicalModelCapability:
     protocol = (channel.protocol or "auto").lower()
     if protocol == "openai":
@@ -109,7 +109,7 @@ def resolve_channel_model_capability(channel: SystemModelChannel, upstream_model
     return infer_model_capability(upstream_model)
 
 
-# 根据渠道列表同步逻辑模型
+# Đồng bộ hóa mô hình logic dựa trên danh sách kênh
 def synchronize_logical_models_with_channels(
     existing_models: list[LogicalModel],
     channels: list[SystemModelChannel],
@@ -187,7 +187,7 @@ def synchronize_logical_models_with_channels(
     return result
 
 
-# 规范化默认模型 ID
+# ID mô hình mặc định được chuẩn hóa
 def normalize_default_models(
     defaults: DefaultModels | None,
     logical_models: list[LogicalModel],
@@ -214,7 +214,7 @@ def normalize_default_models(
     return normalized
 
 
-# 判断逻辑模型是否可解析到可用渠道
+# Xác định xem mô hình logic có thể được phân tích thành các kênh có sẵn hay không
 def is_logical_model_resolvable(
     logical_models: list[LogicalModel],
     channels: list[SystemModelChannel],
@@ -224,7 +224,7 @@ def is_logical_model_resolvable(
     return resolve_logical_model_config(logical_models, channels, capability, model_id) is not None
 
 
-# 解析单条逻辑模型配置
+# Phân tích một cấu hình mô hình logic duy nhất
 def resolve_logical_model_config(
     logical_models: list[LogicalModel],
     channels: list[SystemModelChannel],
@@ -260,7 +260,7 @@ def resolve_logical_model_config(
     return None
 
 
-# 校验路由配置
+# Xác minh cấu hình định tuyến
 def model_routing_validation_errors(
     logical_models: list[LogicalModel],
     channels: list[SystemModelChannel],

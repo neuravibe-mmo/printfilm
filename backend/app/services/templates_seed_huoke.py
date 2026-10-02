@@ -1,4 +1,4 @@
-"""获客短视频模板（并入科普模板库）。
+"""Mẫu video ngắn thu hút khách hàng (được tích hợp vào thư viện mẫu khoa học phổ biến).
 
 结构来自共创营销 Demo 四平台骨架（小红书 / 抖音 / 点评 / 朋友圈）：
 钩子→印象→分点体验→推荐给谁；0–3 秒钩子→画面→1–2 体验→CTA；
@@ -9,7 +9,7 @@ category[0] 固定为「科普」，便于首页科普筛选；另挂「获客�
 sort_order 0–3：创建页「热门推荐」与默认模板会优先落到这四条。
 """
 
-# 四条模板共用：事实边界 + 人称边界 + 合规（写入 llm_system_addon 前缀）
+# Bốn mẫu được chia sẻ: ranh giới thực tế + ranh giới con người + tuân thủ (viết tiền tố llm_system_addon)
 HUOKE_IRON_RULES = (
     "【Quy tắc tiếp thị khách hàng】Chỉ sử dụng những sự thật có trong nội dung của người dùng; "
     "tuyệt đối không tự bịa giá cả, sản phẩm, hiệu quả hay dịch vụ chưa được đề cập. "
@@ -22,7 +22,7 @@ HUOKE_IRON_RULES = (
     "【Lời dẫn】Câu ngắn gọn, khẩu ngữ tự nhiên, ngôn ngữ tiếng Việt."
 )
 
-# 叠字：竖屏获客片顶部大字 + 底部口播字幕
+# Các ký tự chồng chéo: các ký tự lớn ở đầu video thu hút khách hàng màn hình dọc + phụ đề giọng nói ở phía dưới
 _HUOKE_SUB_SPLIT = {
     "font": "SourceHanSans",
     "position": "split",
@@ -52,7 +52,7 @@ def _tpl(
     shot_count_min: int = 3,
     shot_count_max: int = 5,
 ) -> dict:
-    """组装一条获客科普模板，字段与 TEMPLATES 条目一致。"""
+    """Tập hợp một mẫu khoa học thu hút khách hàng, các trường nhất quán với các mục nhập TEMPLATES."""
     cfg = dict(seedream_config)
     if photoreal:
         cfg["photoreal"] = True
@@ -130,10 +130,10 @@ HUOKE_TEMPLATES: list[dict] = [
     _tpl(
         tid="huoke_xhs_recommend",
         name="获客·小红书安利",
-        description="竖屏闺蜜安利结构：钩子标题→第一印象→分点真实体验→推荐给谁。封面信息量高、口语化。",
+        description="竖屏闺蜜安利结构：钩子Tiêu đề→第一印象→分点真实体验→推荐给谁。封面信息量高、口语化。",
         style_prefix=(
             "竖屏生活安利静帧：明亮自然光，浅色桌面或门店角落，产品/空间细节清楚，"
-            "杂志封面气质、留白分层，适合叠标题，非浓妆棚拍、非卡通"
+            "杂志封面气质、留白分层，适合叠Tiêu đề，非浓妆棚拍、非卡通"
         ),
         negative_prompt=(
             "阴暗脏乱，赛博霓虹，卡通动漫，硬广海报堆字，假抠图，水印乱码"
@@ -155,7 +155,7 @@ HUOKE_TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.7,
             "consistency_mode": "style",
-            "extra_prompt": "明亮竖屏，顶部大留白叠标题，画面内不要出现文字，各镜场景不同",
+            "extra_prompt": "明亮竖屏，顶部大留白叠Tiêu đề，画面内不要出现文字，各镜场景不同",
         },
         seedance_config={
             "motion_bias": "缓慢平移与轻微推近细节",

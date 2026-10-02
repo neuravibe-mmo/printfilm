@@ -23,7 +23,7 @@ function isTabKey(value: string | null): value is TabKey {
   return TABS.includes(value as TabKey);
 }
 
-/** 漫剧项目二级详情：概览 / 分集 / 资产 / 任务 */
+/** Chi tiết phụ về dự án phim truyền hình truyện tranh: Tổng quan/Các tập/Tài sản/Nhiệm vụ */
 export function DramaProjectDetailPage() {
   const { m, locale } = useI18n();
   const { projectId } = useParams<{ projectId: string }>();

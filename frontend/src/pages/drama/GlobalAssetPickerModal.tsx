@@ -13,20 +13,20 @@ export type GlobalAssetTabKey = 'character' | 'scene' | 'prop' | 'voice' | 'all'
 type Props = {
   open: boolean
   onClose: () => void
-  /** 当前项目 ID，用于标注来源与可选排除本项 */
+  /** ID dự án hiện tại, được sử dụng để đánh dấu nguồn và loại trừ mục này tùy ý */
   projectId: number
-  /** 默认 Tab；canvas 场景可传 all */
+  /** Tab mặc định; cảnh canvas có thể được chuyển đến tất cả */
   defaultTab?: GlobalAssetTabKey
-  /** 限定可选资产 type 列表；不传则按 Tab 筛选 */
+  /** Giới hạn danh sách loại nội dung tùy chọn; nếu không đạt nhấn Tab để lọc */
   allowedTypes?: string[]
-  /** 标题 */
+  /** Tiêu đề */
   title?: string
-  /** 确认按钮文案 */
+  /** Xác nhận sao chép nút */
   confirmLabel?: string
   onPick: (asset: DramaAsset) => void | Promise<void>
 }
 
-// 资产是否匹配 Tab
+// Nội dung có khớp với Tab không
 function matchAssetTab(asset: DramaAsset, tab: GlobalAssetTabKey): boolean {
   if (!isDramaLibraryAsset(asset)) return false
   if (tab === 'all') return true
@@ -41,7 +41,7 @@ function hasMedia(asset: DramaAsset): boolean {
   return Boolean(asset.url || asset.cover)
 }
 
-// 渲染全局资产库选择弹窗（使用全局 Modal）
+// Hiển thị cửa sổ bật lên lựa chọn thư viện nội dung toàn cầu (sử dụng Phương thức toàn cầu)
 export function GlobalAssetPickerModal({
   open,
   onClose,
@@ -63,13 +63,13 @@ export function GlobalAssetPickerModal({
     ...(DRAMA_VOICE_BINDING_ENABLED ? [{ key: 'voice' as const, label: t('drama.assets.voice') }] : []),
   ]
   /*
-   * allAssets 用户全部项目资产
-   * tab 当前分类
-   * query 搜索词
-   * selectedId 选中资产
-   * loading 加载中
-   * busy 提交中
-   * error 错误文案
+   * allAssets Tất cả tài sản dự án của người dùng
+   * tab danh mục hiện tại
+   * truy vấn cụm từ tìm kiếm
+   * tài sản đã chọnId đã chọn
+   * đang tải đang tải
+   * bận gửi bài
+   * lỗi lỗi sao chép
    */
   const [allAssets, setAllAssets] = useState<DramaAsset[]>([])
   const [tab, setTab] = useState<GlobalAssetTabKey>(
@@ -115,7 +115,7 @@ export function GlobalAssetPickerModal({
     })
   }, [allAssets, allowedTypes, query, tab])
 
-  // 确认选用资产
+  // Xác nhận lựa chọn nội dung
   async function handleConfirm() {
     const picked = allAssets.find((a) => a.id === selectedId)
     if (!picked || busy) return
@@ -227,7 +227,7 @@ export function GlobalAssetPickerModal({
   )
 }
 
-// 将外部资产复制到当前项目（导入）
+// Sao chép nội dung bên ngoài vào dự án hiện tại (nhập)
 export async function importGlobalAssetToProject(
   projectId: number,
   source: DramaAsset,
@@ -259,7 +259,7 @@ export async function importGlobalAssetToProject(
   })
 }
 
-// 画布 kind → 资产 type 筛选
+// loại canvas → bộ lọc loại nội dung
 export function canvasKindToLibraryTypes(kind: string): string[] {
   if (kind === 'character') return ['character']
   if (kind === 'scene') return ['scene']

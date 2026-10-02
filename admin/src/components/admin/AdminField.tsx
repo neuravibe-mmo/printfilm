@@ -8,7 +8,7 @@ type AdminFieldProps = {
   children: ReactNode;
 };
 
-// 管理端表单字段：标签 + 控件 + 可选说明
+// Các trường biểu mẫu quản lý: nhãn + điều khiển + mô tả tùy chọn
 export function AdminField({ label, hint, className, children }: AdminFieldProps) {
   return (
     <div className={cn("admin-field", className)}>

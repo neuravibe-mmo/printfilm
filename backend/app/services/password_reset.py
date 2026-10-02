@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""邮箱找回密码：Redis 一次性 token + SMTP 重置链接。"""
+"""Lấy lại mật khẩu qua email: Token Redis một lần + liên kết đặt lại SMTP."""
 from __future__ import annotations
 
 import hashlib
@@ -15,27 +15,27 @@ from app.services.email import send_email
 
 logger = logging.getLogger(__name__)
 
-# token TTL / 同邮箱冷却
+# TTL của token / thời gian chờ giữa các lần gửi cho cùng một email
 TOKEN_TTL_SECONDS = 30 * 60
 COOLDOWN_SECONDS = 60
 
-GENERIC_OK_MESSAGE = "若该邮箱已注册，将收到重置邮件"
+GENERIC_OK_MESSAGE = "Nếu email này đã được đăng ký, bạn sẽ nhận được email đặt lại mật khẩu"
 
 
 class PasswordResetError(Exception):
-    """找回/重置密码业务错误。"""
+    """Lỗi nghiệp vụ lấy lại/đặt lại mật khẩu."""
 
 
 class RedisUnavailableError(PasswordResetError):
-    """Redis 不可用，无法签发或校验重置 token。"""
+    """Redis không khả dụng, không thể cấp phát hoặc xác thực token đặt lại."""
 
 
 class InvalidTokenError(PasswordResetError):
-    """重置 token 无效或已过期。"""
+    """Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn."""
 
 
 def _token_hash(token: str) -> str:
-    # 只存 sha256，明文 token 仅出现在邮件链接里
+    # Chỉ lưu sha256, token dạng văn bản rõ chỉ xuất hiện trong liên kết gửi qua email
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
@@ -52,7 +52,7 @@ def _cooldown_key(email: str) -> str:
 
 
 def get_redis_client() -> Any:
-    """连接 Redis；失败则抛 RedisUnavailableError（不做内存回退）。"""
+    """Kết nối tới Redis; nếu thất bại sẽ ném lỗi RedisUnavailableError (không dự phòng bộ nhớ)."""
     try:
         import redis
 
@@ -66,11 +66,11 @@ def get_redis_client() -> Any:
         return client
     except Exception as exc:  # noqa: BLE001
         logger.warning("password reset redis unavailable: %s", exc)
-        raise RedisUnavailableError("服务暂时不可用，请稍后再试") from exc
+        raise RedisUnavailableError("Dịch vụ tạm thời không khả dụng, vui lòng thử lại sau") from exc
 
 
 def create_reset_token(redis_client: Any, user_id: int) -> str:
-    """签发一次性 token，并使该用户旧 token 失效。"""
+    """Cấp phát token một lần, đồng thời vô hiệu hóa token cũ của người dùng này."""
     old_hash = redis_client.get(_user_key(user_id))
     if old_hash:
         redis_client.delete(_token_key(str(old_hash)))
@@ -85,41 +85,41 @@ def create_reset_token(redis_client: Any, user_id: int) -> str:
 
 
 def consume_reset_token(redis_client: Any, token: str) -> int:
-    """校验并删除 token，返回 user_id；无效则抛 InvalidTokenError。"""
+    """Xác thực và xóa token, trả về user_id; nếu không hợp lệ sẽ ném lỗi InvalidTokenError."""
     raw = (token or "").strip()
     if not raw:
-        raise InvalidTokenError("重置链接无效或已过期")
+        raise InvalidTokenError("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn")
     th = _token_hash(raw)
     key = _token_key(th)
-    # GETDEL 原子取删：并发的两次重置请求只有一次能拿到 user_id
+    # GETDEL lấy và xóa nguyên tử: trong hai yêu cầu đặt lại đồng thời chỉ một yêu cầu lấy được user_id
     user_id_raw = redis_client.getdel(key)
     if not user_id_raw:
-        raise InvalidTokenError("重置链接无效或已过期")
+        raise InvalidTokenError("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn")
     try:
         user_id = int(user_id_raw)
     except (TypeError, ValueError) as exc:
-        raise InvalidTokenError("重置链接无效或已过期") from exc
+        raise InvalidTokenError("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn") from exc
 
     redis_client.delete(_user_key(user_id))
     return user_id
 
 
 def build_reset_link(token: str) -> str:
-    # 用户端 Auth 页：?mode=reset&token=...
+    # Trang Auth phía người dùng: ?mode=reset&token=...
     base = str(get_settings().public_base_url or "").rstrip("/")
     return f"{base}/auth?mode=reset&token={token}"
 
 
 async def request_password_reset(db: AsyncSession, email: str) -> dict[str, Any]:
     """
-    发起找回：写 Redis token 并尝试发信。
-    始终返回统一成功文案（防枚举）；Redis 不可用时抛错。
+    Khởi tạo lấy lại mật khẩu: Ghi token vào Redis và thử gửi email.
+    Luôn trả về thông báo thành công chung (chống dò quét tài khoản); ném lỗi khi Redis không khả dụng.
     """
     redis_client = get_redis_client()
     email_norm = str(email or "").strip().lower()
     cd_key = _cooldown_key(email_norm)
 
-    # 60 秒冷却：重复请求直接成功、不重发
+    # Thời gian chờ 60 giây: yêu cầu lặp lại trả về thành công trực tiếp, không gửi lại
     if redis_client.get(cd_key):
         return {"ok": True, "message": GENERIC_OK_MESSAGE}
 
@@ -132,13 +132,13 @@ async def request_password_reset(db: AsyncSession, email: str) -> dict[str, Any]
     token = create_reset_token(redis_client, int(user.id))
     link = build_reset_link(token)
     body = (
-        "您正在重置 PRINTFILM 账号密码。\n\n"
-        f"请在 30 分钟内打开以下链接设置新密码：\n{link}\n\n"
-        "如非本人操作，请忽略本邮件。"
+        "Bạn đang thực hiện đặt lại mật khẩu cho tài khoản PRINTFILM.\n\n"
+        f"Vui lòng mở liên kết sau trong vòng 30 phút để thiết lập mật khẩu mới:\n{link}\n\n"
+        "Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email."
     )
     sent = await send_email(
         to_addrs=[email_norm],
-        subject="PRINTFILM 密码重置",
+        subject="PRINTFILM - Đặt lại mật khẩu",
         body=body,
     )
     if not sent:
@@ -156,11 +156,11 @@ async def apply_password_reset(
     token: str,
     new_password: str,
 ) -> None:
-    """校验 token 后更新密码；token 一次性消费。"""
+    """Xác thực token sau đó cập nhật mật khẩu; token chỉ được sử dụng một lần."""
     redis_client = get_redis_client()
     user_id = consume_reset_token(redis_client, token)
     user = await get_user_by_id(db, user_id)
     if not user:
-        raise InvalidTokenError("重置链接无效或已过期")
+        raise InvalidTokenError("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn")
     user.hashed_password = hash_password(new_password)
     await db.commit()

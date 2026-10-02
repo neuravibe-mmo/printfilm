@@ -8,7 +8,7 @@ type AdminDateRangeFilterProps = {
   className?: string;
 };
 
-/** 日期范围筛选（ISO date 字符串 YYYY-MM-DD） */
+/** Bộ lọc phạm vi ngày (chuỗi ngày ISO YYYY-MM-DD) */
 export function AdminDateRangeFilter({ from, to, onChange, className }: AdminDateRangeFilterProps) {
   const { m } = useI18n();
 

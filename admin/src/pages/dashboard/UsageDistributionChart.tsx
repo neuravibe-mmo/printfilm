@@ -43,7 +43,7 @@ function formatMetric(value: number, metric: DashboardMetric, locale?: string): 
   return formatCredits(value, locale);
 }
 
-/** 能力 / 领域分布图 */
+/** Bản đồ phân phối hiện trường/khả năng */
 export function UsageDistributionChart({
   data,
   metric,

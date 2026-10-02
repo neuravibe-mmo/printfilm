@@ -54,7 +54,7 @@ function csvEscape(value: string | number | null | undefined) {
 }
 
 function downloadStoryboardCsv(project: Project) {
-  const header = ['镜号', '旁白', '画面描述', '时长秒', '状态', '镜头标题']
+  const header = ['镜号', '旁白', '画面描述', '时长秒', '状态', '镜头Tiêu đề']
   const rows = (project.shots || [])
     .slice()
     .sort((a, b) => a.shot_no - b.shot_no)
@@ -112,7 +112,7 @@ function hasActiveUnifiedTasks(project: Project | null): boolean {
   )
 }
 
-/** 有任务平台数据时以 active_tasks 为准；COMPOSING 无任务视为拼接失败残留，可重试 */
+/** Khi có dữ liệu nền tảng tác vụ, active_tasks sẽ chiếm ưu thế; nếu không có nhiệm vụ nào trong COMPOSING, nó sẽ được coi là phần còn lại của lỗi nối và có thể được thử lại. */
 function isProjectBusy(project: Project | null): boolean {
   if (!project) return false
   if (hasActiveUnifiedTasks(project)) return true
@@ -130,12 +130,12 @@ export default function StoryboardPage() {
   const [project, setProject] = useState<Project | null>(null)
   const [template, setTemplate] = useState<Template | null>(null)
   const [busy, setBusy] = useState(false)
-  // busyShotIds 正在提交单镜图/视频的镜号，可并行，finally 只删自己
+  // busyShotIds đang gửi số lần quay của hình ảnh/video quay một lần, có thể song song, cuối cùng chỉ xóa chính nó
   const [busyShotIds, setBusyShotIds] = useState<Set<number>>(() => new Set())
   const [error, setError] = useState('')
   const [editing, setEditing] = useState<Shot | null>(null)
   const [editFocus, setEditFocus] = useState<string>('')
-  /** 表格入口：旁白列 / 逐段分镜列 / 操作栏「编辑」 */
+  /** Lối vào biểu mẫu: Cột tường thuật/phân đoạn theo cột phân đoạn/thanh thao tác "Chỉnh sửa" */
   const [editMode, setEditMode] = useState<'full' | 'narration' | 'segment'>('full')
   const [promptEdit, setPromptEdit] = useState<{
     style_prompt: string
@@ -200,16 +200,16 @@ export default function StoryboardPage() {
     [project?.shots],
   )
 
-  // editScriptText 弹窗中当前编辑的逐段脚本
+  // editScriptText Tập lệnh theo từng phần hiện được chỉnh sửa trong cửa sổ bật lên
   const editScriptText = editing?.segment_script || editing?.video_prompt || ''
-  // editDurationCheck 弹窗脚本时长校验
+  // editDurationCheck Xác minh thời lượng của tập lệnh bật lên
   const editDurationCheck = useMemo(
     () => validateSegmentScriptDuration(editScriptText),
     [editScriptText],
   )
 
   const shots = useMemo(() => shotsByNo(project?.shots), [project?.shots])
-  /** 项目字段为空时回显模板默认（与后端 _effective_* 一致） */
+  /** Khi trường dự án trống, mẫu sẽ được lặp lại theo mặc định (phù hợp với phần phụ trợ _hiệu quả_*) */
   const promptDefaults = useMemo(
     () => (template ? defaultsFromTemplate(template) : null),
     [template],
@@ -255,7 +255,7 @@ export default function StoryboardPage() {
           ? t('studio.storyboard.shotVideo')
           : t('studio.storyboard.continueGen')
 
-  // 工作台进度：完整模式要镜头视频 + 外部 TTS，静图模式只配音合成
+  // Tiến trình của Workbench: chế độ đầy đủ yêu cầu video ống kính + TTS bên ngoài, chế độ hình ảnh tĩnh chỉ yêu cầu tổng hợp lồng tiếng
   const progressItems = useMemo(() => {
     if (!project) return []
     const list = project.shots || []
@@ -480,12 +480,12 @@ export default function StoryboardPage() {
     }
   }
 
-  // 标记本镜请求进行中，不覆盖其它镜
+  // Đánh dấu yêu cầu nhân bản này là đang được tiến hành và không bao gồm các nhân bản khác
   function markShotBusy(shotId: number) {
     setBusyShotIds((ids) => new Set(ids).add(shotId))
   }
 
-  // 只清自己，避免并行请求互相冲掉锁
+  // Chỉ xóa chính mình để tránh các yêu cầu song song xả ổ khóa của nhau
   function markShotIdle(shotId: number) {
     setBusyShotIds((ids) => {
       const next = new Set(ids)
@@ -520,7 +520,7 @@ export default function StoryboardPage() {
 
   async function regenAudio(shot: Shot) {
     if (!project) return
-    // 重配音会重写整片口播，锁整表避免两路抢写
+    // Việc lồng tiếng lại sẽ viết lại toàn bộ phim để phát sóng, khóa toàn bộ bàn để tránh viết vội hai chiều
     setBusy(true)
     try {
       setProject(await api.regenAudio(project.id, shot.id))
@@ -546,7 +546,7 @@ export default function StoryboardPage() {
     setEditMode('full')
   }
 
-  // 改旁白时同步写入脚本旁白段
+  // Viết đồng bộ phần tường thuật kịch bản khi thay đổi lời tường thuật
   function patchEditingNarration(value: string) {
     if (!editing) return
     const script = editing.segment_script || editing.video_prompt || ''
@@ -559,7 +559,7 @@ export default function StoryboardPage() {
     })
   }
 
-  // 改首帧画面时同步写入脚本第一段 visual
+  // Viết đồng bộ đoạn đầu tiên của kịch bản khi thay đổi hình ảnh khung hình đầu tiên
   function patchEditingVisual(value: string) {
     if (!editing) return
     const script = editing.segment_script || editing.video_prompt || ''
@@ -572,7 +572,7 @@ export default function StoryboardPage() {
     })
   }
 
-  // 改脚本时回填旁白与首帧画面
+  // Lấp đầy lời tường thuật và khung hình đầu tiên khi sửa kịch bản
   function patchEditingScript(value: string) {
     if (!editing) return
     setEditing({
@@ -586,9 +586,9 @@ export default function StoryboardPage() {
 
   async function saveShot() {
     if (!project || !editing) return
-    // scriptText 当前编辑中的逐段脚本
+    // scriptText tập lệnh theo từng phần hiện đang được chỉnh sửa
     const scriptText = editing.segment_script || editing.video_prompt || ''
-    // durationCheck 时长校验结果
+    // thời lượngKiểm tra kết quả kiểm tra thời lượng
     const durationCheck = validateSegmentScriptDuration(scriptText)
     if (!durationCheck.valid) {
       setError(durationCheck.message || t('studio.storyboard.durationInvalid'))
@@ -615,7 +615,7 @@ export default function StoryboardPage() {
     }
   }
 
-  // 保存项目提示词；与后台模板相同则清空覆盖
+  // Lưu từ nhắc dự án; nếu giống với mẫu nền thì sẽ bị xóa và ghi đè.
   async function saveProjectPrompts() {
     if (!project || !promptEdit) return
     setBusy(true)
@@ -638,7 +638,7 @@ export default function StoryboardPage() {
     }
   }
 
-  // 清空项目覆盖，后续生成跟随后台模板
+  // Xóa phạm vi dự án và thế hệ tiếp theo sẽ đi theo mẫu nền
   async function restoreTemplatePrompts() {
     if (!project) return
     setBusy(true)
@@ -1018,10 +1018,10 @@ title={t('studio.storyboard.respliceTip')}
                   <tbody>
                     {shots.map((shot) => {
                       /*
-                       * localBusy 本镜请求已发出、任务尚未回写
-                       * shotGenerating 本镜任务或本地提交中
-                       * pipelineLocked 整片流水线/配音占用
-                       * displayKind / done / failed 按素材完备度展示
+                       * localBusy Yêu cầu nhân bản này đã được gửi nhưng tác vụ vẫn chưa được viết lại
+                       * shotGenating Tác vụ nhân bản này hoặc quá trình gửi cục bộ đang được tiến hành
+                       * pipeLocked Toàn bộ đường dẫn/lồng tiếng phim đã bị chiếm dụng
+                       * displayKind / done / failed Hiển thị theo mức độ đầy đủ của vật liệu
                        */
                       const localBusy = busyShotIds.has(shot.id)
                       const shotGenerating = isShotGenerating(project, shot.id) || localBusy

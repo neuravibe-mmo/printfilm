@@ -1,4 +1,4 @@
-/** 拉取并缓存前台 TokenFree 图/视频模型目录。 */
+/** Kéo và lưu vào bộ đệm thư mục mô hình hình ảnh/video TokenFree giao diện người dùng. */
 import { useEffect, useState } from 'react'
 import { api, type MediaModelOption, type MediaModelsCatalog } from '../api'
 
@@ -36,17 +36,17 @@ export function useMediaModelsCatalog() {
   return catalog
 }
 
-/** 当前目录下的视频模型；目录未到时为空。 */
+/** Mô hình video trong thư mục hiện tại; nó trống khi thư mục chưa được truy cập. */
 export function catalogVideoModels(catalog: MediaModelsCatalog | null): MediaModelOption[] {
   return catalog?.video_models ?? []
 }
 
-/** 当前目录下的图片模型；目录未到时为空。 */
+/** Mô hình ảnh trong thư mục hiện tại; nó trống khi thư mục chưa được truy cập. */
 export function catalogImageModels(catalog: MediaModelsCatalog | null): MediaModelOption[] {
   return catalog?.image_models ?? []
 }
 
-/** 用目录 label 展示模型名，找不到则显示 id。 */
+/** Sử dụng nhãn thư mục để hiển thị tên model, nếu không tìm thấy thì id sẽ được hiển thị. */
 export function catalogModelLabel(
   modelId: string | undefined | null,
   models: Array<{ id: string; label: string }>,

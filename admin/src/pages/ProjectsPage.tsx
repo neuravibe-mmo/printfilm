@@ -42,7 +42,7 @@ function mediaSrc(url: string | null | undefined): string {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
-// 科普项目列表与详情（镜头 / 任务 / 费用 / 媒体预览）
+// Danh sách và chi tiết các dự án phổ biến khoa học (xem trước ống kính/nhiệm vụ/chi phí/phương tiện truyền thông)
 export function ProjectsPage() {
   const { t, locale } = useI18n();
   const [q, setQ] = useState("");

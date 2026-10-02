@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""按 TaskRun 估算预扣金额。"""
+"""Số tiền giữ lại ước tính theo TaskRun."""
 from __future__ import annotations
 
 import math
@@ -35,7 +35,7 @@ __all__ = [
 
 
 def _kepu_video_resolution(project: Project | None, settings: Settings) -> str:
-    """科普成片清晰度：设置项；HD 且配置为 480p 时升到 720p（与 pipeline 一致）。"""
+    """Độ phân giải phim khoa học phổ biến: mục cài đặt; khi HD được định cấu hình là 480p, nó sẽ tăng lên 720p (phù hợp với quy trình)."""
     raw = str(getattr(settings, "ark_video_resolution", "") or "480p")
     mode = str(getattr(project, "resolution_mode", "") or "")
     if mode == "hd" and raw.strip().lower() == "480p":
@@ -44,7 +44,7 @@ def _kepu_video_resolution(project: Project | None, settings: Settings) -> str:
 
 
 def _drama_video_resolution(payload: dict) -> str:
-    """漫剧成片默认 720p，与前端与 asset_video 缺省一致。"""
+    """Cài đặt mặc định cho truyện tranh đã hoàn thành là 720p, giống với cài đặt mặc định của giao diện người dùng và nội dung video."""
     prepared = payload.get("prepared") if isinstance(payload.get("prepared"), dict) else {}
     raw = str((prepared or {}).get("resolution") or payload.get("resolution") or "").strip()
     return raw or "720p"
@@ -54,7 +54,7 @@ _VIDEO_SIZE_LABELS = {"480p", "720p", "1080p"}
 
 
 def _payload_image_size(payload: dict) -> str:
-    """从任务 payload 取生图清晰度；忽略 480p 等视频档。"""
+    """Nhận độ phân giải của hình ảnh thô từ tải trọng tác vụ; bỏ qua các tập tin video như 480p."""
     prepared = payload.get("prepared") if isinstance(payload.get("prepared"), dict) else {}
     gen = payload.get("generation") if isinstance(payload.get("generation"), dict) else {}
     canvas = payload.get("canvas") if isinstance(payload.get("canvas"), dict) else {}
@@ -79,18 +79,18 @@ def _payload_image_size(payload: dict) -> str:
 
 
 def _billing_image_size(settings: Settings, *, model: str = "", size: str = "") -> str:
-    """计费用清晰度：与 ark 生成侧一致，Pro / sunburst 把 3K·4K 钳到 2K。"""
+    """Chi phí thanh toán rõ ràng: Phù hợp với phía thế hệ Ark, kẹp Pro/sunburst 3K·4K đến 2K."""
     return resolve_billing_image_size(settings, model=model, size=size)
 
 
 def _buffered_fen(fen: int, settings: Settings) -> int:
-    """token / 时长类估价乘缓冲；结果至少 1 分。"""
+    """token / Định giá loại thời lượng nhân với bộ đệm; kết quả là ít nhất 1 điểm."""
     buf = float(settings.billing_estimate_buffer or 1.2)
     return max(1, math.ceil(max(0, int(fen)) * buf))
 
 
 def _catalog_image_fen(settings: Settings, *, model: str = "", size: str = "", payload: dict | None = None) -> int:
-    """按张官价预扣，不再乘 1.2。缓冲是给 token 低估用的，张价已是结算价。"""
+    """Giá chính thức sẽ được giữ lại và không nhân với 1,2. Bộ đệm dùng để định giá thấp mã thông báo và giá đã là giá thanh toán."""
     body = payload if isinstance(payload, dict) else {}
     mid = model or settings.model_image
     resolved = _billing_image_size(settings, model=mid, size=size or _payload_image_size(body))
@@ -98,10 +98,10 @@ def _catalog_image_fen(settings: Settings, *, model: str = "", size: str = "", p
 
 
 def _estimate_assets_fen(project: Project, settings: Settings) -> int:
-    """只估尚未完成的出图 + 整片配音（不含镜头视频）。"""
+    """Chỉ những hình ảnh + lồng tiếng chưa hoàn thiện của toàn bộ phim (không bao gồm cảnh quay và video) mới được đánh giá."""
     shots = list(project.shots or [])
     need_img = sum(1 for s in shots if not shot_image_ready(s))
-    # 整片 TTS 一次估算；旁白已就绪（整片文件或全部镜头文件）则不再预扣
+    # Toàn bộ phim TTS được ước tính một lần; nếu lời tường thuật đã sẵn sàng (toàn bộ tệp phim hoặc tất cả các tệp ống kính), sẽ không bị giữ lại.
     need_tts = 0 if project_audio_ready(project) else 1
     if need_img <= 0 and need_tts <= 0:
         return 1
@@ -120,7 +120,7 @@ def _estimate_assets_fen(project: Project, settings: Settings) -> int:
 
 
 def _estimate_videos_fen(project: Project, settings: Settings) -> int:
-    """只估尚未出片的镜头视频。"""
+    """Chỉ đánh giá những cảnh quay và video chưa ra mắt."""
     shots = [s for s in list(project.shots or []) if not shot_video_ready(s)]
     if not shots:
         return 1
@@ -134,7 +134,7 @@ def _estimate_videos_fen(project: Project, settings: Settings) -> int:
 
 
 def estimate_phase_fen(project: Project, phase: str, settings: Settings | None = None) -> int:
-    """科普 pipeline 阶段估算：script | assets | videos | compose | produce(兼容→下一段)。"""
+    """Ước tính giai đoạn quy trình khoa học phổ biến: script | tài sản | video | soạn | sản xuất (tương thích → đoạn tiếp theo)."""
     s = settings or get_settings()
     raw = normalize_kepu_pipeline_phase(phase, project)
 
@@ -155,7 +155,7 @@ def estimate_phase_fen(project: Project, phase: str, settings: Settings | None =
 
 
 async def estimate_task_fen(db: AsyncSession, task: TaskRun, settings: Settings | None = None) -> int:
-    """按 domain + task_type 估算单任务预扣（分）。"""
+    """Ước tính số điểm giữ lại của một nhiệm vụ dựa trên miền + task_type."""
     s = settings or get_settings()
     await ensure_official_rates(s)
     domain = (task.domain or "").strip()

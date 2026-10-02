@@ -1,4 +1,4 @@
-/** 漫剧分集左侧目录（大纲 / 分集页 / 分镜页共用） */
+/** Mục lục bên trái các tập truyện tranh (được chia sẻ với trang phác thảo/trang tập/trang phân cảnh) */
 import type { ReactNode } from 'react'
 import type { DramaEpisode } from '../../api/drama'
 import { useI18n, type TFunction } from '../../i18n'
@@ -20,7 +20,7 @@ type DramaEpisodeDirProps = {
   emptyText?: string
 }
 
-// 从分集列表生成目录项（按集号排序；缺集号不伪装成第 1 集）
+// Tạo mục nhập thư mục từ danh sách tập (sắp xếp theo số tập; số tập bị thiếu không được ngụy trang thành tập 1)
 export function buildEpisodeDirItems(episodes: DramaEpisode[], t?: TFunction): DramaEpisodeDirItem[] {
   const sorted = [...episodes].sort((a, b) => {
     const an = Number(a.params?.episodeNumber) || 0
@@ -44,7 +44,7 @@ export function buildEpisodeDirItems(episodes: DramaEpisode[], t?: TFunction): D
   })
 }
 
-// 左侧分集目录
+// Thư mục tập bên trái
 export function DramaEpisodeDir({
   title,
   items,

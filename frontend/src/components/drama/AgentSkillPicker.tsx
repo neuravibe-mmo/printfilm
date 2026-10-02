@@ -1,4 +1,4 @@
-/** Agent Skill 多选列表（弹窗 / 画布下拉共用）：可预览、下载 */
+/** Danh sách nhiều lựa chọn Kỹ năng Đặc vụ (được chia sẻ bởi cửa sổ bật lên/trình đơn thả xuống canvas): có thể được xem trước và tải xuống */
 import { useRef, useState, type MouseEvent } from 'react'
 import { Download, Eye, X } from 'lucide-react'
 import type { AgentSkill } from '../../api/agentSkills'
@@ -18,7 +18,7 @@ type AgentSkillPickerProps = {
   compact?: boolean
 }
 
-/** 把 Skill 还原成可下载的 Cursor 风格 SKILL.md */
+/** Khôi phục Kỹ năng về kiểu Con trỏ có thể tải xuống SKILL.md */
 export function skillToMarkdown(skill: AgentSkill): string {
   const tasks = Array.isArray(skill.tasks) ? skill.tasks.filter(Boolean) : []
   const taskLines =
@@ -39,7 +39,7 @@ export function skillToMarkdown(skill: AgentSkill): string {
   ].join('\n')
 }
 
-/** 下载文件名 */
+/** Tên file tải xuống */
 function skillDownloadName(skill: AgentSkill): string {
   const base = (skill.slug || skill.name || 'skill')
     .replace(/[^\w\u4e00-\u9fff.-]+/g, '_')
@@ -47,7 +47,7 @@ function skillDownloadName(skill: AgentSkill): string {
   return `${base || 'skill'}.md`
 }
 
-/** 渲染 Skill 勾选列表，可预览 / 下载 / 上传 */
+/** Danh sách kiểm tra kỹ năng kết xuất, xem trước/tải xuống/tải lên */
 export function AgentSkillPicker({
   skills,
   selectedIds,
@@ -67,7 +67,7 @@ export function AgentSkillPicker({
   const fileRef = useRef<HTMLInputElement>(null)
   const [previewSkill, setPreviewSkill] = useState<AgentSkill | null>(null)
 
-  // 下载单个 Skill 为 .md
+  // Tải xuống một Kỹ năng duy nhất dưới dạng .md
   function handleDownload(skill: AgentSkill, event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
@@ -75,7 +75,7 @@ export function AgentSkillPicker({
     triggerBlobDownload(new Blob([markdown], { type: 'text/markdown;charset=utf-8' }), skillDownloadName(skill))
   }
 
-  // 打开预览（阻止勾选冒泡）
+  // Mở bản xem trước (ngăn kiểm tra sủi bọt)
   function handlePreview(skill: AgentSkill, event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()

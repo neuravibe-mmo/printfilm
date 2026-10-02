@@ -1,4 +1,4 @@
-"""参考音色音频时长：合成源头截断/补足 + 一次性旧数据修复。"""
+"""Thời lượng âm thanh giai điệu tham chiếu: cắt bớt/bổ sung nguồn tổng hợp + sửa chữa dữ liệu cũ một lần."""
 
 from __future__ import annotations
 
@@ -19,17 +19,17 @@ from app.services.ffmpeg_compose import probe_duration
 
 logger = logging.getLogger(__name__)
 
-# Seedance r2v 单条 reference_audio 下限（API ≥ 1.8s）
+# Giới hạn dưới của Seedance r2v tham chiếu đơn_audio (API ≥ 1,8 giây)
 SEEDANCE_REFERENCE_AUDIO_MIN_SEC = 1.8
-# 合成/落盘目标下限（留余量，避免边界被拒）
+# Giới hạn thấp hơn của mục tiêu tổng hợp/vị trí (để lại lề để tránh bị từ chối ranh giới)
 VOICE_REFERENCE_MIN_SEC = 2.0
-# Seedance r2v 单条 reference_audio 上限（API 30.2s）
+# Seedance r2v giới hạn trên tham chiếu đơn_audio (API 30.2s)
 SEEDANCE_REFERENCE_AUDIO_MAX_SEC = 30.0
-# 合成完成后截断目标（2–15s 即可）
+# Cắt bớt mục tiêu sau khi quá trình tổng hợp hoàn tất (2–15 giây là đủ)
 VOICE_REFERENCE_TARGET_SEC = 15.0
 
 
-# 用 ffmpeg 将音频截断至 max_sec
+# Sử dụng ffmpeg để cắt âm thanh thành max_sec
 def trim_audio_to_max(path: Path, max_sec: float, dest: Path | None = None) -> Path:
     settings = get_settings()
     ffmpeg = shutil.which(settings.ffmpeg_path) or shutil.which("ffmpeg")
@@ -67,7 +67,7 @@ def trim_audio_to_max(path: Path, max_sec: float, dest: Path | None = None) -> P
     return path
 
 
-# 用静音补足到至少 min_sec（Seedance 拒收过短 reference_audio）
+# Sử dụng khoảng lặng để bù ít nhất min_sec (Seedance từ chối reference_audio quá ngắn)
 def pad_audio_to_min(path: Path, min_sec: float, dest: Path | None = None) -> Path:
     settings = get_settings()
     ffmpeg = shutil.which(settings.ffmpeg_path) or shutil.which("ffmpeg")
@@ -115,7 +115,7 @@ def _local_duration(url: str) -> float | None:
     return None
 
 
-# 解析本地路径；远程 URL 先下载再探测
+# Phân tích đường dẫn cục bộ; tải xuống URL từ xa trước rồi phát hiện nó
 async def resolve_voice_audio_local_path(url: str, *, dest: Path) -> Path | None:
     raw = (url or "").strip()
     if not raw:
@@ -127,7 +127,7 @@ async def resolve_voice_audio_local_path(url: str, *, dest: Path) -> Path | None
         return None
 
 
-# 探测参考音频时长（必要时下载）
+# Thời lượng âm thanh tham chiếu phát hiện (tải xuống nếu cần)
 async def probe_voice_url_duration(url: str, *, work_dir: Path) -> float | None:
     dest = work_dir / "probe_voice.mp3"
     path = await resolve_voice_audio_local_path(url, dest=dest)
@@ -146,7 +146,7 @@ def is_voice_duration_too_short(
     return float(duration) + 1e-6 < float(min_sec)
 
 
-# 合成完成后：过短补足、过长截断，并重新发布
+# Sau khi tổng hợp xong: nếu dài quá thì bổ sung, dài quá thì cắt bớt và xuất bản lại
 def finalize_voice_reference_url(
     url: str,
     *,
@@ -186,7 +186,7 @@ def finalize_voice_reference_url(
     return published or storage_svc.rel_static_url(current)
 
 
-# 更新 params 内 voiceAudio / canvas.voiceAudio 的 url
+# Cập nhật url của voiceAudio / canvas.voiceAudio trong params
 def patch_params_voice_url(params: dict[str, Any], url: str) -> dict[str, Any]:
     next_params = dict(params)
     binding = next_params.get("voiceAudio")
@@ -207,7 +207,7 @@ def _trim_and_publish_url(
     asset_id: int,
     max_sec: float = VOICE_REFERENCE_TARGET_SEC,
 ) -> tuple[str, bool]:
-    """返回 (新 URL, 是否变更)。"""
+    """Trả về (URL mới, dù đã thay đổi)."""
     new_url = finalize_voice_reference_url(
         url,
         project_id=project_id,
@@ -217,7 +217,7 @@ def _trim_and_publish_url(
     return new_url, new_url != url
 
 
-# 一次性修复：voice 资产、角色绑定、旁白绑定中的超长参考音
+# Khắc phục một lần: âm thanh tham chiếu dài trong nội dung giọng nói, ràng buộc ký tự và ràng buộc tường thuật
 async def backfill_long_voice_references(
     db: AsyncSession,
     *,

@@ -1,4 +1,4 @@
-/** 漫剧生图：模型 / 比例 / 清晰度选项（模型列表来自后台 TokenFree 目录） */
+/** Bản vẽ truyện tranh: tùy chọn mô hình/tỷ lệ/định nghĩa (danh sách mô hình lấy từ thư mục TokenFree phụ trợ) */
 
 export type ImageGenerationModelId = string
 
@@ -20,10 +20,10 @@ export type ImageGenerationOptions = {
   resolution: GenerationResolution
 }
 
-/** 图片清晰度列表 */
+/** Danh sách định nghĩa hình ảnh */
 export const GENERATION_RESOLUTION_OPTIONS: GenerationResolution[] = ['3K', '4K']
 
-/** 比例列表 */
+/** Danh sách tỷ lệ */
 export const GENERATION_ASPECT_RATIO_OPTIONS: Array<{
   id: GenerationAspectRatioId
   label: string
@@ -37,21 +37,21 @@ export const GENERATION_ASPECT_RATIO_OPTIONS: Array<{
   { id: '1:1', label: '1:1' },
 ]
 
-/** 生图模型由 /api/media-models 提供；此处仅占位默认 id */
+/** Mô hình biểu đồ thô được cung cấp bởi /api/media-models; chỉ có id mặc định được sử dụng ở đây. */
 export const IMAGE_GENERATION_MODELS: Array<{
   id: ImageGenerationModelId
   label: string
   description: string
 }> = []
 
-/** 默认生图选项（角色偏竖构图） */
+/** Tùy chọn ảnh thô mặc định (bố cục dọc của ký tự) */
 export const DEFAULT_IMAGE_GENERATION_OPTIONS: ImageGenerationOptions = {
   model_id: '',
   aspect_ratio: '3:4',
   resolution: '3K',
 }
 
-/** 场景默认横构图 */
+/** Bố cục ngang mặc định của cảnh */
 export function defaultOptionsForAssetKind(kind: string | undefined | null): ImageGenerationOptions {
   const k = String(kind || '').toLowerCase()
   if (k === 'scene') {
@@ -60,7 +60,7 @@ export function defaultOptionsForAssetKind(kind: string | undefined | null): Ima
   return { ...DEFAULT_IMAGE_GENERATION_OPTIONS }
 }
 
-/** 格式化比例·清晰度触发文案 */
+/** Tỷ lệ định dạng·Bản sao kích hoạt độ rõ ràng */
 export function formatOutputSettingsLabel(
   aspectRatio: GenerationAspectRatioId,
   resolution: GenerationResolution,
@@ -70,13 +70,13 @@ export function formatOutputSettingsLabel(
   return `${aspectRatio} · ${resolution}`
 }
 
-/** 解析模型展示名（无目录时回退 id） */
+/** Phân tích tên hiển thị mô hình (dự phòng id khi không có thư mục) */
 export function getImageModelLabel(modelId: string | undefined | null): string {
   const id = (modelId || '').trim()
   return id || '图片模型'
 }
 
-/** 任意非空字符串均可作为生图模型 id */
+/** Bất kỳ chuỗi nào không trống đều có thể được sử dụng làm id mô hình biểu đồ */
 export function isImageGenerationModelId(id: string): id is ImageGenerationModelId {
   return Boolean((id || '').trim())
 }

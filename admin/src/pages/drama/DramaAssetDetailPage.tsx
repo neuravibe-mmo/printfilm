@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatDramaAssetName } from "@/lib/statusLabels";
 import { useI18n } from "@/i18n/useI18n";
 
-/** 漫剧资产详情二级页 */
+/** Trang phụ chi tiết nội dung truyện tranh */
 export function DramaAssetDetailPage() {
   const { m, locale } = useI18n();
   const { assetId } = useParams<{ assetId: string }>();

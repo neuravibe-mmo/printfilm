@@ -34,7 +34,7 @@ function shortDate(iso: string): string {
   return parts.length === 3 ? `${parts[1]}/${parts[2]}` : iso;
 }
 
-/** 用量趋势面积图 */
+/** Biểu đồ khu vực xu hướng sử dụng */
 export function UsageTrendChart({ data, metric }: UsageTrendChartProps) {
   const { m, locale } = useI18n();
 

@@ -13,7 +13,7 @@ type PanelProps = {
   className?: string;
 };
 
-// 配置分区面板：标题 + 内容
+// Cấu hình bảng phân vùng: tiêu đề + nội dung
 export function SettingsPanel({ title, description, actions, children, className }: PanelProps) {
   return (
     <section className={cn("settings-panel", className)}>
@@ -36,7 +36,7 @@ type SettingsTabShellProps = {
   saveLabel?: string;
 };
 
-// Tab 内容区：把保存动作注册到页头，不再单独占一行工具条
+// Vùng nội dung tab: Đăng ký thao tác lưu ở phần đầu trang, không còn chiếm một dòng thanh công cụ riêng
 export function SettingsTabShell({ children, onSave, saving, saveLabel }: SettingsTabShellProps) {
   const { m } = useI18n();
   const effectiveSaveLabel = saveLabel ?? m.settings.save;
@@ -65,7 +65,7 @@ export function SettingsTabShell({ children, onSave, saving, saveLabel }: Settin
   );
 }
 
-// 加载占位
+// Tải phần giữ chỗ
 export function SettingsLoading({ label }: { label?: string }) {
   const { m } = useI18n();
   const effectiveLabel = label ?? m.settings.loading;
@@ -77,7 +77,7 @@ export function SettingsLoading({ label }: { label?: string }) {
   );
 }
 
-// 带图标的区块标题
+// Chặn tiêu đề bằng biểu tượng
 export function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
   return (
     <div className="settings-section-title">
@@ -87,7 +87,7 @@ export function SectionTitle({ icon, title }: { icon: ReactNode; title: string }
   );
 }
 
-// 表单标签 + 控件
+// Nhãn biểu mẫu + điều khiển
 export function LabeledControl({
   label,
   hint,
@@ -108,7 +108,7 @@ export function LabeledControl({
   );
 }
 
-// 内嵌子面板（浅灰底，用于状态条或独立分组）
+// Bảng phụ được nhúng (nền xám nhạt, dùng cho thanh trạng thái hoặc nhóm độc lập)
 export function SettingsSurface({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={cn("settings-surface", className)}>{children}</div>;
 }
@@ -121,7 +121,7 @@ export type SettingsStatusItem = {
   pendingText?: string;
 };
 
-// 顶部就绪/状态条（与模型路由一致）
+// Thanh trạng thái/sẵn sàng trên cùng (phù hợp với định tuyến của mô hình)
 export function SettingsStatusBar({
   title,
   items,

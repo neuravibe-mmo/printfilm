@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""额度告警：用户消费里程碑弹窗 + 平台总费用邮件。"""
+"""Cảnh báo về hạn ngạch: cửa sổ bật lên về mốc tiêu thụ của người dùng + email tổng chi phí của nền tảng."""
 from __future__ import annotations
 
 import logging
@@ -36,7 +36,7 @@ async def _user_total_charge_fen(db: AsyncSession, user_id: int) -> int:
 
 
 def _period_key(period: str, now: datetime | None = None) -> tuple[str, datetime | None]:
-    """返回统计周期键与 since 时间。"""
+    """Trả về khóa khoảng thời gian thống kê và kể từ thời điểm đó."""
     current = now or datetime.now(timezone.utc)
     p = (period or "monthly").strip().lower()
     if p == "daily":
@@ -68,7 +68,7 @@ async def _read_admin_alert_dedup(db: AsyncSession) -> tuple[str, int]:
 
 
 async def _persist_flat_keys(db: AsyncSession, updates: dict[str, Any]) -> None:
-    """写入 app_settings.flat 运行时去重字段。"""
+    """Viết trường chống trùng lặp thời gian chạy app_settings.flat."""
     row = await _get_or_create_settings_row(db)
     config = dict(row.config_json or {})
     flat = _decrypt_flat_config(config)
@@ -97,7 +97,7 @@ async def process_user_milestone_alert(
     *,
     settings: Settings | None = None,
 ) -> list[BillingAlertNotification]:
-    """结算后检查用户累计扣费是否跨越里程碑，写入待弹窗通知。
+    """Sau khi thanh toán, hãy kiểm tra xem khoản khấu trừ tích lũy của người dùng có vượt quá cột mốc hay không và viết thông báo bật lên.
 
     每笔结算最多创建 1 条（跳到已跨过的最高档），避免一次连弹多窗。
     """
@@ -135,7 +135,7 @@ async def process_admin_cost_alert(
     *,
     settings: Settings | None = None,
 ) -> bool:
-    """平台总上游成本达阈值时发邮件给管理员（按周期去重）。"""
+    """Khi tổng chi phí ngược dòng của nền tảng đạt đến ngưỡng, một email sẽ được gửi đến quản trị viên (sự trùng lặp sẽ bị xóa định kỳ)."""
     s = settings or get_settings()
     if not s.billing_admin_cost_alert_enabled:
         return False
@@ -199,7 +199,7 @@ async def process_billing_alerts_after_charge(
     charged_fen: int,
     settings: Settings | None = None,
 ) -> None:
-    """结算产生扣费后触发用户弹窗与管理员邮件检查。"""
+    """Sau khi thanh toán và khấu trừ, một cửa sổ bật lên của người dùng và kiểm tra email của quản trị viên sẽ được kích hoạt."""
     if int(charged_fen or 0) <= 0:
         return
     s = settings or get_settings()
@@ -225,7 +225,7 @@ async def list_pending_user_alerts(db: AsyncSession, user_id: int) -> list[Billi
     )
     if len(rows) <= 1:
         return rows
-    # 历史按 ¥10 档积压时：只保留最新一条，其余自动确认，避免连点刷屏
+    # Khi lịch sử bị tồn đọng 10 Yên: chỉ lịch sử mới nhất được giữ lại và phần còn lại sẽ tự động được xác nhận để tránh vuốt màn hình bằng các lần nhấp liên tiếp.
     for old in rows[:-1]:
         old.acknowledged = True
     await db.flush()

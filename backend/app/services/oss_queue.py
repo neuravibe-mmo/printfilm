@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 _ENQUEUE_KEY = "ai_movie:oss:enqueued:{digest}"
 _ENQUEUE_TTL = 7200
 
-# JSON params 内可能存本地媒体 URL 的字段
+# Các trường trong tham số JSON có thể lưu trữ URL phương tiện cục bộ
 _ASSET_PARAM_URL_KEYS = ("voiceAudio", "cover", "url", "image", "video")
 
 
@@ -80,7 +80,7 @@ def clear_enqueue_marker(local_url: str) -> None:
         pass
 
 
-# 从资产 params 递归收集本地 /static URL
+# Thu thập đệ quy các URL cục bộ/tĩnh từ thông số nội dung
 def _collect_local_urls_from_params(params: Any, out: set[str]) -> None:
     if isinstance(params, dict):
         for key, value in params.items():
@@ -95,7 +95,7 @@ def _collect_local_urls_from_params(params: Any, out: set[str]) -> None:
             _collect_local_urls_from_params(item, out)
 
 
-# 将 params 内 old→new 的本地 URL 替换；有改动返回 True
+# Thay thế URL cục bộ của old→new trong params; trả về True nếu có bất kỳ thay đổi nào
 def _rewrite_local_urls_in_params(params: Any, old: str, new: str) -> bool:
     changed = False
     if isinstance(params, dict):
@@ -146,7 +146,7 @@ async def backfill_media_url(old_url: str, new_url: str) -> int:
                 )
                 changed += int(result.rowcount or 0)
 
-        # 仅当 params JSON 文本含该 URL 时回写（音色 voiceAudio 等）
+        # Chỉ viết lại khi văn bản JSON thông số chứa URL (voiceAudio, v.v.)
         assets = (
             await db.execute(
                 select(DramaAsset).where(
@@ -170,7 +170,7 @@ async def backfill_media_url(old_url: str, new_url: str) -> int:
 
 
 def collect_pending_column_targets() -> list[tuple[type, list[str]]]:
-    """补传扫描列：科普只扫成片，不含分镜图/配音/镜头视频。"""
+    """Cột quét bổ sung: Phổ biến khoa học chỉ quét toàn bộ phim, không bao gồm bảng phân cảnh/lồng tiếng/video ống kính."""
     from app.models import Project, Template, Work
     from app.models_drama import DramaAsset, DramaEpisodeFragment
 
@@ -184,7 +184,7 @@ def collect_pending_column_targets() -> list[tuple[type, list[str]]]:
 
 
 async def collect_pending_local_media_urls(*, limit: int = 2000) -> list[str]:
-    """扫描库中仍指向本地 /static 的媒体 URL（含漫剧）。"""
+    """Quét các URL phương tiện (bao gồm cả truyện tranh) vẫn trỏ đến cục bộ /static trong thư viện."""
     from app.database import AsyncSessionLocal
     from app.models_drama import DramaAsset
 
@@ -219,7 +219,7 @@ async def collect_pending_local_media_urls(*, limit: int = 2000) -> list[str]:
 
 
 def upload_local_url_sync(local_url: str) -> str | None:
-    """同步上传单个本地 URL；成功返回 OSS https，失败返回 None。"""
+    """Tải lên đồng bộ một URL cục bộ; trả về OSS https nếu thành công, Không có nếu thất bại."""
     url = (local_url or "").strip()
     if not url or not storage.is_local_static_url(url):
         return None
@@ -230,16 +230,16 @@ def upload_local_url_sync(local_url: str) -> str | None:
         logger.warning("oss backfill skip missing file %s", url)
         return None
     oss_url = storage.upload_local_sync(path)
-    # 成功须为公网 http(s)；勿用 is_local_static_url（本地副本仍在会误判 OSS URL）
+    # Thành công phải là http(s) mạng công cộng; không sử dụng is_local_static_url (bản sao cục bộ vẫn sẽ đánh giá sai URL OSS)
     if not oss_url or not (oss_url.startswith("http://") or oss_url.startswith("https://")):
         raise RuntimeError(f"upload returned local URL for {url}")
     return oss_url
 
 
 async def backfill_pending_local_media(*, limit: int = 500, dry_run: bool = False) -> dict[str, Any]:
-    """把库里仍是 /static 的媒体补传到 OSS 并回写 URL。"""
+    """Chuyển phương tiện vẫn còn /static trong thư viện sang OSS và ghi lại URL."""
     pending = await collect_pending_local_media_urls(limit=limit)
-    # uploaded / failed / skipped / changed_rows 统计
+    # đã tải lên/không thành công/bị bỏ qua/đã thay đổi_hàng thống kê
     uploaded = 0
     failed = 0
     skipped = 0

@@ -1,4 +1,4 @@
-"""对外 API Key 模型。"""
+"""Mô hình khóa API bên ngoài."""
 
 from datetime import datetime
 

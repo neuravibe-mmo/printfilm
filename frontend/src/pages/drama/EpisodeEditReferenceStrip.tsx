@@ -1,4 +1,4 @@
-/** 分镜顶部：已关联资产缩略图条 */
+/** Đầu bảng phân cảnh: Thanh hình thu nhỏ của nội dung được liên kết */
 import type { FragmentRefStripItem } from './dramaEpisodeEditUtils'
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../lib/dramaVoiceBinding'
 import { useI18n } from '../../i18n'
@@ -8,7 +8,7 @@ type Props = {
   onSelect?: (assetId: number) => void
 }
 
-// 渲染当前分镜关联资产条
+// Hiển thị thanh nội dung được liên kết với bảng phân cảnh hiện tại
 export function EpisodeEditReferenceStrip({ items, onSelect }: Props) {
   const { t } = useI18n()
 

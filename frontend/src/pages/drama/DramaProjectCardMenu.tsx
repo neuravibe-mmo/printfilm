@@ -1,4 +1,4 @@
-/** 项目卡片「更多」菜单：点选项、移出或点外部即收起 */
+/** Menu "Thêm" của thẻ dự án: Nhấp vào Tùy chọn, Chuyển ra ngoài hoặc nhấp vào Bên ngoài để thu gọn */
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { MoreHorizontal } from 'lucide-react'
@@ -9,31 +9,31 @@ type Props = {
   onDelete: () => void
 }
 
-// 鼠标离开后延迟收起，避免滑向菜单项时被立刻关掉
+// Trì hoãn việc đóng chuột sau khi rời chuột để tránh bị đóng ngay lập tức khi trượt vào mục menu
 const HIDE_DELAY_MS = 120
 
-// 渲染项目卡片重命名 / 删除菜单
+// Hiển thị menu đổi tên/xóa thẻ dự án
 export function DramaProjectCardMenu({ onRename, onDelete }: Props) {
   const { t } = useI18n()
   /*
-   * open 菜单是否展开
-   * rootRef 用于点外部关闭
-   * hideTimerRef 移出后延迟收起
-   * ignoreToggleRef 挡住菜单卸掉后穿透到「⋯」的同一次 click
+   * mở Menu có được mở rộng không
+   * rootRef được sử dụng để đóng điểm bên ngoài
+   * HideTimerRef Đóng chậm sau khi xóa
+   * ignToggleRef chặn cùng một lượt nhấp chuột thâm nhập vào "⋯" sau khi xóa menu
    */
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ignoreToggleRef = useRef(false)
 
-  // 取消待收起
+  // Đã hủy để đóng
   function cancelHide() {
     if (!hideTimerRef.current) return
     clearTimeout(hideTimerRef.current)
     hideTimerRef.current = null
   }
 
-  // 延迟收起菜单
+  // Trì hoãn đóng menu
   function scheduleHide() {
     cancelHide()
     hideTimerRef.current = setTimeout(() => {
@@ -42,7 +42,7 @@ export function DramaProjectCardMenu({ onRename, onDelete }: Props) {
     }, HIDE_DELAY_MS)
   }
 
-  // 立刻收起后再执行操作，避免弹窗打开后菜单仍挂着
+  // Hãy đóng nó ngay lập tức trước khi thực hiện thao tác để tránh menu vẫn bị treo sau khi cửa sổ bật lên được mở.
   function closeThenRun(action: () => void) {
     cancelHide()
     ignoreToggleRef.current = true
@@ -55,7 +55,7 @@ export function DramaProjectCardMenu({ onRename, onDelete }: Props) {
 
   useEffect(() => () => cancelHide(), [])
 
-  // 点外部、滚动或 Esc 时收起
+  // Thu gọn khi ở bên ngoài, cuộn hoặc Esc
   useEffect(() => {
     if (!open) return
     function onPointerDown(event: PointerEvent) {

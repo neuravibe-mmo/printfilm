@@ -2,7 +2,7 @@ import * as React from "react";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";
 
-// 管理端开关：与主题森林绿一致
+// Công tắc quản lý: phù hợp với chủ đề rừng xanh
 export function Switch({ className, ...props }: React.ComponentProps<typeof SwitchPrimitive.Root>) {
   return (
     <SwitchPrimitive.Root

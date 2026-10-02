@@ -1,11 +1,11 @@
-/** 大纲页：剧本按场次解析展示 / 分段编辑 / 弹窗预览 */
+/** Trang phác thảo: Phân tích kịch bản và hiển thị bằng cách chỉnh sửa cảnh/phân đoạn/xem trước cửa sổ bật lên */
 import { useMemo, useState } from 'react'
 import { Pencil } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import { useI18n } from '../../i18n'
 
 export type OutlineSceneBlock = {
-  /** 原始整段（含场头行），写回时原样拼接 */
+  /** Toàn bộ đoạn văn gốc (bao gồm cả dòng tiêu đề), được ghép lại như khi viết lại */
   raw: string
   label: string
   title: string
@@ -22,7 +22,7 @@ export type ParsedScriptLine = {
   dialogue?: string
 }
 
-/** 解析后单场统计：估时 / 对白 / 动作 / 出场 / 内外景 */
+/** Thống kê từng cảnh sau khi phân tích: ước tính thời gian / lời thoại / hành động / ngoại hình / cảnh nội ngoại thất */
 export type OutlineSceneStats = {
   estimatedSec: number
   dialogueCount: number
@@ -31,7 +31,7 @@ export type OutlineSceneStats = {
   location: string
 }
 
-/** 已进分镜时的镜头合计（优先于文本估算） */
+/** Tổng số lần quay khi viết kịch bản phân cảnh (ưu tiên hơn ước tính văn bản) */
 export type OutlineShotDurationStats = {
   fragmentCount: number
   totalSec: number
@@ -40,25 +40,25 @@ export type OutlineShotDurationStats = {
 const SPEAKER_COLORS = ['#059669', '#dc2626', '#ea580c', '#2563eb', '#7c3aed', '#db2777']
 const SCENE_DURATION_MIN = 4
 const SCENE_DURATION_MAX = 120
-/** 与后端 build_fragments 行时长 clamp / 打包上限对齐 */
+/** Căn chỉnh với giới hạn trên của kẹp/đóng gói độ dài dòng build_fragments phụ trợ */
 const LINE_DURATION_MIN = 3
 const LINE_DURATION_MAX = 15
 const FRAGMENT_SOFT_MAX = 15
 const FRAGMENT_TOTAL_MAX = 15
 
-// 角色名稳定配色
+// Màu sắc ổn định của tên nhân vật
 export function speakerColor(name: string): string {
   let h = 0
   for (let i = 0; i < name.length; i += 1) h = (h * 31 + name.charCodeAt(i)) >>> 0
   return SPEAKER_COLORS[h % SPEAKER_COLORS.length]
 }
 
-// 从拍摄剧本正文拆出场次块
+// Xóa khối cảnh khỏi văn bản chính của kịch bản quay phim
 export function parseOutlineSceneBlocks(text: string): OutlineSceneBlock[] {
   const raw = (text || '').trim()
   if (!raw) return []
-  const scenePattern = /(?=^#{1,3}\s*(?:场|cảnh|scene)\b)/im
-  const hasSceneHeading = /^#{1,3}\s*(?:场|cảnh|scene)\b/im.test(raw)
+  const scenePattern = /(?=^#{1,3}\s*(?:field|cảnh|scene)\b)/im
+  const hasSceneHeading = /^#{1,3}\s*(?:field|cảnh|scene)\b/im.test(raw)
   const parts = raw.split(scenePattern).map((p) => p.trim()).filter(Boolean)
   if (parts.length <= 1 && !hasSceneHeading) {
     return [{ raw, label: 'Toàn văn', title: '', body: raw }]
@@ -74,12 +74,12 @@ export function parseOutlineSceneBlocks(text: string): OutlineSceneBlock[] {
   })
 }
 
-// 场次块拼回完整正文
+// Khối sự kiện dùng để đánh vần văn bản hoàn chỉnh
 export function joinOutlineSceneBlocks(blocks: OutlineSceneBlock[]): string {
   return blocks.map((b) => b.raw.trim()).filter(Boolean).join('\n\n')
 }
 
-// 解析单行：动作 / 对白 / 元信息
+// Phân tích một dòng: hành động/đối thoại/thông tin meta
 export function parseScriptLine(line: string): ParsedScriptLine {
   const text = line ?? ''
   const trimmed = text.trim()
@@ -114,7 +114,7 @@ function compactLen(text: string): number {
   return (text || '').replace(/\s+/g, '').length
 }
 
-/** 单行粗估秒数（对齐后端 build_fragments 量级，供大纲预览） */
+/** Ước tính sơ bộ một dòng về số giây (được căn chỉnh theo cường độ build_fragments phụ trợ để xem trước phác thảo) */
 function estimateLineSec(line: ParsedScriptLine): number {
   if (line.kind === 'empty' || line.kind === 'meta') return 0
   if (line.kind === 'action') {
@@ -135,7 +135,7 @@ function clampLineDuration(sec: number): number {
   return Math.min(LINE_DURATION_MAX, Math.max(LINE_DURATION_MIN, sec))
 }
 
-/** 按分镜打包规则汇总时长（避免「逐行相加」与真实镜数脱节） */
+/** Tóm tắt thời lượng theo quy tắc đóng gói storyboard (tránh việc "bổ sung từng dòng" không khớp với số cảnh quay thực tế) */
 function packEstimatedSec(lineSecs: number[]): number {
   let total = 0
   let used = 0
@@ -171,7 +171,7 @@ function parseCastNames(raw: string): string[] {
     .filter(Boolean)
 }
 
-/** 统计一场：估时、对白/动作数、出场人物、内外景 */
+/** Thống kê một cảnh: thời gian ước tính, số lời thoại/hành động, nhân vật, cảnh trong và ngoài */
 export function summarizeOutlineScene(body: string): OutlineSceneStats {
   const lines = (body || '').split(/\r?\n/).map((line) => parseScriptLine(line))
   const lineSecs: number[] = []
@@ -218,7 +218,7 @@ function formatEstimateDuration(sec: number, approxLabel: string, minLabel: stri
   return approxLabel.replace('{dur}', formatClockDuration(sec, minLabel, minSecLabel))
 }
 
-// 渲染解析后的剧本行
+// Hiển thị các dòng script được phân tích cú pháp
 function ScriptLines({ text }: { text: string }) {
   const lines = useMemo(
     () => text.split(/\r?\n/).map((line) => parseScriptLine(line)),
@@ -264,7 +264,7 @@ function ScriptLines({ text }: { text: string }) {
   )
 }
 
-/** 场次信息条：对白 / 动作 / 内外景 / 出场 */
+/** Thanh thông tin cảnh: Lời thoại/ Hành động/ Cảnh trong ngoài/ Ngoại hình */
 function SceneStatsBar({ stats }: { stats: OutlineSceneStats }) {
   const { t } = useI18n()
   const items: string[] = []
@@ -288,13 +288,13 @@ type OutlineScriptPreviewProps = {
   text: string
   empty: string
   busy?: boolean
-  /** 已切分分镜时优先展示镜头合计时长 */
+  /** Khi chia thành các bảng phân cảnh, tổng thời lượng của cảnh quay sẽ được hiển thị đầu tiên */
   shotStats?: OutlineShotDurationStats | null
-  /** 分段保存：返回更新后的完整 body */
+  /** Lưu phân đoạn: trả về phần nội dung hoàn chỉnh đã cập nhật */
   onSaveScenes?: (nextBody: string) => Promise<void> | void
 }
 
-// 场次卡片列表 + 分段编辑
+// Danh sách thẻ sự kiện + chỉnh sửa theo phân đoạn
 export function OutlineScriptPreview({
   text,
   empty,
@@ -492,7 +492,7 @@ function SceneEditBox({
   )
 }
 
-/** 仅弹窗解析预览 */
+/** Chỉ xem trước phân tích cú pháp cửa sổ bật lên */
 export function OutlineScriptParseModal({
   open,
   onClose,

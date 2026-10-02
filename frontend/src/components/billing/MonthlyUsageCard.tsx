@@ -4,7 +4,7 @@ import { api, type UsageSummary } from '../../api'
 import { useI18n } from '../../i18n'
 import { formatCredits } from '../../lib/dramaUsage'
 
-/** 格式化 token 数量，过大时用 k/M 缩写 */
+/** Định dạng số lượng token, sử dụng chữ viết tắt k/M nếu quá lớn */
 function formatTokens(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
   if (n >= 10_000) return `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1)}k`
@@ -12,13 +12,13 @@ function formatTokens(n: number) {
 }
 
 type MonthlyUsageCardProps = {
-  /** compact 嵌入定价/设置卡片；panel 独立侧栏样式 */
+  /** thẻ cài đặt/giá cả được nhúng nhỏ gọn; kiểu thanh bên độc lập của bảng điều khiển */
   variant?: 'panel' | 'compact'
-  /** 是否显示「去充值」按钮（定价页已可直接充值时可关闭） */
+  /** Có hiển thị nút "Chuyển đến Nạp tiền" hay không (có thể đóng khi tính năng nạp tiền trực tiếp có sẵn trên trang định giá) */
   showTopup?: boolean
 }
 
-/** 本月用量卡片：Token / 费用 / 余额，供定价页与个人中心复用 */
+/** Thẻ sử dụng tháng này: Token/phí/số dư, để tái sử dụng trên trang định giá và trung tâm cá nhân */
 export default function MonthlyUsageCard({
   variant = 'panel',
   showTopup = true,

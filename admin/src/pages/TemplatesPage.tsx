@@ -45,13 +45,13 @@ const emptyForm = (): TemplateFormState => ({
   is_premium: false,
 });
 
-// 从 seedream_config 读取角色/额外提示词
+// Đọc vai trò/các từ nhắc nhở bổ sung từ seedream_config
 function seedreamText(cfg: Record<string, unknown> | undefined, key: string): string {
   const value = cfg?.[key];
   return typeof value === "string" ? value : "";
 }
 
-// 模板管理：封面卡片网格 + 分类筛选 + 全局 UI 组件
+// Quản lý mẫu: lưới thẻ bìa + lọc phân loại + các thành phần giao diện người dùng toàn cầu
 export function TemplatesPage() {
   const { t } = useI18n();
   const [page, setPage] = useState(1);
@@ -78,7 +78,7 @@ export function TemplatesPage() {
     [t],
   );
 
-  // 加载模板分页列表（服务端筛选）
+  // Tải danh sách phân trang mẫu (lọc phía máy chủ)
   async function load(nextPage = page) {
     setLoading(true);
     try {
@@ -98,13 +98,13 @@ export function TemplatesPage() {
     }
   }
 
-  // 加载全库分类标签
+  // Tải toàn bộ thẻ phân loại cơ sở dữ liệu
   async function loadMeta() {
     try {
       const meta = await api<MetaRes>("/api/admin/templates/meta");
       setCategories(meta.categories ?? []);
     } catch {
-      /* 分类元数据失败不阻塞列表 */
+      /* Lỗi siêu dữ liệu phân loại không chặn danh sách */
     }
   }
 
@@ -137,14 +137,14 @@ export function TemplatesPage() {
     return items.filter((t) => t.is_premium);
   }, [data?.items, statusFilter]);
 
-  // 打开新建弹窗
+  // Mở cửa sổ bật lên mới
   function openCreate() {
     setEditing(null);
     setForm(emptyForm());
     setOpen(true);
   }
 
-  // 打开编辑弹窗（拉取最新配置）
+  // Mở cửa sổ bật lên chỉnh sửa (kéo cấu hình mới nhất)
   async function openEdit(tpl: AdminTemplate) {
     try {
       const fresh = await api<AdminTemplate>(`/api/admin/templates/${tpl.id}`);
@@ -177,7 +177,7 @@ export function TemplatesPage() {
     }
   }
 
-  // 创建或更新模板
+  // Tạo hoặc cập nhật mẫu
   async function save() {
     setSaving(true);
     try {
@@ -256,7 +256,7 @@ export function TemplatesPage() {
     }
   }
 
-  // 快捷切换上架 / Premium
+  // Chuyển nhanh lên kệ/Premium
   async function quickPatch(id: string, body: Partial<AdminTemplate>) {
     try {
       await api(`/api/admin/templates/${id}`, { method: "PATCH", body: JSON.stringify(body) });
@@ -266,7 +266,7 @@ export function TemplatesPage() {
     }
   }
 
-  // 确认删除模板
+  // Xác nhận xóa mẫu
   async function confirmDelete() {
     if (!deleteTarget) return;
     setDeleting(true);

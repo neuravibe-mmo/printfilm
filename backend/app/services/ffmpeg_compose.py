@@ -15,7 +15,7 @@ from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-# FFmpeg 被 SIGTERM 打断时的可读错误（部署重启 / 进程被杀等）
+# Các lỗi có thể đọc được khi FFmpeg bị gián đoạn bởi SIGTERM (khởi động lại/quá trình triển khai bị hủy, v.v.)
 FFMPEG_INTERRUPTED_MSG = "FFmpeg 被系统中断（signal 15），将自动重试合成"
 
 # Punctuation removed from on-screen captions (TTS narration keeps original)
@@ -54,14 +54,14 @@ class ComposeOptions:
     # One continuous TTS track for the whole film (preferred over per-shot audio)
     full_audio_path: Path | None = None
     # Overlay / caption sizing & layout (from template.subtitle_config)
-    subtitle_layout: str = "top"  # top | split（标题在上；口播字幕始终底部）
+    subtitle_layout: str = "top"  # hàng đầu | tách (tiêu đề ở trên cùng; phụ đề nói luôn ở dưới cùng)
     title_scale: float = 1.35
     sub_scale: float = 1.3
     caption_scale: float = 1.25
     # Optional continuous BGM under narration
     bgm_path: Path | None = None
     bgm_volume: float = 0.22
-    # 保留镜头视频里的操作音效，后期与 TTS 叠轨（科普 full）
+    # Giữ hiệu ứng âm thanh thao tác trong video ống kính và phủ nó bằng TTS ở giai đoạn sau (khoa học đầy đủ)
     keep_video_sfx: bool = False
     sfx_volume: float = 0.22
 
@@ -96,7 +96,7 @@ def allocate_durations_by_narration(
 
 
 def _probe_has_audio(path: Path) -> bool:
-    """片源是否含音轨（操作音效/人声均算）。"""
+    """Nguồn phim có chứa bản âm thanh hay không (cả hiệu ứng âm thanh/giọng hát hoạt động đều được tính)."""
     ffprobe = shutil.which(get_settings().ffprobe_path) or shutil.which("ffprobe")
     if not ffprobe or not path.exists():
         return False
@@ -152,7 +152,7 @@ def probe_duration(path: Path) -> float | None:
 
 
 def probe_video_dimensions(path: Path) -> tuple[int, int] | None:
-    """读取视频宽高像素（ffprobe），失败返回 None。"""
+    """Đọc pixel chiều rộng và chiều cao của video (ffprobe) và trả về Không có nếu không thành công."""
     ffprobe = shutil.which(get_settings().ffprobe_path) or shutil.which("ffprobe")
     if not ffprobe or not path.exists():
         return None
@@ -218,7 +218,7 @@ def is_near_silent_audio(path: Path, *, max_db: float = -70.0) -> bool:
 
 
 def is_ffmpeg_interrupted_error(exc_or_text: BaseException | str | None) -> bool:
-    """判断是否为 FFmpeg SIGTERM / signal 15 打断（可自动重试）。"""
+    """Xác định xem nó có bị gián đoạn bởi FFmpeg SIGTERM/tín hiệu 15 hay không (có thể tự động thử lại)."""
     text = str(exc_or_text or "")
     if not text:
         return False
@@ -233,7 +233,7 @@ def is_ffmpeg_interrupted_error(exc_or_text: BaseException | str | None) -> bool
 
 
 class FfmpegInterrupted(RuntimeError):
-    """FFmpeg 进程被 SIGTERM 打断，合成可自动重试。"""
+    """Quá trình FFmpeg bị gián đoạn bởi SIGTERM và quá trình tổng hợp có thể được thử lại tự động."""
 
 
 def _run(cmd: list[str]) -> None:
@@ -244,7 +244,7 @@ def _run(cmd: list[str]) -> None:
     stderr = proc.stderr or ""
     stdout = proc.stdout or ""
     combined = f"{stderr}\n{stdout}"
-    # -15 / 143(128+15) / Windows 等价：进程被 SIGTERM
+    # -15 / 143(128+15) / Tương đương với Windows: quy trình là SIGTERM
     if proc.returncode in (-15, 143) or is_ffmpeg_interrupted_error(combined):
         logger.warning(
             "ffmpeg interrupted by SIGTERM returncode=%s cmd=%s",
@@ -270,7 +270,7 @@ def extract_video_poster_frame(
     *,
     at_sec: float = 0.05,
 ) -> bool:
-    """从视频抽取封面帧（默认接近首帧），成功返回 True。"""
+    """Trích xuất khung bìa từ video (mặc định gần với khung hình đầu tiên) và trả về True thành công."""
     src = Path(video)
     if not src.exists():
         logger.warning("抽封面失败：视频不存在 path=%s", src)
@@ -306,14 +306,14 @@ def extract_video_poster_frame(
 
 
 def extract_video_last_frame(video: str | Path, dest: Path) -> bool:
-    """从视频抽取接近尾帧的静帧，供镜间衔接；成功返回 True。"""
+    """Trích xuất khung hình tĩnh gần khung hình cuối từ video để kết nối giữa các ống kính; trả về True thành công."""
     src = Path(video)
     if not src.exists():
         logger.warning("抽尾帧失败：视频不存在 path=%s", src)
         return False
     duration = probe_duration(src)
     if duration is not None and duration > 0.1:
-        # 距片尾约 0.08s，避免精确 seek 到 EOF 抽空帧
+        # Khoảng 0,08 giây kể từ khi kết thúc phim, tránh tìm kiếm chính xác khung trống EOF
         return extract_video_poster_frame(src, dest, at_sec=max(0.0, float(duration) - 0.08))
     try:
         ffmpeg = _which("ffmpeg")
@@ -321,7 +321,7 @@ def extract_video_last_frame(video: str | Path, dest: Path) -> bool:
         logger.warning("抽尾帧失败：未找到 ffmpeg")
         return False
     dest.parent.mkdir(parents=True, exist_ok=True)
-    # 时长未知时用 sseof 从末尾回退
+    # Sử dụng sseof để quay lại từ đầu khi không xác định được thời lượng
     cmd = [
         ffmpeg,
         "-y",
@@ -355,19 +355,19 @@ def _canvas(opts: ComposeOptions) -> tuple[int, int]:
 
 
 def _find_cjk_font() -> str | None:
-    """Return a path usable by drawtext fontfile=…（优先环境变量与仓库内置字体）。"""
+    """Trả về đường dẫn có thể sử dụng được bởi drawtext fontfile=… (ưu tiên cho các biến môi trường và phông chữ tích hợp trong kho)."""
     bundled = (
         Path(__file__).resolve().parents[1] / "assets" / "fonts" / "NotoSansSC-Regular.otf"
     )
     candidates = [
         os.environ.get("FRAMECUT_FONT"),
-        # 仓库内置（部署时可放入 backend/assets/fonts）
+        # Kho tích hợp (có thể được đặt trong phần phụ trợ/tài sản/phông chữ trong quá trình triển khai)
         str(bundled) if bundled.exists() else None,
         r"C:\Windows\Fonts\msyhbd.ttc",
         r"C:\Windows\Fonts\msyh.ttc",
         r"C:\Windows\Fonts\simhei.ttf",
         r"C:\Windows\Fonts\simkai.ttf",
-        # Ubuntu / Debian 常见路径
+        # Đường dẫn chung Ubuntu/Debian
         "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
         "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
@@ -386,7 +386,7 @@ def _find_cjk_font() -> str | None:
     for c in candidates:
         if c and Path(c).exists():
             return c
-    # fontconfig 兜底：解析中文字体文件路径
+    # fontconfig Tìm hiểu sâu hơn: phân tích đường dẫn tệp phông chữ tiếng Trung
     try:
         import subprocess
 
@@ -634,7 +634,7 @@ def _overlay_drawtext(
     title_scale: float = 1.35,
     sub_scale: float = 1.3,
 ) -> str:
-    """顶部标题叠字。split 也把副标题放在标题下方，底部留给口播字幕。"""
+    """Tiêu đề ở trên cùng được xếp chồng lên nhau. tách cũng đặt phụ đề bên dưới tiêu đề, để lại phần dưới cùng cho phụ đề nói."""
     title = _strip_caption_punct(title)
     subtitle = _strip_caption_punct(subtitle)
     title_cap = 14 if layout == "split" else 12
@@ -645,7 +645,7 @@ def _overlay_drawtext(
         subtitle = subtitle[:sub_cap]
     title_e = _escape_drawtext(title)
     sub_e = _escape_drawtext(subtitle)
-    # Portrait 720 base ~ larger than before so 叠字更醒目
+    # Chân đế 720 ~ to hơn trước nên chữ chồng lên nhau bắt mắt hơn
     title_size = max(34, min(52, int(w * 0.058 * max(0.8, title_scale))))
     sub_size = max(24, min(36, int(w * 0.042 * max(0.8, sub_scale))))
     title_y = int(h * 0.055)
@@ -689,7 +689,7 @@ def build_video_caption_vf(
     sub_scale: float = 1.3,
     caption_scale: float = 1.25,
 ) -> str:
-    """合成阶段字幕滤镜：顶部标题 + 底部口播，始终烧录（含 split 布局）。"""
+    """Bộ lọc phụ đề trong giai đoạn tổng hợp: tiêu đề trên cùng + phát giọng nói dưới cùng, luôn bị cháy (bao gồm cả bố cục phân tách)."""
     parts: list[str] = []
     overlay = _overlay_drawtext(
         w,
@@ -905,7 +905,7 @@ def _mux_shot(
     mix_video_sfx: bool = False,
     sfx_volume: float = 0.22,
 ) -> None:
-    """把镜头画面与配音封装；可选把视频里的操作音效压低叠在 TTS 下。"""
+    """Tóm tắt các cảnh quay và lồng tiếng; tùy ý giảm hiệu ứng âm thanh vận hành trong video và đặt nó dưới TTS."""
     ffmpeg = _which("ffmpeg")
     target = max(float(duration), 0.5)
     if mix_video_sfx and _probe_has_audio(video):
@@ -964,7 +964,7 @@ def _mux_shot(
 
 
 def _copy_fitted_clip(video: Path, duration: float, out: Path) -> None:
-    """把已对齐时长的镜头重封装成成片段，保留操作音效轨。"""
+    """Đóng gói lại các cảnh quay có thời lượng được căn chỉnh thành các clip, giữ nguyên bản hiệu ứng âm thanh đang hoạt động."""
     ffmpeg = _which("ffmpeg")
     _run(
         [
@@ -997,7 +997,7 @@ def _mux_continuous_narration(
     mix_video_sfx: bool = False,
     sfx_volume: float = 0.22,
 ) -> None:
-    """叠整片 TTS；可选把镜头操作音效压低混入。视频偏短时冻帧补齐，避免旁白被裁切。"""
+    """Xếp chồng toàn bộ TTS; tùy ý trộn vào các hiệu ứng âm thanh vận hành ống kính. Khi video quá ngắn, các khung hình cố định sẽ được lấp đầy để tránh bị cắt lời tường thuật."""
     ffmpeg = _which("ffmpeg")
     vid_d = probe_duration(merged) or 0.0
     aud_d = probe_duration(narration) or 0.0
@@ -1278,7 +1278,7 @@ def compose_project(
         )
 
         if continuous and opts.full_audio_path:
-            # 整片 TTS 叠在镜头操作音效上（无音效则只保留旁白）
+            # Toàn bộ phim TTS được lồng hiệu ứng âm thanh khi camera hoạt động (nếu không có hiệu ứng âm thanh thì chỉ giữ lại lời tường thuật)
             voiced = tmp_path / "voiced.mp4"
             _mux_continuous_narration(
                 merged,

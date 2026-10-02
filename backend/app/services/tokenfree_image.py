@@ -1,4 +1,4 @@
-"""TokenFree / New API 生图：KIE 渠道走 POST /v1/responses，不是方舟 /images/generations。"""
+"""TokenFree / Hình ảnh thế hệ API mới: Kênh KIE sử dụng POST /v1/responses, không phải Ark /images/thế hệ."""
 
 from __future__ import annotations
 
@@ -14,9 +14,9 @@ from app.services.tokenfree_video import uses_tokenfree_video
 
 logger = logging.getLogger(__name__)
 
-# 全进程只留一个观察位，避免 New API「Too many active task observations」
+# Chỉ còn lại một vị trí quan sát trong toàn bộ quá trình để tránh API mới "Quá nhiều quan sát tác vụ đang hoạt động"
 _image_slot: asyncio.Semaphore | None = None
-# 429 后等待秒数（槽位不释放，避免其它镜继续撞限）
+# Số giây chờ sau 429 (khe không được giải phóng để ngăn các gương khác tiếp tục đạt giới hạn)
 TOKENFREE_IMAGE_RETRY_DELAYS = (3.0, 6.0, 12.0, 20.0)
 
 _IMG_SRC_RE = re.compile(r'<img[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
@@ -24,23 +24,23 @@ _URL_RE = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
 
 
 def uses_tokenfree_image(*, base_url: str = "", channel_id: str = "") -> bool:
-    """与视频相同：TokenFree 主机或 tokenfree 渠道。"""
+    """Tương tự như video: Máy chủ TokenFree hoặc kênh tokenfree."""
     return uses_tokenfree_video(base_url=base_url, channel_id=channel_id)
 
 
 def is_seedream_family(model: str) -> bool:
-    """TokenFree 上 Seedream 走 /responses 会 task_protocol_error。"""
+    """TokenFree trên Seedream sẽ /phản hồi sẽ task_protocol_error."""
     mid = (model or "").strip().lower()
     return "seedream" in mid
 
 
-# TokenFree 分组里实际可通的 GPT Image；sunburst 是 Kie 价目名，default 组没有 distributor
+# TokenFree là Hình ảnh GPT thực sự có thể vượt qua trong nhóm; sunburst là tên giá Kie, nhóm mặc định không có nhà phân phối
 TOKENFREE_WORKING_IMAGE_MODEL = "gpt-image-2-5"
 TOKENFREE_KIE_IMAGE_MODEL = "gpt-image-2-5-sunburst"
 
 
 def tokenfree_working_image_model(model: str) -> str:
-    """Seedream / sunburst 改走实测可通的 gpt-image-2-5；计费仍按 Kie 积分档。"""
+    """Seedream / sunburst đã đổi thành gpt-image-2-5, có thể vượt qua trong thử nghiệm thực tế; thanh toán vẫn dựa trên điểm Kie."""
     raw = (model or "").strip()
     low = raw.lower()
     if (
@@ -67,7 +67,7 @@ def build_tokenfree_image_body(
     ref_urls: list[str] | None = None,
     style_ref_urls: list[str] | None = None,
 ) -> dict[str, Any]:
-    """线上成功体只要 model + 自然语言 input，不要 size: 这种协议字段。"""
+    """Cơ quan thành công trực tuyến chỉ cần mô hình + đầu vào ngôn ngữ tự nhiên, không cần kích thước: các trường giao thức."""
     text = (prompt or "").strip() or "Hình ảnh sắc nét, chủ thể ổn định"
     size_s = (size or "").strip()
     if size_s:
@@ -82,7 +82,7 @@ def build_tokenfree_image_body(
 
 
 def extract_tokenfree_image_url(data: dict[str, Any]) -> str | None:
-    """从 /v1/responses 或兼容包里抽出图片 URL。"""
+    """Trích xuất URL hình ảnh từ /v1/responses hoặc gói tương thích."""
     if not isinstance(data, dict):
         return None
     for item in data.get("output") or []:
@@ -111,7 +111,7 @@ def extract_tokenfree_image_url(data: dict[str, Any]) -> str | None:
 
 
 def _parse_json_object(body: str) -> dict[str, Any] | None:
-    """解析 JSON 对象；失败返回 None。"""
+    """Phân tích đối tượng JSON; trả về Không có khi thất bại."""
     text = (body or "").strip()
     if not text.startswith("{"):
         return None
@@ -123,7 +123,7 @@ def _parse_json_object(body: str) -> dict[str, Any] | None:
 
 
 def is_tokenfree_image_task_failed(data: dict[str, Any]) -> bool:
-    """/v1/responses HTTP 200 也可能 status=failed（无 output）。"""
+    """/v1/responses HTTP 200 hoặc status=failed (không có kết quả)."""
     if not isinstance(data, dict):
         return False
     status = str(data.get("status") or "").lower()
@@ -141,11 +141,11 @@ def is_tokenfree_image_task_failed(data: dict[str, Any]) -> bool:
 
 
 def tokenfree_image_failed_task_message(data: dict[str, Any]) -> str:
-    """/responses status=failed 时给用户的中文短句，不含 JSON / resp_id。"""
+    """Một câu tiếng Trung ngắn được cung cấp cho người dùng khi /responses status=failed, ngoại trừ JSON / resp_id."""
     err = data.get("error") if isinstance(data.get("error"), dict) else {}
     body = json.dumps(data, ensure_ascii=False)
     if is_tokenfree_input_text_sensitive(status_code=200, body=body):
-        return "生图文案未通过内容审核（可能含敏感或历史名人相关表述），请修改提示词后重试。"
+        return "生图文案未通过内容审核（可能含敏感或历史名人相关表述），请修Thay đổi lời nhắc后重试。"
     code = str((err or {}).get("code") or "").lower()
     msg = str((err or {}).get("message") or "")
     if code in {"server_error", "internal_error"} or "task failed" in msg.lower():
@@ -155,7 +155,7 @@ def tokenfree_image_failed_task_message(data: dict[str, Any]) -> str:
 
 
 def raise_tokenfree_image_if_failed(data: dict[str, Any]) -> None:
-    """任务失败时抛中文短句，不把 resp_id / JSON 丢给用户。"""
+    """Ném các câu ngắn tiếng Trung khi tác vụ thất bại và không ném resp_id/JSON cho người dùng."""
     if not is_tokenfree_image_task_failed(data):
         return
     err = data.get("error") if isinstance(data.get("error"), dict) else {}
@@ -169,7 +169,7 @@ def raise_tokenfree_image_if_failed(data: dict[str, Any]) -> None:
 
 
 def is_tokenfree_rate_limit(*, status_code: int = 0, body: str = "") -> bool:
-    """429，或明确的观察位/限流错误体；2xx 成功体里的 rate_limit 字段不算。"""
+    """429, hoặc xóa bit quan sát/nội dung lỗi giới hạn hiện tại; trường rate_limit trong nội dung thành công 2xx không được tính."""
     if int(status_code or 0) == 429:
         return True
     text = body or ""
@@ -189,7 +189,7 @@ def is_tokenfree_rate_limit(*, status_code: int = 0, body: str = "") -> bool:
 
 
 def is_tokenfree_protocol_error(*, status_code: int = 0, body: str = "") -> bool:
-    """KIE / New API 任务协议失败（常见于 Seedream 或瞬时 502）。"""
+    """KIE / Giao thức tác vụ API mới không thành công (thường gặp với Seedream hoặc tạm thời 502)."""
     text = (body or "").lower()
     if "task_protocol_error" in text or "task protocol request failed" in text:
         return True
@@ -203,7 +203,7 @@ def is_tokenfree_protocol_error(*, status_code: int = 0, body: str = "") -> bool
 
 
 def is_tokenfree_no_distributor(*, status_code: int = 0, body: str = "") -> bool:
-    """New API 分组下没有可用 distributor（须 404/502/503 且 model_not_found + 无线路）。"""
+    """Không có nhà phân phối nào trong nhóm API mới (yêu cầu 404/502/503 và model_not_found + không có dòng)."""
     if int(status_code or 0) not in {404, 502, 503}:
         return False
     text = body or ""
@@ -214,7 +214,7 @@ def is_tokenfree_no_distributor(*, status_code: int = 0, body: str = "") -> bool
 
 
 def is_tokenfree_retryable_image_error(*, status_code: int = 0, body: str = "") -> bool:
-    """限流，或 HTTP 200 的上游 server_error 可退避；协议/无线路立刻失败。"""
+    """Giới hạn hiện tại hoặc lỗi server_error ngược dòng HTTP 200 có thể được sao lưu; giao thức/đường dây không dây bị lỗi ngay lập tức."""
     if is_tokenfree_rate_limit(status_code=status_code, body=body):
         return True
     if int(status_code or 0) != 200:
@@ -228,14 +228,14 @@ def is_tokenfree_retryable_image_error(*, status_code: int = 0, body: str = "") 
 
 
 def tokenfree_image_channel_dead(*, status_code: int = 0, body: str = "") -> bool:
-    """TokenFree 出图通道当前不可用（协议失败或无 distributor）。"""
+    """TokenFree Kênh vẽ hiện không khả dụng (giao thức không thành công hoặc không có nhà phân phối)."""
     return is_tokenfree_protocol_error(status_code=status_code, body=body) or is_tokenfree_no_distributor(
         status_code=status_code, body=body
     )
 
 
 def is_tokenfree_input_text_sensitive(*, status_code: int = 0, body: str = "") -> bool:
-    """文案审核拦截；协议失败、限流、无线路不算，才能走 compact/style_only。"""
+    """Đánh giá và đánh chặn Copywriting; lỗi giao thức, giới hạn dòng điện và đường dây không dây không được tính, vì vậy có thể sử dụng compact/style_only."""
     if is_tokenfree_rate_limit(status_code=status_code, body=body):
         return False
     if tokenfree_image_channel_dead(status_code=status_code, body=body):
@@ -250,11 +250,11 @@ def is_tokenfree_input_text_sensitive(*, status_code: int = 0, body: str = "") -
 
 
 def tokenfree_image_user_error(*, model: str = "", status_code: int = 0, body: str = "") -> str:
-    """用户可见的 TokenFree 出图失败文案；通道挂了不再误导改模型。"""
+    """Người dùng có thể nhìn thấy bản sao chép về lỗi vẽ TokenFree; nếu kênh bị hỏng, nó sẽ không còn khiến bạn nhầm lẫn để thay đổi mô hình."""
     if is_tokenfree_rate_limit(status_code=status_code, body=body):
         return "出图通道繁忙，同时进行的任务过多，请稍后再点「生成画面」"
     if tokenfree_image_channel_dead(status_code=status_code, body=body):
-        # TokenFree 上已会把 Seedream 改走 gpt-image，再提示「请改用」会误导
+        # TokenFree đã thay đổi Seedream thành gpt-image. Sẽ gây hiểu lầm khi nhắc lại "vui lòng sử dụng nó thay thế".
         return "出图通道暂时失败，请稍后再点「生成画面」"
     payload = _parse_json_object(body)
     if payload and is_tokenfree_image_task_failed(payload):
@@ -264,7 +264,7 @@ def tokenfree_image_user_error(*, model: str = "", status_code: int = 0, body: s
 
 
 def tokenfree_image_slot() -> asyncio.Semaphore:
-    """全进程 TokenFree 生图互斥（默认 1 路）。"""
+    """Toàn bộ quá trình đồ thị TokenFree loại trừ lẫn nhau (mặc định 1 chiều)."""
     global _image_slot
     if _image_slot is None:
         from app.config import get_settings
@@ -280,7 +280,7 @@ async def post_until_not_rate_limited(
     delays: tuple[float, ...] = TOKENFREE_IMAGE_RETRY_DELAYS,
     sleep: Callable[[float], Awaitable[Any]] = asyncio.sleep,
 ) -> Any:
-    """POST 遇观察位限流或 HTTP 200+server_error 则退避重试；仍失败则返回最后一次响应。"""
+    """Nếu POST gặp giới hạn hiện tại của bit quan sát hoặc lỗi HTTP 200+server_error, nó sẽ tắt và thử lại; nếu vẫn thất bại, phản hồi cuối cùng sẽ được trả về."""
     last: Any = None
     for attempt in range(len(delays) + 1):
         last = await post()
@@ -297,7 +297,7 @@ async def post_until_not_rate_limited(
 
 
 def is_tokenfree_image_url(url: str) -> bool:
-    """TokenFree 任务产物地址，下载建议带 Bearer。"""
+    """Địa chỉ sản phẩm đang hoạt động của TokenFree, nên mang theo Bearer để tải xuống."""
     raw = (url or "").strip().lower()
     if "tokenfree.com" not in raw:
         return False

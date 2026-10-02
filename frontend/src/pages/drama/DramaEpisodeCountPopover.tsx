@@ -1,4 +1,4 @@
-/** 自定义集数弹层：预设 + 手填 1–999 */
+/** Lớp đàn hồi số cài đặt tùy chỉnh: mặc định + điền thủ công 1–999 */
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { EPISODE_COUNT_PRESETS } from '../../lib/dramaImageStyles'
@@ -13,12 +13,12 @@ type Props = {
   disabled?: boolean
 }
 
-// 是否为预设集数
+// Đây có phải là số tập mặc định không?
 function isPreset(count: number) {
   return (EPISODE_COUNT_PRESETS as readonly number[]).includes(count)
 }
 
-// 解析自定义集数
+// Phân tích số bộ tùy chỉnh
 function parseCustom(raw: string): number | null {
   const trimmed = raw.trim()
   if (!trimmed) return null
@@ -27,13 +27,13 @@ function parseCustom(raw: string): number | null {
   return n
 }
 
-// 渲染集数选择弹层
+// Kết xuất lớp đàn hồi chọn số bộ kết xuất
 export function DramaEpisodeCountPopover({ value, onChange, disabled = false }: Props) {
   const { t } = useI18n()
   /*
-   * open 弹层开关
-   * customInput 自定义输入
-   * rootRef / panelRef 点击外部关闭
+   * công tắc lớp đàn hồi mở
+   * customInput tùy chỉnh đầu vào
+   * rootRef / panelRef Nhấp vào bên ngoài để đóng
    */
   const rootRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
@@ -49,7 +49,7 @@ export function DramaEpisodeCountPopover({ value, onChange, disabled = false }: 
     return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
 
-  // 切换开关
+  // Chuyển đổi
   function toggle() {
     if (disabled) return
     setOpen((cur) => {
@@ -59,14 +59,14 @@ export function DramaEpisodeCountPopover({ value, onChange, disabled = false }: 
     })
   }
 
-  // 选预设
+  // Chọn mặc định
   function selectPreset(count: number) {
     onChange(count)
     setCustomInput('')
     setOpen(false)
   }
 
-  // 应用自定义
+  // Áp dụng tùy chỉnh
   function applyCustom() {
     const parsed = parseCustom(customInput)
     if (parsed == null) return

@@ -1,4 +1,4 @@
-/** 漫剧画布资产生视频队列：入队即提交 Seedance Worker，刷新后可从资产状态恢复 */
+/** Nội dung canvas truyện tranh tạo hàng đợi video: Gửi Seedance Worker khi bạn tham gia hàng đợi và bạn có thể khôi phục từ trạng thái nội dung sau khi làm mới. */
 import { dramaApi, type DramaAsset } from '../api/drama'
 import type { VideoGenerationOptions } from './dramaVideoGenerationOptions'
 import { syncAssetVideoJobToUnified } from './dramaGenQueue'
@@ -26,7 +26,7 @@ type EnqueueInput = {
   prompt: string
   options?: Partial<VideoGenerationOptions>
   referenceAssetIds?: number[]
-  /** 仅恢复轮询（后端已在 generating，不再重复 POST） */
+  /** Chỉ tiếp tục bỏ phiếu (phần phụ trợ đã được tạo, POST sẽ không được lặp lại) */
   resumeOnly?: boolean
 }
 
@@ -37,8 +37,8 @@ type InternalJob = DramaVideoGenJob & {
 }
 
 /*
- * MAX_POLL_CONCURRENT 同时轮询路数
- * POLL_TIMEOUT_MS Seedance 等待上限
+ * MAX_POLL_CONCURRENT Số kênh bỏ phiếu đồng thời
+ * POLL_TIMEOUT_MS Giới hạn chờ đợi hạt giống
  */
 const MAX_POLL_CONCURRENT = 4
 const DONE_RETENTION_MS = 45_000
@@ -54,7 +54,7 @@ let pollingCount = 0
 let pumping = false
 const waitingPoll: InternalJob[] = []
 
-// 将内部 job 转为对外结构
+// Chuyển đổi công việc nội bộ sang cấu trúc bên ngoài
 function toPublicJob(job: InternalJob): DramaVideoGenJob {
   return {
     id: job.id,
@@ -71,7 +71,7 @@ function toPublicJob(job: InternalJob): DramaVideoGenJob {
   }
 }
 
-// 两个快照内容是否一致
+// Nội dung của hai ảnh chụp nhanh có nhất quán không?
 function snapshotsEqual(a: DramaVideoGenJob[], b: DramaVideoGenJob[]): boolean {
   if (a === b) return true
   if (a.length !== b.length) return false
@@ -90,7 +90,7 @@ function snapshotsEqual(a: DramaVideoGenJob[], b: DramaVideoGenJob[]): boolean {
   return true
 }
 
-// 清理过期完成项
+// Dọn dẹp các mục đã hoàn thành hết hạn
 function pruneFinished() {
   const now = Date.now()
   jobs = jobs.filter((job) => {
@@ -100,7 +100,7 @@ function pruneFinished() {
   })
 }
 
-// 重建并缓存对外快照
+// Xây dựng lại và lưu vào bộ nhớ đệm các ảnh chụp nhanh bên ngoài
 function refreshSnapshot() {
   pruneFinished()
   const next = jobs.length === 0 ? EMPTY_SNAPSHOT : jobs.map((job) => toPublicJob(job))
@@ -109,7 +109,7 @@ function refreshSnapshot() {
   }
 }
 
-// 通知订阅者，并同步到统一生成队列
+// Thông báo cho thuê bao và đồng bộ vào hàng đợi thế hệ thống nhất
 function emit() {
   refreshSnapshot()
   listeners.forEach((listener) => listener())
@@ -126,7 +126,7 @@ function emit() {
   }
 }
 
-// 某资产是否正在生视频
+// Nội dung có đang sản xuất video hay không
 export function isDramaAssetVideoBusy(assetId: number): boolean {
   return jobs.some(
     (job) =>
@@ -134,18 +134,18 @@ export function isDramaAssetVideoBusy(assetId: number): boolean {
   )
 }
 
-// 读取资产 generation 状态
+// Đọc trạng thái tạo tài sản
 function readGenerationStatus(asset: DramaAsset): string {
   const gen = (asset.params || {}).generation as { status?: string } | undefined
   return String(gen?.status || '')
 }
 
-// 成片 URL 是否已是视频文件
+// URL video hoàn chỉnh đã là tệp video chưa?
 function isVideoMediaUrl(url: string | null | undefined): boolean {
   return Boolean(url && VIDEO_URL_RE.test(url))
 }
 
-// 轮询直到资产生视频结束（必须等到 mp4，不能把旧封面图当完成）
+// Poll đến hết video tạo nội dung (phải đợi đến mp4, không thể coi ảnh bìa cũ là hoàn chỉnh)
 async function waitForAssetVideo(projectId: number, assetId: number): Promise<DramaAsset> {
   const started = Date.now()
   while (Date.now() - started < POLL_TIMEOUT_MS) {
@@ -168,7 +168,7 @@ async function waitForAssetVideo(projectId: number, assetId: number): Promise<Dr
   throw new Error('生视频超时，请刷新后重试')
 }
 
-// 有限并发轮询后端结果
+// Kết quả phụ trợ bỏ phiếu đồng thời có giới hạn
 async function pollJob(job: InternalJob) {
   pollingCount += 1
   try {
@@ -191,7 +191,7 @@ async function pollJob(job: InternalJob) {
   }
 }
 
-// 调度轮询槽位
+// Lên lịch bỏ phiếu
 function pump() {
   if (pumping) return
   pumping = true
@@ -207,7 +207,7 @@ function pump() {
   })
 }
 
-// 提交后端后进入轮询
+// Nhập bỏ phiếu sau khi gửi phần phụ trợ
 function startJob(job: InternalJob) {
   void (async () => {
     try {
@@ -239,14 +239,14 @@ function startJob(job: InternalJob) {
   })()
 }
 
-// 生成本地任务 id
+// Tạo id tác vụ cục bộ
 function makeJobId() {
   return `vid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 /**
- * 将画布资产生视频加入队列：立刻 POST 到后端 Worker，再本地轮询结果。
- * 同资产已在排队/生成中时复用同一 Promise。
+ * Thêm video do nội dung canvas tạo vào hàng đợi: POST tới Worker phụ trợ ngay lập tức, sau đó thăm dò kết quả cục bộ.
+ * Sử dụng lại cùng một Lời hứa khi cùng một nội dung đã được xếp hàng/được tạo.
  */
 export function enqueueDramaVideoGen(input: EnqueueInput): Promise<DramaAsset> {
   const existing = jobs.find(
@@ -291,7 +291,7 @@ export function enqueueDramaVideoGen(input: EnqueueInput): Promise<DramaAsset> {
 }
 
 /**
- * 从资产列表恢复「后端仍在 generating」的视频任务。
+ * Khôi phục tác vụ video "phụ trợ vẫn đang tạo" từ danh sách nội dung.
  */
 export function resumeDramaVideoGensFromAssets(
   projectId: number,
@@ -310,7 +310,7 @@ export function resumeDramaVideoGensFromAssets(
       prompt: '',
       resumeOnly: true,
     }).catch(() => {
-      /* 面板会显示失败 */
+      /* Màn hình sẽ hiển thị lỗi */
     })
   }
 }

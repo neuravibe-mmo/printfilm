@@ -213,7 +213,7 @@ export default function CreateProjectPage() {
   const inspTotal = Math.ceil(INSPIRATION_POOL.length / PAGE_SIZE)
   const inspirations = INSPIRATION_POOL.slice(inspPage * PAGE_SIZE, inspPage * PAGE_SIZE + PAGE_SIZE)
 
-  // 把灵感示例填进主题/文案，并同步短标题
+  // Điền ví dụ cảm hứng vào chủ đề/bản sao và đồng bộ hóa tiêu đề ngắn
   function applyInspiration(item: Inspiration) {
     if (sourceType === 'script') {
       setInputTab(t('studio.createProject.tabScript'))

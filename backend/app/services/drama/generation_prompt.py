@@ -1,4 +1,4 @@
-"""漫剧资产生图提示词拼接（角色/场景结构前缀 + 内置风格）。
+"""Ghép các từ gợi ý cho nội dung truyện tranh (tiền tố cấu trúc nhân vật/cảnh + kiểu dựng sẵn).
 
 与 manju generationPrompt.ts 对齐：character/scene 加结构强制前缀。
 ai_movie 扩展：prop/material 增加静物/空镜前缀（manju 无此前缀）。
@@ -63,8 +63,8 @@ MATERIAL_PROMPT_PREFIX = (
 )
 
 
-# 将内置风格提示词追加到正文后；设定板类资产强调构图优先于风格场景
-# has_style_board 为真时补一句：只借画风板气质，禁止抄主体
+# Nối các lời nhắc về kiểu có sẵn vào văn bản; đặt nội dung bảng để nhấn mạnh bố cục trong các cảnh phong cách
+# Khi has_style_board đúng thì thêm một câu: Chỉ mượn phong cách và khí chất của bức tranh, cấm sao chép nội dung chính.
 def append_style_prompt(
     prompt: str,
     style_id: str | None = None,
@@ -84,7 +84,7 @@ def append_style_prompt(
     return f"{prompt}。Yêu cầu phong cách hình ảnh: {style_prompt}{board_hint}"
 
 
-# 按资产类型与风格 ID 组装完整 Seedream 提示词
+# Tập hợp các từ nhắc Seedream hoàn chỉnh theo loại nội dung và ID kiểu
 def build_generation_prompt(
     user_prompt: str,
     asset_type: str | None = None,

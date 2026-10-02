@@ -11,7 +11,7 @@ type Props = {
   onClose: () => void
 }
 
-// 拉取该目标相关的多条历史任务（用于挖出被「重试超限」覆盖的根因）
+// Kéo nhiều nhiệm vụ lịch sử liên quan đến mục tiêu (dùng để tìm ra nguyên nhân gốc rễ được đề cập trong "Retry Exceeded")
 async function listRelatedTasks(job: DramaGenJob): Promise<TaskRunOut[]> {
   if (job.kind === 'video' && job.targetId > 0) {
     const list = await tasksApi.list({
@@ -45,7 +45,7 @@ async function listRelatedTasks(job: DramaGenJob): Promise<TaskRunOut[]> {
   return []
 }
 
-// 进行中任务的进度说明
+// Mô tả tiến độ của các nhiệm vụ đang thực hiện
 function activeJobHint(job: DramaGenJob, t: (key: string) => string): string {
   if (job.message?.trim()) return job.message.trim()
   if (job.status === 'queued') return t('drama.genQueue.hintQueued')
@@ -53,7 +53,7 @@ function activeJobHint(job: DramaGenJob, t: (key: string) => string): string {
   return t('drama.genQueue.hintImage')
 }
 
-// 任务详情抽屉（进行中=进度；失败=错误文案）
+// Ngăn chi tiết nhiệm vụ (đang tiến hành = tiến trình; không thành công = sao chép lỗi)
 export function DramaGenTaskDetail({ job, onClose }: Props) {
   const { t } = useI18n()
   const isFailed = job.status === 'failed'
@@ -70,7 +70,7 @@ export function DramaGenTaskDetail({ job, onClose }: Props) {
   }
 
   useEffect(() => {
-    // 非失败任务不挖历史错误，避免把旧的「跳过重复任务」当成当前失败
+    // Đừng đào sâu các lỗi lịch sử đối với các nhiệm vụ không thất bại và tránh coi việc "bỏ qua các nhiệm vụ lặp lại" cũ là các lỗi hiện tại.
     if (!isFailed) {
       setRawError('')
       setLoading(false)
@@ -86,7 +86,7 @@ export function DramaGenTaskDetail({ job, onClose }: Props) {
         if (cancelled) return
         const candidates: Array<string | null | undefined> = [job.error]
         for (const task of tasks) {
-          // 优先当前 job 绑定的任务；历史 cancelled「跳过重复」不当作根因抢占
+          // Ưu tiên những nhiệm vụ gắn liền với công việc hiện tại; "Bỏ qua các bản sao" bị hủy trong lịch sử không được coi là quyền ưu tiên nguyên nhân gốc rễ
           if (job.taskId && task.id === job.taskId) {
             candidates.unshift(task.error_message)
             continue
@@ -124,7 +124,7 @@ export function DramaGenTaskDetail({ job, onClose }: Props) {
         }
         if (best) setRawError(best)
       } catch {
-        /* 无平台任务时仍用 job.error */
+        /* vẫn sử dụng job.error khi không có tác vụ nền tảng */
       } finally {
         if (!cancelled) setLoading(false)
       }

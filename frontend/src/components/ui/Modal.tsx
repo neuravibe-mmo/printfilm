@@ -17,7 +17,7 @@ type ModalProps = {
   className?: string
 }
 
-// 全局居中/抽屉弹层（portal 到 body，统一 pf-modal 样式）
+// Lớp bật lên ngăn kéo/định tâm toàn cầu (cổng vào phần thân, kiểu pf-modal thống nhất)
 export default function Modal({
   open,
   onClose,

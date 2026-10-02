@@ -92,7 +92,7 @@ export default function EditorPage() {
     }
   }
 
-  /** 在片尾追加一镜，并选中新建镜头。 */
+  /** Thêm cảnh quay vào cuối phim và chọn Cảnh quay mới. */
   async function addShot() {
     if (!project) return
     setBusy(true)
@@ -110,7 +110,7 @@ export default function EditorPage() {
     }
   }
 
-  /** 将当前镜与相邻镜对调顺序。 */
+  /** Đảo ngược thứ tự của gương hiện tại và gương liền kề. */
   async function moveShot(delta: number) {
     if (!project || !shot) return
     const ordered = orderedShots
@@ -130,7 +130,7 @@ export default function EditorPage() {
     }
   }
 
-  /** 上传本镜静帧，替换后需重出视频。 */
+  /** Upload khung tĩnh của gương này lên. Bạn cần phát lại video sau khi thay thế nó. */
   async function onShotImageFile(file: File | null) {
     if (!project || !shot || !file) return
     setBusy(true)
@@ -145,7 +145,7 @@ export default function EditorPage() {
     }
   }
 
-  /** 下载已合成的成片。 */
+  /** Tải phim tổng hợp về. */
   async function exportFilm() {
     if (!project?.final_video_url) return
     setBusy(true)

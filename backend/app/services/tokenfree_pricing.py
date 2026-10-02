@@ -1,4 +1,4 @@
-"""TokenFree 公开 /api/pricing：推荐模型官方价与预估。"""
+"""TokenFree public /api/pricing: Giá chính thức và ước tính của mô hình được đề xuất."""
 
 from __future__ import annotations
 
@@ -16,31 +16,31 @@ from app.services.tokenfree_usage import usd_cny_rate
 
 logger = logging.getLogger(__name__)
 
-# New API：model_ratio=1 → $2 / 百万 tokens
+# API mới: model_ratio=1 → $2 / triệu token
 NEWAPI_USD_PER_1M_AT_RATIO_1 = 2.0
-# 视频价目常见占位倍率，不能当秒价
+# Tỷ lệ lấp đầy chung cho giá video không thể được sử dụng làm giá thứ hai
 PLACEHOLDER_MODEL_RATIO = 37.5
 _CACHE_TTL_SEC = 3600.0
 _FAIL_TTL_SEC = 60.0
 TOKENFREE_PRICING_PATH = "/api/pricing"
-# LLM 预估按输入/输出拆分
+# Ước tính LLM được chia theo đầu vào/đầu ra
 LLM_PROMPT_SHARE = 0.7
-# 费率表视频展示用的对照时长
+# Thời lượng so sánh để hiển thị video bảng tỷ lệ
 VIDEO_RATE_SAMPLE_SECONDS = 5.0
 
-# 火山 480P 5 秒官价折秒价（TokenFree 视频表不可信时预估用）
+# Volcano 480P 5 giây giảm giá chính thức mỗi giây (ước tính khi bảng video TokenFree không đáng tin cậy)
 VENDOR_VIDEO_YUAN_PER_SEC_480P = {
     "seedance-2-5": 3.36 / 5.0,
     "seedance-2-0": 2.31 / 5.0,
     "seedance-2-0-mini": 2.31 / 5.0,
 }
-# 相对 480P 的预估倍率（宁多冻、少结算超扣）
+# bội số ước tính so với 480P (đóng băng nhiều hơn, khấu trừ quá mức thanh toán ít hơn)
 VIDEO_RESOLUTION_MULT = {
     "480p": 1.0,
     "720p": 2.0,
     "1080p": 4.0,
 }
-# Kie sunburst 控制台档（USD / credits）；公开 /api/pricing 往往只有笼统 gpt-image-2-5
+# Kie sunburst console file (USD/credits); /api/pricing công khai thường chỉ chung chung gpt-image-2-5
 KIE_SUNBURST_USD_1K = 0.03
 KIE_SUNBURST_USD_2K = 0.05
 KIE_SUNBURST_USD_4K = 0.08
@@ -48,7 +48,7 @@ KIE_SUNBURST_CREDITS_1K = 6
 KIE_SUNBURST_CREDITS_2K = 10
 KIE_SUNBURST_CREDITS_4K = 16
 
-# 产品里好用、目录有、方便去 TokenFree 核对的短名单
+# Sản phẩm dễ sử dụng, có thư mục, dễ kiểm tra trên TokenFree.
 RECOMMENDED_MODELS: tuple[dict[str, Any], ...] = (
     {
         "id": "kimi-k2.6",
@@ -136,7 +136,7 @@ _cache_failed: bool = False
 
 @dataclass(frozen=True)
 class OfficialRate:
-    """一条 TokenFree 官方价。"""
+    """Giá chính thức của một TokenFree."""
 
     model: str
     billing: str
@@ -150,17 +150,17 @@ class OfficialRate:
 
 
 def tokenfree_pricing_url() -> str:
-    """公开价目接口，无需 Key。"""
+    """Giao diện bảng giá công khai, không cần Key."""
     return f"{tokenfree_site_origin()}{TOKENFREE_PRICING_PATH}"
 
 
 def cached_rates() -> dict[str, OfficialRate]:
-    """内存缓存；未拉过返回空。"""
+    """Bộ nhớ đệm; trả về trống nếu không được kéo."""
     return dict(_cache or {})
 
 
 def set_cached_rates(rates: dict[str, OfficialRate] | None) -> None:
-    """写入缓存；None 表示测试清空，空 dict 表示负缓存。"""
+    """Ghi bộ đệm; Không có nghĩa là bài kiểm tra đã bị xóa và dict trống có nghĩa là bộ đệm âm."""
     global _cache, _cache_at, _cache_failed
     if rates is None:
         _cache = None
@@ -173,7 +173,7 @@ def set_cached_rates(rates: dict[str, OfficialRate] | None) -> None:
 
 
 def _mark_fetch_failed() -> None:
-    """拉取失败：保留旧表，刷新时间戳，避免预扣每次打外网。"""
+    """Không kéo được: Giữ lại bảng cũ và làm mới dấu thời gian để tránh bị giữ lại mỗi khi chạm vào mạng bên ngoài."""
     global _cache, _cache_at, _cache_failed
     if _cache is None:
         _cache = {}
@@ -182,7 +182,7 @@ def _mark_fetch_failed() -> None:
 
 
 def parse_pricing_item(item: dict[str, Any], *, usd_cny: float) -> OfficialRate | None:
-    """把 /api/pricing 一行折成人民币。"""
+    """Chuyển đổi dòng /api/pricing thành RMB."""
     name = str(item.get("model_name") or "").strip()
     if not name:
         return None
@@ -220,7 +220,7 @@ def parse_pricing_item(item: dict[str, Any], *, usd_cny: float) -> OfficialRate 
 
 
 def parse_pricing_payload(payload: dict[str, Any], settings: Settings | None = None) -> dict[str, OfficialRate]:
-    """解析 TokenFree 价目 JSON。"""
+    """Phân tích bảng giá TokenFree JSON."""
     items = payload.get("data") if isinstance(payload, dict) else None
     if not isinstance(items, list):
         return {}
@@ -236,7 +236,7 @@ def parse_pricing_payload(payload: dict[str, Any], settings: Settings | None = N
 
 
 def lookup_rate(model: str, rates: dict[str, OfficialRate] | None = None) -> OfficialRate | None:
-    """按模型 id 精确或忽略大小写查找。"""
+    """Tìm chính xác theo id mẫu hoặc bỏ qua trường hợp."""
     mid = (model or "").strip()
     table = rates if rates is not None else cached_rates()
     if not mid or not table:
@@ -252,7 +252,7 @@ def lookup_rate(model: str, rates: dict[str, OfficialRate] | None = None) -> Off
 
 
 def video_catalog_id(model: str) -> str:
-    """计费预估用：已知别名映射，未知 Seedance 回退 2.5。"""
+    """Để ước tính hóa đơn: ánh xạ bí danh đã biết, dự phòng Seedance chưa xác định thành 2.5."""
     mapped = canonicalize_channel_model_id(model)
     if _is_canonical_seedance(mapped):
         return mapped
@@ -260,12 +260,12 @@ def video_catalog_id(model: str) -> str:
 
 
 def _is_canonical_seedance(model: str) -> bool:
-    """是否为 TokenFree 目录里的三档 Seedance id。"""
+    """Đây có phải là id Seedance cấp ba trong thư mục TokenFree không."""
     return model in {"seedance-2-5", "seedance-2-0", "seedance-2-0-mini"}
 
 
 def canonicalize_channel_model_id(model: str) -> str:
-    """已知 Seedance 别名收到 TokenFree 目录 id；对不上则原样返回。"""
+    """Được biết, bí danh Seedance nhận id thư mục TokenFree; nếu nó không khớp, nó sẽ được trả về như cũ."""
     mid = (model or "").strip()
     if "seedance" not in mid.lower():
         return mid
@@ -283,7 +283,7 @@ def canonicalize_channel_model_id(model: str) -> str:
 
 
 def canonicalize_channel_models(models: list[str] | None) -> list[str]:
-    """合并 Seedance 2.0 三档别名，保持原顺序。"""
+    """Hợp nhất ba bí danh của Seedance 2.0 và giữ nguyên thứ tự ban đầu."""
     out: list[str] = []
     seen: set[str] = set()
     for raw in models or []:
@@ -296,14 +296,14 @@ def canonicalize_channel_models(models: list[str] | None) -> list[str]:
 
 
 def _markup_charge(cost_fen: int, settings: Settings) -> int:
-    """用户预扣金额 = 官方成本，不再乘倍率。"""
+    """Số tiền giữ lại của người dùng = chi phí chính thức, sẽ không sử dụng hệ số nhân."""
     from app.services.billing.pricing import user_charge_fen
 
     return user_charge_fen(cost_fen, settings)
 
 
 def _kie_sunburst_tier(size: str | None = "") -> str:
-    """Kie sunburst 清晰度档：1k / 2k / 4k。"""
+    """Kie định nghĩa sunburst file: 1k/2k/4k."""
     raw = (size or "").strip().upper().replace(" ", "")
     if raw.startswith("1K"):
         return "1k"
@@ -327,7 +327,7 @@ def _kie_sunburst_tier(size: str | None = "") -> str:
 
 
 def kie_sunburst_usd_for_size(size: str | None = "") -> float:
-    """Kie sunburst 按清晰度：1K $0.03 / 2K $0.05 / 3K·4K $0.08。"""
+    """Kie sunburst Theo độ phân giải: 1K $0,03 / 2K $0,05 / 3K·4K $0,08."""
     return {
         "1k": KIE_SUNBURST_USD_1K,
         "2k": KIE_SUNBURST_USD_2K,
@@ -336,7 +336,7 @@ def kie_sunburst_usd_for_size(size: str | None = "") -> float:
 
 
 def kie_sunburst_credits_for_size(size: str | None = "") -> int:
-    """Kie sunburst 积分：1K 6 / 2K 10 / 4K 16。"""
+    """Điểm tỏa nắng của Kie: 1K 6 / 2K 10 / 4K 16."""
     return {
         "1k": KIE_SUNBURST_CREDITS_1K,
         "2k": KIE_SUNBURST_CREDITS_2K,
@@ -345,7 +345,7 @@ def kie_sunburst_credits_for_size(size: str | None = "") -> int:
 
 
 def resolve_billing_image_size(settings: Settings, *, model: str = "", size: str = "") -> str:
-    """计费用清晰度：与 ark 生成侧一致，Pro / sunburst 把 3K·4K 钳到 2K。"""
+    """Chi phí thanh toán rõ ràng: Phù hợp với phía thế hệ Ark, kẹp Pro/sunburst 3K·4K đến 2K."""
     from app.services.drama.seedream_options import is_seedream_pro_model
     from app.services.tokenfree_image import tokenfree_working_image_model
 
@@ -363,7 +363,7 @@ def resolve_billing_image_size(settings: Settings, *, model: str = "", size: str
 
 
 def charge_fen_official_image(settings: Settings, *, model: str = "", size: str = "") -> int:
-    """生图预估：sunburst / Seedream / gpt-image 按 Kie 积分档；其它按张走价目。"""
+    """Sản lượng hình ảnh ước tính: sunburst / Seedream / gpt-image theo mức điểm Kie; giá khác dựa trên hình ảnh."""
     from app.services.billing.pricing import kie_credits_to_cost_fen
     from app.services.tokenfree_image import is_seedream_family, tokenfree_working_image_model
 
@@ -387,7 +387,7 @@ def charge_fen_official_image(settings: Settings, *, model: str = "", size: str 
 
 
 def charge_fen_official_llm(tokens: int, settings: Settings, *, model: str = "") -> int:
-    """LLM 预估：官方 in/out，按 70% 输入 / 30% 输出拆。"""
+    """LLM ước tính: vào/ra chính thức, chia theo 70% đầu vào/30% đầu ra."""
     from app.services.billing.pricing import charge_fen_for_tokens
 
     t = max(0, int(tokens))
@@ -403,7 +403,7 @@ def charge_fen_official_llm(tokens: int, settings: Settings, *, model: str = "")
 
 
 def normalize_video_resolution(resolution: str | None, settings: Settings | None = None) -> str:
-    """预估用清晰度：只认 480p/720p/1080p。"""
+    """Độ phân giải dự kiến: chỉ 480p/720p/1080p."""
     raw = (resolution or "").strip().lower()
     if raw in VIDEO_RESOLUTION_MULT:
         return raw
@@ -418,7 +418,7 @@ def charge_fen_official_video(
     model: str = "",
     resolution: str = "",
 ) -> int:
-    """视频预估：火山 480P 秒价 × 清晰度倍率，不用 TokenFree 占位 37.5。"""
+    """Video ước tính: Giá Volcano 480P mỗi giây × độ phóng đại độ phân giải, không có TokenFree chiếm 37,5."""
     from app.services.billing.pricing import charge_fen_for_tokens
 
     secs = max(float(seconds or 0), 2.0)
@@ -436,7 +436,7 @@ def build_official_rate_rows(
     rates: dict[str, OfficialRate],
     settings: Settings | None = None,
 ) -> list[dict[str, Any]]:
-    """管理端推荐模型费率表（含用户价）。"""
+    """Bảng giá mô hình do ban quản lý đề xuất (bao gồm cả giá người dùng)."""
     s = settings or get_settings()
     usd_cny = usd_cny_rate(s)
     items: list[dict[str, Any]] = []
@@ -500,7 +500,7 @@ def build_official_rate_rows(
 
 
 async def fetch_tokenfree_pricing() -> dict[str, Any]:
-    """GET TokenFree 公开价目，无需 API Key。"""
+    """NHẬN TokenFree Giá công khai, không cần API Key."""
     url = tokenfree_pricing_url()
     try:
         async with httpx.AsyncClient(timeout=8.0) as client:
@@ -519,7 +519,7 @@ async def fetch_tokenfree_pricing() -> dict[str, Any]:
 
 
 async def ensure_official_rates(settings: Settings | None = None) -> dict[str, OfficialRate]:
-    """有缓存且未过期则复用；失败写短 TTL，预扣不因外网挂掉。"""
+    """Nếu nó được lưu vào bộ nhớ đệm và chưa hết hạn thì nó sẽ được sử dụng lại; nếu thất bại, một TTL ngắn sẽ được viết và việc giữ lại sẽ không bị gián đoạn do lỗi mạng bên ngoài."""
     ttl = _FAIL_TTL_SEC if _cache_failed else _CACHE_TTL_SEC
     if _cache is not None and _cache_at and (time.monotonic() - _cache_at) < ttl:
         return _cache
@@ -537,7 +537,7 @@ async def ensure_official_rates(settings: Settings | None = None) -> dict[str, O
 
 
 async def billing_official_rate_rows(settings: Settings | None = None) -> list[dict[str, Any]]:
-    """拉取（或复用）官方价后生成推荐模型费率表。"""
+    """Kéo (hoặc sử dụng lại) giá chính thức để tạo bảng giá mô hình được đề xuất."""
     s = settings or get_settings()
     rates = await ensure_official_rates(s)
     return build_official_rate_rows(rates, s)

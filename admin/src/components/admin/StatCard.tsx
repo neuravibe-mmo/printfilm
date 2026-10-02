@@ -11,7 +11,7 @@ type StatCardProps = {
   className?: string;
 };
 
-// 仪表盘 / 任务中心统计卡片
+// Thẻ thống kê Bảng điều khiển/Trung tâm tác vụ
 export function StatCard({ label, value, hint, icon: Icon, tone = "default", className }: StatCardProps) {
   return (
     <div className={cn("admin-panel admin-stat-card", `tone-${tone}`, className)}>

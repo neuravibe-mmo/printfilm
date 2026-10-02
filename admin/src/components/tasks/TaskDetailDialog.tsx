@@ -51,18 +51,18 @@ const PAYLOAD_FIELD_LABELS: Record<string, string> = {
   reextract_props: "重抽道具",
 };
 
-// 格式化时间为本地字符串
+// Định dạng thời gian dưới dạng chuỗi cục bộ
 function fmtTime(value: string | null | undefined): string {
   if (!value) return "—";
   return new Date(value).toLocaleString();
 }
 
-// 美化 JSON 展示
+// Làm đẹp hiển thị JSON
 function fmtJson(value: unknown): string {
   return prettyJson(value);
 }
 
-// 状态 pill 样式
+// kiểu thuốc trạng thái
 function statusClass(status: string): string {
   if (status === "running" || status === "leased") return "is-run";
   if (status === "succeeded") return "is-done";
@@ -71,7 +71,7 @@ function statusClass(status: string): string {
   return "is-warn";
 }
 
-// 仅在有值时渲染一行定义列表项
+// Chỉ hiển thị một hàng xác định các mục danh sách khi có giá trị
 function DlRow({ label, children }: { label: string; children: ReactNode }) {
   if (children == null || children === "" || children === "—") return null;
   return (
@@ -82,7 +82,7 @@ function DlRow({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-// DlRow 未渲染时 children 仍是元素描述符；按 props 判断是否会出内容。
+// Khi DlRow không được hiển thị, phần tử con vẫn là phần mô tả phần tử; sử dụng đạo cụ để xác định xem nội dung có được xuất ra hay không.
 function dlRowWillShow(child: ReactNode): boolean {
   if (child == null || child === false) return false;
   if (!isValidElement(child)) return Boolean(child);
@@ -91,7 +91,7 @@ function dlRowWillShow(child: ReactNode): boolean {
   return c != null && c !== "" && c !== "—";
 }
 
-// 有内容才包一层 section，避免「标识」等空壳标题
+// Chỉ bao gồm một phần nếu có nội dung và tránh các tiêu đề trống như "logo"
 function DetailSection({ title, children }: { title: string; children: ReactNode }) {
   const visible = Children.toArray(children).filter(dlRowWillShow);
   if (visible.length === 0) return null;
@@ -103,7 +103,7 @@ function DetailSection({ title, children }: { title: string; children: ReactNode
   );
 }
 
-// 从 payload 抽出可读字段摘要（其余仍看下方 JSON）
+// Trích xuất bản tóm tắt trường có thể đọc được từ tải trọng (xem phần còn lại ở JSON bên dưới)
 function payloadSummaryRows(
   payload: Record<string, unknown> | null | undefined,
 ): Array<{ key: string; label: string; value: string }> {
@@ -124,7 +124,7 @@ function payloadSummaryRows(
   return rows;
 }
 
-// 任务详情弹窗：概览 / 步骤 / 事件 / 原始 JSON
+// Cửa sổ bật lên chi tiết nhiệm vụ: Tổng quan/Các bước/Sự kiện/JSON gốc
 export function TaskDetailDialog({ taskId, open, onOpenChange, onCancelled }: TaskDetailDialogProps) {
   const { t, locale } = useI18n();
   const [task, setTask] = useState<AdminTaskDetail | null>(null);

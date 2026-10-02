@@ -1,4 +1,4 @@
-/** 按角色设定 AI 生成音色并绑定到 voiceAudio（无弹窗，供卡片一键生成） */
+/** Đặt AI để tạo âm thanh theo vai trò và liên kết chúng với voiceAudio (không có cửa sổ bật lên, tạo thẻ chỉ bằng một cú nhấp chuột) */
 import { dramaApi, type DramaAsset } from '../api/drama'
 import { buildBoundParams } from '../pages/drama/CharacterVoiceBindModal'
 
@@ -7,7 +7,7 @@ export type CharacterVoiceGenerateResult = {
   voice: DramaAsset
 }
 
-// 根据角色资产生成音色描述、合成试听并写回绑定
+// Tạo mô tả âm sắc dựa trên nội dung nhân vật, tổng hợp phần thử giọng và viết lại ràng buộc
 export async function generateAndBindCharacterVoice(
   projectId: number,
   asset: DramaAsset,

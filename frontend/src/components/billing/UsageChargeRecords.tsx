@@ -34,7 +34,7 @@ function formatContext(context: string, locale: Locale): string {
   return context
 }
 
-/** 格式化相对时间展示 */
+/** Định dạng hiển thị thời gian tương đối */
 function formatWhen(iso?: string | null, locale: Locale = 'zh') {
   if (!iso) return '—'
   const d = new Date(iso)
@@ -48,7 +48,7 @@ function formatWhen(iso?: string | null, locale: Locale = 'zh') {
   })
 }
 
-/** 格式化 token 数量 */
+/** Số lượng mã thông báo được định dạng */
 function formatTokens(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
   if (n >= 10_000) return `${(n / 1000).toFixed(n >= 100_000 ? 0 : 1)}k`
@@ -56,11 +56,11 @@ function formatTokens(n: number) {
 }
 
 type UsageChargeRecordsProps = {
-  /** 嵌入设置页时为 compact */
+  /** Nhỏ gọn khi nhúng trang cài đặt */
   variant?: 'panel' | 'compact'
 }
 
-/** 使用扣费记录列表：按次展示 LLM / 生图 / 生视频等计费明细 */
+/** Danh sách bản ghi khấu trừ mức sử dụng: LLM trả tiền cho mỗi lần xem/hình ảnh thô/video thô, v.v. chi tiết thanh toán */
 export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeRecordsProps) {
   const { t, locale } = useI18n()
   const [items, setItems] = useState<UsageChargeRecord[]>([])
@@ -72,7 +72,7 @@ export default function UsageChargeRecords({ variant = 'compact' }: UsageChargeR
 
   const pageCount = pageCountOf(total, pageSize)
 
-  // 拉取指定页
+  // Kéo trang được chỉ định
   const loadPage = useCallback(async (nextPage: number, size: number) => {
     if (!localStorage.getItem('token')) {
       setItems([])

@@ -40,16 +40,16 @@ from app.services.drama.seed_asset_params import (
 
 logger = logging.getLogger(__name__)
 
-# PROMPT_REFRESH_CONCURRENCY 并发生图提示词 LLM 数
+# PROMPT_REFRESH_CONCURRENCY dấu nhắc từ biểu đồ đồng thời Số LLM
 PROMPT_REFRESH_CONCURRENCY = 3
 
-# 资产库类型（不含 voice 等）
+# Loại thư viện nội dung (không bao gồm giọng nói, v.v.)
 LIBRARY_ASSET_TYPES = frozenset({"character", "scene", "prop", "material", "none"})
 
-# 纯音色占位名（不应建成角色）
+# Tên giữ chỗ âm thanh thuần túy (không được tích hợp vào ký tự)
 VOICE_ONLY_NAMES = frozenset({"音色", "声音", "语音", "旁白音色", "旁白声音", "voice"})
 
-# 名称尾部音色标记：如「李白音色」「现代科普旁白（声音）」
+# Dấu âm sắc ở cuối tên: chẳng hạn như "Âm sắc Lý Bạch" "Lời kể khoa học hiện đại (giọng nói)"
 VOICE_LIKE_NAME_RE = re.compile(
     r"(?:音色|的声音|语音)$|"
     r"[\(（]\s*(?:声音|音色|语音|旁白音色|voice)\s*[\)）]\s*$",
@@ -58,12 +58,12 @@ VOICE_LIKE_NAME_RE = re.compile(
 
 
 def _normalize_asset_name(name: str) -> str:
-    """统一资产名空白，避免「张三」与「张三 」重复入库。"""
+    """Thống nhất tên tài sản trống để tránh việc lưu trữ trùng lặp "Zhang San" và "Zhang San"."""
     return re.sub(r"\s+", " ", (name or "").strip())
 
 
 def _is_voice_like_character_name(name: str) -> bool:
-    """判断名称是否为音色/声音标注，不应作为角色资产。"""
+    """Xác định xem tên có phải là nhãn âm sắc/âm thanh hay không và không được sử dụng làm nội dung ký tự."""
     norm = _normalize_asset_name(name)
     if not norm:
         return False
@@ -73,7 +73,7 @@ def _is_voice_like_character_name(name: str) -> bool:
 
 
 def _character_name_for_seed(name: str) -> str | None:
-    """规范化可建库的角色名；纯音色占位返回 None，带（声音）/音色后缀则还原基名。"""
+    """Chuẩn hóa tên ký tự có thể tạo thư viện; chiếm giữ âm sắc thuần túy trả về Không có, với hậu tố (giọng nói) / âm sắc trả về tên cơ sở."""
     norm = _normalize_asset_name(name)
     if not norm:
         return None
@@ -88,14 +88,14 @@ def _character_name_for_seed(name: str) -> str | None:
 
 
 def _asset_dedupe_key(asset_type: str, name: str) -> tuple[str, str]:
-    """(类型, 规范化名称) 作为去重键；none 与 material 视为同类。"""
+    """(loại, tên chuẩn hóa) đóng vai trò là khóa chống trùng lặp; không có và vật liệu được coi là cùng loại."""
     kind = (asset_type or "").lower()
     if kind == "none":
         kind = "material"
     return (kind, _normalize_asset_name(name))
 
 
-# 评分：优先保留有封面/URL、有音色绑定的资产；同分取更小 id（更早创建）
+# Xếp hạng: Ưu tiên nội dung có bìa/URL và ràng buộc âm thanh; những người có cùng số điểm sẽ nhận được ID nhỏ hơn (được tạo trước đó)
 def _duplicate_asset_keep_score(asset: DramaAsset) -> tuple[int, int, int]:
     has_media = 1 if ((asset.cover or "").strip() or (asset.url or "").strip()) else 0
     params = asset.params if isinstance(asset.params, dict) else {}
@@ -109,7 +109,7 @@ def _duplicate_asset_keep_score(asset: DramaAsset) -> tuple[int, int, int]:
 
 
 async def merge_duplicate_library_assets(db: AsyncSession, project_id: int) -> int:
-    """合并同项目内同类型同名库资产：引用改挂到保留项，删除重复行。"""
+    """Hợp nhất các tài sản thư viện cùng loại và cùng tên trong cùng một dự án: Thay đổi tham chiếu đến các mục dành riêng và xóa các hàng trùng lặp."""
     assets = list(
         (
             await db.execute(select(DramaAsset).where(DramaAsset.project_id == int(project_id)))
@@ -202,7 +202,7 @@ async def _rebind_and_delete_asset(
     remove: DramaAsset,
     keep_id: int | None,
 ) -> None:
-    """删除资产前将其分镜引用/分集关联改挂到 keep_id（若有）。"""
+    """Trước khi xóa nội dung, hãy thay đổi liên kết tập/tham chiếu bảng phân cảnh của nó thành keep_id (nếu có)."""
     remove_id = int(remove.id)
     refs = list(
         (
@@ -256,7 +256,7 @@ async def _rebind_and_delete_asset(
 
 
 async def purge_voice_like_character_assets(db: AsyncSession, project_id: int) -> int:
-    """清理误建为角色的音色名资产（如「某某（声音）」），引用尽量并回同名基角色。"""
+    """Làm sạch nội dung tên âm thanh bị tạo nhầm thành ký tự (chẳng hạn như "So-and-so (giọng nói)") và cố gắng hợp nhất các tham chiếu trở lại ký tự cơ sở có cùng tên."""
     assets = list(
         (
             await db.execute(select(DramaAsset).where(DramaAsset.project_id == int(project_id)))
@@ -264,7 +264,7 @@ async def purge_voice_like_character_assets(db: AsyncSession, project_id: int) -
         .scalars()
         .all()
     )
-    # base_character_ids 规范化角色名 → 资产 id（非音色名）
+    # base_character_ids tên ký tự chuẩn hóa → id nội dung (không phải tên âm thanh)
     base_character_ids: dict[str, int] = {}
     for asset in assets:
         if (asset.type or "").lower() != "character":
@@ -283,7 +283,7 @@ async def purge_voice_like_character_assets(db: AsyncSession, project_id: int) -
         name = _normalize_asset_name(asset.name or "")
         if not _is_voice_like_character_name(name):
             continue
-        # 去掉尾部音色标记后尝试并回基角色
+        # Sau khi xóa dấu âm đuôi, hãy thử và quay lại vai trò cơ bản
         base = VOICE_LIKE_NAME_RE.sub("", name).strip()
         base = _normalize_asset_name(base)
         keep_id = base_character_ids.get(base) if base else None
@@ -314,7 +314,7 @@ class SeedAssetsResult:
 
 @dataclass
 class EpisodeBodySeedResult:
-    """单集正文增量 seed：同名复用、新名建 stub（不抽道具）。"""
+    """Hạt giống tăng văn bản một tập: sử dụng lại cùng tên, tạo sơ khai với tên mới (sẽ không có đạo cụ nào được rút ra)."""
 
     created: list[dict[str, str]] = field(default_factory=list)
     reused: list[dict[str, str]] = field(default_factory=list)
@@ -328,7 +328,7 @@ class EpisodeBodySeedResult:
         return len(self.reused)
 
 
-# 刷新 params 时保留生成状态与音色绑定
+# Giữ trạng thái tạo và liên kết âm sắc khi làm mới thông số
 def _merge_preserved_asset_params(old: dict[str, Any], fresh: dict[str, Any]) -> dict[str, Any]:
     merged = dict(fresh)
     for key in ("generation", "voiceAudio"):
@@ -343,7 +343,7 @@ def _merge_preserved_asset_params(old: dict[str, Any], fresh: dict[str, Any]) ->
     return merged
 
 
-# 将 LLM/规则生成的提示词写回资产 params
+# Viết các từ nhắc nhở do LLM/quy tắc tạo ra trở lại thông số nội dung
 def _write_visual_prompt_to_asset(asset: DramaAsset, prompt: str) -> None:
     params = dict(asset.params or {})
     params["visualPrompt"] = prompt
@@ -365,7 +365,7 @@ async def refresh_asset_prompts_from_script(
     project: DramaProject,
     assets: list[DramaAsset],
 ) -> tuple[int, list[str]]:
-    """按最新剧本为已有资产生成完整生图提示词（不删封面/视频）。"""
+    """Tạo lời nhắc hình ảnh hoàn chỉnh cho nội dung hiện có theo tập lệnh mới nhất (không xóa bìa/video)."""
     from app.services.drama.visual_prompt import resolve_visual_prompt_for_asset
 
     targets = [
@@ -422,7 +422,7 @@ async def seed_assets_from_script(
 
     summary = script.summary if isinstance(script.summary, dict) else {}
     story_type = str(summary.get("storyType") or "").strip()
-    # 先合并历史并发 seed 留下的同名重复，并清掉误入角色的音色名
+    # Trước tiên, hãy hợp nhất các bản sao có cùng tên do hạt giống đồng thời lịch sử để lại và xóa các tên âm thanh bị nhập nhầm vào vai trò.
     merged = await merge_duplicate_library_assets(db, int(project.id))
     purged = await purge_voice_like_character_assets(db, int(project.id))
     if merged or purged:
@@ -467,7 +467,7 @@ async def seed_assets_from_script(
         len(existing),
     )
 
-    # refresh：先把摘要人物/场景字段同步到已有资产
+    # làm mới: Trước tiên, hãy đồng bộ hóa các trường ký tự/cảnh tóm tắt với nội dung hiện có
     if refresh_prompts:
         for ch in summary.get("characters") or []:
             if not isinstance(ch, dict):
@@ -482,7 +482,7 @@ async def seed_assets_from_script(
 
     # Extract scene names from episode bodies
     bodies = _episode_bodies(script.episode_content)
-    # summary_by_name 摘要人物小传，优先用于建角色
+    # summary_by_name Tóm tắt tiểu sử nhân vật, ưu tiên tạo nhân vật
     summary_by_name: dict[str, dict[str, Any]] = {}
     for ch in summary.get("characters") or []:
         if not isinstance(ch, dict):
@@ -490,9 +490,9 @@ async def seed_assets_from_script(
         name = str(ch.get("name") or "").strip()
         if name:
             summary_by_name[name] = ch
-    # cast_names 分集「出场人物」全量名单（补摘要遗漏）
+    # cast_names Danh sách đầy đủ các "Nhân vật" trong tập (bỏ sót phần tóm tắt bổ sung)
     cast_names = _extract_cast_names_from_bodies(bodies)
-    # character_names 摘要 + 出场人物合并保序（跳过音色/声音标注名）
+    # character_names Tóm tắt + Các ký tự được hợp nhất để giữ nguyên trật tự (bỏ qua tên chú thích âm sắc/âm thanh)
     character_names: list[str] = []
     for name in list(summary_by_name.keys()) + cast_names:
         seed_name = _character_name_for_seed(name)
@@ -558,7 +558,7 @@ async def seed_assets_from_script(
         created.append(asset)
         existing_by_key[scene_key] = asset
 
-    # 道具：尚无道具、或强制重抽时调用 LLM（素材已停用，不再创建）
+    # Props: Chưa có props nào, hoặc LLM được gọi khi buộc phải vẽ lại (tài liệu đã bị vô hiệu hóa và sẽ không được tạo nữa)
     need_props = not has_prop
     should_extract_props = not props_seeded and (need_props or reextract_props)
     if should_extract_props:
@@ -634,7 +634,7 @@ async def seed_assets_from_script(
 
 
 def _extract_scene_names_from_bodies(bodies: list[str]) -> list[str]:
-    """从场头时间内外景行抽取场景名（去重保序）。"""
+    """Trích xuất tên cảnh từ các dòng cảnh bên trong và bên ngoài thời gian bắt đầu cảnh (loại bỏ trùng lặp và giữ nguyên trật tự)."""
     scene_names: list[str] = []
     for body in bodies:
         for m in re.finditer(
@@ -652,7 +652,7 @@ def collect_episode_seed_names(
     summary: dict[str, Any],
     body: str,
 ) -> tuple[list[str], list[str], dict[str, dict[str, Any]]]:
-    """收集本集 seed 用角色名/场景名，及摘要人物小传索引。"""
+    """Hãy thu thập hạt giống của tập này bằng cách sử dụng tên nhân vật/tên cảnh và chỉ mục tiểu sử tóm tắt của nhân vật."""
     summary_by_name: dict[str, dict[str, Any]] = {}
     for ch in summary.get("characters") or []:
         if not isinstance(ch, dict):
@@ -677,7 +677,7 @@ def classify_episode_seed_ops(
     character_names: list[str],
     scene_names: list[str],
 ) -> EpisodeBodySeedResult:
-    """纯函数：按规范化同名划分新建 / 复用（单测用）。"""
+    """Chức năng thuần túy: Tạo/tái sử dụng theo tên tiêu chuẩn (đối với thử nghiệm đơn lẻ)."""
     result = EpisodeBodySeedResult()
     seen: set[tuple[str, str]] = set(existing_keys)
     for name in character_names:
@@ -710,7 +710,7 @@ async def seed_assets_from_episode_body(
     project: DramaProject,
     episode_number: int,
 ) -> EpisodeBodySeedResult:
-    """正文生成后增量 seed：只扫该集出场人物/场景 + 全剧 summary 人物；不抽道具。"""
+    """Hạt giống tăng dần sau khi tạo văn bản: chỉ quét các nhân vật/cảnh trong tập + nhân vật tóm tắt của toàn bộ phim; sẽ không có đạo cụ nào được rút ra."""
     script = project.script
     if not script or not script.summary:
         raise ValueError("请先生成剧本摘要")
@@ -758,7 +758,7 @@ async def seed_assets_from_episode_body(
         char_key = _asset_dedupe_key("character", norm)
         hit = existing_by_key.get(char_key)
         if hit is None:
-            # 软包含匹配：避免「小明」与「小明同学」重复建库
+            # Mềm bao gồm kết hợp: tránh việc tạo cơ sở dữ liệu lặp lại bởi "Xiao Ming" và "Bạn cùng lớp của Xiao Ming"
             soft = _find_asset_by_name(
                 [a for a in existing_by_key.values() if (a.type or "") == "character"],
                 norm,
@@ -827,7 +827,7 @@ async def seed_episodes_from_script(
     *,
     force: bool = False,
 ) -> list[DramaEpisode]:
-    # Create / 重切分镜：按 ### 场次拆分并生成视频向分镜文案
+    # Tạo / Chia lại bảng phân cảnh: chia thành ### cảnh và tạo bản sao bảng phân cảnh video
     script = project.script
     if not script:
         raise ValueError("缺少剧本")
@@ -857,7 +857,7 @@ async def seed_episodes_from_script(
         ).scalars().all()
     )
 
-    # 无论是否重切，先合并同集号重复行，避免侧栏出现两个「第1集」
+    # Dù có cắt lại hay không thì trước tiên hãy hợp nhất các hàng trùng lặp có cùng số tập để tránh hai "Tập 1" xuất hiện ở thanh bên.
     merged = await merge_duplicate_episodes_by_number(db, int(project.id))
     if merged:
         await db.commit()
@@ -876,7 +876,7 @@ async def seed_episodes_from_script(
 
     if not existing:
         created: list[DramaEpisode] = []
-        # series_introduced 本剧已介绍角色（按集号累计）
+        # series_introduced Bộ truyện này đã giới thiệu các nhân vật (tích lũy theo số tập)
         series_introduced: set[str] = set()
         for item in bodies:
             ep_no = int(item.get("episodeNumber") or len(created) + 1)
@@ -905,8 +905,8 @@ async def seed_episodes_from_script(
         await db.commit()
         return await _reload_episodes(db, project.id)
 
-    # 已有分集：按集号同步名称与分镜（已生成视频 / 用户编辑过的分镜默认保留，除非 force）
-    # series_introduced 按集号累计本剧已介绍角色
+    # Các tập hiện có: Đồng bộ hóa tên và bảng phân cảnh theo số tập (video/bảng phân cảnh do người dùng tạo do người dùng chỉnh sửa được giữ lại theo mặc định, trừ khi sử dụng vũ lực)
+    # series_introduced Các nhân vật tích lũy được giới thiệu trong bộ phim này theo số tập
     series_introduced: set[str] = set()
     ordered_existing = sorted(
         existing,
@@ -944,7 +944,7 @@ async def seed_episodes_from_script(
             for frag in episode.fragments or []:
                 series_introduced.update(extract_introduced_names_from_content(frag.content or ""))
 
-    # 补建剧本里有、库中没有的集
+    # Bổ sung các tập có trong kịch bản nhưng chưa có trong thư viện
     existing_numbers = {
         int((ep.params or {}).get("episodeNumber") or 0)
         for ep in existing
@@ -982,7 +982,7 @@ def require_confirmable_episode_body(
     episode_content: Any,
     episode_number: int,
 ) -> dict[str, Any]:
-    """取出指定集正文；缺失或过短则报错。"""
+    """Lấy văn bản của bộ được chỉ định; nếu thiếu hoặc quá ngắn sẽ báo lỗi."""
     number = int(episode_number)
     if number < 1:
         raise ValueError("集号无效")
@@ -1018,14 +1018,14 @@ def _episode_number_of(episode: DramaEpisode) -> int:
 
 
 def _episode_keep_score(episode: DramaEpisode) -> tuple[int, int, int]:
-    """优先保留成片多、分镜多、更早创建的分集行。"""
+    """Sẽ ưu tiên giữ lại những dòng tập có nhiều phim, nhiều cảnh và được tạo trước đó."""
     frags = list(episode.fragments or [])
     videos = sum(1 for f in frags if (getattr(f, "video", None) or "").strip())
     return (videos, len(frags), -int(episode.id or 0))
 
 
 def _dedupe_episode_body_items(bodies: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """剧本分集列表按集号去重（同号保留后者）；缺号在已占用号之外顺延分配。"""
+    """Danh sách các tập trong kịch bản được loại bỏ theo số tập (cùng số thì giữ lại); số còn thiếu được phân bổ thêm vào số đã chiếm."""
     by_number: dict[int, dict[str, Any]] = {}
     missing: list[dict[str, Any]] = []
     for item in bodies:
@@ -1055,7 +1055,7 @@ def _dedupe_episode_body_items(bodies: list[dict[str, Any]]) -> list[dict[str, A
 
 
 async def merge_duplicate_episodes_by_number(db: AsyncSession, project_id: int) -> int:
-    """合并同项目同集号的重复 DramaEpisode：保留成片/分镜更优者，删除其余。"""
+    """Hợp nhất các DramaEpisodes trùng lặp của cùng một dự án với cùng số tập: giữ lại tập có phim/phân cảnh hoàn thiện tốt hơn và xóa phần còn lại."""
     episodes = list(
         (
             await db.execute(
@@ -1110,7 +1110,7 @@ async def seed_single_episode_from_script(
     *,
     force: bool = False,
 ) -> DramaEpisode:
-    """只为指定集建行/按规则切分镜，不 force 时保留已有视频与手改。"""
+    """Chỉ xây dựng các hàng/lát theo quy tắc cho tập hợp đã chỉ định. Các video hiện có và các sửa đổi thủ công sẽ được giữ lại khi không sử dụng vũ lực."""
     script = project.script
     if not script:
         raise ValueError("缺少剧本")
@@ -1124,7 +1124,7 @@ async def seed_single_episode_from_script(
         .all()
     )
     summary = script.summary if isinstance(script.summary, dict) else None
-    # 进入分镜前先清同号重复，避免再建一条第 N 集
+    # Trước khi vào bảng phân cảnh, hãy xóa các số trùng lặp có cùng số để tránh tạo tập thứ N khác.
     await merge_duplicate_episodes_by_number(db, int(project.id))
     existing = list(
         (
@@ -1204,7 +1204,7 @@ async def _list_episode_fragments(
     db: AsyncSession,
     episode_id: int,
 ) -> list[DramaEpisodeFragment]:
-    # 显式查询分镜，避免 async 会话下 lazy load episode.fragments 触发 MissingGreenlet
+    # Truy vấn rõ ràng các đoạn để tránh việc tải từng phần. các đoạn kích hoạt MissingGreenlet trong phiên không đồng bộ
     result = await db.execute(
         select(DramaEpisodeFragment)
         .where(DramaEpisodeFragment.episode_id == episode_id)
@@ -1225,7 +1225,7 @@ async def _replace_episode_fragments(
     preserve_protected: bool = False,
     continuation: bool = False,
 ) -> list[dict[str, Any]]:
-    # 删除旧分镜并重建；preserve_protected 时保留已有视频/手改分镜
+    # Xóa bảng phân cảnh cũ và xây dựng lại nó; khi được bảo vệ_bảo vệ, hãy giữ lại video hiện có/thay đổi bảng phân cảnh theo cách thủ công
     existing = await _list_episode_fragments(db, episode.id)
     protected = (
         sorted(
@@ -1257,7 +1257,7 @@ async def _replace_episode_fragments(
             summary=summary,
         )
     )
-    # 全量重拆时跳过与已拍前缀等量的草稿；续拆（continuation）则草稿全是后续镜
+    # Khi mở lại hoàn toàn, bỏ qua các bản nháp bằng tiền tố của cảnh quay; khi tiếp tục, các bản nháp đều là những cảnh quay tiếp theo.
     if protected and not continuation:
         skip = min(len(protected), len(planned))
         planned = planned[skip:]
@@ -1283,7 +1283,7 @@ async def _replace_episode_fragments(
         for asset_id in frag.get("asset_ids") or []:
             db.add(DramaFragmentAssetRef(fragment_id=row.id, asset_id=int(asset_id)))
 
-    # 记录切分所用剧本身份，供后续判断是否需要自动重切
+    # Ghi lại danh tính của tập lệnh được sử dụng để phân đoạn để đưa ra đánh giá tiếp theo xem liệu có cần phân đoạn lại tự động hay không.
     ep_params = dict(episode.params) if isinstance(episode.params, dict) else {}
     ep_params["fragment_source_fp"] = _script_body_fingerprint(body)
     episode.params = ep_params
@@ -1291,7 +1291,7 @@ async def _replace_episode_fragments(
 
 
 def resolve_episode_script_body(episode_content: Any, episode: DramaEpisode) -> str:
-    # 按 episodeNumber 从剧本 episode_content 取本集场记正文
+    # Nhấn fileepNumber để lấy nội dung của tập này từ tập lệnhep_content
     ep_no = 0
     if isinstance(episode.params, dict):
         ep_no = int(episode.params.get("episodeNumber") or 0)
@@ -1311,7 +1311,7 @@ async def replace_episode_fragments_with_drafts(
     preserve_protected: bool = True,
     continuation: bool = False,
 ) -> None:
-    # 用外部草稿（LLM）覆盖本集分镜；默认保留已生成视频/手改
+    # Ghi đè lên bảng phân cảnh của tập này bằng bản nháp bên ngoài (LLM); giữ lại các sửa đổi video/thủ công đã tạo theo mặc định
     await _replace_episode_fragments(
         db,
         episode,
@@ -1324,13 +1324,13 @@ async def replace_episode_fragments_with_drafts(
 
 
 def _script_body_fingerprint(body: str) -> str:
-    # 分集正文指纹（用于判断剧本是否变更）
+    # Dấu vân tay văn bản của tập (dùng để xác định xem tập lệnh có bị thay đổi hay không)
     normalized = (body or "").replace("\r\n", "\n").strip()
     return hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:16]
 
 
 def _fragment_is_protected(frag: DramaEpisodeFragment) -> bool:
-    # 已有视频或用户手改过的分镜，非 force 时不覆盖
+    # Các video hiện có hoặc bảng phân cảnh do người dùng sửa đổi sẽ không bị ghi đè trừ khi sử dụng vũ lực.
     if (frag.video or "").strip():
         return True
     params = frag.params if isinstance(frag.params, dict) else {}
@@ -1342,7 +1342,7 @@ def _episode_has_protected_fragments(episode: DramaEpisode) -> bool:
 
 
 def _should_auto_replan(existing: list[DramaEpisode], bodies: list[dict[str, Any]]) -> bool:
-    # 无分集、分镜为空、仍是场记原文、剧本变更且无保护分镜、或剧本集数更多时自动重切
+    # Không có tập nào, bảng phân cảnh trống, kịch bản vẫn là nguyên văn của cảnh, kịch bản bị thay đổi và không có phân cảnh được bảo vệ, hoặc kịch bản tự động cắt lại khi có thêm tập.
     if not existing:
         return True
     body_by_number = {
@@ -1363,14 +1363,14 @@ def _should_auto_replan(existing: list[DramaEpisode], bodies: list[dict[str, Any
 
 
 def _episode_should_replace_fragments(episode: DramaEpisode, script_body: str) -> bool:
-    # 是否应用规则重切本集分镜（保护视频/手改）
+    # Có nên áp dụng các quy tắc để cắt lại bảng phân cảnh của tập này hay không (bảo vệ việc sửa đổi video/thủ công)
     frags = list(episode.fragments or [])
     if not frags:
         return True
     if _episode_has_protected_fragments(episode):
         return False
     if all(is_raw_screenplay_fragment(f.content or "") for f in frags):
-        # 整集仍是场记原文才重切；夹一手写镜或空镜不要整集覆盖
+        # Toàn bộ tập phim vẫn phải được sao chép bằng bản gốc; không che toàn bộ tập phim bằng gương viết tay hoặc gương trống
         return True
     params = episode.params if isinstance(episode.params, dict) else {}
     stored_fp = str(params.get("fragment_source_fp") or "")
@@ -1378,7 +1378,7 @@ def _episode_should_replace_fragments(episode: DramaEpisode, script_body: str) -
     if stored_fp and current_fp and stored_fp != current_fp:
         return True
     if not stored_fp and script_body:
-        # 旧数据无指纹：场次数明显大于 1 且仅 1 条分镜时重切
+        # Dữ liệu cũ không có dấu vân tay: cắt lại khi số lượng cảnh lớn hơn 1 đáng kể và chỉ có 1 storyboard
         scene_count = len(split_episode_content_into_scenes(script_body))
         if scene_count > 1 and len(frags) == 1:
             return True
@@ -1386,7 +1386,7 @@ def _episode_should_replace_fragments(episode: DramaEpisode, script_body: str) -
 
 
 def _episode_needs_replan(episode: DramaEpisode) -> bool:
-    # 兼容旧调用名
+    # Tương thích với tên gọi cũ
     return _episode_should_replace_fragments(episode, "")
 
 
@@ -1423,10 +1423,10 @@ def _episode_bodies(episode_content: Any) -> list[str]:
 
 
 def _extract_cast_names_from_bodies(bodies: list[str]) -> list[str]:
-    """从分集正文「出场人物：」行收集全部角色名（去重保序，跳过音色标注）。"""
-    # seen 已收录名
+    """Thu thập tất cả tên nhân vật từ dòng "Nhân vật:" trong văn bản tập (xóa trùng lặp, giữ nguyên thứ tự và bỏ qua chú thích giọng nói)."""
+    # đã thấy Đã bao gồm
     seen: set[str] = set()
-    # names 保序结果
+    # tên kết quả bảo toàn trật tự
     names: list[str] = []
     for body in bodies:
         for line in (body or "").replace("\r\n", "\n").split("\n"):
@@ -1447,7 +1447,7 @@ def _character_stub_from_cast(
     summary: dict[str, Any] | None = None,
     bodies: list[str] | None = None,
 ) -> dict[str, Any]:
-    """分集出场但摘要未写小传时的角色 stub（供建资产 + 后续 AI 补提示词）。"""
+    """Sơ khai nhân vật (nội dung xây dựng + lời nhắc AI tiếp theo) khi xuất hiện trong các tập phim nhưng không viết tiểu sử trong phần tóm tắt."""
     from app.services.drama.build_fragments import infer_character_intro_text
 
     genre = (story_type or "").strip() or "短剧"

@@ -1,4 +1,4 @@
-/** 画布生成条：多选 Agent Skill */
+/** Thanh tạo canvas: Kỹ năng tác nhân đa lựa chọn */
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { ChevronDown, Wand2 } from 'lucide-react'
 import { AgentSkillPicker } from '../../../../components/drama/AgentSkillPicker'
@@ -19,7 +19,7 @@ type DramaSkillOptionsBarProps = {
   disabled?: boolean
 }
 
-/** 渲染 Skill 下拉多选 */
+/** Nhiều lựa chọn thả xuống Kỹ năng kết xuất */
 export function DramaSkillOptionsBar({
   skills,
   selectedIds,

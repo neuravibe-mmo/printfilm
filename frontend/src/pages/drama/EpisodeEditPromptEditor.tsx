@@ -1,4 +1,4 @@
-/** 分集脚本 contentEditable：时长/资产 chip + @ 弹层 */
+/** Nội dung tập lệnh có thể chỉnh sửa: thời lượng/chip nội dung + lớp đàn hồi @ */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
@@ -30,7 +30,7 @@ type Props = {
   onOpenAsset?: (assetId: number) => void
 }
 
-// 渲染可编辑分镜脚本
+// Hiển thị kịch bản bảng phân cảnh có thể chỉnh sửa
 export function EpisodeEditPromptEditor({
   content,
   assets,
@@ -53,7 +53,7 @@ export function EpisodeEditPromptEditor({
   const [mentionActiveIndex, setMentionActiveIndex] = useState(0)
   const [mentionItemsCount, setMentionItemsCount] = useState(0)
 
-  // 按资产 id 解析 chip 展示数据
+  // Phân tích dữ liệu hiển thị chip theo id nội dung
   const resolveChip = useCallback(
     (assetId: number) => {
       const asset = assets.find((a) => a.id === assetId)
@@ -63,7 +63,7 @@ export function EpisodeEditPromptEditor({
     [assets],
   )
 
-  // 关闭 @ 弹层
+  // Đóng @ lớp đàn hồi
   const closeMentionPopover = useCallback(() => {
     setMentionOpen(false)
     setMentionQuery('')
@@ -72,7 +72,7 @@ export function EpisodeEditPromptEditor({
     mentionTriggerRangeRef.current = null
   }, [])
 
-  // 把 content 刷到编辑器 DOM
+  // Đưa nội dung vào trình soạn thảo DOM
   const paint = useCallback(
     (next: string) => {
       const editor = editorRef.current
@@ -82,20 +82,20 @@ export function EpisodeEditPromptEditor({
     [resolveChip],
   )
 
-  // 外部 content 变化时同步到 DOM（编辑中忽略本编辑器回写）
+  // Đồng bộ hóa với DOM khi nội dung bên ngoài thay đổi (bài viết lại của biên tập viên này bị bỏ qua trong quá trình chỉnh sửa)
   useEffect(() => {
     if (editing && content === lastEmittedRef.current) return
     paint(content)
     lastEmittedRef.current = content
   }, [content, editing, paint])
 
-  // 只读态资产列表变化时刷新 chip 展示
+  // Làm mới màn hình chip khi danh sách tài sản chỉ đọc thay đổi
   useEffect(() => {
     if (editing) return
     paint(content)
   }, [assets, content, editing, paint])
 
-  // 进入编辑时聚焦
+  // Tập trung khi vào chỉnh sửa
   useEffect(() => {
     if (!editing) {
       closeMentionPopover()
@@ -104,7 +104,7 @@ export function EpisodeEditPromptEditor({
     requestAnimationFrame(() => editorRef.current?.focus())
   }, [closeMentionPopover, editing])
 
-  // 同步 @ 触发状态
+  // Đồng bộ hóa @ trạng thái kích hoạt
   const syncMentionTrigger = useCallback(() => {
     const editor = editorRef.current
     if (!editor || !editing) {
@@ -124,7 +124,7 @@ export function EpisodeEditPromptEditor({
     setMentionActiveIndex(0)
   }, [closeMentionPopover, editing])
 
-  // 把编辑器内容回写到父级
+  // Viết nội dung soạn thảo lại cho phụ huynh
   const emitContent = useCallback(() => {
     const editor = editorRef.current
     if (!editor) return
@@ -133,7 +133,7 @@ export function EpisodeEditPromptEditor({
     onContentChange(next)
   }, [onContentChange])
 
-  // 选择资产插入 chip
+  // Chọn nội dung và chèn chip
   const handleSelectAsset = useCallback(
     (asset: DramaAsset) => {
       const editor = editorRef.current
@@ -149,7 +149,7 @@ export function EpisodeEditPromptEditor({
     [closeMentionPopover, emitContent],
   )
 
-  // 选择时长插入 chip
+  // Chọn thời lượng gắn chip
   const handleSelectDuration = useCallback(
     (seconds: number) => {
       const editor = editorRef.current
@@ -164,7 +164,7 @@ export function EpisodeEditPromptEditor({
     [closeMentionPopover, emitContent],
   )
 
-  // 插入景别 / 运镜前缀纯文本
+  // Chèn văn bản đơn giản của tiền tố cảnh/chuyển động
   const handleSelectCameraPhrase = useCallback(
     (text: string) => {
       const editor = editorRef.current
@@ -250,7 +250,7 @@ export function EpisodeEditPromptEditor({
           }
           if (e.key === 'Enter' && mentionItemsCount > 0) {
             e.preventDefault()
-            // Enter 由弹层资产列表在父级通过 activeIndex 处理较复杂，这里仅拦截避免换行打断触发
+            // Enter được xử lý bởi danh sách tài sản lớp đàn hồi thông qua activeIndex ở cấp độ gốc, việc này phức tạp hơn. Ở đây chúng tôi chỉ chặn trình kích hoạt để tránh ngắt dòng.
           }
         }}
       />

@@ -1,4 +1,4 @@
-"""管理端：官方上游用量快照与本地成本对照（TokenFree / New API）。"""
+"""Bên quản lý: Ảnh chụp nhanh chính thức về mức sử dụng ngược dòng và so sánh chi phí cục bộ (TokenFree / API mới)."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from app.services.tokenfree_usage import (
 
 
 def _utc_today() -> date:
-    """UTC 当天日期，与快照 usage_date 对齐。"""
+    """Ngày hôm nay theo giờ UTC, được căn chỉnh với ngày sử dụng ảnh chụp nhanh."""
     return datetime.now(UTC).date()
 
 
@@ -32,7 +32,7 @@ async def _local_usage_daily(
     since: date,
     until: date,
 ) -> dict[str, dict[str, int]]:
-    """按日聚合全部本地 usage_events（TokenFree 覆盖全部模型）。"""
+    """Tổng hợp tất cả các sự kiện sử dụng cục bộ theo ngày (TokenFree bao gồm tất cả các mô hình)."""
     day_expr = cast(UsageEvent.created_at, Date)
     rows = (
         await db.execute(
@@ -64,7 +64,7 @@ async def _latest_used_quota_before(
     *,
     before: date,
 ) -> int | None:
-    """取 before 日之前最近一条快照里的累计 used_quota。"""
+    """Nhận used_quota tích lũy trong ảnh chụp nhanh mới nhất trước ngày hôm trước."""
     row = (
         await db.execute(
             select(UpstreamUsageDaily)
@@ -85,7 +85,7 @@ async def _today_from_cumulative(
     used_quota: int,
     settings: Any,
 ) -> dict[str, Any]:
-    """当 New API 不按日返回用量时，用累计 used_quota 差分记到今天。"""
+    """Khi API mới không trả về mức sử dụng theo ngày, chênh lệch used_quota tích lũy sẽ được sử dụng để ghi lại vào ngày hôm nay."""
     existing = (
         await db.execute(select(UpstreamUsageDaily).where(UpstreamUsageDaily.usage_date == today))
     ).scalar_one_or_none()
@@ -118,7 +118,7 @@ async def sync_upstream_usage(
     days: int = 30,
     force: bool = False,
 ) -> dict[str, Any]:
-    """拉取 TokenFree 官方日用量并写入 upstream_usage_daily。"""
+    """Lấy mức sử dụng chính thức hàng ngày của TokenFree và ghi nó vào upstream_usage_daily."""
     if not tokenfree_usage_configured():
         return {"configured": False, "synced": 0, "skipped": 0}
 
@@ -208,7 +208,7 @@ async def build_upstream_usage_compare(
     *,
     days: int = 30,
 ) -> dict[str, Any]:
-    """返回近 N 日官方/本地成本对照序列。"""
+    """Trả về chuỗi so sánh chi phí chính thức/địa phương trong N ngày qua."""
     today = _utc_today()
     start = today - timedelta(days=max(1, int(days)) - 1)
     rows = (

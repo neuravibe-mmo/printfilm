@@ -18,7 +18,7 @@ function formatUpdated(d: Date | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 定价页深色余额卡片：余额、本月消耗、冻结、充值记录 */
+/** Thẻ cân bằng tối trên trang định giá: số dư, mức tiêu thụ trong tháng này, đóng băng, hồ sơ nạp tiền */
 export default function PricingWalletCard({ wallet, usage, loggedIn, updatedAt, onHistory }: Props) {
   const { t, locale } = useI18n()
   const [balanceVisible, setBalanceVisible] = useState(true)

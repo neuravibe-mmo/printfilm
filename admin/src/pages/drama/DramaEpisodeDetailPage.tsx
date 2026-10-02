@@ -12,7 +12,7 @@ import { AdminEntityLink } from "@/components/admin/AdminEntityLink";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/useI18n";
 
-/** 漫剧分集详情：含分镜列表 */
+/** Chi tiết các tập của bộ truyện tranh: bao gồm danh sách kịch bản phân cảnh */
 export function DramaEpisodeDetailPage() {
   const { m } = useI18n();
   const { episodeId } = useParams<{ episodeId: string }>();

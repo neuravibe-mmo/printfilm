@@ -1,4 +1,4 @@
-"""开源版固定对接 TokenFree New API，不允许切换其它上游。"""
+"""Phiên bản nguồn mở được kết nối cố định với API mới TokenFree và không được phép chuyển sang các phiên bản ngược dòng khác."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from app.schemas_routing import SystemModelChannel
 
 TOKENFREE_CHANNEL_ID = "tokenfree"
 TOKENFREE_CHANNEL_NAME = "TokenFree New API"
-# New API OpenAI 兼容根路径（/channels 是控制台，不是接口）
+# Đường dẫn gốc tương thích với API mới OpenAI (/channels là bảng điều khiển, không phải giao diện)
 TOKENFREE_BASE_URL = "https://www.tokenfree.com/v1"
 TOKENFREE_CONSOLE_URL = "https://www.tokenfree.com/channels"
-# New API 内部额度：500000 quota = 1 USD
+# Hạn ngạch nội bộ API mới: 500000 hạn ngạch = 1 USD
 TOKENFREE_QUOTA_PER_USD = 500_000
 
 
 def tokenfree_site_origin(base_url: str | None = None) -> str:
-    """把 /v1 兼容根路径收成站点 origin，供 /api/* 与 dashboard 计费用。"""
+    """Thu thập đường dẫn gốc tương thích /v1 vào nguồn gốc của trang web để thanh toán /api/* và trang tổng quan."""
     raw = (base_url or TOKENFREE_BASE_URL).strip().rstrip("/")
     if raw.endswith("/v1"):
         return raw[: -len("/v1")].rstrip("/")
@@ -24,7 +24,7 @@ def tokenfree_site_origin(base_url: str | None = None) -> str:
 
 
 def resolve_tokenfree_api_key() -> str:
-    """优先渠道 Key，其次运行时 overlay / 环境变量。"""
+    """Ưu tiên được dành cho Khóa kênh, theo sau là các biến môi trường/lớp phủ thời gian chạy."""
     try:
         from app.services.model_settings import get_routing_snapshot
 
@@ -47,7 +47,7 @@ def locked_tokenfree_channel(
     models: list[str] | None = None,
     enabled: bool = True,
 ) -> SystemModelChannel:
-    """构造不可改 Base URL / 协议的唯一渠道。"""
+    """Cách duy nhất để xây dựng URL/giao thức cơ sở không thể thay đổi."""
     key = (api_key or "").strip()
     return SystemModelChannel(
         id=TOKENFREE_CHANNEL_ID,
@@ -64,7 +64,7 @@ def locked_tokenfree_channel(
 
 
 def pick_migratable_api_key(channels: list[SystemModelChannel]) -> str:
-    """只迁 TokenFree 渠道或 base_url 含 tokenfree.com 的 Key，避免把 Moonshot/方舟 Key 写进去。"""
+    """Chỉ di chuyển kênh TokenFree hoặc base_url chứa Khóa của tokenfree.com và tránh ghi Khóa Moonshot/Ark vào đó."""
     for channel in channels:
         if channel.id == TOKENFREE_CHANNEL_ID and (channel.api_key or "").strip():
             return (channel.api_key or "").strip()
@@ -77,7 +77,7 @@ def pick_migratable_api_key(channels: list[SystemModelChannel]) -> str:
 
 
 def apply_tokenfree_flat_overlay(flat: dict[str, Any], channels: list[SystemModelChannel]) -> dict[str, Any]:
-    """运行时把 TokenFree Key / Base 同步到 LLM 与方舟客户端共用字段。"""
+    """Đồng bộ hóa TokenFree Key / Base với các trường được chia sẻ bởi ứng dụng khách LLM và Ark trong thời gian chạy."""
     channel = next((item for item in channels if item.id == TOKENFREE_CHANNEL_ID), None)
     if channel is None:
         return flat

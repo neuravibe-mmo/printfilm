@@ -1,4 +1,4 @@
-/** 漫剧资产生成状态（与 params.generation.status 一致） */
+/** Trạng thái tạo nội dung truyện tranh (phù hợp với params.Generation.status) */
 export const DRAMA_GENERATION_STATUSES = [
   "queued",
   "running",
@@ -8,7 +8,7 @@ export const DRAMA_GENERATION_STATUSES = [
   "cancelled",
 ] as const;
 
-/** 漫剧生成状态中文标签（idle 仅用于分镜等无 params.generation 时的展示回退） */
+/** Trạng thái tạo chương trình truyện tranh Nhãn Trung Quốc (nhàn rỗi chỉ được sử dụng để khôi phục hiển thị khi không có params.thế hệ như bảng phân cảnh) */
 export function dramaGenerationStatusLabel(status: string): string {
   const map: Record<string, string> = {
     queued: "排队中",
@@ -22,13 +22,13 @@ export function dramaGenerationStatusLabel(status: string): string {
   return map[status] ?? status;
 }
 
-/** 列表/详情展示：空值显示 — */
+/** Hiển thị danh sách/chi tiết: hiển thị giá trị trống — */
 export function formatDramaGenerationStatus(status: string | null | undefined): string {
   if (!status) return "—";
   return dramaGenerationStatusLabel(status);
 }
 
-/** 漫剧资产类型中文标签 */
+/** Loại nội dung truyện tranh Nhãn tiếng Trung */
 export function dramaAssetTypeLabel(type: string): string {
   const map: Record<string, string> = {
     character: "角色",

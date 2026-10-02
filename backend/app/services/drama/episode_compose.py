@@ -1,4 +1,4 @@
-"""漫剧分集成片：统一画幅重编码后拼接（兼容各镜 HEVC 参数不一致）。"""
+"""Phim đa dạng về truyện tranh và phim truyền hình: mã hóa lại khung hình thống nhất rồi ghép nối (tương thích với các thông số HEVC không nhất quán của từng ống kính)."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from app.services.ffmpeg_compose import _run, _scale_pad, _which
 logger = logging.getLogger("app.drama.episode_compose")
 
 
-# 将单镜规范到目标分辨率（H.264 + AAC），便于后续 stream copy 拼接
+# Chuẩn hóa ống kính đơn thành độ phân giải mục tiêu (H.264 + AAC) để tạo điều kiện thuận lợi cho việc ghép nối sao chép luồng tiếp theo
 def _normalize_clip(src: Path, dest: Path, width: int, height: int) -> None:
     ffmpeg = _which("ffmpeg")
     vf = _scale_pad(width, height)
@@ -51,7 +51,7 @@ def _normalize_clip(src: Path, dest: Path, width: int, height: int) -> None:
     )
 
 
-# 拼接已规范化的片段（stream copy）
+# Nối các đoạn đã chuẩn hóa (sao chép luồng)
 def _concat_normalized(paths: list[Path], output: Path) -> None:
     ffmpeg = _which("ffmpeg")
     with tempfile.TemporaryDirectory(prefix="drama_ep_concat_") as tmp:
@@ -83,7 +83,7 @@ def _concat_normalized(paths: list[Path], output: Path) -> None:
         output.write_bytes(merged.read_bytes())
 
 
-# 确保远程/本地视频落到可 ffmpeg 读取的本地路径
+# Đảm bảo video từ xa/cục bộ rơi vào đường dẫn cục bộ mà ffmpeg có thể đọc được
 async def _ensure_clip_local(url: str, cache_dir: Path, index: int) -> Path:
     local = storage_svc.local_path_from_url(url)
     if local is not None:
@@ -98,7 +98,7 @@ async def _ensure_clip_local(url: str, cache_dir: Path, index: int) -> Path:
     return dest
 
 
-# 按分集设置统一重编码并拼接；返回可下载 URL
+# Mã hóa lại và ghép nối thống nhất theo cài đặt tập; quay lại URL có thể tải xuống
 async def compose_episode_video(
     db: AsyncSession,
     *,
@@ -156,7 +156,7 @@ async def compose_episode_video(
     return url
 
 
-# 加载分集（含 fragments）供合成
+# Đang tải các tập (bao gồm cả các đoạn) để tổng hợp
 async def load_episode_for_compose(db: AsyncSession, episode_id: int) -> DramaEpisode | None:
     from sqlalchemy import select
 

@@ -31,7 +31,7 @@ function yuanShort(fen: number) {
   return Number.isInteger(v) ? String(v) : v.toFixed(2)
 }
 
-/** 定价与充值页 */
+/** Trang định giá và nạp tiền */
 export default function PricingPage() {
   const nav = useNavigate()
   const { t, m, locale } = useI18n()

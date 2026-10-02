@@ -1,7 +1,7 @@
-/** 分镜入口：跳过中间分集页，直达首集编辑 */
+/** Lối vào cốt truyện: Bỏ qua các trang giữa tập và đi thẳng đến phần biên tập tập đầu tiên */
 import { dramaApi, type DramaEpisode } from '../api/drama'
 
-/** 已有分集只读取；没有分集才按剧本切一次。force 才走重切。 */
+/** Nếu đã có tập rồi thì chúng ta sẽ chỉ đọc thôi; nếu không có tập nào chúng tôi sẽ cắt một lần theo kịch bản. Lực được sử dụng để thực hiện các vết cắt nặng. */
 export async function loadDramaEpisodes(
   projectId: number,
   force = false,
@@ -13,7 +13,7 @@ export async function loadDramaEpisodes(
   return dramaApi.seedEpisodes(projectId, force)
 }
 
-/** 确保已切分并返回首集（或指定集）编辑路径；无分集则回大纲 */
+/** Hãy chắc chắn rằng nó đã được chia và quay lại đường dẫn chỉnh sửa của tập đầu tiên (hoặc tập được chỉ định); nếu không có tập thì quay lại đề cương */
 export async function resolveStoryboardPath(
   projectId: number,
   preferredEpisodeId?: number | null,

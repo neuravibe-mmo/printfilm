@@ -1,4 +1,4 @@
-"""Agent Skill API 入出参。"""
+"""Tham số đầu vào và đầu ra của Agent Skill API."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ class AgentSkillListOut(BaseModel):
 
 
 class AgentSkillUploadBody(BaseModel):
-    """上传 Skill：完整 markdown（可含 YAML 头）。"""
+    """Kỹ năng tải lên: đánh dấu hoàn chỉnh (có thể bao gồm tiêu đề YAML)."""
 
     markdown: str = Field(min_length=8, max_length=80000)
 
@@ -35,7 +35,7 @@ class AgentSkillUpdateBody(BaseModel):
 
 
 class AgentSkillOptimizeBody(BaseModel):
-    """按勾选 Skill 优化提示词。"""
+    """Nhấp để kiểm tra từ nhắc nhở Tối ưu hóa kỹ năng."""
 
     prompt: str = Field(min_length=1, max_length=8000)
     skill_ids: list[int] = Field(default_factory=list)

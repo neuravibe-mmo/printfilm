@@ -1,11 +1,11 @@
-/** 官网首页宣传文案与结构数据 */
+/** Bản sao quảng cáo trang chủ trang web chính thức và dữ liệu cấu trúc */
 
 /*
- * HOME_PIPELINE 成片三步
- * HOME_DRAMA_STEPS 漫剧路径标签
- * HOME_KEPU_STEPS 科普路径标签
- * HOME_CAPABILITIES 能力说明
- * HOME_AUDIENCES 适用对象
+ * HOME_PIPELINE Ba bước để làm phim
+ * Thẻ đường dẫn truyện tranh HOME_DRAMA_STEPS
+ * HOME_KEPU_STEPS Nhãn con đường phổ biến khoa học
+ * HOME_CAPABILITIES Khả năng Mô tả
+ * HOME_AUDIENCES đối tượng áp dụng
  */
 
 export const HOME_PIPELINE = [

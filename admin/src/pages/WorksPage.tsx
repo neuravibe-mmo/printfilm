@@ -26,7 +26,7 @@ function coverSrc(url: string | null | undefined): string {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
-// 作品审核：搜索、预览与只读详情
+// Đánh giá tác phẩm: tìm kiếm, xem trước và chi tiết chỉ đọc
 export function WorksPage() {
   const { t, locale } = useI18n();
   const [auditStatus, setAuditStatus] = useState("");

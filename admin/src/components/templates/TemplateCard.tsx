@@ -13,7 +13,7 @@ type TemplateCardProps = {
   onTogglePremium: (id: string, value: boolean) => void;
 };
 
-// 解析封面 URL（相对 /static 走 Vite 代理）
+// Phân tích URL bìa (sử dụng proxy Vite liên quan đến /static)
 function coverSrc(url: string): string {
   const trimmed = (url || "").trim();
   if (!trimmed) return "";
@@ -21,7 +21,7 @@ function coverSrc(url: string): string {
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 }
 
-// 模板卡片：封面 + 元信息 + 快捷开关
+// Thẻ mẫu: bìa + thông tin meta + phím tắt
 export function TemplateCard({
   template,
   onEdit,

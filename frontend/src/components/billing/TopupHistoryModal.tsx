@@ -20,7 +20,7 @@ function formatTime(iso?: string | null) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 充值记录弹窗：列出近期订单与到账状态 */
+/** Cửa sổ bật lên bản ghi nạp tiền: liệt kê các đơn hàng gần đây và trạng thái thanh toán */
 export default function TopupHistoryModal({ open, onClose }: Props) {
   const { t, m, locale } = useI18n()
   const [orders, setOrders] = useState<BillingOrder[]>([])

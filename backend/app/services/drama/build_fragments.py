@@ -1,4 +1,4 @@
-"""将分集剧本按场次切成视频向分镜（对齐 manju buildSerieFragmentsFromEpisode）。"""
+"""Cắt tập lệnh thành các bảng phân cảnh hướng video theo các cảnh (phù hợp với manju buildSerieFragmentsFromEpisode)."""
 
 from __future__ import annotations
 
@@ -22,52 +22,52 @@ from app.services.drama.fragment_asset_limit import (
     strip_unlisted_asset_mentions,
 )
 
-# 场次标题：支持中文 ### 场1-2 / ### 场景1-2 以及越南语 CẢNH 1 / ### Cảnh 1-2 / SCENE 1
+# Tiêu đề phiên: Hỗ trợ tiếng Trung ### Cảnh 1-2 / ### Cảnh 1-2 và Tiếng Việt CẢNH 1 / ### Cảnh báo 1-2 / CẢNH 1
 SCENE_HEADER_RE = re.compile(
-    r"^(?:###\s*)?(?:场(?:景)?|cảnh|scene)\s*\d+(?:\s*[-－—]\s*\d+)?\s*$",
+    r"^(?:###\s*)?(?:scene(?:scene)?|cảnh|scene)\s*\d+(?:\s*[-－——]\s*\d+)?\s*$",
     re.IGNORECASE,
 )
-# 兼容无空格、或标题后带说明（如 CẢNH 1 — NGOẠI. NGÔI LÀNG — SÁNG）
+# Tương thích không có dấu cách hoặc có mô tả sau tiêu đề (chẳng hạn như CẢNH 1 — NGOẠI. NGÔI LÀNG — SÁNG)
 SCENE_HEADER_LOOSE_RE = re.compile(
-    r"^(?:###\s*)?(?:场(?:景)?|cảnh|scene)\s*\d+(?:\s*[-－—]\s*\d+)?(?:\s*[:—\-–].*)?$",
+    r"^(?:###\s*)?(?:scene(?:scene)?|cảnh|scene)\s*\d+(?:\s*[--—]\s*\d+)?(?:\s*[:—\-–].*)?$",
     re.IGNORECASE,
 )
-# 时间内外景行
+# Cảnh sắc trong và ngoài thời gian
 SCENE_LOCATION_RE = re.compile(
     r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚|sáng|trưa|chiều|tối|đêm)?\s*(?:内|外|内外|nội|ngoại|nội/ngoại)\s*[:.]?\s*(.+)$",
     re.IGNORECASE,
 )
-# 出场人物行
+# Hàng ký tự
 CAST_LINE_RE = re.compile(r"^(?:出场人物|nhân vật|diễn viên)[：:]\s*(.+)$", re.IGNORECASE)
 EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。", "không", "không có"}
 
 FRAGMENT_DURATION_MIN = 3
-# 单行/单块 @duration 上限（对白、空镜等；整镜硬上限见 FRAGMENT_TOTAL_MAX）
+# Một dòng/khối đơn @duration giới hạn trên (đối thoại, ống kính trống, v.v.; xem FRAGMENT_TOTAL_MAX để biết giới hạn trên cứng của toàn bộ ống kính)
 FRAGMENT_DURATION_MAX = 15
-# 单分镜软上限：尽量打满再拆，减少镜数（与硬上限对齐）
+# Giới hạn trên mềm của một gương đơn: cố gắng lấp đầy nó trước khi tháo dỡ để giảm số lượng gương (căn chỉnh với giới hạn trên cứng)
 FRAGMENT_SOFT_MAX = 15
-# 单分镜总时长硬上限（短剧节奏；Seedance 仍支持更长，此处刻意收紧）
+# Giới hạn trên cứng đối với tổng thời lượng của một câu chuyện (nhịp chơi ngắn; Seedance vẫn hỗ trợ lâu hơn, nhưng được cố tình thắt chặt ở đây)
 FRAGMENT_TOTAL_MAX = 15
-# 整集分镜条数 / 时长预算（重新分镜与规则切分共用，上限设为最多 3 条分镜）
+# Số lượng bảng phân cảnh/ngân sách thời lượng cho toàn bộ tập (được chia sẻ giữa việc viết lại phân cảnh và phân đoạn thông thường, giới hạn trên được đặt ở mức tối đa là 3 câu chuyện)
 EPISODE_FRAGMENT_MAX = int(os.getenv("EPISODE_FRAGMENT_MAX", "3"))
 EPISODE_DURATION_BUDGET_SEC = 45
-# 重要角色：roleType / title / tags 命中则需要人物介绍叠字
+# Các vai trò quan trọng: roleType/title/tags Nếu đánh trúng cần giới thiệu nhân vật và lặp lại nhân vật.
 IMPORTANT_ROLE_RE = re.compile(r"主角|男主|女主|重要|反派|BOSS|核心|主人公")
-# 次要定位：默认不介绍
+# Định vị phụ: mặc định không được giới thiệu
 MINOR_ROLE_RE = re.compile(r"群演|路人|群众|龙套|配角|出场人物|兵丁|侍卫|士兵")
-# 群体/无名角色名：不介绍
+# Tên nhóm/nhân vật không tên: không giới thiệu
 MINOR_NAME_RE = re.compile(r"(兵|百姓|群众|路人|侍从|侍卫|士兵|甲|乙|众人|百姓们)$")
-# 无意义 intro 占位文案
+# Bản giữ chỗ giới thiệu vô nghĩa
 GENERIC_INTRO_TEXTS = frozenset({"出场人物", "配角", "角色", "群演", "路人", "-"})
-# stub 资产默认身份背景等占位句式
+# nền nhận dạng mặc định của nội dung sơ khai và các câu giữ chỗ khác
 STUB_CAST_INTRO_RE = re.compile(r"剧本分集出场人物|出场\s*->\s*卷入")
-# 已写入分镜的人物介绍叠字行（兼容旧「·画面叠字」与现行「·角色身旁」）
+# Các dòng lớp phủ giới thiệu nhân vật đã được viết vào bảng phân cảnh (tương thích với "·Lớp phủ màn hình" cũ và "·Bên cạnh nhân vật" hiện tại)
 CHARACTER_INTRO_CUE = "【人物介绍·画面叠字·角色身旁】"
 CHARACTER_INTRO_LINE_RE = re.compile(
     r"^【人物介绍·画面叠字(?:·角色身旁)?】\s*([^｜\|\n]+?)(?:\s*[｜|].*)?$"
 )
 LEGACY_CHARACTER_INTRO_CUE = "【人物介绍·画面叠字】"
-# 纯画面/空镜标签（冒号前）：禁止当成「角色名：对白」
+# Màn hình thuần túy/thẻ camera trống (trước dấu hai chấm): Cấm coi nó là "Tên nhân vật: hội thoại"
 VISUAL_SHOT_LABEL_RE = re.compile(
     r"^(?:"
     r"空镜|画面|远景|近景|中景|全景|特写|大特写|"
@@ -75,19 +75,19 @@ VISUAL_SHOT_LABEL_RE = re.compile(
     r"建立镜头|气氛镜头"
     r")\s*[：:]"
 )
-# 「角色名（动作）：台词」——动作应走画面行，冒号后才是口播
+# "Tên nhân vật (hành động): dòng" - hành động phải ở dòng màn hình, theo sau là dòng nói sau dấu hai chấm
 DIALOGUE_WITH_ACTION_BODY_RE = re.compile(
     r"^(?P<speaker>[^（(:：\n]{1,16})"
     r"[（(](?P<action>[^）)]+)[）)]"
     r"\s*[：:]\s*"
     r"(?P<text>.+)$"
 )
-# 括号内为口播类型标记（非舞台动作），禁止拆成画面行
+# Dấu ngoặc chỉ loại chương trình phát sóng bằng giọng nói (hành động không phải sân khấu) và cấm chia thành các dòng trên màn hình.
 VOICE_TYPE_ACTION_RE = re.compile(r"^(?:vo|os|旁白|VO|OS)$", re.I)
 
 
 def normalize_scene_location_name(raw: str) -> str:
-    # 去掉斜杠说明、压缩空白
+    # Xóa mô tả dấu gạch chéo và nén khoảng trắng
     primary = re.split(r"[／/]", raw)[0].strip()
     cleaned = re.sub(r"\s+", " ", primary).strip()
     if len(cleaned) < 2 or len(cleaned) > 40:
@@ -96,7 +96,7 @@ def normalize_scene_location_name(raw: str) -> str:
 
 
 def parse_cast_names(raw: str) -> list[str]:
-    # 解析「出场人物：A、B」
+    # Phân tích "Nhân vật: A, B"
     trimmed = (raw or "").strip()
     if not trimmed or trimmed.rstrip("。.．") in EMPTY_CAST:
         return []
@@ -105,7 +105,7 @@ def parse_cast_names(raw: str) -> list[str]:
         for part in re.split(r"[、，,／/|]", trimmed)
         if part.strip() and part.strip() not in EMPTY_CAST
     ]
-    # 去重保序
+    # Loại bỏ trùng lặp và giữ nguyên trật tự
     seen: set[str] = set()
     out: list[str] = []
     for name in names:
@@ -116,7 +116,7 @@ def parse_cast_names(raw: str) -> list[str]:
 
 
 def extract_introduced_names_from_content(content: str) -> list[str]:
-    # 从分镜正文提取已写入的人物介绍角色名（保序）
+    # Trích xuất tên nhân vật giới thiệu nhân vật bằng văn bản từ văn bản bảng phân cảnh (giữ nguyên thứ tự)
     names: list[str] = []
     seen: set[str] = set()
     for line in (content or "").replace("\r\n", "\n").split("\n"):
@@ -140,7 +140,7 @@ def collect_series_introduced_names(
     汇总本剧更早分集里已做过人物介绍的角色名。
     before_episode_number：只统计集号更小的分集；None 则按 exclude 排除当前集。
     """
-    # rows (ep_no, ep_id, episode) 排序用
+    # hàng (ep_no, ep_id, tập) để sắp xếp
     rows: list[tuple[int, int, Any]] = []
     for ep in episodes:
         params = getattr(ep, "params", None) or {}
@@ -165,7 +165,7 @@ def collect_series_introduced_names(
 
 
 def split_episode_content_into_scenes(content: str) -> list[dict[str, str]]:
-    # 按 ### 场X-Y 拆分；无场头时整集一场
+    # Chia theo trường ### X-Y; nếu không có tiêu đề trường thì toàn bộ tập sẽ là một tập
     lines = (content or "").replace("\r\n", "\n").split("\n")
     scenes: list[dict[str, str]] = []
     current: dict[str, Any] | None = None
@@ -203,7 +203,7 @@ def split_episode_content_into_scenes(content: str) -> list[dict[str, str]]:
 
 
 def extract_scene_meta(body: str) -> dict[str, Any]:
-    # 抽取地点与出场人物
+    # Vẽ vị trí và ký tự
     scene_name: str | None = None
     character_names: list[str] = []
     for line in (body or "").replace("\r\n", "\n").split("\n"):
@@ -257,7 +257,7 @@ def _strip_screenplay_meta(body: str) -> tuple[str | None, list[str]]:
 
 
 def _strip_production_prefix(line: str) -> str:
-    # 去掉已有【…】生产前缀，便于二次分类
+    # Xóa tiền tố sản xuất […] hiện có để tạo điều kiện cho việc phân loại thứ cấp
     return re.sub(r"^【[^】]*】\s*", "", (line or "").strip()).strip()
 
 
@@ -266,13 +266,13 @@ _CONTINUATION_START = tuple("（(，,、；;…—-")
 
 
 def is_opening_cue_line(line: str) -> bool:
-    """整集片头/背景叠字：只应出现在开幕镜。"""
+    """Tiêu đề/nền chồng lên toàn bộ tập phim: chỉ nên xuất hiện ở cảnh mở đầu."""
     stripped = (line or "").strip()
     return any(stripped.startswith(prefix) for prefix in _OPENING_CUE_PREFIXES)
 
 
 def is_wrapped_continuation_line(line: str) -> bool:
-    """括号/标点续写行：属于上一句换行，不应单独占一段 @duration。"""
+    """Dấu ngoặc/dòng nối tiếp dấu câu: Nó thuộc về ngắt dòng của câu trước và không được chiếm một đoạn @duration riêng biệt."""
     body = _strip_production_prefix(line)
     if not body or body.startswith("@") or is_production_meta_line(body):
         return False
@@ -284,7 +284,7 @@ def is_wrapped_continuation_line(line: str) -> bool:
 
 
 def merge_wrapped_narrative_lines(lines: list[str]) -> list[str]:
-    """把「换行续写」合并回上一行，避免一行一个 3s。"""
+    """Hợp nhất "ngắt dòng và tiếp tục viết" trở lại dòng trước để tránh 3 giây trên mỗi dòng."""
     out: list[str] = []
     for raw in lines:
         stripped = (raw or "").strip()
@@ -298,7 +298,7 @@ def merge_wrapped_narrative_lines(lines: list[str]) -> list[str]:
 
 
 def strip_repeat_opening_cues(content: str) -> str:
-    """非开幕镜去掉片头/背景叠字，保留字幕、BGM、人物介绍。"""
+    """Xóa tiêu đề/lớp phủ nền cho các cảnh không mở đầu và giữ lại phụ đề, nhạc nền và phần giới thiệu nhân vật."""
     kept = [
         raw
         for raw in (content or "").replace("\r\n", "\n").split("\n")
@@ -313,7 +313,7 @@ def prepare_fragment_content(
     duration_sec: int | None = None,
     is_opening: bool = False,
 ) -> str:
-    """读取/保存/生成前统一：去掉重复片头，并修正过碎的 @duration。"""
+    """Thống nhất trước khi đọc/lưu/tạo: xóa các tiêu đề trùng lặp và sửa @duration bị hỏng."""
     text = content or ""
     if not is_opening:
         text = strip_repeat_opening_cues(text)
@@ -342,7 +342,7 @@ def _join_header_and_blocks(
 def _coalesce_continuation_blocks(
     blocks: list[tuple[int, list[str]]],
 ) -> list[tuple[int, list[str]]]:
-    """续写行并入上一拍，不新增时长标签。"""
+    """Dòng tiếp theo được hợp nhất vào nhịp trước đó và không thêm nhãn thời lượng."""
     packed: list[tuple[int, list[str]]] = []
     for dur, rows in blocks:
         body = _duration_body_lines(rows)
@@ -358,7 +358,7 @@ def _coalesce_timed_blocks_to_budget(
     blocks: list[tuple[int, list[str]]],
     target: int,
 ) -> list[tuple[int, list[str]]]:
-    """拍数过多导致合计超上限时，合并相邻拍并缩放到 target。"""
+    """Khi có quá nhiều nhịp và tổng số nhịp vượt quá giới hạn trên, các nhịp liền kề sẽ được hợp nhất và điều chỉnh theo tỷ lệ mục tiêu."""
     if not blocks:
         return blocks
     target = min(FRAGMENT_TOTAL_MAX, max(FRAGMENT_DURATION_MIN, int(target)))
@@ -396,7 +396,7 @@ def is_vietnamese_text(text: str) -> bool:
 
 
 def _is_visual_description_line(line: str) -> bool:
-    # 空镜/景别/纯画面描写：不得配音、不得烧字幕
+    # Cảnh trống/phong cảnh/mô tả hình ảnh thuần khiết: không lồng tiếng, không đốt phụ đề
     trimmed = (line or "").strip()
     if not trimmed:
         return False
@@ -422,7 +422,7 @@ def _is_visual_description_line(line: str) -> bool:
 
 
 def _split_dialogue_action_line(line: str) -> list[str]:
-    """将「角色（动作）：台词」拆成画面动作行 + 纯口播对白行；无法识别则原样返回。"""
+    """Tách "Nhân vật (Hành động): Lời thoại" thành lời thoại hành động trên màn hình + lời thoại thuần túy; nếu không nhận dạng được thì trả lại như cũ."""
     trimmed = (line or "").strip()
     if not trimmed:
         return []
@@ -449,7 +449,7 @@ def _split_dialogue_action_line(line: str) -> list[str]:
 
 
 def _expand_narrative_lines(line: str, is_vi: bool = False) -> list[str]:
-    """叙事行展开：含括号舞台指示的对白拆成多行后再打生产前缀。"""
+    """Mở rộng dòng tường thuật: đoạn hội thoại chứa hướng dẫn giai đoạn trong ngoặc được chia thành nhiều dòng và sau đó bắt đầu bằng phần sản xuất."""
     return [
         formatted
         for part in _split_dialogue_action_line(line)
@@ -460,7 +460,7 @@ def _expand_narrative_lines(line: str, is_vi: bool = False) -> list[str]:
 
 
 def rewrite_dialogue_action_lines(content: str) -> str:
-    """提交前兜底：纠正对白行内误塞的舞台指示（兼容旧分镜）。"""
+    """Lưu ý trước khi gửi: Chỉnh sửa hướng dẫn sân khấu vô tình được chèn vào lời thoại (tương thích với bảng phân cảnh cũ)."""
     from app.services.seedance_segments import is_production_meta_line
 
     is_vi = is_vietnamese_text(content or "")
@@ -483,7 +483,7 @@ def rewrite_dialogue_action_lines(content: str) -> str:
 
 
 def _format_narrative_line(line: str, is_vi: bool = False) -> str:
-    # 将场记行标成画面/旁白/对白；空镜类必须走无配音前缀
+    # Đánh dấu các dòng cảnh là cảnh/tường thuật/đối thoại; cảnh trống phải không có tiền tố lồng tiếng
     trimmed = line.strip()
     if not trimmed:
         return trimmed
@@ -500,7 +500,7 @@ def _format_narrative_line(line: str, is_vi: bool = False) -> str:
         or trimmed.startswith("【对白")
         or trimmed.startswith("【Thoại")
     ):
-        # 已打标但仍可能是误判的「对白·空镜：…」→ 纠正为画面
+        # "Dialogue·Empty Shot:..." đã được đánh dấu nhưng vẫn có thể là đánh giá sai → sửa lại màn hình
         body = _strip_production_prefix(trimmed)
         kind = classify_voice_body(body)
         if kind == "visual" or (
@@ -529,18 +529,18 @@ def _format_narrative_line(line: str, is_vi: bool = False) -> str:
         return f"{inner_pfx}{trimmed}"
     if kind == "narration":
         return f"{narration_pfx}{trimmed}"
-    # 角色对白：排除空镜/景别等冒号标签，避免「空镜：…」被当成「角色名：台词」
+    # Đối thoại nhân vật: loại trừ cảnh quay/cảnh trống và các thẻ dấu hai chấm khác để tránh "cảnh trống:..." bị coi là "tên nhân vật: dòng"
     if re.match(r"^[^（(:：\n]{1,16}[（(][^）)]*[）)]\s*[：:].+", trimmed):
         return f"{dialogue_pfx}{trimmed}"
     colon_speaker = re.match(r"^([^：:\n]{1,16})[：:](.+)$", trimmed)
     if colon_speaker and not VISUAL_SHOT_LABEL_RE.match(trimmed):
         return f"{dialogue_pfx}{trimmed}"
-    # 纯画面/动作描述：明确禁止配音，避免被全局字幕 cue 误读为旁白
+    # Mô tả hình ảnh/hành động thuần túy: Việc lồng tiếng bị nghiêm cấm rõ ràng để tránh bị hiểu nhầm là tường thuật bởi các tín hiệu phụ đề chung
     return f"{visual_pfx}{trimmed}"
 
 
 def _speakable_body(line: str) -> str:
-    """估算口播时长用：去掉生产前缀与「角色名：」标签，只计真正念出的字。"""
+    """Để ước tính thời lượng phát sóng bằng miệng: hãy xóa tiền tố sản xuất và thẻ "Tên nhân vật:" và chỉ đếm số từ được nói thực tế."""
     body = re.sub(r"^【[^】]*】\s*", "", (line or "").strip()).strip()
     speaker = re.match(r"^([^：:\n]{1,16})[：:](.+)$", body)
     if speaker:
@@ -667,7 +667,7 @@ def _is_generic_intro_text(text: str) -> bool:
 
 
 def _shorten_intro(text: str, max_len: int = 24) -> str:
-    # 叠字描述截断：去空白、取首句、限长
+    # Cắt ngắn phần mô tả từ trùng lặp: bỏ khoảng trống, lấy câu đầu tiên, giới hạn độ dài
     cleaned = re.sub(r"\s+", "", (text or "").strip())
     if not cleaned:
         return ""
@@ -678,7 +678,7 @@ def _shorten_intro(text: str, max_len: int = 24) -> str:
 
 
 def _resolve_character_intro_text(params: dict[str, Any] | None) -> str | None:
-    # 优先 title，其次身份背景首句 / roleType / 标签；跳过占位文案
+    # Ưu tiên cho tiêu đề, theo sau là câu đầu tiên của nền/roleType/nhãn nhận dạng; bỏ qua bản giữ chỗ
     if not isinstance(params, dict):
         return None
     title = str(params.get("title") or "").strip()
@@ -709,7 +709,7 @@ def _resolve_character_intro_text(params: dict[str, Any] | None) -> str | None:
 
 
 def _extract_intro_sentence_for_name(name: str, text: str) -> str | None:
-    # 从梗概/分集正文截取含该角色的句子作叠字介绍
+    # Trích xuất các câu có chứa ký tự trong văn bản tóm tắt/tập để giới thiệu các từ chồng chéo
     char_name = (name or "").strip()
     blob = (text or "").strip()
     if not char_name or char_name not in blob:
@@ -728,7 +728,7 @@ def _extract_intro_sentence_for_name(name: str, text: str) -> str | None:
         candidates.append(cleaned)
     if not candidates:
         return None
-    # 叠字宜短：优先 12~36 字的句子
+    # Các từ lặp lại phải ngắn gọn: ưu tiên các câu từ 12~36 từ.
     best = min(candidates, key=lambda s: abs(len(s) - 22))
     return _shorten_intro(best, max_len=28)
 
@@ -755,7 +755,7 @@ def infer_character_intro_text(
     episode_bodies: list[str] | None = None,
     intro_overrides: dict[str, str] | None = None,
 ) -> str | None:
-    """人物介绍叠字文案：override → 资产字段 → 摘要梗概 → 分集剧本正文。"""
+    """Giới thiệu nhân vật chồng chéo phần viết quảng cáo: ghi đè → trường nội dung → tóm tắt tóm tắt → văn bản kịch bản tập."""
     char_name = (name or "").strip()
     if char_name and intro_overrides:
         override = str(intro_overrides.get(char_name) or "").strip()
@@ -783,7 +783,7 @@ def infer_character_intro_text(
 
 
 def build_summary_character_lookup(summary: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
-    # 剧本摘要 characters[] 按名索引（保序，供 stub 资产补全小传）
+    # Các ký tự tóm tắt tập lệnh[] được lập chỉ mục theo tên (giữ nguyên thứ tự, đối với nội dung sơ khai để hoàn thành tiểu sử)
     lookup: dict[str, dict[str, Any]] = {}
     if not isinstance(summary, dict):
         return lookup
@@ -815,7 +815,7 @@ def _merge_params_with_summary(
     params: dict[str, Any] | None,
     summary_char: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    # 资产 params 为 stub 时，用摘要人物字段补全
+    # Khi thông số tài sản còn sơ khai, hãy sử dụng trường ký tự tóm tắt để hoàn thành
     merged = dict(params or {})
     if not summary_char:
         return merged
@@ -851,7 +851,7 @@ def build_character_binding(
     episode_bodies: list[str] | None = None,
     intro_overrides: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    # 组装单角色 binding：重要度 + 介绍文案（摘要优先于 stub 资产）
+    # Hợp nhất ràng buộc một vai trò: tầm quan trọng + bản giới thiệu (bản tóm tắt được ưu tiên hơn nội dung sơ khai)
     name = str(character_name or "").strip()
     params = getattr(character_asset, "params", None) or {}
     if not isinstance(params, dict):
@@ -892,7 +892,7 @@ def _is_important_character(
     title: str | None = None,
     core_tags: str | None = None,
 ) -> bool:
-    # 仅重要角色做人物介绍：群体名 / 纯配角 stub 跳过
+    # Chỉ những vai trò quan trọng mới được giới thiệu: bỏ qua tên nhóm / sơ khai vai trò hỗ trợ thuần túy
     char_name = (name or "").strip()
     if not char_name or MINOR_NAME_RE.search(char_name):
         return False
@@ -903,7 +903,7 @@ def _is_important_character(
     if IMPORTANT_ROLE_RE.search(blob):
         return True
     if ttl and not _is_generic_intro_text(ttl):
-        # 有具体身份头衔（如「治水英雄」「四岳首领」）视为可介绍
+        # Những người có danh hiệu cụ thể (chẳng hạn như "Anh hùng chống lũ" và "Thủ lĩnh Tứ Sơn") được coi là đủ điều kiện để giới thiệu
         return True
     if MINOR_ROLE_RE.search(role) or role in GENERIC_INTRO_TEXTS or not role:
         return False
@@ -911,7 +911,7 @@ def _is_important_character(
 
 
 def _strip_subtitle_instruction(line: str) -> str:
-    # 关闭字幕时移除正文中的同步字幕提示，保留对白/旁白本身。
+    # Loại bỏ lời nhắc phụ đề được đồng bộ hóa trong văn bản chính khi tắt phụ đề và giữ lại lời thoại/tường thuật.
     trimmed = (line or "").strip()
     replacements = {
         DIALOGUE_PREFIX: "【对白·慢速清晰】",
@@ -932,7 +932,7 @@ def _build_production_cues(
     include_subtitles: bool = True,
     is_vi: bool = False,
 ) -> list[str]:
-    # 字幕 / BGM / 人物介绍前置提示（字幕 cue 不含「旁白」字样，避免 Seedance 整镜念白）
+    # Phụ đề/BGM/Phần mở đầu giới thiệu nhân vật (tiêu đề phụ đề không chứa từ "tường thuật" để tránh lời tường thuật đầy đủ của Seedance)
     hint = " ".join(filter(None, [location_line or "", *narrative_lines[:3]]))
     if is_vi:
         lines = [f"【BGM: {_infer_bgm_mood(hint, is_vi=True)}；âm lượng nhỏ hơn giọng nói】"]
@@ -947,7 +947,7 @@ def _build_production_cues(
 
 
 def _build_character_intro_lines(character_bindings: list[dict[str, Any]]) -> list[str]:
-    # 人物介绍叠字：贴在对应角色身旁，非口播
+    # Giới thiệu nhân vật chồng chữ: dán cạnh nhân vật tương ứng, không nói.
     lines: list[str] = []
     for b in character_bindings:
         name = str(b.get("name") or "").strip()
@@ -962,7 +962,7 @@ def _bindings_mentioned_in_text(
     text: str,
     bindings: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    # 正文或 @asset 引用中首次点名的角色（保序）
+    # Ký tự đầu tiên có tên trong văn bản hoặc trích dẫn @asset (giữ nguyên thứ tự)
     if not text or not bindings:
         return []
     hit: list[dict[str, Any]] = []
@@ -986,7 +986,7 @@ def _flush_fragment_chunk(
     body_lines: list[str],
     used: int,
 ) -> tuple[str, int]:
-    # 组装单条分镜草稿；无正文时给最小时长占位
+    # Tập hợp một bản thảo bảng phân cảnh duy nhất; nếu không có văn bản, hãy dành khoảng trống trong thời lượng tối thiểu
     planned = [*cue_lines, *body_lines]
     duration = used
     if duration <= 0:
@@ -1002,14 +1002,14 @@ def _pick_intros_for_fragment(
     *,
     flush_remaining: bool = False,
 ) -> list[dict[str, Any]]:
-    # 本镜首次出场的重要角色；末镜可兜底介绍本场剩余候选
+    # Một nhân vật quan trọng lần đầu tiên xuất hiện trong cảnh này; Cảnh cuối có thể giới thiệu các ứng cử viên còn lại ở cảnh này
     pending = [b for b in intro_candidates if str(b.get("name") or "") not in introduced]
     if not pending:
         return []
     body_text = "\n".join(body_lines)
     mentioned = _bindings_mentioned_in_text(body_text, pending)
     if flush_remaining:
-        # 末镜：点名优先，其余未出场候选一并介绍，避免重要角色漏介绍
+        # Cảnh cuối: Những cái tên được ưu tiên, những ứng cử viên khác chưa xuất hiện được giới thiệu cùng nhau để tránh bỏ sót những nhân vật quan trọng.
         mentioned_names = {str(b.get("name") or "") for b in mentioned}
         extras = [b for b in pending if str(b.get("name") or "") not in mentioned_names]
         return [*mentioned, *extras]
@@ -1032,11 +1032,11 @@ def plan_fragments_from_scene(
     introduced 跨集/跨场共享的已介绍角色名集合（会被原地更新）。
     返回 [(content, duration_sec), ...]
     """
-    # introduced_names 本剧已介绍过的角色
+    # được giới thiệu_names Các nhân vật đã được giới thiệu trong vở kịch này
     introduced_names = introduced if introduced is not None else set()
     is_vi = is_vietnamese_text(body)
     location_line, narrative_lines = _strip_screenplay_meta(body)
-    # intro_candidates 本场可介绍的重要角色（须有简短描述）
+    # intro_candidates Các nhân vật quan trọng có thể được giới thiệu trong cảnh này (phải mô tả ngắn gọn)
     intro_candidates = (
         [
             b
@@ -1054,7 +1054,7 @@ def plan_fragments_from_scene(
         is_vi=is_vi,
     )
 
-    # timed_blocks 待打包的 (时长, 文本行列表)
+    # timed_blocks cần được đóng gói (thời lượng, danh sách dòng văn bản)
     timed_blocks: list[tuple[int, list[str]]] = []
 
     opener = _format_location_opener(location_line, scene_asset_id, meta.get("sceneName"))
@@ -1101,7 +1101,7 @@ def plan_fragments_from_scene(
     used = 0
 
     def flush_current(*, is_last: bool) -> None:
-        # 落盘当前镜并注入本镜首次出场介绍
+        # Đặt gương hiện tại và đưa gương này vào phần giới thiệu diện mạo đầu tiên
         nonlocal body_lines, used
         to_intro = _pick_intros_for_fragment(
             body_lines,
@@ -1118,11 +1118,11 @@ def plan_fragments_from_scene(
         used = 0
 
     for block_dur, block_lines in timed_blocks:
-        # 已达软上限且本块放不下 → 先落盘当前镜
+        # Đã đạt đến giới hạn mềm và không thể đặt khối này → Đặt gương hiện tại trước
         if used > 0 and used >= FRAGMENT_SOFT_MAX and used + block_dur > FRAGMENT_SOFT_MAX:
             flush_current(is_last=False)
 
-        # 硬上限：本块放不下则开新镜；单块超过硬上限则截断到硬上限
+        # Giới hạn trên cứng: Nếu không thể chứa khối, một gương mới sẽ được mở; nếu một khối vượt quá giới hạn trên cứng, nó sẽ bị cắt đến giới hạn trên cứng.
         if used > 0 and used + block_dur > FRAGMENT_TOTAL_MAX:
             flush_current(is_last=False)
 
@@ -1136,7 +1136,7 @@ def plan_fragments_from_scene(
             take_dur = min(block_dur, FRAGMENT_TOTAL_MAX)
 
         if take_dur != block_dur:
-            # 时长被截断时改写 @duration 行
+            # Viết lại dòng @duration khi thời lượng bị cắt bớt
             rewritten = [f"@duration:{take_dur}" if ln.startswith("@duration:") else ln for ln in block_lines]
             body_lines.extend(rewritten)
         else:
@@ -1149,7 +1149,7 @@ def plan_fragments_from_scene(
     return fragments
 
 
-# 解析已有分镜正文：片头 cue + (@duration + 正文) 块
+# Phân tích văn bản bảng phân cảnh hiện có: khối tiêu đề + (@duration + text)
 def parse_fragment_timed_blocks(content: str) -> tuple[list[str], list[tuple[int, list[str]]]]:
     lines = (content or "").replace("\r\n", "\n").split("\n")
     header: list[str] = []
@@ -1180,7 +1180,7 @@ def parse_fragment_timed_blocks(content: str) -> tuple[list[str], list[tuple[int
 
 
 def _is_header_meta_line(line: str) -> bool:
-    """片头 cue（字幕/BGM/介绍等），不属于需单独计时的叙事段。"""
+    """Đoạn mở đầu (phụ đề/BGM/phần giới thiệu, v.v.) không phải là đoạn tường thuật cần được tính thời gian riêng."""
     stripped = (line or "").strip()
     if not stripped:
         return True
@@ -1232,7 +1232,7 @@ def repair_fragment_timed_layout(content: str, *, duration_sec: int | None = Non
     target = int(duration_sec or 0) or _sum_duration_tags(text) or FRAGMENT_DURATION_MIN
     target = min(FRAGMENT_TOTAL_MAX, max(FRAGMENT_DURATION_MIN, target))
 
-    # 现代布局：@duration 已在段前。换行续写并入上一拍；拍数过多再合并到预算内。
+    # Bố cục hiện đại: @duration đã đứng trước đoạn văn. Việc ngắt dòng được tiếp tục và hợp nhất vào nhịp trước đó; nếu có quá nhiều nhịp, chúng sẽ được gộp vào ngân sách.
     if blocks and not header_narrative:
         packed = _coalesce_continuation_blocks(blocks)
         tagged = sum(d for d, _ in packed)
@@ -1280,7 +1280,7 @@ def _rescale_timed_blocks(
     blocks: list[tuple[int, list[str]]],
     target: int,
 ) -> list[tuple[int, list[str]]]:
-    """timed_blocks 合计超过目标秒数时，按段等比缩放到 target。"""
+    """Khi tổng số timed_blocks vượt quá số giây mục tiêu, nó sẽ được điều chỉnh theo tỷ lệ mục tiêu theo phân đoạn."""
     if not blocks or target <= 0:
         return blocks
     current = sum(d for d, _ in blocks)
@@ -1300,7 +1300,7 @@ def _rescale_timed_blocks(
 
 
 def _partition_header_cues(header: list[str]) -> tuple[list[str], list[str]]:
-    """片头/背景叠字只跟第一块；字幕、BGM 可随拆镜重复。"""
+    """Tiêu đề/nền các từ xếp chồng chỉ theo khối đầu tiên; phụ đề và BGM có thể được lặp lại khi cảnh bị xóa."""
     opening: list[str] = []
     rest: list[str] = []
     for raw in header:
@@ -1311,7 +1311,7 @@ def _partition_header_cues(header: list[str]) -> tuple[list[str], list[str]]:
     return opening, rest
 
 
-# 将已有超长分镜正文按软/硬上限拆成多条 content（片头只留在第一块）
+# Chia văn bản storyboard siêu dài hiện có thành nhiều phần nội dung theo giới hạn mềm/cứng (tiêu đề chỉ còn lại ở phần đầu tiên)
 def split_overlong_fragment_content(
     content: str,
     *,
@@ -1381,7 +1381,7 @@ def plan_fragment_content_from_scene(
     include_subtitles: bool = True,
     include_character_intro: bool = True,
 ) -> tuple[str, int]:
-    # 兼容旧调用：返回本场第一条分镜
+    # Tương thích với cách gọi cũ: quay lại storyboard đầu tiên của cảnh này
     chunks = plan_fragments_from_scene(
         body,
         meta,
@@ -1394,7 +1394,7 @@ def plan_fragment_content_from_scene(
 
 
 def is_raw_screenplay_fragment(content: str) -> bool:
-    # 仍是未切镜的场记原文（空、场次标题、出场人物表）；手写电影感分镜不要当原文
+    # Vẫn là nguyên văn của những cảnh chưa cắt (trống, tiêu đề cảnh, danh sách nhân vật); bảng phân cảnh viết tay giống như phim không nên được coi là văn bản gốc
     trimmed = (content or "").strip()
     if not trimmed:
         return True
@@ -1450,7 +1450,7 @@ def build_fragments_from_episode_body(
             }
         ]
 
-    # introduced 本剧已做过人物介绍的角色名（含更早分集 + 本集跨场）
+    # giới thiệu tên các nhân vật đã được giới thiệu trong phim (bao gồm các tập trước + các cảnh xuyên suốt trong tập này)
     introduced: set[str] = set(already_introduced or ())
     fragments: list[dict[str, Any]] = []
     for scene in scenes:
@@ -1478,7 +1478,7 @@ def build_fragments_from_episode_body(
                 )
             )
 
-        # 一场可拆多条分镜（按时长软/硬上限）；介绍落在首次出场镜
+        # Một trò chơi có thể được chia thành nhiều bảng phân cảnh (giới hạn mềm/cứng dựa trên thời lượng); phần giới thiệu rơi vào cảnh xuất hiện đầu tiên
         for planned, duration in plan_fragments_from_scene(
             scene["body"],
             meta,
@@ -1488,7 +1488,7 @@ def build_fragments_from_episode_body(
             include_subtitles=include_subtitles,
             include_character_intro=include_character_intro,
         ):
-            # 本条正文里真正出现的角色/道具，不把整场出场人物挂到每一镜
+            # Các nhân vật/đạo cụ thực sự xuất hiện trong nội dung bài viết này không có trong mọi cảnh.
             fragment_ids: list[int] = []
             if scene_asset_id:
                 fragment_ids.append(int(scene_asset_id))

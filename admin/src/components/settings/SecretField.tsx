@@ -11,7 +11,7 @@ type SecretFieldProps = {
   onClear?: () => void;
 };
 
-// 密钥输入：留空不修改，支持清除已存密钥
+// Nhập chính: Để trống và không sửa đổi. Nó hỗ trợ xóa khóa đã lưu.
 export function SecretField({
   label,
   hint,

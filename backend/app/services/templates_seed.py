@@ -1,18 +1,18 @@
-"""内置风格模板 — 提示词与风格描述统一中文。
+"""Template phong cách tích hợp sẵn — Lời nhắc prompt và mô tả phong cách chuẩn hóa.
 
-分类约定（category[0] 为主分类，用于首页筛选）：
-电影感 / 真人感 / 写实感 / 科普 / 儿童 / 国风 / 科幻 / 动漫 / 3D / 商业 / 复古 / 纪录片 / 奇幻 / 图文 / 悬疑 / 开源 / 获客
-获客短视频四条在 templates_seed_huoke.py，并入 TEMPLATES 末尾；category[0] 仍为科普。
-真人感、写实感模板须在 seedream_config 设 photoreal: true。
+Quy ước phân loại (category[0] là phân loại chính, dùng cho bộ lọc trang chủ):
+Điện ảnh / Người thật / Hiện thực / Khoa học / Thiếu nhi / Cổ phong / Khoa học viễn tưởng / Anime / 3D / Thương mại / Hoài cổ / Phim tài liệu / Kỳ ảo / Đồ họa chữ / Giật gân / Mã nguồn mở / Tiếp cận khách hàng
+Bốn mẫu video marketing tiếp cận khách hàng nằm trong templates_seed_huoke.py, được gộp vào cuối TEMPLATES; category[0] là Khoa học.
+Các mẫu người thật và hiện thực cần đặt photoreal: true trong seedream_config.
 
-一致性（seedream_config.consistency_mode）：
-- character：人物+画风锁定，镜间图生图链式参考（叙事默认）
-- style：仅画风气质，不锁人物、不链式参考
-- diverse：按内容动态规划独立场景（开源/产品演示），禁止镜间雷同
-未设置时回退 seedance/seedream 的 character_consistency。
+Tính nhất quán (seedream_config.consistency_mode):
+- character: Khóa nhân vật + phong cách, tham chiếu ảnh theo chuỗi giữa các cảnh (mặc định tự sự)
+- style: Chỉ giữ phong thái phong cách, không khóa nhân vật, không tham chiếu theo chuỗi
+- diverse: Lập kế hoạch cảnh độc lập linh hoạt theo nội dung (mã nguồn mở / demo sản phẩm), cấm trùng lặp giữa các cảnh
+Khi chưa thiết lập sẽ quay về character_consistency của seedance/seedream.
 
-成片方式（是否生成 AI 视频）由用户在风格配置页选择，不再由模板锁定。
-模板 default_ratio 仅作画幅默认建议。
+Phương thức dựng phim (có tạo video AI hay không) do người dùng chọn trên trang cấu hình phong cách, không bị khóa bởi template.
+default_ratio của template chỉ mang tính gợi ý tỷ lệ khung hình mặc định.
 """
 
 from app.services.templates_seed_huoke import HUOKE_TEMPLATES
@@ -20,21 +20,21 @@ from app.services.templates_seed_huoke import HUOKE_TEMPLATES
 TEMPLATES: list[dict] = [
     {
         "id": "opensource_showcase",
-        "name": "开源项目展示",
-        "description": "按项目内容动态规划：人物操作系统界面与真实使用场景，适合开源工具与平台介绍。",
-        "category": ["开源", "图文", "商业"],
+        "name": "Giới thiệu dự án mã nguồn mở",
+        "description": "Lập kế hoạch linh hoạt theo nội dung: người thao tác giao diện phần mềm và bối cảnh sử dụng thực tế, phù hợp cho công cụ và nền tảng mã nguồn mở.",
+        "category": ["Mã nguồn mở", "Đồ họa chữ", "Thương mại"],
         "preview_cover": "/static/templates/covers/opensource_showcase.png",
         "style_prefix": (
-            "高品质产品演示静帧：人物在真实工位前操作软件/文档站/工作台，"
-            "手部点击与屏幕界面清晰，排版克制、信息层级清楚，"
-            "材质与配色由内容决定（浅色SaaS、纸感文档、深色IDE、终端均可），"
-            "电影级产品演示质感，干净留白便于叠字，非任务清单界面"
+            "Ảnh tĩnh trình diễn sản phẩm chất lượng cao: Nhân vật ngồi trước bàn làm việc thực tế thao tác phần mềm/trang tài liệu/bảng làm việc, "
+            "tay nhấp chuột và giao diện màn hình rõ ràng, bố cục tiết chế, phân cấp thông tin mạch lạc, "
+            "chất liệu và phối màu theo nội dung (SaaS sáng màu, tài liệu giấy, IDE tối màu, terminal), "
+            "chất lượng trình diễn sản phẩm điện ảnh, khoảng trống sạch sẽ dễ chèn chữ, không phải giao diện danh sách công việc"
         ),
         "negative_prompt": (
-            "任务列表，todolist，勾选框，看板卡片堆叠，"
-            "霓虹蓝，赛博朋克蓝光，全屏蓝紫渐变，发光网格地板，科幻HUD堆叠，"
-            "卡通夸张，动漫美少女，手绘潦草，画面乱码文字，字幕水印，logo乱码，模糊，"
-            "空界面无操作者，纯抽象色块"
+            "Danh sách công việc, todolist, ô tích chọn, thẻ kanban xếp chồng, "
+            "xanh neon, ánh sáng xanh cyberpunk, dải màu xanh tím toàn màn hình, sàn lưới phát sáng, HUD viễn tưởng xếp chồng, "
+            "hoạt hình phóng đại, anime, vẽ tay nguệch ngoạc, chữ rác trên hình, watermark phụ đề, logo nhòe, mờ, "
+            "giao diện trống không có người thao tác, mảng màu trừu tượng"
         ),
         "default_ratio": "9:16",
         "shot_duration_min": 5,
@@ -56,21 +56,21 @@ TEMPLATES: list[dict] = [
             "strength": 0.72,
             "consistency_mode": "diverse",
             "character_prompt": (
-                "产品演示操作员：侧脸或过肩视角，坐在工位前操作笔记本电脑或双屏，"
-                "商务休闲着装，手部与屏幕为视觉重点，五官不必抢戏，全片气质统一"
+                "Người thao tác trình diễn sản phẩm: Góc nhìn nghiêng hoặc qua vai, ngồi trước bàn làm việc thao tác laptop hoặc hai màn hình, "
+                "trang phục công sở thoải mái, bàn tay và màn hình là trọng tâm thị giác, đường nét khuôn mặt không quá nổi bật, phong thái đồng nhất toàn phim"
             ),
             "extra_prompt": (
-                "主体为人操作系统界面，手部点击可读，禁止霓虹蓝赛博大屏；"
-                "顶部与底部留白便于叠大字，画面内不要出现任何文字；"
-                "本镜布局与操作动作须与其他镜头明显不同"
+                "Chủ thể là người thao tác giao diện hệ thống, động tác nhấp chuột rõ ràng, cấm màn hình lớn cyber xanh neon; "
+                "phía trên và dưới có khoảng trống để chèn chữ lớn, không xuất hiện chữ trong hình; "
+                "bố cục và thao tác của cảnh này phải khác biệt rõ rệt với các cảnh khác"
             ),
         },
         "seedance_config": {
-            "motion_bias": "手部轻微点击与屏幕内容切换，缓慢推近工位",
+            "motion_bias": "Bàn tay nhấp nhẹ và nội dung màn hình chuyển đổi, máy quay từ từ tiến lại gần bàn làm việc",
             "character_consistency": False,
             "generate_audio": True,
         },
-        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "轻快专业"},
+        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "Nhanh nhẹn chuyên nghiệp"},
         "subtitle_config": {
             "font": "SourceHanSans",
             "position": "split",
@@ -84,18 +84,18 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "opensource_live_work",
-        "name": "真人工作场景",
-        "description": "真人写实工位操作：侧脸/过肩操作系统，适合开源工具与产品工作流科普。",
-        "category": ["开源", "真人感", "写实感"],
+        "name": "Bối cảnh người thật làm việc",
+        "description": "Người thật thao tác tại bàn làm việc: Góc nhìn nghiêng/qua vai thao tác hệ thống, phù hợp cho công cụ mã nguồn mở và quy trình làm việc sản phẩm.",
+        "category": ["Mã nguồn mở", "Người thật", "Hiện thực"],
         "preview_cover": "/static/templates/covers/opensource_live_work.png",
         "style_prefix": (
-            "真人写实摄影，真实办公室工位，侧脸或过肩视角操作笔记本电脑/双屏，"
-            "手部点击与屏幕界面清晰，自然窗光与显示器补光，商务休闲着装，"
-            "皮肤与材质真实，非卡通非动漫，干净留白便于叠字"
+            "Nhiếp ảnh người thật hiện thực, bàn làm việc văn phòng thực tế, góc nhìn nghiêng hoặc qua vai thao tác laptop/màn hình đôi, "
+            "động tác nhấp tay và giao diện màn hình rõ ràng, ánh sáng cửa sổ tự nhiên và ánh sáng màn hình, trang phục công sở thoải mái, "
+            "da và chất liệu chân thực, không hoạt hình anime, khoảng trống sạch sẽ dễ chèn chữ"
         ),
         "negative_prompt": (
-            "卡通，动漫，赛璐璐，二次元，美颜过度磨皮，CGI假人，"
-            "霓虹蓝赛博大屏，任务清单堆叠，空界面无操作者，画面文字水印，模糊"
+            "Hoạt hình, anime, cel-shaded, 2D, làm mịn da quá đà, người giả CGI, "
+            "màn hình lớn cyber xanh neon, danh sách công việc xếp chồng, giao diện trống không có người, watermark chữ trên hình, mờ"
         ),
         "default_ratio": "16:9",
         "shot_duration_min": 6,
@@ -114,20 +114,20 @@ TEMPLATES: list[dict] = [
             "photoreal": True,
             "consistency_mode": "diverse",
             "character_prompt": (
-                "写实产品演示操作员：侧脸或过肩，坐在工位前操作笔记本或双屏，"
-                "商务休闲着装，手部与屏幕为视觉重点，五官不抢戏，气质全片统一"
+                "Người thao tác trình diễn sản phẩm hiện thực: Góc nhìn nghiêng hoặc qua vai, ngồi trước bàn làm việc thao tác laptop hoặc màn hình đôi, "
+                "trang phục công sở thoải mái, bàn tay và màn hình là trọng tâm thị giác, ngũ quan hài hòa, phong thái đồng nhất toàn phim"
             ),
             "extra_prompt": (
-                "真人写实工位，手部点击可读，界面类型随内容变化；"
-                "禁止正脸大特写与霓虹赛博大屏；画面内不要出现文字"
+                "Bàn làm việc người thật hiện thực, động tác tay rõ ràng, loại giao diện thay đổi theo nội dung; "
+                "cấm đặc tả lớn chính diện khuôn mặt và màn hình cyber neon; không xuất hiện chữ trong hình"
             ),
         },
         "seedance_config": {
-            "motion_bias": "手部轻微点击与屏幕内容切换，缓慢推近工位",
+            "motion_bias": "Bàn tay nhấp nhẹ và nội dung màn hình chuyển đổi, máy quay từ từ tiến lại gần bàn làm việc",
             "character_consistency": False,
             "generate_audio": True,
         },
-        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "轻快专业"},
+        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "Nhanh nhẹn chuyên nghiệp"},
         "subtitle_config": {
             "font": "SourceHanSans",
             "position": "split",
@@ -141,15 +141,15 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "live_street_interview",
-        "name": "真人街访口播",
-        "description": "街头/通勤场景的真人出镜口播感，适合观点、体验与轻访谈科普。",
-        "category": ["真人感", "纪录片"],
+        "name": "Phỏng vấn đường phố người thật",
+        "description": "Cảm giác người thật xuất hiện nói chuyện trên đường phố hoặc khi đi làm, phù hợp chia sẻ quan điểm, trải nghiệm và phỏng vấn ngắn.",
+        "category": ["Người thật", "Phim tài liệu"],
         "preview_cover": "/static/templates/covers/live_street_interview.png",
         "style_prefix": (
-            "真人纪实街访摄影，自然光与轻微手持感，城市街道或通勤场景，"
-            "真实皮肤与环境噪音感克制，非棚拍浓妆，非卡通非动漫"
+            "Nhiếp ảnh phỏng vấn tài liệu đường phố người thật, ánh sáng tự nhiên và cảm giác máy quay cầm tay nhẹ, đường phố đô thị hoặc khung cảnh đi làm, "
+            "kết cấu da chân thực và tiếng ồn môi trường tiết chế, không trang điểm đậm kiểu studio, không hoạt hình anime"
         ),
-        "negative_prompt": "卡通，动漫，赛璐璐，二次元，棚拍浓妆，CGI假人，霓虹赛博，画面文字水印",
+        "negative_prompt": "Hoạt hình, anime, cel-shaded, 2D, trang điểm đậm kiểu studio, người giả CGI, cyber neon, watermark chữ trên hình",
         "default_ratio": "9:16",
         "shot_duration_min": 5,
         "shot_duration_max": 12,
@@ -161,15 +161,15 @@ TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.72,
             "photoreal": True,
-            "character_prompt": "真人街访主角：年龄气质、发型服装日常感固定，自然表情，全片同一人",
-            "extra_prompt": "自然光街景或通勤场景，竖屏主体清晰，顶部可留白叠字",
+            "character_prompt": "Nhân vật chính phỏng vấn đường phố người thật: Độ tuổi phong thái, kiểu tóc trang phục đời thường cố định, biểu cảm tự nhiên, toàn phim cùng một người",
+            "extra_prompt": "Cảnh đường phố ánh sáng tự nhiên hoặc cảnh đi lại, chủ thể màn hình dọc rõ ràng, phía trên có thể chừa khoảng trống chèn chữ",
         },
         "seedance_config": {
-            "motion_bias": "轻微手持感，缓慢推近",
+            "motion_bias": "Cảm giác cầm tay nhẹ, từ từ tiến lại gần",
             "character_consistency": True,
             "generate_audio": True,
         },
-        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "温暖人文"},
+        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "Ấm áp nhân văn"},
         "subtitle_config": {"font": "SourceHanSans", "position": "top", "caption_scale": 1.3},
         "sort_order": 3,
         "is_active": True,
@@ -177,15 +177,15 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "live_product_desk",
-        "name": "真人桌面演示",
-        "description": "桌面俯拍/斜俯写实：真人双手演示产品或笔记本流程，适合工具评测与教程。",
-        "category": ["真人感", "写实感", "商业"],
+        "name": "Người thật trình diễn trên bàn",
+        "description": "Góc quay từ trên xuống hoặc chéo xuống hiện thực: Hai bàn tay người thật thao tác sản phẩm hoặc laptop, phù hợp đánh giá công cụ và hướng dẫn.",
+        "category": ["Người thật", "Hiện thực", "Thương mại"],
         "preview_cover": "/static/templates/covers/live_product_desk.png",
         "style_prefix": (
-            "真人桌面产品演示摄影，斜俯或过肩，木质/浅色桌面，笔记本与手部清晰，"
-            "柔和棚灯或窗光，材质真实，非卡通非插画"
+            "Nhiếp ảnh người thật trình diễn sản phẩm trên bàn, góc nhìn chéo xuống hoặc qua vai, mặt bàn gỗ/sáng màu, laptop và bàn tay rõ ràng, "
+            "ánh sáng đèn studio dịu nhẹ hoặc ánh sáng cửa sổ, chất liệu chân thực, không hoạt hình tranh vẽ"
         ),
-        "negative_prompt": "卡通，动漫，赛璐璐，二次元，空桌无手，霓虹赛博，画面乱码文字水印",
+        "negative_prompt": "Hoạt hình, anime, cel-shaded, 2D, bàn trống không có tay, cyber neon, watermark chữ loạn trên hình",
         "default_ratio": "16:9",
         "shot_duration_min": 5,
         "shot_duration_max": 12,
@@ -198,15 +198,15 @@ TEMPLATES: list[dict] = [
             "strength": 0.7,
             "photoreal": True,
             "consistency_mode": "diverse",
-            "character_prompt": "写实双手与小臂为主，可露侧脸；着装简洁，全片气质统一",
-            "extra_prompt": "桌面斜俯，手部与产品/屏幕清晰，画面内无文字",
+            "character_prompt": "Chủ yếu là hai bàn tay và cẳng tay hiện thực, có thể lộ góc mặt nghiêng; trang phục gọn gàng, phong thái đồng nhất toàn phim",
+            "extra_prompt": "Góc chéo mặt bàn, bàn tay và sản phẩm/màn hình rõ ràng, trong hình không có chữ",
         },
         "seedance_config": {
-            "motion_bias": "手部点击滑动，轻微推近屏幕",
+            "motion_bias": "Bàn tay nhấp chuột lướt màn hình, máy quay tiến nhẹ về phía màn hình",
             "character_consistency": False,
             "generate_audio": True,
         },
-        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "冷静纪实"},
+        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "Điềm tĩnh tài liệu"},
         "subtitle_config": {
             "font": "SourceHanSans",
             "position": "split",
@@ -220,12 +220,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "portrait_story",
-        "name": "竖屏图文故事",
-        "description": "竖屏插画叙事，电影感构图，适合历史人文短片。",
-        "category": ["图文", "电影感", "故事"],
+        "name": "Câu chuyện tranh chữ màn hình dọc",
+        "description": "Tự sự bằng tranh minh họa màn hình dọc, bố cục điện ảnh, phù hợp cho video lịch sử nhân văn ngắn.",
+        "category": ["Đồ họa chữ", "Điện ảnh", "Câu chuyện"],
         "preview_cover": "/static/templates/covers/portrait_story.png",
-        "style_prefix": "统一二维概念插画，细腻光影与电影感构图，非写实摄影、非日系赛璐璐动漫，竖屏主体偏中下，顶部留白便于叠字，画面干净无文字",
-        "negative_prompt": "写实照片，真人，真实人脸，摄影棚，电影真人剧照，日系动漫赛璐璐，画面文字，字幕，水印，标题字，logo，模糊",
+        "style_prefix": "Tranh minh họa khái niệm 2D đồng nhất, ánh sáng tinh tế và bố cục điện ảnh, không nhiếp ảnh hiện thực, không anime cel-shaded Nhật Bản, chủ thể màn hình dọc lệch giữa xuống dưới, phía trên chừa khoảng trống để chèn chữ, hình ảnh sạch sẽ không có chữ",
+        "negative_prompt": "Ảnh chụp hiện thực, người thật, khuôn mặt người thật, studio nhiếp ảnh, ảnh đoàn phim người thật, anime cel-shaded Nhật, chữ trên hình, phụ đề, watermark, tiêu đề chữ, logo, mờ",
         "default_ratio": "9:16",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
@@ -233,14 +233,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
-            "character_prompt": "故事主角外形固定：年龄感、发型发色、服装配色与辨识物全片一致，细腻插画五官，非真人照片",
-            "extra_prompt": "竖屏构图，主体偏中下，顶部约1/4留白，电影感光影，画面内无文字",
+            "character_prompt": "Ngoại hình nhân vật chính câu chuyện cố định: Độ tuổi, kiểu tóc màu tóc, phối màu trang phục và vật nhận diện đồng nhất toàn phim, ngũ quan minh họa tinh tế, không phải ảnh người thật",
+            "extra_prompt": "Bố cục màn hình dọc, chủ thể lệch giữa dưới, phía trên chừa khoảng 1/4 khoảng trống, ánh sáng điện ảnh, trong hình không có chữ",
         },
         "seedance_config": {
-            "motion_bias": "缓慢推近或轻拉远",
+            "motion_bias": "Từ từ đẩy tới gần hoặc kéo ra xa nhẹ",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "叙事氛围"},
+        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "Không khí tự sự"},
         "subtitle_config": {
             "font": "SourceHanSans",
             "position": "top",
@@ -254,18 +254,18 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "anim_3d",
-        "name": "3D 动画",
-        "description": "电影级三维动画质感，圆润造型与柔和体积光，适合科普讲解与故事短片。",
-        "category": ["3D", "动漫", "科普"],
+        "name": "Hoạt hình 3D",
+        "description": "Chất lượng hoạt hình 3D điện ảnh, tạo hình tròn trịa và ánh sáng thể tích dịu nhẹ, phù hợp giải thích khoa học và phim ngắn cốt truyện.",
+        "category": ["3D", "Anime", "Khoa học"],
         "preview_cover": "/static/templates/covers/anim_3d.png",
         "style_prefix": (
-            "电影级三维动画渲染，皮克斯/梦工厂气质，圆润造型与清晰轮廓，"
-            "柔和体积光与次表面散射，干净材质与饱和配色，浅景深，"
-            "非写实摄影、非日系赛璐璐平面、非剪纸扁平"
+            "Kết xuất hoạt hình 3D điện ảnh, phong cách Pixar/DreamWorks, tạo hình tròn trịa đường nét rõ ràng, "
+            "ánh sáng thể tích dịu nhẹ và tán xạ dưới bề mặt, chất liệu sạch sẽ phối màu bão hòa, độ sâu trường ảnh nông, "
+            "không nhiếp ảnh hiện thực, không 2D cel-shaded, không cắt giấy phẳng"
         ),
         "negative_prompt": (
-            "写实照片，真人皮肤毛孔，摄影棚实拍，日系赛璐璐，二次元平涂，"
-            "剪纸扁平，像素风，手绘潦草，血腥恐怖，水印，画面文字，字幕乱码"
+            "Ảnh chụp hiện thực, lỗ chân lông da người thật, chụp studio thực tế, anime cel-shaded, tranh tô màu phẳng 2D, "
+            "cắt giấy phẳng, pixel art, vẽ tay nguệch ngoạc, máu me kinh dị, watermark, chữ trên hình, phụ đề lỗi"
         ),
         "default_ratio": "16:9",
         "shot_duration_min": 4,
@@ -281,20 +281,20 @@ TEMPLATES: list[dict] = [
             "strength": 0.72,
             "consistency_mode": "character",
             "character_prompt": (
-                "固定 3D 动画角色：圆润比例、简洁五官、识别度高的发型发色与服装配色，"
-                "塑料感柔和皮肤与布料材质，全片同一人物设定"
+                "Nhân vật hoạt hình 3D cố định: Tỷ lệ tròn trịa, ngũ quan tinh gọn, kiểu tóc màu tóc và màu trang phục có độ nhận diện cao, "
+                "làn da và chất vải mềm mại, toàn phim cùng một thiết kế nhân vật"
             ),
             "extra_prompt": (
-                "三维渲染体积光，干净材质，饱和但不刺眼，主体清晰，"
-                "画面内不要出现文字；可留白便于叠字"
+                "Ánh sáng thể tích kết xuất 3D, chất liệu sạch sẽ, màu sắc bão hòa không chói mắt, chủ thể rõ ràng, "
+                "trong hình không xuất hiện chữ; có thể chừa khoảng trống chèn chữ"
             ),
         },
         "seedance_config": {
-            "motion_bias": "轻微布料与发丝飘动，缓慢推近，动画感运镜平滑",
+            "motion_bias": "Vải áo và lọn tóc khẽ bay, từ từ tiến lại gần, chuyển động máy quay hoạt hình mượt mà",
             "character_consistency": True,
             "generate_audio": True,
         },
-        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "轻快专业"},
+        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "Nhanh nhẹn chuyên nghiệp"},
         "subtitle_config": {
             "font": "SourceHanSans",
             "position": "bottom",
@@ -308,12 +308,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "live_cinematic",
-        "name": "真人电影感",
-        "description": "真人实拍电影质感，戏剧光影与浅景深，适合叙事短片。",
-        "category": ["电影感", "真人感"],
+        "name": "Điện ảnh người thật",
+        "description": "Chất lượng phim điện ảnh quay người thật, ánh sáng kịch tính và độ sâu trường ảnh nông, phù hợp phim ngắn tự sự.",
+        "category": ["Điện ảnh", "Người thật"],
         "preview_cover": "/static/templates/covers/live_cinematic.png",
-        "style_prefix": "真人电影感摄影，电影级打光与浅景深，胶片质感与轻微颗粒，青橙调色，写实皮肤与真实材质，宽银幕构图，非卡通非动漫",
-        "negative_prompt": "卡通，动漫，赛璐璐，二次元，扁平插画，剪纸，像素，夸张五官，塑料皮肤，水印，画面文字",
+        "style_prefix": "Nhiếp ảnh điện ảnh người thật, đánh sáng chuẩn điện ảnh và độ sâu trường ảnh nông, chất cảm phim nhựa hạt nhẹ, chỉnh màu cam xanh teal-orange, da hiện thực và chất liệu chân thực, bố cục màn hình rộng, không hoạt hình anime",
+        "negative_prompt": "Hoạt hình, anime, cel-shaded, 2D, tranh minh họa phẳng, cắt giấy, pixel, ngũ quan phóng đại, da bóng nhựa, watermark, chữ trên hình",
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
@@ -322,14 +322,14 @@ TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.75,
             "photoreal": True,
-            "character_prompt": "真人演员外形固定：年龄、发型发色、面部特征、服装全片一致，写实皮肤质感",
-            "extra_prompt": "电影打光、浅景深、胶片颗粒，真实场景材质",
+            "character_prompt": "Ngoại hình diễn viên người thật cố định: Độ tuổi, kiểu tóc màu tóc, đặc điểm khuôn mặt, trang phục toàn phim đồng nhất, kết cấu da chân thực",
+            "extra_prompt": "Ánh sáng điện ảnh, độ sâu trường ảnh nông, hạt film nhựa, chất liệu bối cảnh chân thực",
         },
         "seedance_config": {
-            "motion_bias": "电影感推轨或轻微横移，自然运动模糊",
+            "motion_bias": "Trượt ray điện ảnh hoặc lia máy nhẹ, làm mờ chuyển động tự nhiên",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "电影氛围"},
+        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "Không khí điện ảnh"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom", "caption_scale": 1.3},
         "sort_order": 6,
         "is_active": True,
@@ -337,12 +337,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "live_person",
-        "name": "真人感叙事",
-        "description": "生活化真人出镜感，适合人物故事、口播与纪实短片。",
-        "category": ["真人感", "故事"],
+        "name": "Tự sự người thật đời sống",
+        "description": "Cảm giác người thật đời sống, phù hợp cho câu chuyện nhân vật, thuyết minh và phim tài liệu ngắn.",
+        "category": ["Người thật", "Câu chuyện"],
         "preview_cover": "/static/templates/covers/live_person.png",
-        "style_prefix": "真人感生活摄影，自然光与柔和环境光，真实人物五官与皮肤质感，纪实构图，非棚拍浓妆，非卡通非动漫",
-        "negative_prompt": "卡通，动漫，赛璐璐，二次元，美颜过度磨皮，CGI假人，扁平插画，水印，画面文字",
+        "style_prefix": "Nhiếp ảnh đời sống người thật, ánh sáng tự nhiên và ánh sáng môi trường dịu nhẹ, ngũ quan và kết cấu da chân thực, bố cục tài liệu, không trang điểm đậm studio, không hoạt hình anime",
+        "negative_prompt": "Hoạt hình, anime, cel-shaded, 2D, làm mịn da quá đà, người giả CGI, tranh minh họa phẳng, watermark, chữ trên hình",
         "default_ratio": "9:16",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
@@ -351,14 +351,14 @@ TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.72,
             "photoreal": True,
-            "character_prompt": "真人出镜主角：年龄气质、发型发色、服装日常感固定，自然表情，全片同一人",
-            "extra_prompt": "自然光、生活场景、竖屏主体清晰，顶部可留白叠字",
+            "character_prompt": "Nhân vật chính người thật: Độ tuổi phong thái, kiểu tóc màu tóc, trang phục đời thường cố định, biểu cảm tự nhiên, toàn phim cùng một người",
+            "extra_prompt": "Ánh sáng tự nhiên, bối cảnh đời sống, chủ thể màn hình dọc rõ ràng, phía trên có thể để trống chèn chữ",
         },
         "seedance_config": {
-            "motion_bias": "轻微手持感，缓慢推近",
+            "motion_bias": "Cảm giác cầm tay nhẹ, từ từ tiến lại gần",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "温暖人文"},
+        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "Ấm áp nhân văn"},
         "subtitle_config": {"font": "SourceHanSans", "position": "top"},
         "sort_order": 7,
         "is_active": True,
@@ -366,12 +366,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "photo_realism",
-        "name": "写实摄影",
-        "description": "照片级写实质感，适合产品、风光与纪实科普。",
-        "category": ["写实感", "摄影"],
+        "name": "Nhiếp ảnh hiện thực",
+        "description": "Chất lượng hiện thực cấp độ ảnh chụp, phù hợp cho sản phẩm, phong cảnh và khoa học tài liệu.",
+        "category": ["Hiện thực", "Nhiếp ảnh"],
         "preview_cover": "/static/templates/covers/photo_realism.png",
-        "style_prefix": "照片级写实摄影，清晰细节与真实材质，自然色彩，高动态范围，微距或风光皆可，非卡通非插画非动漫",
-        "negative_prompt": "卡通，动漫，赛璐璐，扁平插画，油画笔触，剪纸，像素，过度HDR伪色，水印，画面文字",
+        "style_prefix": "Nhiếp ảnh hiện thực cấp độ ảnh chụp, chi tiết sắc nét và chất liệu chân thực, màu sắc tự nhiên, dải tương phản động cao HDR, chụp cận cảnh hoặc phong cảnh, không hoạt hình không tranh vẽ không anime",
+        "negative_prompt": "Hoạt hình, anime, cel-shaded, tranh minh họa phẳng, nét cọ sơn dầu, cắt giấy, pixel, sai màu HDR quá đà, watermark, chữ trên hình",
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
@@ -380,14 +380,14 @@ TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.7,
             "photoreal": True,
-            "character_prompt": "若出现人物：写实五官与发型服装固定；若无人物则专注真实场景与材质",
-            "extra_prompt": "照片级细节、真实材质、自然色彩，清晰主体",
+            "character_prompt": "Nếu xuất hiện nhân vật: Ngũ quan hiện thực, kiểu tóc và trang phục cố định; nếu không có nhân vật thì tập trung vào bối cảnh và chất liệu chân thực",
+            "extra_prompt": "Chi tiết chuẩn ảnh chụp, chất liệu chân thực, màu sắc tự nhiên, chủ thể sắc nét",
         },
         "seedance_config": {
-            "motion_bias": "缓慢推近或轻微横移，真实空间感",
+            "motion_bias": "Từ từ tiến lại gần hoặc lia ngang nhẹ, cảm giác không gian chân thực",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "冷静纪实"},
+        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "Điềm tĩnh tài liệu"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 7,
         "is_active": True,
@@ -395,12 +395,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "film_cinematic",
-        "name": "电影感胶片",
-        "description": "宽银幕胶片质感与戏剧光影，适合叙事短片与氛围故事。",
-        "category": ["电影感", "胶片"],
+        "name": "Phim nhựa điện ảnh",
+        "description": "Chất cảm phim nhựa màn ảnh rộng và ánh sáng kịch tính, phù hợp cho phim ngắn tự sự và câu chuyện giàu bầu không khí.",
+        "category": ["Điện ảnh", "Phim nhựa"],
         "preview_cover": "/static/templates/covers/film_cinematic.png",
-        "style_prefix": "电影感概念插画，宽银幕构图，胶片颗粒与轻微暗角，戏剧光影（侧光/逆光），青橙调色倾向，浅景深氛围，非写实摄影、非赛璐璐动漫",
-        "negative_prompt": "写实照片，真人，真实人脸，日系动漫，赛璐璐，扁平贴纸风，过曝，水印，画面文字，卡通简笔画",
+        "style_prefix": "Tranh minh họa khái niệm điện ảnh, bố cục màn ảnh rộng, hạt film nhựa và tối góc nhẹ, ánh sáng kịch tính (sáng nghiêng/ngược sáng), tông màu cam xanh, độ sâu trường ảnh nông giàu không khí, không nhiếp ảnh hiện thực, không anime cel-shaded",
+        "negative_prompt": "Ảnh chụp hiện thực, người thật, khuôn mặt người thật, anime Nhật Bản, cel-shaded, nhãn dán phẳng, cháy sáng, watermark, chữ trên hình, hoạt hình nét vẽ đơn giản",
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
@@ -408,14 +408,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
-            "character_prompt": "电影感插画主角，明确年龄与发型发色，服装轮廓与辨识物固定，面部细节适中非照片，全片同一人设",
-            "extra_prompt": "胶片颗粒、暗角、戏剧光影，青橙氛围，宽银幕主体明确",
+            "character_prompt": "Nhân vật chính minh họa điện ảnh, độ tuổi rõ ràng và kiểu tóc màu tóc cố định, đường nét trang phục và vật nhận diện cố định, chi tiết khuôn mặt vừa phải không phải ảnh chụp, toàn phim cùng thiết kế nhân vật",
+            "extra_prompt": "Hạt film nhựa, tối góc, ánh sáng kịch tính, không khí cam xanh, chủ thể màn ảnh rộng rõ ràng",
         },
         "seedance_config": {
-            "motion_bias": "缓慢推轨或轻微横移，电影感运镜，避免抖动",
+            "motion_bias": "Trượt ray chậm hoặc lia ngang nhẹ, góc máy điện ảnh, tránh rung lắc",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "电影氛围"},
+        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "Không khí điện ảnh"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 8,
         "is_active": True,
@@ -423,12 +423,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "noir_thriller",
-        "name": "黑色悬疑",
-        "description": "高对比光影与冷调氛围，适合悬疑、案件与暗夜叙事。",
-        "category": ["悬疑", "电影感"],
+        "name": "Noir giật gân hồi hộp",
+        "description": "Ánh sáng tương phản cao và bầu không khí lạnh, phù hợp cho trinh thám, vụ án và tự sự đêm tối.",
+        "category": ["Giật gân", "Điện ảnh"],
         "preview_cover": "/static/templates/covers/noir_thriller.png",
-        "style_prefix": "黑色电影概念插画，高对比明暗交界，冷青灰与少量暖光点缀，雨夜或室内台灯氛围，剪影与侧脸，非写实摄影",
-        "negative_prompt": "明亮粉彩，儿童绘本，日系美少女，写实照片，真人，血腥特写，水印，画面文字",
+        "style_prefix": "Tranh minh họa khái niệm phim đen Noir, ranh giới sáng tối tương phản cao, tông xám xanh lạnh điểm xuyết ít ánh sáng ấm, không khí đêm mưa hoặc đèn bàn trong phòng, bóng đen và góc nghiêng mặt, không nhiếp ảnh hiện thực",
+        "negative_prompt": "Màu phấn tươi sáng, tranh truyện thiếu nhi, thiếu nữ anime Nhật, ảnh chụp hiện thực, người thật, cận cảnh máu me, watermark, chữ trên hình",
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
@@ -436,14 +436,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
-            "character_prompt": "Noir 风插画角色，轮廓清晰，大衣或标志性剪影，面部少光，外形全片一致",
-            "extra_prompt": "高对比阴影、冷调、雨夜或台灯，强构图张力",
+            "character_prompt": "Nhân vật minh họa phong cách Noir, đường nét rõ ràng, áo khoác dài hoặc bóng đen biểu tượng, khuôn mặt ít ánh sáng, ngoại hình toàn phim đồng nhất",
+            "extra_prompt": "Bóng tối tương phản cao, tông màu lạnh, đêm mưa hoặc đèn bàn, lực căng bố cục mạnh mẽ",
         },
         "seedance_config": {
-            "motion_bias": "极慢推近，烟雾或雨丝轻微飘动",
+            "motion_bias": "Rất chậm tiến lại gần, làn khói hoặc hạt mưa khẽ bay",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "悬疑低沉"},
+        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "Hồi hộp trầm lắng"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 9,
         "is_active": True,
@@ -451,18 +451,18 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "vox_papercut",
-        "name": "Vox剪纸科普",
-        "description": "低饱和扁平剪纸，以人物操作电脑/系统界面为主画面，适合硬核科普与产品讲解。",
-        "category": ["科普", "剪纸"],
+        "name": "Vox cắt giấy khoa học",
+        "description": "Cắt giấy phẳng độ bão hòa thấp, với nhân vật thao tác máy tính/giao diện hệ thống làm khung hình chính, phù hợp giải thích kiến thức chuyên sâu và sản phẩm.",
+        "category": ["Khoa học", "Cắt giấy"],
         "preview_cover": "/static/templates/covers/vox_papercut.png",
         "style_prefix": (
-            "Vox剪纸扁平插画，层叠剪纸边缘，低饱和，干净剪影，科普解说片气质；"
-            "画面以人物操作电脑或业务系统为主：工位前操作、手指点击界面、多屏监控、"
-            "配置参数、流程演示，屏幕与手部动作清晰，信息图表为辅"
+            "Tranh minh họa phẳng cắt giấy Vox, viền giấy xếp lớp, độ bão hòa thấp, bóng cắt sạch sẽ, phong thái video thuyết minh khoa học; "
+            "hình ảnh lấy nhân vật thao tác máy tính hoặc hệ thống làm chủ đạo: thao tác trước bàn làm việc, ngón tay nhấp giao diện, giám sát đa màn hình, "
+            "cấu hình tham số, trình diễn quy trình, màn hình và động tác tay rõ ràng, biểu đồ thông tin phụ trợ"
         ),
         "negative_prompt": (
-            "写实照片，真人照片级皮肤，三维写实渲染，日系动漫，模糊，噪点，水印，"
-            "画面乱码文字，空镜风景无人物无界面，纯抽象色块无操作场景"
+            "Ảnh chụp hiện thực, da cấp độ ảnh người thật, kết xuất 3D hiện thực, anime Nhật, mờ, nhiễu hạt, watermark, "
+            "chữ rác trên hình, cảnh trống phong cảnh không có người không có giao diện, mảng màu thuần trừu tượng không có bối cảnh thao tác"
         ),
         "default_ratio": "16:9",
         "shot_duration_min": 4,
@@ -480,19 +480,19 @@ TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.7,
             "character_prompt": (
-                "固定剪纸操作员：简洁人形剪影、低细节面部、工装或休闲色块服装固定，"
-                "常坐工位前操作笔记本电脑或双屏控制台，发型与配色全片一致"
+                "Người thao tác cắt giấy cố định: Bóng người đơn giản, khuôn mặt tối giản chi tiết, trang phục mảng màu công sở hoặc thường ngày cố định, "
+                "thường ngồi trước bàn thao tác laptop hoặc bảng điều khiển màn hình đôi, kiểu tóc và phối màu toàn phim đồng nhất"
             ),
             "extra_prompt": (
-                "主体为人操作电脑/系统界面，屏幕区块与点击手势可读，"
-                "层叠纸片边缘清晰，低饱和，单镜一个视觉焦点，避免写实皮肤"
+                "Chủ thể là người thao tác máy tính/giao diện hệ thống, phân khu màn hình và cử chỉ nhấp chuột rõ ràng, "
+                "viền giấy xếp lớp sắc nét, độ bão hòa thấp, mỗi cảnh một tiêu điểm thị giác, tránh da hiện thực"
             ),
         },
         "seedance_config": {
-            "motion_bias": "手部轻微点击与光标移动感，屏幕内容轻切换，缓慢推近工位",
+            "motion_bias": "Bàn tay nhấp nhẹ và cảm giác con trỏ chuột di chuyển, nội dung màn hình chuyển đổi nhẹ, máy quay từ từ tiến lại gần bàn làm việc",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "好奇纪录片"},
+        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "Phim tài liệu tò mò"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 10,
         "is_active": True,
@@ -500,12 +500,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "docu_warm",
-        "name": "温暖纪实",
-        "description": "纪实插画气质与暖色调，适合人物故事与人文纪录短片。",
-        "category": ["纪录片", "电影感"],
+        "name": "Tài liệu ấm áp",
+        "description": "Chất cảm tranh minh họa tài liệu và tông màu ấm, phù hợp câu chuyện nhân vật và phim tài liệu ngắn nhân văn.",
+        "category": ["Phim tài liệu", "Điện ảnh"],
         "preview_cover": "/static/templates/covers/docu_warm.png",
-        "style_prefix": "温暖纪实概念插画，自然光感，柔和暖棕与米白，生活场景细节，纪录片构图，非写实照片、非动漫赛璐璐",
-        "negative_prompt": "赛博霓虹，日系美少女，血腥，夸张卡通，写实照片，真人，水印，画面文字",
+        "style_prefix": "Tranh minh họa khái niệm tài liệu ấm áp, cảm giác ánh sáng tự nhiên, tông nâu ấm và trắng be dịu nhẹ, chi tiết bối cảnh đời sống, bố cục phim tài liệu, không ảnh chụp hiện thực, không anime cel-shaded",
+        "negative_prompt": "Cyber neon, thiếu nữ anime Nhật, máu me, hoạt hình phóng đại, ảnh chụp hiện thực, người thật, watermark, chữ trên hình",
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 14,
@@ -513,14 +513,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.68,
-            "character_prompt": "纪实插画人物，生活化发型服装，亲切五官，年龄感明确，全片同一人设",
-            "extra_prompt": "暖色自然光，生活场景，纪录片式构图，柔和颗粒",
+            "character_prompt": "Nhân vật minh họa tài liệu, kiểu tóc trang phục đời thường, ngũ quan gần gũi, độ tuổi rõ ràng, toàn phim cùng một thiết kế nhân vật",
+            "extra_prompt": "Ánh sáng tự nhiên tông ấm, bối cảnh đời sống, bố cục phong cách tài liệu, hạt nhẹ dịu",
         },
         "seedance_config": {
-            "motion_bias": "手持感极轻晃动或缓慢横移，纪实运镜",
+            "motion_bias": "Rung nhẹ cảm giác cầm tay hoặc lia ngang chậm, góc máy tài liệu",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "温暖人文"},
+        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "Ấm áp nhân văn"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 12,
         "is_active": True,
@@ -528,12 +528,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "kids_flat",
-        "name": "儿童绘本扁平",
-        "description": "柔和配色与圆润造型，适合儿童科普与故事。",
-        "category": ["儿童", "绘本"],
+        "name": "Tranh truyện thiếu nhi phẳng",
+        "description": "Phối màu dịu nhẹ và tạo hình tròn trịa, phù hợp cho khoa học và câu chuyện thiếu nhi.",
+        "category": ["Thiếu nhi", "Tranh truyện"],
         "preview_cover": "/static/templates/covers/kids_flat.png",
-        "style_prefix": "儿童绘本扁平插画，柔和粉彩，圆润造型，友好角色，简洁背景",
-        "negative_prompt": "恐怖，阴暗，写实照片，复杂纹理，血腥",
+        "style_prefix": "Tranh minh họa phẳng phong cách tranh truyện thiếu nhi, màu phấn dịu nhẹ, tạo hình tròn trịa, nhân vật thân thiện, hậu cảnh tinh giản",
+        "negative_prompt": "Kinh dị, tăm tối, ảnh chụp hiện thực, kết cấu phức tạp, máu me",
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
@@ -541,14 +541,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.65,
-            "character_prompt": "圆润可爱卡通角色，大眼睛简化五官，柔和配色服装，友好表情，全片同一角色外形",
-            "extra_prompt": "粉彩柔光，背景简洁，造型圆润，适合儿童观看",
+            "character_prompt": "Nhân vật hoạt hình tròn trịa đáng yêu, mắt to ngũ quan đơn giản hóa, trang phục phối màu dịu nhẹ, biểu cảm thân thiện, toàn phim cùng một ngoại hình nhân vật",
+            "extra_prompt": "Ánh sáng dịu màu phấn, hậu cảnh tinh giản, tạo hình tròn trịa, phù hợp cho trẻ em xem",
         },
         "seedance_config": {
-            "motion_bias": "轻微弹跳感，柔和镜头漂移",
+            "motion_bias": "Cảm giác nhún nhảy nhẹ, máy quay trôi dịu dàng",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "俏皮轻快"},
+        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "Hóm hỉnh vui tươi"},
         "subtitle_config": {"font": "RoundedSans", "position": "bottom"},
         "sort_order": 20,
         "is_active": True,
@@ -556,12 +556,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "soft_anime",
-        "name": "柔光动漫",
-        "description": "日系柔光赛璐璐，适合青春故事与情感短片。",
-        "category": ["动漫", "故事"],
+        "name": "Anime ánh sáng dịu",
+        "description": "Anime cel-shaded ánh sáng dịu Nhật Bản, phù hợp câu chuyện thanh xuân và phim ngắn cảm xúc.",
+        "category": ["Anime", "Câu chuyện"],
         "preview_cover": "/static/templates/covers/soft_anime.png",
-        "style_prefix": "日系柔光赛璐璐动漫，干净线稿，柔和渐变天空，大眼睛精致五官，统一角色设定，非写实摄影、非水墨、非剪纸",
-        "negative_prompt": "写实照片，真人，真实人脸，水墨，剪纸，像素风，血腥恐怖，水印，画面文字，三头身Q版混用",
+        "style_prefix": "Anime cel-shaded ánh sáng dịu Nhật Bản, nét vẽ sạch sẽ, bầu trời chuyển màu dịu dàng, mắt to ngũ quan tinh tế, thiết lập nhân vật đồng nhất, không nhiếp ảnh hiện thực, không thủy mặc, không cắt giấy",
+        "negative_prompt": "Ảnh chụp hiện thực, người thật, khuôn mặt người thật, thủy mặc, cắt giấy, pixel art, máu me kinh dị, watermark, chữ trên hình, pha trộn phong cách Chibi Q-version",
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
@@ -569,14 +569,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
-            "character_prompt": "日系动漫主角，发型发色瞳色固定，校服或常服配色固定，赛璐璐五官，全片同一人设",
-            "extra_prompt": "柔光、干净线稿、柔和天空，统一赛璐璐上色",
+            "character_prompt": "Nhân vật chính anime Nhật Bản, kiểu tóc màu tóc màu mắt cố định, phối màu đồng phục học sinh hoặc thường phục cố định, ngũ quan cel-shaded, toàn phim cùng một thiết kế nhân vật",
+            "extra_prompt": "Ánh sáng dịu, nét vẽ sạch sẽ, bầu trời dịu nhẹ, tô màu cel-shaded đồng nhất",
         },
         "seedance_config": {
-            "motion_bias": "轻微发丝与衣袂飘动，缓慢推近",
+            "motion_bias": "Lọn tóc và vạt áo khẽ bay, máy quay từ từ tiến lại gần",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "青春轻音乐"},
+        "audio_config": {"voice_preset": "warm_storyteller", "bgm_mood": "Nhạc nhẹ thanh xuân"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 22,
         "is_active": True,
@@ -584,15 +584,15 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "chalk_whiteboard",
-        "name": "粉笔白板手绘",
-        "description": "黑板粉笔讲解风，突出人物操作系统/画流程图的课堂演示。",
-        "category": ["科普", "手绘"],
+        "name": "Bút phấn bảng trắng vẽ tay",
+        "description": "Phong cách giảng giải bút phấn bảng đen, làm nổi bật nhân vật thao tác hệ thống / vẽ sơ đồ quy trình.",
+        "category": ["Khoa học", "Vẽ tay"],
         "preview_cover": "/static/templates/covers/chalk_whiteboard.png",
         "style_prefix": (
-            "黑板粉笔与白板手绘讲解风，粉笔笔触，示意图箭头；"
-            "画面常含简笔人物在白板或电脑前操作系统、画流程、指点界面"
+            "Phong cách giảng giải bảng phấn đen và bảng trắng vẽ tay, nét cọ phấn, mũi tên sơ đồ; "
+            "hình ảnh thường có nhân vật nét vẽ đơn giản trước bảng trắng hoặc máy tính thao tác hệ thống, vẽ quy trình, chỉ dẫn giao diện"
         ),
-        "negative_prompt": "写实照片，光滑三维，杂乱界面，空教室无人物",
+        "negative_prompt": "Ảnh chụp hiện thực, 3D nhẵn bóng, giao diện rối rắm, phòng học trống không có người",
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 15,
@@ -605,16 +605,16 @@ TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.6,
             "character_prompt": (
-                "粉笔简笔讲解者/操作员，线条简洁特征固定，"
-                "常站在白板前或坐在电脑前指点界面"
+                "Người giảng giải/thao tác vẽ nét phấn đơn giản, đường nét tinh gọn đặc điểm cố định, "
+                "thường đứng trước bảng trắng hoặc ngồi trước máy tính chỉ vào giao diện"
             ),
-            "extra_prompt": "黑板/白板底，人物操作系统或画流程图，箭头清晰，教学感构图",
+            "extra_prompt": "Nền bảng đen/bảng trắng, nhân vật thao tác hệ thống hoặc vẽ sơ đồ quy trình, mũi tên rõ ràng, bố cục mang tính giảng dạy",
         },
         "seedance_config": {
-            "motion_bias": "手部指点与线条逐步显现，镜头基本固定或轻推",
+            "motion_bias": "Bàn tay chỉ trỏ và đường nét dần xuất hiện, máy quay cơ bản cố định hoặc đẩy nhẹ",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "teacher_clear", "bgm_mood": "专注氛围"},
+        "audio_config": {"voice_preset": "teacher_clear", "bgm_mood": "Tập trung chú ý"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 30,
         "is_active": True,
@@ -622,12 +622,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "cyber_neon",
-        "name": "赛博霓虹",
-        "description": "霓虹夜城与未来感，适合科技、都市与科幻话题。",
-        "category": ["科幻", "赛博"],
+        "name": "Cyber Neon",
+        "description": "Thành phố đêm ánh sáng neon và cảm giác tương lai, phù hợp cho chủ đề công nghệ, đô thị và khoa học viễn tưởng.",
+        "category": ["Khoa học viễn tưởng", "Cyber"],
         "preview_cover": "/static/templates/covers/cyber_neon.png",
-        "style_prefix": "赛博朋克概念插画，霓虹粉青对比，雨夜反光街道，未来都市剪影，高对比夜景，非写实摄影、非儿童绘本",
-        "negative_prompt": "日光沙滩，田园水彩，儿童粉彩，写实照片，真人，水墨留白，水印，画面文字",
+        "style_prefix": "Tranh minh họa khái niệm Cyberpunk, tương phản hồng xanh neon, đường phố đêm mưa phản chiếu, bóng hình đô thị tương lai, cảnh đêm tương phản cao, không nhiếp ảnh hiện thực, không tranh truyện thiếu nhi",
+        "negative_prompt": "Bãi biển nắng ban ngày, màu nước đồng quê, màu phấn trẻ em, ảnh chụp hiện thực, người thật, thủy mặc chừa trắng, watermark, chữ trên hình",
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
@@ -635,14 +635,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
-            "character_prompt": "赛博风插画角色，外套剪裁与发色固定，霓虹边缘光，面部非照片，全片同一人设",
-            "extra_prompt": "霓虹粉青、雨夜反光、未来都市，强对比夜景",
+            "character_prompt": "Nhân vật minh họa phong cách Cyber, kiểu áo khoác và màu tóc cố định, ánh sáng viền neon, khuôn mặt không phải ảnh chụp, toàn phim cùng một thiết kế nhân vật",
+            "extra_prompt": "Hồng xanh neon, đêm mưa phản chiếu, đô thị tương lai, cảnh đêm tương phản mạnh",
         },
         "seedance_config": {
-            "motion_bias": "霓虹闪烁，雨丝下落，缓慢穿梭运镜",
+            "motion_bias": "Ánh đèn neon nhấp nháy, hạt mưa rơi, góc máy từ từ lướt qua",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "赛博电子"},
+        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "Điện tử Cyber"},
         "subtitle_config": {"font": "DisplaySans", "position": "bottom"},
         "sort_order": 35,
         "is_active": True,
@@ -650,12 +650,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "epic_fantasy",
-        "name": "奇幻史诗",
-        "description": "宏大场景与奇幻光影，适合神话、冒险与世界观短片。",
-        "category": ["奇幻", "电影感"],
+        "name": "Sử thi kỳ ảo",
+        "description": "Bối cảnh hùng vĩ và ánh sáng kỳ ảo, phù hợp cho thần thoại, phiêu lưu và phim ngắn thế giới quan.",
+        "category": ["Kỳ ảo", "Điện ảnh"],
         "preview_cover": "/static/templates/covers/epic_fantasy.png",
-        "style_prefix": "奇幻史诗概念插画，宏大远景与英雄中景，暮光与神性光束，岩石城堡与云海，戏剧构图，非写实摄影、非现代都市",
-        "negative_prompt": "现代城市，手机界面，写实照片，真人，儿童简笔画，赛博霓虹，水印，画面文字",
+        "style_prefix": "Tranh minh họa khái niệm sử thi kỳ ảo, đại cảnh hùng vĩ và trung cảnh người hùng, ánh hoàng hôn và luồng sáng thần thánh, lâu đài đá và biển mây, bố cục kịch tính, không nhiếp ảnh hiện thực, không đô thị hiện đại",
+        "negative_prompt": "Thành phố hiện đại, giao diện điện thoại, ảnh chụp hiện thực, người thật, nét vẽ đơn giản trẻ em, cyber neon, watermark, chữ trên hình",
         "default_ratio": "16:9",
         "shot_duration_min": 4,
         "shot_duration_max": 14,
@@ -663,14 +663,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.72,
-            "character_prompt": "奇幻主角外形固定：盔甲或斗篷轮廓、发色、武器辨识物全片一致，插画五官非照片",
-            "extra_prompt": "宏大场景、暮光神性光束、戏剧构图，史诗氛围",
+            "character_prompt": "Ngoại hình nhân vật chính kỳ ảo cố định: Đường nét áo giáp hoặc áo choàng, màu tóc, vũ khí nhận diện toàn phim đồng nhất, ngũ quan minh họa không phải ảnh chụp",
+            "extra_prompt": "Bối cảnh hùng vĩ, ánh sáng thần thánh hoàng hôn, bố cục kịch tính, không khí sử thi",
         },
         "seedance_config": {
-            "motion_bias": "缓慢升降镜头，云雾与旗帜飘动",
+            "motion_bias": "Máy quay nâng hạ chậm, mây mù và cờ bay phấp phới",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "史诗管弦"},
+        "audio_config": {"voice_preset": "narrator_calm", "bgm_mood": "Dàn nhạc giao hưởng sử thi"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 38,
         "is_active": True,
@@ -678,12 +678,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "magazine_collage",
-        "name": "杂志拼贴",
-        "description": "剪报拼贴与印刷纹理，适合文化话题与品牌故事。",
-        "category": ["商业", "拼贴"],
+        "name": "Cắt dán tạp chí",
+        "description": "Cắt dán báo và vân in ấn, phù hợp cho chủ đề văn hóa và câu chuyện thương hiệu.",
+        "category": ["Thương mại", "Cắt dán"],
         "preview_cover": "/static/templates/covers/magazine_collage.png",
-        "style_prefix": "杂志纸质拼贴，撕边，网纹印刷质感，层叠剪贴，大胆平面构图",
-        "negative_prompt": "纯净矢量，写实皮肤，脏污发灰的色彩",
+        "style_prefix": "Cắt dán chất liệu giấy tạp chí, viền rách xé, chất cảm in lưới chấm hạt, cắt dán xếp lớp, bố cục đồ họa phẳng táo bạo",
+        "negative_prompt": "Vector thuần khiết, da hiện thực, màu sắc bẩn thỉu xám xịt",
         "default_ratio": "9:16",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
@@ -691,14 +691,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.75,
-            "character_prompt": "杂志剪贴人像剪影或印刷半调人物，外形与配色全片统一",
-            "extra_prompt": "撕边纸质、网纹印刷、大胆色块，竖屏强构图",
+            "character_prompt": "Bóng người cắt dán tạp chí hoặc nhân vật bán sắc in ấn halftone, ngoại hình và phối màu toàn phim thống nhất",
+            "extra_prompt": "Giấy rách viền, in lưới halftone, mảng màu táo bạo, bố cục màn hình dọc mạnh mẽ",
         },
         "seedance_config": {
-            "motion_bias": "图层轻微滑动旋转，纸张沙沙感",
+            "motion_bias": "Các lớp hình khẽ trượt và xoay nhẹ, tiếng sột soạt chất liệu giấy",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "时髦轻电子"},
+        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "Điện tử thời thượng nhẹ nhàng"},
         "subtitle_config": {"font": "DisplaySans", "position": "center"},
         "sort_order": 40,
         "is_active": True,
@@ -706,12 +706,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "brand_clean",
-        "name": "极简品牌",
-        "description": "干净色块与强留白，适合产品解说与品牌短片。",
-        "category": ["商业", "极简"],
+        "name": "Thương hiệu tối giản",
+        "description": "Mảng màu sạch sẽ và khoảng trống lớn, phù hợp giải thích sản phẩm và phim ngắn thương hiệu.",
+        "category": ["Thương mại", "Tối giản"],
         "preview_cover": "/static/templates/covers/brand_clean.png",
-        "style_prefix": "极简品牌概念插画，大面积留白，有限色板（黑白+一强调色），几何构图，干净产品感，非写实摄影、非杂乱拼贴",
-        "negative_prompt": "杂乱纹理，霓虹赛博，血腥，儿童粉彩堆砌，写实照片，真人，水印，画面乱文字",
+        "style_prefix": "Tranh minh họa khái niệm thương hiệu tối giản, diện tích khoảng trống lớn, bảng màu giới hạn (trắng đen + 1 màu nhấn), bố cục hình học, cảm giác sản phẩm tinh tế, không nhiếp ảnh hiện thực, không cắt dán lộn xộn",
+        "negative_prompt": "Chất liệu lộn xộn, cyber neon, máu me, màu phấn trẻ em xếp đống, ảnh chụp hiện thực, người thật, watermark, chữ loạn trên hình",
         "default_ratio": "9:16",
         "shot_duration_min": 3,
         "shot_duration_max": 10,
@@ -719,14 +719,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.68,
-            "character_prompt": "极简几何化人物或手部剪影，配色固定，低细节面部，全片外形一致",
-            "extra_prompt": "大留白、有限色板、几何构图，竖屏品牌感",
+            "character_prompt": "Nhân vật hình học tối giản hoặc bóng bàn tay, phối màu cố định, khuôn mặt ít chi tiết, ngoại hình toàn phim nhất quán",
+            "extra_prompt": "Khoảng trống lớn, bảng màu giới hạn, bố cục hình học, cảm giác thương hiệu màn hình dọc",
         },
         "seedance_config": {
-            "motion_bias": "色块轻移，极慢推近，干净无抖动",
+            "motion_bias": "Mảng màu di chuyển nhẹ, từ từ tiến lại rất chậm, sạch sẽ không rung lắc",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "极简电子"},
+        "audio_config": {"voice_preset": "urban_editorial", "bgm_mood": "Điện tử tối giản"},
         "subtitle_config": {"font": "DisplaySans", "position": "center"},
         "sort_order": 42,
         "is_active": True,
@@ -734,12 +734,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "pixel_retro",
-        "name": "像素复古科普",
-        "description": "8-bit/16-bit 像素风，适合科技史与游戏化讲解。",
-        "category": ["复古", "像素"],
+        "name": "Pixel hoài cổ khoa học",
+        "description": "Phong cách pixel 8-bit/16-bit, phù hợp cho lịch sử công nghệ và giải thích dạng trò chơi.",
+        "category": ["Hoài cổ", "Pixel"],
         "preview_cover": "/static/templates/covers/pixel_retro.png",
-        "style_prefix": "复古像素画，16位有限色板，清晰像素块，简单游戏场景，无抗锯齿",
-        "negative_prompt": "平滑渐变，写实照片，模糊像素",
+        "style_prefix": "Tranh pixel hoài cổ, bảng màu giới hạn 16-bit, các khối pixel sắc nét, bối cảnh trò chơi đơn giản, không khử răng cưa",
+        "negative_prompt": "Dải chuyển màu mượt mà, ảnh chụp hiện thực, pixel bị nhòe mờ",
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
@@ -750,14 +750,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
-            "character_prompt": "16位像素小人操作员，坐在电脑前，有限色板，外形与调色全片不变",
-            "extra_prompt": "像素小人操作系统界面，清晰像素块，无抗锯齿，游戏关卡式场景",
+            "character_prompt": "Người thao tác tí hon pixel 16-bit, ngồi trước máy tính, bảng màu giới hạn, ngoại hình và tông màu toàn phim không đổi",
+            "extra_prompt": "Nhân vật pixel tí hon thao tác giao diện hệ thống, các khối pixel sắc nét, không khử răng cưa, bối cảnh dạng màn chơi game",
         },
         "seedance_config": {
-            "motion_bias": "逐帧点击与屏幕切换，轻微视差滚动",
+            "motion_bias": "Nhấp chuột từng khung hình và chuyển đổi màn hình, cuộn thị sai nhẹ",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "retro_host", "bgm_mood": "8位好奇"},
+        "audio_config": {"voice_preset": "retro_host", "bgm_mood": "Tò mò 8-bit"},
         "subtitle_config": {"font": "PixelFont", "position": "bottom"},
         "sort_order": 50,
         "is_active": True,
@@ -765,12 +765,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "retro_vhs",
-        "name": "复古 VHS",
-        "description": "磁带录像与扫描线质感，适合怀旧故事与年代感内容。",
-        "category": ["复古", "电影感"],
+        "name": "Băng từ VHS hoài cổ",
+        "description": "Chất cảm băng từ video và đường quét scanline, phù hợp cho câu chuyện hoài niệm và nội dung mang tính thời đại.",
+        "category": ["Hoài cổ", "Điện ảnh"],
         "preview_cover": "/static/templates/covers/retro_vhs.png",
-        "style_prefix": "复古 VHS 概念插画，轻微色差与扫描线暗示，1980–90s 色调，圆角电视框感构图，怀旧氛围，非写实照片、非现代超清UI",
-        "negative_prompt": "超清现代广告，赛博霓虹堆砌，写实照片，真人，儿童粉彩，水印，画面乱码文字",
+        "style_prefix": "Tranh minh họa khái niệm VHS hoài cổ, quang sai màu nhẹ và gợi ý đường quét scanline, tông màu thập niên 1980–90, bố cục khung tivi bo góc, bầu không khí hoài niệm, không ảnh chụp hiện thực, không UI siêu nét hiện đại",
+        "negative_prompt": "Quảng cáo hiện đại siêu nét, cyber neon xếp đống, ảnh chụp hiện thực, người thật, màu phấn trẻ em, watermark, chữ rác trên hình",
         "default_ratio": "16:9",
         "shot_duration_min": 3,
         "shot_duration_max": 12,
@@ -778,14 +778,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
-            "character_prompt": "怀旧风插画人物，年代感发型服装固定，轻微色差边缘，非照片，全片同一人设",
-            "extra_prompt": "扫描线暗示、轻微色差、80/90年代色调，怀旧构图",
+            "character_prompt": "Nhân vật minh họa phong cách hoài cổ, kiểu tóc trang phục mang tính thời đại cố định, viền quang sai màu nhẹ, không phải ảnh chụp, toàn phim cùng một thiết kế nhân vật",
+            "extra_prompt": "Gợi ý đường quét scanline, quang sai màu nhẹ, tông màu thập niên 80/90, bố cục hoài niệm",
         },
         "seedance_config": {
-            "motion_bias": "轻微磁带抖动感，慢推，色差微闪",
+            "motion_bias": "Cảm giác rung giật nhẹ của băng từ, đẩy chậm, viền màu chớp nhẹ",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "retro_host", "bgm_mood": "怀旧合成器"},
+        "audio_config": {"voice_preset": "retro_host", "bgm_mood": "Synth hoài cổ"},
         "subtitle_config": {"font": "SourceHanSans", "position": "bottom"},
         "sort_order": 52,
         "is_active": True,
@@ -793,12 +793,12 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "ink_guofeng",
-        "name": "水墨国风",
-        "description": "水墨留白与写意笔触，适合历史与文化短故事。",
-        "category": ["国风", "水墨"],
+        "name": "Thủy mặc cổ phong",
+        "description": "Thủy mặc chừa trắng và nét vẽ ý cảnh, phù hợp cho lịch sử và câu chuyện văn hóa ngắn.",
+        "category": ["Cổ phong", "Thủy mặc"],
         "preview_cover": "/static/templates/covers/ink_guofeng.png",
-        "style_prefix": "中国水墨写意插画，富有表现力的笔触，大量留白，诗意氛围，淡雅墨色，非写实摄影",
-        "negative_prompt": "写实照片，真人，真实人脸，霓虹，赛博朋克，日系动漫，欧美卡通，画面文字，字幕，水印",
+        "style_prefix": "Tranh minh họa thủy mặc tả ý, nét cọ giàu sức biểu cảm, khoảng trống chừa trắng lớn, bầu không khí thi vị, sắc mực thanh nhã, không nhiếp ảnh hiện thực",
+        "negative_prompt": "Ảnh chụp hiện thực, người thật, khuôn mặt người thật, neon, cyberpunk, anime Nhật, hoạt hình Âu Mỹ, chữ trên hình, phụ đề, watermark",
         "default_ratio": "9:16",
         "shot_duration_min": 4,
         "shot_duration_max": 12,
@@ -806,14 +806,14 @@ TEMPLATES: list[dict] = [
         "seedream_config": {
             "ref_images": [],
             "strength": 0.7,
-            "character_prompt": "水墨写意人物，简笔眉眼，宽袍或古装轮廓固定，墨色淡雅，全片同一人设",
-            "extra_prompt": "大量留白，淡墨渲染，诗意意境，竖屏顶部可叠字",
+            "character_prompt": "Nhân vật thủy mặc tả ý, nét vẽ giản lược lông mày ánh mắt, áo thụng hoặc trang phục cổ trang dáng cố định, sắc mực thanh nhã, toàn phim cùng một thiết kế nhân vật",
+            "extra_prompt": "Nhiều khoảng trống chừa trắng, loang mực thanh nhã, ý cảnh thi vị, màn hình dọc phía trên có thể chèn chữ",
         },
         "seedance_config": {
-            "motion_bias": "墨晕渗开与消散，缓慢升降镜头，薄雾飘动",
+            "motion_bias": "Vết mực loang ra và tan biến, máy quay nâng hạ chậm, sương mỏng lượn lờ",
             "character_consistency": True,
         },
-        "audio_config": {"voice_preset": "guqin_narrator", "bgm_mood": "古筝氛围"},
+        "audio_config": {"voice_preset": "guqin_narrator", "bgm_mood": "Cổ cầm cổ tranh"},
         "subtitle_config": {"font": "KaiTi", "position": "top"},
         "sort_order": 60,
         "is_active": True,

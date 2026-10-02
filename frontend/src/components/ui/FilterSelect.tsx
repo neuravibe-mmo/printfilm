@@ -16,7 +16,7 @@ type Props = {
   disabled?: boolean
 }
 
-/** 品牌风格自定义下拉，避免原生 option 的蓝色高亮 */
+/** Trình đơn thả xuống tùy chỉnh theo phong cách thương hiệu để tránh làm nổi bật màu xanh lam của các tùy chọn gốc */
 export default function FilterSelect({
   label,
   options,

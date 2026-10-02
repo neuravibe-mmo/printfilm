@@ -1,4 +1,4 @@
-"""从剧本抽取资产时组装 params（对齐 manju seedAssetsFromScript）。"""
+"""Tập hợp các thông số khi trích xuất nội dung từ tập lệnh (căn chỉnh với manjuseedAssetsFromScript)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any
 # DEFAULT_APPEARANCE_NAME Tạo hình mặc định khi trích xuất nhân vật từ kịch bản
 DEFAULT_APPEARANCE_NAME = "Tạo hình cơ bản"
 
-# DEFAULT_IMAGE_GENERATION 默认生图参数（空 modelId 走后台 TokenFree 默认）
+# DEFAULT_IMAGE_GENEration Tham số tạo hình ảnh mặc định (modelId trống sẽ chuyển sang mặc định TokenFree nền)
 DEFAULT_IMAGE_GENERATION = {
     "modelId": "",
     "aspectRatio": "3:4",
@@ -15,7 +15,7 @@ DEFAULT_IMAGE_GENERATION = {
 }
 
 
-# 组装道具/素材等命名图片资产 params（对齐 manju buildNamedImageParams）
+# Lắp ráp đạo cụ/tài liệu và các thông số nội dung hình ảnh được đặt tên khác (phù hợp với manju buildNamedImageParams)
 def build_named_image_params(prompt: str, aspect_ratio: str, *, kind: str = "prop") -> dict[str, Any]:
     text = (prompt or "").strip()
     return {
@@ -34,7 +34,7 @@ def build_named_image_params(prompt: str, aspect_ratio: str, *, kind: str = "pro
     }
 
 
-# 按 manju buildCharacterParams 规则拼接角色生图 prompt
+# Ghép các bản vẽ ký tự theo lời nhắc quy tắc manju buildCharacterParams
 def manju_join_character_prompt(character: dict[str, Any]) -> str:
     visual = str(character.get("visualImage") or "").strip()
     title = str(character.get("title") or "").strip()
@@ -51,7 +51,7 @@ def manju_join_character_prompt(character: dict[str, Any]) -> str:
     return ". ".join(part for part in parts if part)
 
 
-# 从摘要人物 dict 拼角色生图提示词正文（refresh/fallback 时可叙事化扩展）
+# Từ chính tả ký tự trừu tượng, đánh vần văn bản của từ nhắc ký tự (có thể được mở rộng theo cách tường thuật trong quá trình làm mới/dự phòng)
 def compose_character_visual_text(character: dict[str, Any]) -> str:
     visual = str(character.get("visualImage") or character.get("visualPrompt") or "").strip()
     if len(visual) >= 120:
@@ -73,7 +73,7 @@ def compose_character_visual_text(character: dict[str, Any]) -> str:
     return "。".join(s for s in segments if s)
 
 
-# 组装角色资产 params（形象名 + 生图提示词，对齐 manju buildCharacterParams）
+# Tập hợp các thông số nội dung ký tự (tên hình ảnh + từ nhắc vẽ, căn chỉnh với manju buildCharacterParams)
 def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
     prompt = manju_join_character_prompt(character)
     visual = str(character.get("visualImage") or "").strip() or prompt
@@ -99,8 +99,8 @@ def build_character_params(character: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-# 组装场景资产 params（对齐 manju buildSceneParams）
+# Tập hợp các thông số nội dung cảnh (căn chỉnh manju buildSceneParams)
 def build_scene_params(scene_name: str, story_type: str = "") -> dict[str, Any]:
-    _ = story_type  # manju 场景 seed 未使用 storyType，保留参数供 refresh 扩展
+    _ = story_type  # hạt giống cảnh manju không sử dụng storyType, các tham số được dành riêng cho việc mở rộng làm mới
     prompt = f"Bối cảnh: {scene_name.strip()}, bối cảnh điện ảnh chân thực, bố cục rõ ràng, phù hợp quay phim ngắn"
     return build_named_image_params(prompt, "16:9", kind="scene")

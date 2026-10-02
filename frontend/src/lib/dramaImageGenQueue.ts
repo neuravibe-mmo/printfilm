@@ -1,4 +1,4 @@
-/** 漫剧资产生图：提交后立刻轮询，成功后用新 URL 实时回显（不排队提交） */
+/** Tạo nội dung truyện tranh: thăm dò ý kiến ngay sau khi gửi và sử dụng URL mới để phản hồi trong thời gian thực sau khi thành công (không phải xếp hàng để gửi) */
 import { dramaApi, type DramaAsset } from '../api/drama'
 import type { ImageGenerationOptions } from './dramaGenerationOptions'
 import { syncImageJobToUnified } from './dramaGenQueue'
@@ -26,9 +26,9 @@ type EnqueueInput = {
   assetType?: string
   prompt: string
   options?: Partial<ImageGenerationOptions>
-  /** 仅恢复轮询（后端已在 generating，不再重复 POST） */
+  /** Chỉ tiếp tục bỏ phiếu (phần phụ trợ đã được tạo, POST sẽ không được lặp lại) */
   resumeOnly?: boolean
-  /** 入队/状态变化时回写资产（用于 UI 即时显示 generating / 新图） */
+  /** Ghi lại nội dung khi xếp hàng/thay đổi trạng thái (được sử dụng để tạo hiển thị thời gian thực trên giao diện người dùng/hình ảnh mới) */
   onAssetUpdate?: (asset: DramaAsset) => void
 }
 
@@ -41,21 +41,21 @@ type InternalJob = DramaImageGenJob & {
   reject: (err: Error) => void
 }
 
-/* 轮询可多路并行；提交不再限流排队，点了就 POST */
+/* Việc bỏ phiếu có thể được thực hiện song song trên nhiều kênh; bài gửi không còn bị giới hạn và xếp hàng đợi, chỉ cần nhấp và ĐĂNG */
 const MAX_POLL_CONCURRENT = 12
 const DONE_RETENTION_MS = 45_000
 const POLL_INTERVAL_MS = 1500
 const POLL_TIMEOUT_MS = 10 * 60 * 1000
 
-/** 对外暴露（文案用） */
+/** Tiếp xúc với thế giới bên ngoài (để viết quảng cáo) */
 export const DRAMA_IMAGE_GEN_MAX_CONCURRENT = MAX_POLL_CONCURRENT
 
 /*
- * jobs 本地队列（UI + 轮询）
- * cachedSnapshot useSyncExternalStore 快照
- * listeners 订阅
- * pollingCount 正在 waitForAssetImage 的数量
- * pumping 是否已调度 poll pump
+ * hàng đợi công việc cục bộ (UI + bỏ phiếu)
+ * cachedSnapshot useSyncExternalStore snapshot
+ * người nghe đăng ký
+ * pollingCount Số lượng waitForAssetImage
+ * bơm Bơm thăm dò ý kiến đã được lên lịch chưa?
  */
 let jobs: InternalJob[] = []
 const EMPTY_SNAPSHOT: DramaImageGenJob[] = []
@@ -64,7 +64,7 @@ const listeners = new Set<() => void>()
 let pollingCount = 0
 let pumping = false
 
-// 将内部 job 转为对外结构
+// Chuyển đổi công việc nội bộ sang cấu trúc bên ngoài
 function toPublicJob(job: InternalJob): DramaImageGenJob {
   return {
     id: job.id,
@@ -81,7 +81,7 @@ function toPublicJob(job: InternalJob): DramaImageGenJob {
   }
 }
 
-// 两个快照内容是否一致
+// Nội dung của hai ảnh chụp nhanh có nhất quán không?
 function snapshotsEqual(a: DramaImageGenJob[], b: DramaImageGenJob[]): boolean {
   if (a === b) return true
   if (a.length !== b.length) return false
@@ -100,7 +100,7 @@ function snapshotsEqual(a: DramaImageGenJob[], b: DramaImageGenJob[]): boolean {
   return true
 }
 
-// 清理过期完成项
+// Dọn dẹp các mục đã hoàn thành hết hạn
 function pruneFinished() {
   const now = Date.now()
   jobs = jobs.filter((job) => {
@@ -110,7 +110,7 @@ function pruneFinished() {
   })
 }
 
-// 重建并缓存对外快照
+// Xây dựng lại và lưu vào bộ nhớ đệm các ảnh chụp nhanh bên ngoài
 function refreshSnapshot() {
   pruneFinished()
   const next = jobs.length === 0 ? EMPTY_SNAPSHOT : jobs.map((job) => toPublicJob(job))
@@ -119,7 +119,7 @@ function refreshSnapshot() {
   }
 }
 
-// 通知订阅者，并同步到统一生成队列
+// Thông báo cho thuê bao và đồng bộ vào hàng đợi thế hệ thống nhất
 function emit() {
   refreshSnapshot()
   listeners.forEach((listener) => listener())
@@ -138,13 +138,13 @@ function emit() {
   }
 }
 
-// 读取队列快照
+// Đọc ảnh chụp nhanh hàng đợi
 export function getDramaImageGenQueue(): DramaImageGenJob[] {
   refreshSnapshot()
   return cachedSnapshot
 }
 
-// 某资产是否忙
+// Tài sản có bận không?
 export function isDramaAssetImageBusy(assetId: number): boolean {
   return jobs.some(
     (job) =>
@@ -152,12 +152,12 @@ export function isDramaAssetImageBusy(assetId: number): boolean {
   )
 }
 
-// 当前排队 + 进行中数量
+// Hàng đợi hiện tại + số đang được xử lý
 export function getDramaImageGenActiveCount(): number {
   return jobs.filter((job) => job.status === 'queued' || job.status === 'running').length
 }
 
-// 订阅队列变化
+// Đăng ký thay đổi hàng đợi
 export function subscribeDramaImageGenQueue(listener: () => void): () => void {
   listeners.add(listener)
   return () => {
@@ -165,26 +165,26 @@ export function subscribeDramaImageGenQueue(listener: () => void): () => void {
   }
 }
 
-// 生成本地任务 id
+// Tạo id tác vụ cục bộ
 function makeJobId() {
   return `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-// 读取资产 generation 状态
+// Đọc trạng thái tạo tài sản
 function readGenerationStatus(asset: DramaAsset): string {
   const gen = (asset.params || {}).generation as { status?: string } | undefined
   return String(gen?.status || '')
 }
 
-// 资产当前预览 URL
+// URL xem trước hiện tại của nội dung
 function assetMediaUrl(asset: DramaAsset): string {
   return String(asset.url || asset.cover || '').trim()
 }
 
 /**
- * 轮询直到本次生图真正结束。
- * 有旧图时必须见到 queued/generating，或 URL 相对基线变化，避免秒回旧图当成功。
- * 必须先判 failed/cancelled：重试失败时旧 url/cover 仍在，不能当成功。
+ * Bỏ phiếu cho đến khi thực sự kết thúc lần sinh nở này.
+ * Khi có hình ảnh cũ, bạn phải xem các thay đổi được xếp hàng/tạo hoặc URL so với đường cơ sở, để tránh khôi phục hình ảnh cũ ngay lập tức khi thành công.
+ * Trước tiên phải xác định thất bại/bị hủy: khi thử lại không thành công, url/bìa cũ vẫn còn đó và không thể coi là thành công.
  */
 async function waitForAssetImage(
   projectId: number,
@@ -233,7 +233,7 @@ async function waitForAssetImage(
       return latest
     }
 
-    // 仍是旧图且未进入过 in-flight：继续等（POST 后状态可能尚未可见）
+    // Vẫn là ảnh cũ và chưa đưa lên máy bay: tiếp tục chờ (trạng thái có thể không hiển thị sau POST)
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
   }
   throw new Error('生图超时，请刷新后重试')
@@ -241,7 +241,7 @@ async function waitForAssetImage(
 
 const waitingPoll: InternalJob[] = []
 
-// 有限并发轮询后端结果
+// Kết quả phụ trợ bỏ phiếu đồng thời có giới hạn
 async function pollJob(job: InternalJob) {
   pollingCount += 1
   try {
@@ -279,7 +279,7 @@ async function pollJob(job: InternalJob) {
   }
 }
 
-// 调度轮询槽位
+// Lên lịch bỏ phiếu
 function pumpPoll() {
   if (pumping) return
   pumping = true
@@ -295,7 +295,7 @@ function pumpPoll() {
   })
 }
 
-// 立即 POST 入队（不限流），再进入轮询
+// POST ngay lập tức để tham gia hàng đợi (không có giới hạn hiện tại), sau đó tham gia bỏ phiếu
 async function submitJob(job: InternalJob) {
   try {
     if (!job.resumeOnly) {
@@ -334,8 +334,8 @@ async function submitJob(job: InternalJob) {
 }
 
 /**
- * 将资产生图加入队列：立刻 POST 到后端，再本地轮询结果。
- * 同资产已在排队/生成中时复用同一 Promise（避免重复打上游）。
+ * Thêm biểu đồ nội dung vào hàng đợi: POST vào phần phụ trợ ngay lập tức, sau đó thăm dò kết quả cục bộ.
+ * Sử dụng lại cùng một Lời hứa khi cùng một nội dung đã được xếp hàng/được tạo (để tránh bị ngược dòng nhiều lần).
  */
 export function enqueueDramaImageGen(input: EnqueueInput): Promise<DramaAsset> {
   const existing = jobs.find(
@@ -384,7 +384,7 @@ export function enqueueDramaImageGen(input: EnqueueInput): Promise<DramaAsset> {
     }
     jobs = [...jobs, job]
     emit()
-    // 先拉一次当前图作基线，再提交/轮询，避免旧图被当成成功
+    // Trước tiên hãy lấy ảnh hiện tại làm đường cơ sở, sau đó gửi/bỏ phiếu để ngăn ảnh cũ được coi là thành công.
     void (async () => {
       try {
         const list = await dramaApi.listAssets(input.projectId)
@@ -404,8 +404,8 @@ export function enqueueDramaImageGen(input: EnqueueInput): Promise<DramaAsset> {
 }
 
 /**
- * 从资产列表恢复「后端仍在 generating」的任务（刷新页面后调用）。
- * 不再重复 POST，只接上轮询与队列 UI。
+ * Tiếp tục tác vụ "phụ trợ vẫn đang tạo" từ danh sách tài sản (được gọi sau khi làm mới trang).
+ * Không còn lặp lại POST nữa, chỉ kết nối giao diện người dùng bỏ phiếu và xếp hàng.
  */
 export function resumeDramaImageGensFromAssets(
   projectId: number,
@@ -414,7 +414,7 @@ export function resumeDramaImageGensFromAssets(
 ): void {
   for (const asset of assets) {
     if (asset.project_id !== projectId) continue
-    /* 视频资产走 Seedance 队列，避免刷新后误 POST 生图 */
+    /* Nội dung video sẽ được đưa vào hàng đợi Seedance để tránh việc vô tình ĐĂNG hình ảnh sau khi làm mới. */
     if ((asset.type || '').toLowerCase() === 'video') continue
     const status = readGenerationStatus(asset)
     if (status !== 'generating' && status !== 'queued') continue
@@ -428,12 +428,12 @@ export function resumeDramaImageGensFromAssets(
       resumeOnly: true,
       onAssetUpdate,
     }).catch(() => {
-      /* 面板会显示失败；页面层可再 toast */
+      /* Bảng điều khiển sẽ hiển thị lỗi; lớp trang có thể được nướng lại */
     })
   }
 }
 
-// 清空已结束项
+// Xóa các mục đã hoàn thành
 export function clearFinishedDramaImageGenJobs() {
   jobs = jobs.filter((job) => job.status === 'queued' || job.status === 'running')
   emit()

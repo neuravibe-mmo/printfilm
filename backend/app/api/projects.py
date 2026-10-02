@@ -56,7 +56,7 @@ router = APIRouter(tags=["projects"])
 
 
 def _demote_after_edit(project: Project) -> None:
-    """改镜头/配乐后作废成片，并按素材把终态打回 script/assets/videos/compose。"""
+    """Sau khi thay đổi camera/nhạc phim, nó bị loại bỏ và chuyển thành phim, trạng thái cuối cùng được trả về script/assets/videos/compose theo tài liệu."""
     project.final_video_url = None
     if project.status not in {
         ProjectStatus.DONE,
@@ -85,7 +85,7 @@ async def get_voices() -> list[dict]:
 
 @router.get("/media-models")
 async def get_media_models() -> dict:
-    """科普前台可选图/视频模型目录（TokenFree 已勾选模型）。"""
+    """Danh mục mô hình hình ảnh/video tùy chọn tại quầy lễ tân khoa học phổ biến (TokenFree đã chọn các mô hình)."""
     from app.services.media_catalog import catalog_payload
 
     return catalog_payload()
@@ -165,7 +165,7 @@ async def _get_owned_project(db: AsyncSession, project_id: int, user: User) -> P
 
 
 def _image_ext_from_magic(raw: bytes) -> str:
-    """按文件头识别图片后缀；无法识别则返回空。"""
+    """Xác định hậu tố hình ảnh dựa trên tiêu đề tệp; nếu không thể xác định được, nó sẽ trả về trống."""
     if raw.startswith(b"\xff\xd8\xff"):
         return ".jpg"
     if raw.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -177,7 +177,7 @@ def _image_ext_from_magic(raw: bytes) -> str:
     return ""
 
 
-# 整片级任务占用项目时，禁止再开侧任务（含 cancel_requested，流水线可能仍在写）
+# Khi toàn bộ nhiệm vụ cấp chip chiếm giữ dự án, việc bắt đầu các nhiệm vụ phụ bị cấm (bao gồm cả cancel_requested, đường ống có thể vẫn đang ghi)
 _PROJECT_WIDE_TASK_TYPES = {
     "project_pipeline",
     "project_compose_only",
@@ -187,7 +187,7 @@ _PROJECT_WIDE_TASK_TYPES = {
 
 
 def _ensure_side_task_allowed(project: Project) -> None:
-    """整片任务未终态前拒绝侧任务；单镜重绘可并行，不因残留 IMAGING 卡住。"""
+    """Nhiệm vụ phụ bị từ chối trước khi toàn bộ nhiệm vụ được hoàn thành; việc vẽ lại ống kính đơn có thể được thực hiện song song và sẽ không bị kẹt do HÌNH ẢNH còn sót lại."""
     for task in getattr(project, "active_tasks", []) or []:
         if str(getattr(task, "status", "") or "") not in ACTIVE_TASK_STATUSES:
             continue
@@ -195,7 +195,7 @@ def _ensure_side_task_allowed(project: Project) -> None:
             raise HTTPException(status_code=409, detail="整片生成进行中，请稍后")
 
 
-# COMPOSING 且无进行中任务时视为拼接已失败卡住，允许重新发起
+# COMPOSING Khi không có tác vụ nào đang diễn ra, việc ghép nối được coi là không thành công và bị kẹt và được phép bắt đầu lại.
 async def _ensure_compose_allowed(db: AsyncSession, user: User, project: Project) -> None:
     active = await list_active_tasks_for_owner(db, user.id, project_id=project.id)
     if active:
@@ -209,10 +209,10 @@ async def _ensure_compose_allowed(db: AsyncSession, user: User, project: Project
     }
     if project.status in running:
         raise HTTPException(status_code=409, detail="生成进行中，请稍后")
-    # COMPOSING / FAILED / VIDEO_READY / DONE 等均可重试拼接（无 active task）
+    # COMPOSING / FAILED / VIDEO_READY / DONE, v.v. có thể được thử lại để ghép nối (không có tác vụ hoạt động)
 
 
-# 用统一任务中心投影项目运行态，避免前端只依赖旧 Project.status。
+# Sử dụng trung tâm tác vụ hợp nhất để chiếu trạng thái đang chạy của dự án nhằm tránh việc giao diện người dùng chỉ dựa vào Project.status cũ.
 def _project_runtime_view(project: Project) -> tuple[str, int, str | None]:
     active_tasks = list(getattr(project, "active_tasks", []) or [])
     if not active_tasks:
@@ -242,7 +242,7 @@ def _project_runtime_view(project: Project) -> tuple[str, int, str | None]:
     return str(project.status), int(project.progress or 0), project.error_msg
 
 
-# 为科普项目/镜头创建统一任务，由平台调度器自动执行
+# Tạo các nhiệm vụ thống nhất cho các dự án/ống kính khoa học phổ biến, được bộ lập lịch nền tảng thực hiện tự động
 async def _create_kepu_task(
     db: AsyncSession,
     user: User,
@@ -275,7 +275,7 @@ async def _create_kepu_task(
     return int(task.id)
 
 
-# 批量读取项目活动任务，避免列表页逐项查询。
+# Đọc các nhiệm vụ hoạt động dự án theo lô để tránh truy vấn từng mục trên trang danh sách.
 async def list_active_tasks_for_user_rows(
     db: AsyncSession,
     user_id: int,
@@ -312,7 +312,7 @@ async def create_project(
         pipeline_mode=body.pipeline_mode,
         output_ratio=(body.output_ratio or "").strip(),
         voice_id=(body.voice_id or "").strip(),
-        # 空则生成时读后台模板；不在创建时拷贝，避免后台改模板对已有项目不生效
+        # Nếu trống, hãy đọc mẫu nền khi tạo; không sao chép khi tạo, để tránh việc thay đổi mẫu nền không ảnh hưởng đến các dự án hiện có
         style_prompt=(body.style_prompt or "").strip(),
         character_prompt=(body.character_prompt or "").strip(),
         extra_prompt=(body.extra_prompt or "").strip(),
@@ -587,7 +587,7 @@ async def update_project(
         tpl = await db.get(Template, data["template_id"])
         if not tpl or not tpl.is_active:
             raise HTTPException(status_code=400, detail="无效模板")
-        # 换模板后清空项目覆盖，后续生成跟随后台模板；请求显式带提示词则保留
+        # Xóa phạm vi dự án sau khi thay đổi mẫu và thế hệ tiếp theo sẽ tuân theo mẫu nền; nếu yêu cầu rõ ràng có chứa các từ nhắc nhở thì yêu cầu đó sẽ được giữ lại.
         if "style_prompt" not in data:
             data["style_prompt"] = ""
         if "character_prompt" not in data:
@@ -711,7 +711,7 @@ async def generate_project(
     shots = list(project.shots or [])
     phase = "script" if (restart or not shots) else resolve_kepu_billing_phase(project)
     if phase == "compose":
-        # 成片走专用 compose 任务，避免 project_pipeline 重复预扣整片视频
+        # Sử dụng các tác vụ soạn thảo chuyên dụng để tránh project_pipeline liên tục giữ lại toàn bộ video
         raise HTTPException(status_code=409, detail="素材已齐，请点击合成成片")
     if restart or not shots:
         # First run / restart — actually splitting storyboard
@@ -848,7 +848,7 @@ async def create_shot(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Shot:
-    """在片尾追加一镜空白分镜。"""
+    """Thêm một storyboard trống ở cuối phim."""
     project = await _get_owned_project(db, project_id, user)
     _ensure_side_task_allowed(project)
     shots = sorted(project.shots, key=lambda s: s.shot_no)
@@ -891,7 +891,7 @@ async def reorder_shots(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Project:
-    """按 shot_ids 重排镜号。"""
+    """Sắp xếp lại số lượt bắn theo shot_ids."""
     project = await _get_owned_project(db, project_id, user)
     _ensure_side_task_allowed(project)
     existing = {s.id: s for s in project.shots}
@@ -912,7 +912,7 @@ async def upload_shot_image(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Project:
-    """上传替换本镜画面。"""
+    """Tải lên hình ảnh phản chiếu thay thế."""
     project = await _get_owned_project(db, project_id, user)
     _ensure_side_task_allowed(project)
     shot = next((s for s in project.shots if s.id == shot_id), None)
@@ -979,7 +979,7 @@ async def update_shot(
 
         bgm = clip_shot_bgm(getattr(project, "bgm_lock", None) or shot.bgm_mood)
         script = str(data["segment_script"])
-        # 弹窗旁白/首帧优先写回脚本，避免保存时被旧脚本盖掉
+        # Tường thuật bật lên/khung hình đầu tiên được ghi lại vào tập lệnh trước để tránh bị ghi đè bởi tập lệnh cũ khi lưu.
         if "narration" in data and data["narration"] is not None:
             script = replace_narration_in_script(script, str(data["narration"]))
         if "img_prompt" in data and data["img_prompt"] is not None:
@@ -1002,8 +1002,8 @@ async def update_shot(
         )
     if "bgm_mood" in data and data["bgm_mood"] is not None:
         data["bgm_mood"] = clip_shot_bgm(str(data["bgm_mood"]))
-    # 旁白文本真实变化（直接改旁白或脚本规范化带出的新旁白）时作废整片连贯音轨：
-    # 缓存只看文件存在性不比对文本，不删会导致旧配音配新字幕。
+    # Khi văn bản tường thuật thực sự thay đổi (thay đổi trực tiếp tường thuật hoặc tường thuật mới do chuẩn hóa kịch bản đưa ra), toàn bộ đoạn âm thanh liên tục sẽ bị vô hiệu:
+    # Bộ đệm chỉ kiểm tra sự tồn tại của tệp và không so sánh văn bản. Nếu không xóa sẽ dẫn đến lồng tiếng cũ và phụ đề mới.
     new_narration = data.get("narration")
     audio_dirty = (
         new_narration is not None
@@ -1016,7 +1016,7 @@ async def update_shot(
         shot.image_url = None
         shot.video_url = None
         shot.last_frame_url = None
-        shot.video_skip_reason = None  # 画面变更，隐私拦截结论失效
+        shot.video_skip_reason = None  # Màn hình thay đổi và kết luận chặn quyền riêng tư trở nên không hợp lệ.
         shot.status = ShotStatus.PENDING
     elif (
         "video_prompt" in data
@@ -1032,7 +1032,7 @@ async def update_shot(
         full_narration.unlink(missing_ok=True)
         for sibling in project.shots:
             sibling.audio_url = None
-    # 统一按素材进度把终态打回对应阶段并作废成片（本端点此前漏调，状态会卡在 DONE）
+    # Thống nhất đưa trạng thái cuối cùng về giai đoạn tương ứng theo tiến độ vật chất và hủy nó vào phim (điểm cuối này đã bị bỏ qua trước đó và trạng thái sẽ bị kẹt ở DONE)
     _demote_after_edit(project)
     shot.version += 1
     await db.commit()

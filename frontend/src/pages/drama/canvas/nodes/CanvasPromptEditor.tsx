@@ -1,4 +1,4 @@
-/** 画布提示词：contentEditable，@asset 显示为带小图的标签 */
+/** Từ nhắc canvas: contentEditable, @asset được hiển thị dưới dạng nhãn có hình ảnh nhỏ */
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { resolveDramaMediaUrl } from '../../../../api/drama'
 import {
@@ -33,7 +33,7 @@ type MentionUi = {
 
 const EMPTY_MENTION: MentionUi = { open: false, query: '', activeIndex: 0 }
 
-/** 把选中资产写入正文并渲染小图标签 */
+/** Viết nội dung đã chọn vào văn bản và hiển thị nhãn hình thu nhỏ */
 function applyMentionToken(content: string, token: string) {
   const trimmed = content.replace(/\s+$/u, '')
   if (/@(?!(?:asset|duration):\d+)[^\s@]*$/.test(trimmed)) {
@@ -42,7 +42,7 @@ function applyMentionToken(content: string, token: string) {
   return trimmed ? `${trimmed} ${token} ` : `${token} `
 }
 
-/** 可编辑提示词：插入 @ 后渲染资产小图标签 */
+/** Từ nhắc nhở có thể chỉnh sửa: chèn @ rồi hiển thị nhãn hình thu nhỏ của nội dung */
 export function CanvasPromptEditor({
   value,
   placeholder,
@@ -62,7 +62,7 @@ export function CanvasPromptEditor({
     [mentionItems],
   )
 
-  /** 把 @asset:id 解析成 chip 数据 */
+  /** Phân tích cú pháp @asset:id vào dữ liệu chip */
   const resolveChip = useCallback(
     (assetId: number) => {
       const item = byAssetId.get(assetId)
@@ -76,7 +76,7 @@ export function CanvasPromptEditor({
     [byAssetId],
   )
 
-  /** 把 value 刷到编辑器 DOM */
+  /** Xoá giá trị vào trình soạn thảo DOM */
   const paint = useCallback(
     (next: string) => {
       const editor = editorRef.current
@@ -94,12 +94,12 @@ export function CanvasPromptEditor({
     paintedRef.current = true
   }, [paint, value])
 
-  /** 关闭 @ 弹层 */
+  /** Đóng @ lớp đàn hồi */
   const closeMention = useCallback(() => {
     setMention(EMPTY_MENTION)
   }, [])
 
-  /** 序列化编辑器并回写 */
+  /** Trình soạn thảo nối tiếp và viết lại */
   const emitContent = useCallback(() => {
     const editor = editorRef.current
     if (!editor) return ''
@@ -109,7 +109,7 @@ export function CanvasPromptEditor({
     return next
   }, [onChange])
 
-  /** 根据光标前正文刷新 @ 弹层 */
+  /** Làm mới lớp bật lên @ dựa trên văn bản trước con trỏ */
   const syncMention = useCallback(() => {
     const editor = editorRef.current
     if (!editor || disabled || !allowMention) {
@@ -128,7 +128,7 @@ export function CanvasPromptEditor({
     })
   }, [allowMention, closeMention, disabled])
 
-  /** 插入资产小图标签（优先替换光标处的 @，避免整段重绘后无法再触发） */
+  /** Chèn nhãn hình thu nhỏ của nội dung (trước tiên thay thế @ tại con trỏ để tránh không thể kích hoạt toàn bộ phần sau khi vẽ lại) */
   const insertMention = useCallback(
     (item: CanvasMentionItem) => {
       const editor = editorRef.current

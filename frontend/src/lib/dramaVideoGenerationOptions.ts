@@ -1,4 +1,4 @@
-/** 漫剧画布 / 分集：视频生成选项（模型列表来自后台 TokenFree 目录） */
+/** Comic Canvas/Episode: Tùy chọn tạo video (danh sách mô hình lấy từ thư mục TokenFree phụ trợ) */
 
 export type VideoGenerationModelId = string
 
@@ -26,13 +26,13 @@ export const DEFAULT_VIDEO_GENERATION_OPTIONS: VideoGenerationOptions = {
   duration_sec: 8,
 }
 
-/** 夹紧时长到允许区间 */
+/** Thời gian kẹp đạt phạm vi cho phép */
 export function clampVideoDuration(sec: number) {
   const n = Math.round(Number(sec) || DEFAULT_VIDEO_GENERATION_OPTIONS.duration_sec)
   return Math.min(VIDEO_DURATION_MAX, Math.max(VIDEO_DURATION_MIN, n))
 }
 
-/** 格式化比例 · 清晰度 */
+/** Tỷ lệ định dạng · Rõ ràng */
 export function formatVideoOutputLabel(
   aspectRatio: VideoAspectRatio,
   resolution: VideoResolution,
@@ -40,18 +40,18 @@ export function formatVideoOutputLabel(
   return `${aspectRatio} · ${resolution}`
 }
 
-/** 解析模型展示名（无目录时回退 id） */
+/** Phân tích tên hiển thị mô hình (dự phòng id khi không có thư mục) */
 export function getVideoModelLabel(modelId: string | undefined | null) {
   const id = (modelId || '').trim()
   return id || '视频模型'
 }
 
-/** 任意非空字符串均可作为视频模型 id（后台 TokenFree 目录） */
+/** Bất kỳ chuỗi nào không trống đều có thể được sử dụng làm id mô hình video (thư mục TokenFree phụ trợ) */
 export function isVideoGenerationModelId(id: string): id is VideoGenerationModelId {
   return Boolean((id || '').trim())
 }
 
-/** 从节点 data 恢复视频选项 */
+/** Khôi phục tùy chọn video từ dữ liệu nút */
 export function readVideoGenerationOptions(raw: unknown): VideoGenerationOptions {
   const row = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
   const modelId = String(row.model_id || '').trim()

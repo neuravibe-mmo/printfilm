@@ -15,7 +15,7 @@ type AdminConfirmDialogProps = {
   onConfirm: () => void;
 };
 
-// 管理端确认弹窗（删除等二次确认）
+// Cửa sổ bật lên xác nhận bên quản lý (xác nhận phụ như xóa)
 export function AdminConfirmDialog({
   open,
   title,

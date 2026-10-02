@@ -7,7 +7,7 @@ type Props = {
   children?: string
 }
 
-/** 内联「去充值」快速跳转 */
+/** Nhảy nhanh "đi nạp tiền" nội tuyến */
 export default function BillingTopupLink({ className = 'pf-link pf-billing-topup-link', children }: Props) {
   const { t } = useI18n()
   const label = children || t('billing.goToTopup')

@@ -1,4 +1,4 @@
-/** 画面风格选择：触发器 + Modal 卡片网格 */
+/** Lựa chọn kiểu màn hình: Kích hoạt + Lưới thẻ phương thức */
 import { useState } from 'react'
 import { BookOpen, ChevronDown } from 'lucide-react'
 import { DramaImageStyleCardGrid } from '../../components/drama/DramaImageStyleCardGrid'
@@ -11,17 +11,17 @@ type Props = {
   value: ImageStyleId | ''
   onChange: (id: ImageStyleId | '') => void
   disabled?: boolean
-  /** toolbar：列表页胶囊按钮；field：大纲页带缩略图字段 */
+  /** thanh công cụ: nút trang danh sách; trường: trang phác thảo với trường hình thu nhỏ */
   variant?: 'toolbar' | 'field'
-  /** field 变体左侧文案，默认「项目风格」 */
+  /** Bản sao bên trái của biến thể trường, "kiểu dự án" mặc định */
   fieldLabel?: string
-  /** Modal 标题 */
+  /** Tiêu đề phương thức */
   title?: string
-  /** 未选时的触发文案 */
+  /** Kích hoạt sao chép khi không được chọn */
   emptyLabel?: string
 }
 
-// 渲染风格库触发器与画面风格 Modal
+// Trình kích hoạt thư viện kiểu kết xuất và kiểu hình ảnh Modal
 export function DramaImageStyleModal({
   value,
   onChange,
@@ -40,7 +40,7 @@ export function DramaImageStyleModal({
     styleLabel || emptyLabel || (variant === 'field' ? t('drama.styleModal.select') : t('drama.styleModal.library'))
   const active = Boolean(value) || open
 
-  // 选中风格并关闭
+  // Chọn kiểu và đóng nó
   function select(id: ImageStyleId | '') {
     onChange(id)
     setOpen(false)

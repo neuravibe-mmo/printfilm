@@ -1,4 +1,4 @@
-"""漫剧工作流类型：script（大纲→资产→分集）与 canvas（自由画布）。"""
+"""Các loại quy trình làm việc truyện tranh: kịch bản (phác thảo → nội dung → tập) và canvas (canvas miễn phí)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ CANVAS_TITLE_MARKER = "自由画布"
 def resolve_drama_workflow(project: DramaProject) -> str:
     """
     解析项目工作流。
-    优先读 params.workflow；兼容旧自由画布项目（标题/占位创意文案）。
+    优先读 params.workflow；兼容旧自由画布项目（Tiêu đề/占位创意文案）。
     """
     params = project.params if isinstance(project.params, dict) else {}
     raw = str(params.get("workflow") or "").strip().lower()
@@ -39,7 +39,7 @@ def build_project_params(
     image_style_id: str,
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """组装创建项目时写入的 params。"""
+    """Tập hợp các thông số được viết khi tạo dự án."""
     wf = workflow if workflow in ("canvas", "script") else "script"
     return {
         **(extra or {}),

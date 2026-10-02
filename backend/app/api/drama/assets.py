@@ -55,7 +55,7 @@ async def list_assets(
     )
     if project_id is not None:
         await get_owned_drama_project(db, project_id, user)
-        # 进入资产库时顺带合并同名重复，并清掉误入角色的音色名
+        # Khi vào thư viện nội dung, hãy hợp nhất các bản sao có cùng tên và xóa các tên âm thanh bị nhập nhầm vào ký tự.
         removed = await merge_duplicate_library_assets(db, int(project_id))
         purged = await purge_voice_like_character_assets(db, int(project_id))
         if removed or purged:
@@ -80,7 +80,7 @@ async def create_asset(
     user: User = Depends(get_current_user),
 ) -> DramaAssetOut:
     await get_owned_drama_project(db, body.project_id, user)
-    # 同类型同名已存在则直接返回，避免手动/并发再造重复卡
+    # Nếu đã tồn tại loại thẻ có cùng tên thì sẽ được trả lại trực tiếp để tránh việc sao chép thủ công/đồng thời các thẻ trùng lặp.
     want_name = _normalize_asset_name(body.name or "")
     if want_name:
         want_key = _asset_dedupe_key(body.type or "", want_name)
@@ -113,7 +113,7 @@ async def create_asset(
 
 
 def _merge_asset_params(prev: dict | None, incoming: dict | None) -> dict:
-    """合并资产 params：客户端全量写回时保留 image_versions / 进行中的 generation。"""
+    """Hợp nhất các thông số nội dung: giữ lại image_versions / thế hệ đang diễn ra khi khách hàng ghi lại tất cả."""
     base = dict(prev or {}) if isinstance(prev, dict) else {}
     patch = dict(incoming or {}) if isinstance(incoming, dict) else {}
     out = {**base, **patch}
@@ -121,7 +121,7 @@ def _merge_asset_params(prev: dict | None, incoming: dict | None) -> dict:
     prev_gen = base.get("generation") if isinstance(base.get("generation"), dict) else None
     prev_status = str((prev_gen or {}).get("status") or "").lower()
     if prev_status in {"queued", "running", "generating"}:
-        # 生图进行中禁止被陈旧客户端状态覆盖
+        # Không được phép ghi đè trạng thái máy khách cũ trong khi hình ảnh đang được tạo.
         out["generation"] = prev_gen
 
     prev_vers = base.get("image_versions")
@@ -228,7 +228,7 @@ async def upload_asset_media(
         else:
             raise HTTPException(status_code=400, detail="仅支持 JPG / PNG / WebP / GIF")
 
-    # 直接检查上传临时文件大小，避免先把整文件读入内存。
+    # Kiểm tra trực tiếp kích thước tệp tạm thời tải lên để tránh đọc toàn bộ tệp vào bộ nhớ trước.
     upload_fp = file.file
     try:
         upload_fp.seek(0, 2)
@@ -246,7 +246,7 @@ async def upload_asset_media(
         f"asset_{asset.id}_{uuid.uuid4().hex[:10]}{ext}"
     )
     try:
-        # OSS SDK 为同步阻塞 IO，放到线程池里避免阻塞事件循环。
+        # OSS SDK chặn IO một cách đồng bộ và đặt nó vào nhóm luồng để tránh chặn vòng lặp sự kiện.
         url = await run_in_threadpool(
             oss_svc.upload_fileobj,
             upload_fp,
@@ -282,7 +282,7 @@ async def activate_image_version(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DramaAssetOut:
-    """将资产形象历史版本设为当前。"""
+    """Đặt phiên bản lịch sử hình ảnh nội dung thành hiện tại."""
     from app.services.drama.generation import activate_asset_image_version
 
     result = await db.execute(
@@ -341,7 +341,7 @@ async def seed_assets(
     project = await get_owned_drama_project(db, project_id, user, with_script=True)
     heavy = bool(refresh_prompts or reextract_props)
 
-    # 行锁：防止空库并发 seed 插入同名角色
+    # Khóa hàng: Ngăn chặn việc chèn hạt giống đồng thời các vai trò có cùng tên trong các thư viện trống
     locked = (
         await db.execute(
             select(DramaProject).where(DramaProject.id == project.id).with_for_update()

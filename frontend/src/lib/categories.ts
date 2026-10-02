@@ -20,14 +20,14 @@ export const CATEGORY_ORDER = [
   '图文',
 ]
 
-/** zh中文内部键 → 当前语言显示标签 */
+/** zhKhóa nội bộ tiếng Trung → Nhãn hiển thị ngôn ngữ hiện tại */
 export function getCategoryLabel(key: string): string {
   const locale = getActiveLocale()
   const m = messages[locale] as unknown as { categories?: Record<string, string> }
   return m?.categories?.[key] ?? key
 }
 
-/** 兼容旧代码：用 key 查显示标签的 Record */
+/** Tương thích với mã cũ: dùng key để kiểm tra Record của nhãn hiển thị */
 export const HOME_CATEGORY_LABELS: Record<string, string> = new Proxy({} as Record<string, string>, {
   get(_target, prop: string) {
     return getCategoryLabel(prop)

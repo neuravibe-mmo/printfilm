@@ -55,7 +55,7 @@ async def update_script(
 
         new_series = normalize_series_title(body.summary.get("seriesTitle"))
         old_series = normalize_series_title(prev_summary.get("seriesTitle"))
-        # 用户在摘要里主动改了剧名 → 同步项目名；否则仅覆盖「默认/截断」标题
+        # Người dùng chủ động đổi tên phim trong phần tóm tắt → Đồng bộ tên dự án; nếu không thì chỉ tiêu đề "mặc định/cắt ngắn" sẽ bị ghi đè
         if new_series and new_series != old_series:
             project.title = new_series
             script.name = new_series

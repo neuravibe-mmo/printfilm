@@ -1,4 +1,4 @@
-/** 获客短视频宣传页：方法论结构 + 开始使用 / 回到 GEO */
+/** Trang quảng cáo video ngắn thu hút khách hàng: Cấu trúc phương pháp + Bắt đầu / Quay lại GEO */
 import { useEffect, type ReactNode } from 'react'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import LanguageSwitch from '../components/layout/LanguageSwitch'
@@ -13,14 +13,14 @@ import './method/method.css'
 
 const PAGE_URL = 'https://www.printfilm.com/method'
 
-// 注入本页 title / description；延迟一拍以免被 I18nProvider 的默认 meta 覆盖
+// Thêm tiêu đề / mô tả của trang này; trì hoãn một nhịp để tránh bị ghi đè bởi meta mặc định của I18nProvider
 function useMethodMeta(copy: MethodLandingCopy) {
   useEffect(() => {
     const descEl = document.querySelector('meta[name="description"]')
     const prevTitle = document.title
     const prevDesc = descEl?.getAttribute('content')
 
-    // 写入宣传页 SEO 文案
+    // Viết bài chuẩn SEO cho trang quảng cáo
     function apply() {
       document.title = copy.metaTitle
       descEl?.setAttribute('content', copy.metaDescription)
@@ -36,7 +36,7 @@ function useMethodMeta(copy: MethodLandingCopy) {
   }, [copy.metaTitle, copy.metaDescription])
 }
 
-// 外链按钮：开始使用 / 回到 GEO
+// Nút liên kết ngoài: Bắt đầu sử dụng / Quay lại GEO
 function MethodCta({
   href,
   className,
@@ -53,7 +53,7 @@ function MethodCta({
   )
 }
 
-/** 获客短视频宣传页主体：方法论章节 + 双 CTA */
+/** Nội dung chính của trang quảng cáo video ngắn thu hút khách hàng: chương phương pháp + CTA kép */
 export default function MethodPage() {
   const { locale } = useI18n()
   const copy = METHOD_LANDING[locale]

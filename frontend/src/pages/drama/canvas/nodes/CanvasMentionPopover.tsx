@@ -21,7 +21,7 @@ type CanvasMentionPopoverProps = {
   onClose: () => void
 }
 
-/** 按节点类型返回图标 */
+/** Trả về biểu tượng theo loại nút */
 function KindIcon({ kind }: { kind: CanvasNodeKind }) {
   if (kind === 'character') return <UserRound size={14} strokeWidth={1.8} />
   if (kind === 'scene') return <Landmark size={14} strokeWidth={1.8} />
@@ -29,7 +29,7 @@ function KindIcon({ kind }: { kind: CanvasNodeKind }) {
   return <ImageIcon size={14} strokeWidth={1.8} />
 }
 
-/** 按查询过滤可引用节点 */
+/** Lọc các nút có thể tham chiếu theo truy vấn */
 export function filterCanvasMentionItems(items: CanvasMentionItem[], query: string, locale?: string) {
   const q = query.trim().toLowerCase()
   if (!q) return items
@@ -40,7 +40,7 @@ export function filterCanvasMentionItems(items: CanvasMentionItem[], query: stri
   })
 }
 
-/** 渲染 @ 引用候选列表 */
+/** Render @ danh sách ứng viên tham khảo */
 export function CanvasMentionPopover({
   open,
   query,

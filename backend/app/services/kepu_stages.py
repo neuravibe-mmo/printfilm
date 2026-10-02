@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""科普流水线阶段判定：计费预扣与 pipeline 共用同一套就绪规则。"""
+"""Việc xác định giai đoạn quy trình khoa học phổ biến: Khấu trừ thanh toán và quy trình có chung một bộ quy tắc sẵn sàng."""
 from __future__ import annotations
 
 from typing import Any
@@ -8,7 +8,7 @@ from app.services import storage
 from app.services.ffmpeg_compose import is_near_silent_audio
 
 
-# 真人隐私被 Seedance 拦截、确认跳过 AI 视频（成片用静图）的镜头标记
+# Quyền riêng tư của người thật đã bị Seedance chặn lại và xác nhận bỏ qua shot mark video AI (hình ảnh tĩnh được sử dụng trong phim)
 VIDEO_SKIP_REASON_PRIVACY = "privacy"
 
 
@@ -17,22 +17,22 @@ def _is_image_text(project: Any) -> bool:
 
 
 def shot_image_ready(shot: Any) -> bool:
-    """分镜是否已有可用分镜图。"""
+    """Bảng phân cảnh có sẵn bảng phân cảnh không?"""
     return bool(getattr(shot, "image_url", None) or getattr(shot, "image_ark_url", None))
 
 
 def shot_video_skipped(shot: Any) -> bool:
-    """分镜是否被确认跳过 AI 视频（如真人隐私拦截），无需再提交上游。"""
+    """Nếu bảng phân cảnh được xác nhận là bỏ qua các video AI (chẳng hạn như đánh chặn quyền riêng tư của người thật), thì không cần phải gửi nó lên cấp trên."""
     return getattr(shot, "video_skip_reason", None) == VIDEO_SKIP_REASON_PRIVACY
 
 
 def shot_video_ready(shot: Any) -> bool:
-    """分镜视频是否已收敛：已有视频，或已确认跳过（隐私拦截后用静图合成）。"""
+    """Liệu video bảng phân cảnh đã được hội tụ hay chưa: Đã có video hay đã được xác nhận là bị bỏ qua (tổng hợp với hình ảnh tĩnh sau khi chặn quyền riêng tư)."""
     return bool(getattr(shot, "video_url", None)) or shot_video_skipped(shot)
 
 
 def shot_audio_file_ok(shot: Any) -> bool:
-    """单镜旁白文件存在且非近静音（与 pipeline _resume_plan 一致）。"""
+    """Tệp tường thuật gương đơn tồn tại và gần như không ở chế độ im lặng (phù hợp với quy trình _resume_plan)."""
     audio_url = getattr(shot, "audio_url", None)
     if not audio_url:
         return False
@@ -43,13 +43,13 @@ def shot_audio_file_ok(shot: Any) -> bool:
 
 
 def continuous_narration_ok(project_id: int) -> bool:
-    """整片连贯旁白文件是否可用（与 pipeline _continuous_audio_ok 一致）。"""
+    """Liệu có sẵn toàn bộ tệp tường thuật liên tục hay không (phù hợp với quy trình _continuous_audio_ok)."""
     path = storage.project_dir(int(project_id)) / "full_narration.mp3"
     return path.exists() and path.stat().st_size > 2000 and not is_near_silent_audio(path)
 
 
 def project_audio_ready(project: Any) -> bool:
-    """项目旁白是否就绪：整片文件 OK，或全部镜头旁白文件 OK。"""
+    """Bản tường thuật dự án đã sẵn sàng chưa: toàn bộ tệp phim đều ổn, hoặc tất cả các tệp tường thuật cảnh quay đều ổn."""
     project_id = getattr(project, "id", None)
     if project_id is not None and continuous_narration_ok(int(project_id)):
         return True
@@ -58,7 +58,7 @@ def project_audio_ready(project: Any) -> bool:
 
 
 def resolve_kepu_billing_phase(project: Any) -> str:
-    """按分镜进度解析下一段：script | assets | videos | compose。"""
+    """Phân tích đoạn tiếp theo theo diễn biến của storyboard: script | tài sản | video | sáng tác."""
     shots = list(getattr(project, "shots", None) or [])
     if not shots:
         return "script"
@@ -73,7 +73,7 @@ def resolve_kepu_billing_phase(project: Any) -> str:
 
 
 def normalize_kepu_pipeline_phase(phase: str | None, project: Any | None = None) -> str:
-    """规范化任务 phase；produce 兼容映射到当前应执行的下一段。"""
+    """Giai đoạn nhiệm vụ chuẩn hóa; sản phẩm tương thích với việc ánh xạ tới phân đoạn tiếp theo cần được thực thi hiện tại."""
     raw = (phase or "").strip().lower()
     if raw == "produce":
         if project is None:

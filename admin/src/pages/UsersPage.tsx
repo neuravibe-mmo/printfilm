@@ -23,7 +23,7 @@ import { useI18n, formatDateTime } from "@/i18n";
 type ListRes = { items: AdminUserRow[]; meta: PageMeta };
 
 
-// 用户管理：搜索、筛选、只读明细与编辑
+// Quản lý người dùng: tìm kiếm, lọc, chi tiết chỉ đọc và chỉnh sửa
 export function UsersPage() {
   const { t, locale } = useI18n();
   const [q, setQ] = useState("");

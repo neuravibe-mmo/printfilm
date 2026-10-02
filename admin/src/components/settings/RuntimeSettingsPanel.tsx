@@ -12,7 +12,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/i18n/useI18n";
 
-// 运行参数配置（并发、质量、Mock 等 flat 字段）
+// Cấu hình tham số đang chạy (đồng thời, chất lượng, Mock và các trường phẳng khác)
 export function RuntimeSettingsPanel() {
   const { t } = useI18n();
   const [form, setForm] = useState<AdminModelSettings | null>(null);

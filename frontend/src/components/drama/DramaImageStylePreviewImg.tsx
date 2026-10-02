@@ -1,4 +1,4 @@
-/** 漫剧画面风格预览图：按 jpg → png → 后端 static → svg 依次回退 */
+/** Xem trước kiểu màn hình truyện tranh: nhấn jpg → png → phụ trợ tĩnh → svg để quay lại theo trình tự */
 import { useMemo, useState } from 'react'
 import { getDramaImageStylePreviewCandidates } from '../../lib/dramaImageStylePreviews'
 import type { ImageStyleId } from '../../lib/dramaImageStyles'
@@ -10,7 +10,7 @@ type Props = {
   loading?: 'lazy' | 'eager'
 }
 
-// 渲染带多级回退的风格预览图
+// Hiển thị bản xem trước kiểu với dự phòng đa cấp
 export function DramaImageStylePreviewImg({
   styleId,
   alt = '',

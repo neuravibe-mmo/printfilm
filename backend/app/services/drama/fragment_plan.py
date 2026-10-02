@@ -1,4 +1,4 @@
-"""单集 LLM 分镜：调用模型规划，再规范化为可落库分镜草稿。"""
+"""Bảng phân cảnh LLM một tập: lập kế hoạch mô hình, sau đó chuẩn hóa nó thành bảng phân cảnh nháp có thể thả vào thư viện."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_asset_catalog(assets: list[Any]) -> list[dict[str, Any]]:
-    # 压缩资产目录给 LLM（角色/场景/道具；素材已停用）
+    # Nén danh mục nội dung thành LLM (nhân vật/cảnh/đạo cụ; tài liệu bị vô hiệu hóa)
     catalog: list[dict[str, Any]] = []
     for asset in assets:
         kind = str(getattr(asset, "type", "") or "")
@@ -67,7 +67,7 @@ def build_asset_catalog(assets: list[Any]) -> list[dict[str, Any]]:
 
 
 def _coerce_name_list(raw: Any) -> list[str]:
-    # character_names / prop_names 等字段统一为去空白名称列表
+    # Character_names / prop_names và các trường khác được hợp nhất thành danh sách tên trống
     if isinstance(raw, str):
         return [p.strip() for p in re.split(r"[、，,/|]", raw) if p.strip()]
     if isinstance(raw, list):
@@ -81,7 +81,7 @@ def _match_prop_material_bindings(
     *,
     body_blob: str = "",
 ) -> list[dict[str, Any]]:
-    # 按名匹配道具/素材；正文兜底扫描未点名但出现在行文中的资产
+    # Ghép đạo cụ/tài liệu theo tên; quét toàn bộ văn bản để tìm nội dung không được đặt tên nhưng xuất hiện trong văn bản
     bindings: list[dict[str, Any]] = []
     seen: set[int] = set()
     for name in names:
@@ -120,7 +120,7 @@ def _build_character_bindings(
     episode_bodies: list[str] | None = None,
     intro_overrides: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
-    # 按名匹配角色资产，附带介绍文案与是否重要（摘要补全 stub）
+    # Ghép nội dung nhân vật theo tên, với nội dung giới thiệu và liệu nó có quan trọng hay không (sơ khai hoàn thành tóm tắt)
     bindings: list[dict[str, Any]] = []
     for character_name in character_names:
         character_asset = _find_asset_by_name(character_assets, str(character_name))
@@ -140,7 +140,7 @@ def _build_character_bindings(
 
 
 def _coerce_lines(raw: Any) -> list[str]:
-    # lines / content 字段统一成非空文本行
+    # dòng/trường nội dung được hợp nhất thành các dòng văn bản không trống
     if isinstance(raw, list):
         return [str(x).strip() for x in raw if str(x).strip()]
     if isinstance(raw, str) and raw.strip():
@@ -149,7 +149,7 @@ def _coerce_lines(raw: Any) -> list[str]:
 
 
 def _clamp_fragment_duration(seconds: int, line_count: int) -> int:
-    # 单镜时长钳制；无模型给值时按行数粗估
+    # Kẹp thời gian gương đơn; ước tính sơ bộ dựa trên số hàng khi không có mô hình nào được đưa ra
     if seconds <= 0:
         seconds = max(FRAGMENT_DURATION_MIN, min(FRAGMENT_TOTAL_MAX, line_count * 3 or 8))
     return min(max(int(seconds), 4), FRAGMENT_TOTAL_MAX)
@@ -161,7 +161,7 @@ def _truthy_opening_flag(
     *,
     allow_opening: bool = True,
 ) -> bool:
-    # 首条默认开幕；或模型显式 is_opening；续拆时禁止开幕
+    # Mục đầu tiên được mở theo mặc định; hoặc mô hình rõ ràng là is_opening; mở bị cấm trong quá trình phá hủy tiếp tục
     if not allow_opening:
         return False
     if index == 0:
@@ -187,7 +187,7 @@ def _build_opening_cue_lines(
     one_line_story: str | None,
     background_blurb: str | None,
 ) -> list[str]:
-    # 开幕叠字：集号 / 集名 / 剧名 / 背景简介
+    # Lời mở đầu: số tập/tiêu đề tập/tiêu đề phim/giới thiệu bối cảnh
     cues: list[str] = []
     ep_no = int(episode_number or 0)
     title = (episode_name or "").strip()
@@ -218,7 +218,7 @@ def _pick_background_blurb(
     synopsis: str | None,
     core_hook: str | None,
 ) -> str | None:
-    # 开幕背景文案优先级：一句话 > 钩子 > 梗概首句
+    # Ưu tiên mở đầu copywriting nền: 1 câu > hook > câu đầu tiên của tóm tắt
     for raw in (one_line_story, core_hook, synopsis):
         text = (raw or "").strip()
         if text:
@@ -237,7 +237,7 @@ def _merge_bindings_for_fragment_body(
     episode_bodies: list[str] | None = None,
     intro_overrides: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
-    # 补全 LLM 未列 character_names、但正文/@asset 已点名的角色
+    # Hoàn thành các ký tự LLM không được liệt kê trong character_names nhưng được đặt tên trong văn bản/@asset
     seen = {str(b.get("name") or "") for b in bindings}
     extra_names: list[str] = []
     raw_blob = "\n".join(raw_lines)
@@ -298,7 +298,7 @@ def normalize_llm_fragment_items(
         if str(getattr(a, "type", "") or "") in {"prop", "material", "none"}
     ]
     summary_lookup = build_summary_character_lookup(summary)
-    # introduced 本剧已介绍角色（含更早分集）
+    # giới thiệu Bộ phim này đã giới thiệu các nhân vật (bao gồm cả các tập trước)
     introduced: set[str] = set(already_introduced or ())
     drafts: list[dict[str, Any]] = []
     opening_cues = _build_opening_cue_lines(
@@ -332,7 +332,7 @@ def normalize_llm_fragment_items(
             item.get("material_names") or item.get("materialNames") or []
         )
 
-        # 正文未点名但 catalog 有的角色：从行文再扫一次资产名
+        # Đối với các vai trò không có tên trong văn bản chính nhưng có trong danh mục: quét lại tên nội dung từ văn bản
         bindings = _build_character_bindings(
             character_names,
             character_assets,
@@ -341,7 +341,7 @@ def normalize_llm_fragment_items(
             episode_bodies=episode_bodies,
         )
         if not bindings:
-            # 兜底：全角色资产按名扫描本镜正文
+            # Điểm mấu chốt: Quét văn bản của tấm gương này theo tên để tìm tất cả nội dung nhân vật
             mentioned = []
             blob = "\n".join(lines)
             for asset in character_assets:
@@ -383,7 +383,7 @@ def normalize_llm_fragment_items(
 
         body_lines: list[str] = []
         used = 0
-        # timed_blocks 本 LLM 镜内各行 (时长, 文本行)；超软/硬上限时拆成多条 Fragment
+        # timed_blocks Mỗi dòng trong bản sao LLM này (thời lượng, dòng văn bản); giới hạn trên siêu mềm/cứng được chia thành nhiều mảnh
         timed_blocks: list[tuple[int, list[str]]] = []
         inject_bindings = [*bindings, *prop_bindings]
         for line in lines:
@@ -408,7 +408,7 @@ def normalize_llm_fragment_items(
 
         llm_target = _clamp_duration(int(item.get("duration_sec") or 0))
         block_sum = sum(d for d, _ in timed_blocks)
-        # 仅在单镜可容纳范围内按 LLM 时长缩段；超硬上限仍走拆镜逻辑
+        # Chỉ trong khả năng của một ống kính duy nhất, phân đoạn được giảm theo thời gian LLM; giới hạn trên siêu cứng vẫn tuân theo logic tháo ống kính
         if (
             llm_target > 0
             and block_sum > llm_target
@@ -419,7 +419,7 @@ def normalize_llm_fragment_items(
         chunk_index = 0
 
         def flush_chunk(*, is_last: bool) -> None:
-            # 落盘当前块：注入介绍 / 开幕 cue，并保证 duration_sec 与 @duration 合计一致
+            # Đặt khối hiện tại: Đưa tín hiệu giới thiệu/mở đầu và đảm bảo rằng thời lượng_sec nhất quán với tổng @duration
             nonlocal body_lines, used, chunk_index
             if not body_lines:
                 return
@@ -455,7 +455,7 @@ def normalize_llm_fragment_items(
                 aid = int(pb["assetId"])
                 if aid not in chunk_ids:
                     chunk_ids.append(aid)
-                # 已写入 body 的行若仍是裸名，在最终 content 里再注一次
+                # Nếu những dòng ghi trong thân bài vẫn là những cái tên trần trụi thì hãy ghi chú lại ở nội dung cuối cùng
                 body_text = _inject_character_mentions(body_text, [pb])
                 body_lines = body_text.split("\n") if body_text else body_lines
 

@@ -1,4 +1,4 @@
-/** 资产库「音色」Tab 单卡：描述编辑、试听与合成 */
+/** Thẻ tab "Tone" của thư viện nội dung: chỉnh sửa mô tả, thử giọng và tổng hợp */
 import { AudioLines, Trash2, Volume2 } from 'lucide-react'
 import { resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
 import { CharacterVoicePreviewButton } from '../../components/drama/CharacterVoicePreviewButton'
@@ -15,7 +15,7 @@ type Props = {
   onError: (message: string) => void
 }
 
-// 渲染音色资产卡片
+// Kết xuất thẻ nội dung âm thanh
 export function DramaVoiceAssetCard({
   asset,
   promptValue,

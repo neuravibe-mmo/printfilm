@@ -1,4 +1,4 @@
-"""按勾选 Skill 改写用户提示词，并保留 @asset 引用。"""
+"""Nhấp để kiểm tra Kỹ năng viết lại từ nhắc người dùng và giữ tham chiếu @asset."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.agent.runner import run_task_text
 
-# ASSET_TOKEN_RE 画布/分镜里的资产引用
+# ASSET_TOKEN_RE Tham chiếu nội dung trong canvas/bảng phân cảnh
 ASSET_TOKEN_RE = re.compile(r"@asset:\d+")
 
 VIDEO_OPTIMIZE_SYSTEM = """Bạn là đạo diễn viết prompt video Seedance. Căn cứ vào các Agent Skill đã kích hoạt, hãy viết lại prompt của người dùng thành mô tả cảnh quay bằng tiếng Việt phù hợp nhất để tạo video AI.
@@ -33,7 +33,7 @@ Quy tắc bắt buộc:
 
 
 def extract_asset_tokens(prompt: str) -> list[str]:
-    # 按出现顺序去重提取 @asset:id
+    # Xóa các bản sao và trích xuất @asset:id theo thứ tự xuất hiện
     seen: set[str] = set()
     tokens: list[str] = []
     for match in ASSET_TOKEN_RE.finditer(prompt or ""):
@@ -46,7 +46,7 @@ def extract_asset_tokens(prompt: str) -> list[str]:
 
 
 def strip_optimize_fences(text: str) -> str:
-    # 去掉模型偶尔包上的代码块
+    # Loại bỏ các khối mã đôi khi có trong mô hình
     raw = (text or "").strip()
     if raw.startswith("```"):
         raw = re.sub(r"^```[a-zA-Z]*\s*", "", raw)
@@ -55,7 +55,7 @@ def strip_optimize_fences(text: str) -> str:
 
 
 def restore_asset_tokens(original: str, rewritten: str) -> str:
-    # 模型漏掉的 @asset 引用补回文末
+    # @asset còn thiếu trong mô hình sẽ được trích dẫn ở cuối bài viết
     text = strip_optimize_fences(rewritten)
     missing = [token for token in extract_asset_tokens(original) if token not in text]
     if missing:
@@ -64,7 +64,7 @@ def restore_asset_tokens(original: str, rewritten: str) -> str:
 
 
 def system_prompt_for_task(task: str) -> str:
-    # 按任务选优化系统提示
+    # Tối ưu hóa lời nhắc hệ thống theo tác vụ
     if task == "image_prompt":
         return IMAGE_OPTIMIZE_SYSTEM
     return VIDEO_OPTIMIZE_SYSTEM
@@ -78,7 +78,7 @@ async def optimize_prompt_with_skills(
     skill_ids: list[int],
     task: str = "video_prompt",
 ) -> str:
-    """用勾选 Skill 改写提示词；空 skill 时原样返回。"""
+    """Sử dụng kỹ năng đã chọn để viết lại từ gợi ý; để trống kỹ năng và trả lại như cũ."""
     source = (prompt or "").strip()
     if not source:
         return ""

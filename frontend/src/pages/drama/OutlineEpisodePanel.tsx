@@ -1,4 +1,4 @@
-/** 剧情大纲：左栏分集目录 + 右栏本集创意/摘要/剧本（对齐截图样式） */
+/** Sơ lược cốt truyện: Mục lục các tập ở cột bên trái + Quảng cáo/tóm tắt/kịch bản của tập ở cột bên phải (kiểu ảnh chụp màn hình căn chỉnh) */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -35,7 +35,7 @@ import { useI18n } from '../../i18n'
 
 type SectionKey = 'creative' | 'summary' | 'body'
 
-/** 分集目录用的镜头合计文案 */
+/** Đã quay toàn bộ bản sao cho danh mục tập */
 function formatOutlineShotDuration(sec: number, t: (k: string) => string): string {
   if (sec <= 0) return '—'
   if (sec < 60) return `${sec}s`
@@ -71,7 +71,7 @@ type SectionCardProps = {
   draft: string
   open: boolean
   busy: boolean
-  /** 禁用「生成」按钮；其他集生成中时仍可编辑本集 */
+  /** Tắt nút "Tạo"; tập này vẫn có thể được chỉnh sửa trong khi các tập khác đang được tạo */
   generateBusy?: boolean
   placeholder: string
   regenerateLabel: string
@@ -82,11 +82,11 @@ type SectionCardProps = {
   onDraftChange: (v: string) => void
   onRegenerate: () => void
   onCopy: () => void
-  /** 剧本区：解析预览 + 分段编辑 */
+  /** Vùng tập lệnh: xem trước phân tích + chỉnh sửa phân đoạn */
   scriptPreview?: ReactNode
 }
 
-// 分区卡片：图标标题 + 编辑/生成/复制/折叠
+// Thẻ phân vùng: tiêu đề biểu tượng + chỉnh sửa/tạo/sao chép/gấp
 function SectionCard({
   sectionKey,
   icon,
@@ -184,7 +184,7 @@ function SectionCard({
     </article>
   )
 }
-// 分集目录 + 本集三卡片
+// Danh mục tập + Ba thẻ trong tập này
 export function OutlineEpisodePanel({
   projectId,
   script,
@@ -280,7 +280,7 @@ export function OutlineEpisodePanel({
     setScriptModalOpen(false)
   }, [selected?.episodeNumber])
 
-  // 拉取已切分分集，用首镜封面/成片作目录缩略图
+  // Kéo các tập đã chia và sử dụng bìa cảnh quay đầu tiên/phim đã hoàn thành làm hình thu nhỏ thư mục
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -340,7 +340,7 @@ export function OutlineEpisodePanel({
     !confirming &&
     directoryEpisodes.length < 120
 
-  // 仅锁正在生成的那一集；其他集可浏览/编辑（单集任务全局串行，故禁止并行再点生成）
+  // Chỉ tập đang được tạo mới bị khóa; các tập khác có thể được duyệt/chỉnh sửa (các tác vụ một tập được xuất bản trên toàn cầu, vì vậy việc tạo nhấp chuột song song bị cấm)
   const busy = episodeGenerating || selectedGenerating || confirming || saving || adding
   const generateBusy = episodeGenerating || anyEpisodeGenerating || confirming || saving || adding
 
@@ -490,7 +490,7 @@ export function OutlineEpisodePanel({
     setLocalError('')
     setConfirming(true)
     try {
-      // 本集已有分镜：直接进入，不再弹 Skill / 重切
+      // Tập này đã được dựng storyboard: vào trực tiếp không cần chơi Skill/cắt lại
       const rows = await dramaApi.listEpisodes(projectId)
       const existing = rows.find(
         (ep) => Number(ep.params?.episodeNumber) === Number(selected.episodeNumber),
@@ -509,7 +509,7 @@ export function OutlineEpisodePanel({
     }
   }
 
-  // 首次进入：确认剧本 + 按所选 Skill 做 AI 分镜
+  // Tham gia lần đầu: xác nhận kịch bản + nhấn Kỹ năng đã chọn để thực hiện phân cảnh AI
   async function startEnterWithSkills(skillIds: number[]) {
     if (!selected?.episodeNumber) return
     setEnterSkillOpen(false)

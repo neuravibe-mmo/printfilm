@@ -11,7 +11,7 @@ export const RUNNING = new Set([
   'PARALLEL_ASSETS',
 ])
 
-// 按当前界面语言取状态文案（兼容旧的 STATUS_CN[code] 写法）
+// Lấy bản sao trạng thái theo ngôn ngữ giao diện hiện tại (tương thích với cách viết STATUS_CN[code] cũ)
 export const STATUS_CN: Record<string, string> = new Proxy(
   {},
   {
@@ -55,7 +55,7 @@ export function effectiveStatus(project: {
   const auds = shots.filter((s) => s.audio_url).length
   const vids = shots.filter((s) => s.video_url).length
   const n = shots.length
-  // full 管线配音由视频模型完成，不要求 TTS audio_url
+  // Việc lồng tiếng toàn bộ Pipeline được thực hiện bằng mô hình video, không cần TTS audio_url
   const assetsOk = full ? imgs === n : imgs === n && auds === n
 
   if (assetsOk) {
@@ -90,17 +90,17 @@ export const SHOT_STATUS_CN: Record<string, string> = new Proxy(
   },
 )
 
-// 兼容旧调用：直接翻译 shot.status
+// Tương thích với các cuộc gọi cũ: dịch trực tiếp shot.status
 export function shotStatusLabel(status: string) {
   return SHOT_STATUS_CN[status] || STATUS_CN[status] || status
 }
 
-// 旧「镜头终态」判断；分镜表请用 shotDisplayDone
+// Phán quyết "bắn trạng thái cuối cùng" cũ; vui lòng sử dụng shotDisplayDone cho bảng phân cảnh
 export function shotIsDone(status: string) {
   return ['AUDIO_READY', 'VIDEO_READY', 'DONE', 'IMAGE_READY'].includes(status)
 }
 
-/** 分镜表按素材完备度展示，不盲信 shot.status（AUDIO_READY 只代表配音） */
+/** Storyboard được hiển thị theo độ đầy đủ của tư liệu, đừng mù quáng tin vào shot.status (AUDIO_READY chỉ thể hiện lồng tiếng) */
 export type ShotDisplayKind =
   | 'failed'
   | 'generating'
@@ -116,8 +116,8 @@ export type ShotAssetLike = {
 }
 
 /*
- * SHOT_TASK_ACTIVE 任务中心进行中状态
- * PROJECT_WIDE_TASKS 整片占用，单镜生成需避开
+ * SHOT_TASK_ACTIVE Trung tâm tác vụ đang trong trạng thái tiến hành
+ * PROJECT_WIDE_TASKS chiếm toàn bộ chip, cần tránh việc tạo ra ống kính đơn
  */
 const SHOT_TASK_ACTIVE = [
   'pending',
@@ -134,7 +134,7 @@ const PROJECT_WIDE_TASKS = new Set([
   'shot_regen_audio',
 ])
 
-/** 按图/视频是否齐推断单镜展示态 */
+/** Suy ra trạng thái hiển thị của ống kính đơn dựa trên việc hình ảnh/video có nhất quán hay không */
 export function shotDisplayKind(
   shot: ShotAssetLike,
   opts?: { pipelineMode?: string | null; generating?: boolean },
@@ -148,12 +148,12 @@ export function shotDisplayKind(
   return 'image_ready'
 }
 
-/** 该镜素材是否已齐（静图看图，全流程看视频） */
+/** Chất liệu gương đã sẵn sàng chưa? (Xem hình ảnh tĩnh, xem video toàn bộ quá trình) */
 export function shotDisplayDone(kind: ShotDisplayKind) {
   return kind === 'image_ready' || kind === 'video_ready'
 }
 
-/** 分镜表 / CSV 用的素材态文案 */
+/** Bản sao tài liệu cho bảng phân cảnh/CSV */
 export function shotDisplayLabel(kind: ShotDisplayKind) {
   const key = {
     failed: 'FAILED',
@@ -173,7 +173,7 @@ type TaskLike = {
   cancel_requested?: boolean | null
 }
 
-/** 整片流水线 / 合成 / 整片配音进行中 */
+/** Toàn bộ dây chuyền lắp ráp/tổng hợp/lồng tiếng toàn bộ phim đang được tiến hành */
 export function isProjectWideBusy(project: {
   status?: string
   active_tasks?: TaskLike[] | null
@@ -188,7 +188,7 @@ export function isProjectWideBusy(project: {
   return isRunning(project.status || '')
 }
 
-/** 该镜是否有进行中的单镜任务 */
+/** Chiếc gương này có nhiệm vụ gương đơn đang diễn ra không? */
 export function isShotGenerating(
   project: { active_tasks?: TaskLike[] | null } | null | undefined,
   shotId: number,
@@ -207,7 +207,7 @@ export function formatMmSs(seconds: number) {
   return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`
 }
 
-/** 科普全链路步骤：建项 / 风格 / 分镜台共用 */
+/** Các bước để có được liên kết đầy đủ về phổ biến khoa học: chia sẻ dự án/phong cách/bảng phân cảnh */
 export const KEPU_STEPS = [
   { key: 'topic', label: '选题' },
   { key: 'style', label: '风格' },
@@ -233,7 +233,7 @@ export function getKepuStepsLocalized() {
 export const CREATE_STEPS = KEPU_STEPS
 export const BOARD_STEPS = KEPU_STEPS
 
-/** 静图成片跳过「镜头视频」步 */
+/** Bỏ qua bước "video ống kính" khi chuyển ảnh tĩnh thành phim */
 export function kepuSteps(pipelineMode?: string | null) {
   const steps = getKepuStepsLocalized()
   if (pipelineMode === 'image_text') {
@@ -246,7 +246,7 @@ export type KepuWizardPage = 'create' | 'style' | 'board'
 
 export type KepuBillingPhase = 'script' | 'assets' | 'videos' | 'compose'
 
-/** 与后端 resolve_kepu_billing_phase 对齐（前端不做近静音文件检测）。 */
+/** Căn chỉnh với phần phụ trợ Resolve_kepu_billing_phase (giao diện người dùng không phát hiện các tệp gần như im lặng). */
 export function kepuBillingPhase(project: {
   pipeline_mode?: string | null
   shots?: Array<{ image_url?: string | null; audio_url?: string | null; video_url?: string | null }>
@@ -266,7 +266,7 @@ export function shotsByNo<T extends { shot_no: number }>(shots: T[] | null | und
 }
 
 /**
- * 当前步骤下标；分镜台跟 script / assets / videos / compose 对齐。
+ * Chỉ số bước hiện tại; bảng phân cảnh được căn chỉnh theo kịch bản/nội dung/video/sáng tác.
  */
 export function kepuStepIndex(
   page: KepuWizardPage,
@@ -301,7 +301,7 @@ export function kepuStepIndex(
   return idx('confirm')
 }
 
-/** 分镜台主按钮旁：本步做什么、是否预扣 */
+/** Bên cạnh nút chính của bảng phân cảnh: Việc cần làm trong bước này và có nên giữ lại hay không */
 export function kepuPhaseHint(project: {
   status: string
   pipeline_mode?: string | null

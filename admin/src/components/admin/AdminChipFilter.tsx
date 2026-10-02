@@ -14,7 +14,7 @@ type AdminChipFilterProps = {
   className?: string;
 };
 
-// 管理端分类 Chip 筛选
+// Phân loại cuối quản lý Lọc chip
 export function AdminChipFilter({ label, value, options, onChange, className }: AdminChipFilterProps) {
   const segment = className?.includes("admin-chip-filter--segment");
   return (

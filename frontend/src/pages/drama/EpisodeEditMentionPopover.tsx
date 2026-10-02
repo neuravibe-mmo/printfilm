@@ -1,4 +1,4 @@
-/** 分集编辑：输入 @ 时弹出的资产 / 时长 / 运镜选择层 */
+/** Chỉnh sửa tập: nội dung / thời lượng / lớp chọn camera bật lên khi nhập @ */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { createPortal } from 'react-dom'
@@ -38,7 +38,7 @@ type Props = {
 type TabKey = 'assets' | 'tools'
 type ToolsView = 'list' | 'duration' | 'camera'
 
-// 渲染 @ 引用弹层
+// Kết xuất @ Lớp đàn hồi tham chiếu
 export function EpisodeEditMentionPopover({
   open,
   query,
@@ -79,7 +79,7 @@ export function EpisodeEditMentionPopover({
     let list = assets
     if (scope === 'episode') {
       list = list.filter((a) => referencedIds.has(a.id))
-      // 本集无引用时回退全剧，避免空列表无法插入
+      // Nếu không có tài liệu tham khảo nào trong tập này, toàn bộ tập sẽ được khôi phục để ngăn danh sách trống được chèn vào.
       if (list.length === 0) list = assets
     }
     if (!effectiveQuery) return list
@@ -164,7 +164,7 @@ export function EpisodeEditMentionPopover({
 
   const remaining = Math.max(0, FRAGMENT_CONTENT_DURATION_MAX - contentDurationTotal)
 
-  // 渲染一组运镜/景别按钮
+  // Kết xuất một bộ nút chuyển động/cảnh của máy ảnh
   function renderCameraGroup(title: string, items: DramaCameraLexiconItem[]) {
     if (items.length === 0) return null
     return (

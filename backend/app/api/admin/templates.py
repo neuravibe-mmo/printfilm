@@ -23,7 +23,7 @@ async def templates_meta(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    # 汇总全库分类标签（用于管理端筛选）
+    # Tóm tắt các thẻ phân loại của toàn bộ cơ sở dữ liệu (dùng để lọc phía quản lý)
     result = await db.execute(select(Template.category))
     categories: set[str] = set()
     for (cat_list,) in result.all():

@@ -1,4 +1,4 @@
-/** 分集编辑右侧：分段视频预览 + 入口打开全屏分镜画布 */
+/** Bên phải phần chỉnh sửa tập: xem trước video phân đoạn + lối vào để mở canvas bảng phân cảnh toàn màn hình */
 import { useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import type { DramaFragment } from '../../api/drama'
@@ -24,7 +24,7 @@ type Props = {
   episodeName?: string
   subtitleMode: DramaSubtitleMode
   onOpenStoryboard: () => void
-  /** 预览历史版本时覆盖当前镜 video src */
+  /** Ghi đè src video nhân bản hiện tại khi xem trước các phiên bản lịch sử */
   previewVideoUrl?: string | null
   previewPosterUrl?: string | null
   previewLabel?: string
@@ -32,7 +32,7 @@ type Props = {
   onActivatePreview?: () => void
 }
 
-/** 把合成进度转成按钮文案 */
+/** Chuyển tiến trình tổng hợp thành bản sao nút */
 function composeProgressLabel(progress: EpisodeComposeProgress | null, busy: boolean, t: TFunction) {
   if (!busy) return t('drama.episodeEdit.stitchAll')
   if (!progress) return t('drama.episodeEdit.stitching')
@@ -41,7 +41,7 @@ function composeProgressLabel(progress: EpisodeComposeProgress | null, busy: boo
   return t('drama.episodeEdit.stitching')
 }
 
-// 渲染分集右侧预览与画布入口
+// Bản xem trước và mục nhập canvas ở phía bên phải của tập kết xuất
 export function EpisodeEditSidePane({
   fragments,
   playingFragmentId,
@@ -61,9 +61,9 @@ export function EpisodeEditSidePane({
   const resolvedEpisodeName = episodeName || t('drama.episodeEdit.thisEpisode')
   const hasSelection = playingFragmentId !== null
   /*
-   * composeBusy 本地拼接中
-   * composeProgress 拉取/拼接进度
-   * composeError 失败原因
+   * soạn bài Bận rộn nối cục bộ
+   * soạn tiến trình kéo/nối tiến trình
+   * nguyên nhân lỗi soạn thảoError
    */
   const [composeBusy, setComposeBusy] = useState(false)
   const [composeProgress, setComposeProgress] = useState<EpisodeComposeProgress | null>(null)
@@ -71,7 +71,7 @@ export function EpisodeEditSidePane({
   const composeClips = listEpisodeComposeClips(fragments)
   const missingCount = fragments.length - composeClips.length
 
-  // 浏览器内拼接已生成镜头并下载成片
+  // Tính năng ghép nối trong trình duyệt đã tạo ra cảnh quay và tải nó thành phim
   async function handleComposeDownload() {
     if (composeBusy || composeClips.length === 0) return
     if (missingCount > 0) {

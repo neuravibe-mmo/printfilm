@@ -14,7 +14,7 @@ const SIZE_CLASS = {
   xl: 'pf-user-avatar--xl',
 } as const
 
-/** 用户头像：有图显示图片，否则昵称首字母占位 */
+/** Hình đại diện của người dùng: Nếu có hình ảnh sẽ hiển thị, nếu không thì chữ cái đầu tiên của biệt danh sẽ được sử dụng. */
 export default function UserAvatar({ user, size = 'md', className = '', title }: Props) {
   const nickname = user?.nickname || 'P'
   const initial = nickname.slice(0, 1).toUpperCase()

@@ -1,4 +1,4 @@
-"""解析 Cursor 风格 SKILL.md：YAML 头 + markdown 正文。"""
+"""Kiểu con trỏ phân tích cú pháp SKILL.md: Tiêu đề YAML + nội dung đánh dấu."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import hashlib
 import re
 from typing import Any
 
-# SLUG_PATTERN 合法短名
+# SLUG_PATTERN Tên viết tắt hợp pháp
 SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}$")
 FRONTMATTER_PATTERN = re.compile(r"\A---\s*\n([\s\S]*?)\n---\s*\n?", re.MULTILINE)
 TASK_ALIASES = {
@@ -23,11 +23,11 @@ TASK_ALIASES = {
 
 
 class SkillParseError(ValueError):
-    """Skill markdown 无法解析。"""
+    """Không thể phân tích cú pháp đánh dấu kỹ năng."""
 
 
 def slugify_skill_name(raw: str) -> str:
-    # 英文名收成连字符；中文名用 hash，避免都变成 untitled-skill
+    # Sử dụng dấu gạch nối trong tên tiếng Anh; sử dụng hàm băm trong tên tiếng Trung để tránh biến nó thành kỹ năng không có tiêu đề
     text = (raw or "").strip().lower()
     ascii_part = re.sub(r"[^a-z0-9]+", "-", text).strip("-")[:64]
     if ascii_part and SLUG_PATTERN.match(ascii_part):
@@ -37,7 +37,7 @@ def slugify_skill_name(raw: str) -> str:
 
 
 def normalize_tasks(raw: Any) -> list[str]:
-    # 任务标签归一：缺省规划镜头
+    # Chuẩn hóa nhãn tác vụ: ống kính lập kế hoạch mặc định
     values: list[str] = []
     if isinstance(raw, str):
         values = [part.strip() for part in re.split(r"[,，|/]", raw) if part.strip()]
@@ -54,7 +54,7 @@ def normalize_tasks(raw: Any) -> list[str]:
 
 
 def _parse_simple_yaml(block: str) -> dict[str, Any]:
-    # 只解析本系统需要的标量/列表/折叠字符串，避免引入 PyYAML
+    # Chỉ phân tích cú pháp vô hướng/danh sách/chuỗi gấp theo yêu cầu của hệ thống này để tránh giới thiệu PyYAML
     data: dict[str, Any] = {}
     folded_key: str | None = None
     folded_lines: list[str] = []
@@ -109,7 +109,7 @@ def _parse_simple_yaml(block: str) -> dict[str, Any]:
 
 
 def parse_skill_markdown(markdown: str) -> dict[str, Any]:
-    """把 SKILL.md 拆成 slug/name/description/tasks/body。"""
+    """Chia SKILL.md thành slug/name/description/tasks/body."""
     text = (markdown or "").replace("\r\n", "\n").strip()
     if not text:
         raise SkillParseError("Skill 内容为空")

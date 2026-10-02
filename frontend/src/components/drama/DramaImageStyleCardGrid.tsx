@@ -1,4 +1,4 @@
-/** 画面风格卡片网格：无风格 + 缩略图选项 */
+/** Lưới thẻ kiểu ảnh: Không có kiểu + tùy chọn hình thu nhỏ */
 import { Check } from 'lucide-react'
 import { DramaImageStylePreviewImg } from './DramaImageStylePreviewImg'
 import { getImageStyleLabel, IMAGE_STYLE_OPTIONS, type ImageStyleId } from '../../lib/dramaImageStyles'
@@ -12,7 +12,7 @@ type Props = {
   className?: string
 }
 
-// 渲染可点选的画面风格卡片网格
+// Hiển thị lưới thẻ kiểu màn hình có thể nhấp
 export function DramaImageStyleCardGrid({
   value,
   onChange,

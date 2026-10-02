@@ -9,7 +9,7 @@ type TopUsersRankingChartProps = {
   metric: DashboardMetric;
 };
 
-/** 用户消费排行：与领域分布一致的横向柱状图 */
+/** Xếp hạng mức tiêu thụ của người dùng: biểu đồ ngang phù hợp với phân bổ trường */
 export function TopUsersRankingChart({ users, metric }: TopUsersRankingChartProps) {
   const { m } = useI18n();
   const rows = topUsersToBuckets(users);

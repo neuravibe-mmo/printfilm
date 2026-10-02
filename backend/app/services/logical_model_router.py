@@ -11,7 +11,7 @@ from app.services.model_routing_config import (
 from app.services.model_settings import get_routing_snapshot
 
 
-# 解析某逻辑模型的可用路由
+# Phân tích các tuyến đường có sẵn của một mô hình logic nhất định
 def _routes_for_logical_model(
     logical: LogicalModel,
     capability: LogicalModelCapability,
@@ -41,14 +41,14 @@ def _routes_for_logical_model(
     return routes
 
 
-# 解析逻辑模型到运行时路由（含 failover 候选列表）
+# Phân tích mô hình logic để định tuyến thời gian chạy (bao gồm danh sách ứng cử viên chuyển đổi dự phòng)
 def resolve_logical_model_candidates(
     capability: LogicalModelCapability,
     requested_model_id: str,
     *,
     preferred_channel_id: str = "",
 ) -> list[ResolvedModelRoute]:
-    """按请求 ID 解析；不可用时回落到同能力任一可解析逻辑模型（通用模型）。"""
+    """Phân tích theo ID yêu cầu; quay trở lại bất kỳ mô hình logic có thể phân tích cú pháp nào (mô hình phổ quát) có cùng khả năng khi không có sẵn."""
     snapshot = get_routing_snapshot()
     requested = (requested_model_id or "").strip()
     if not requested:
@@ -75,7 +75,7 @@ def resolve_logical_model_candidates(
             if routes:
                 return routes
 
-    # 用户点名的上游模型在渠道清单里时，不要静默换成同能力的另一个逻辑模型
+    # Khi mô hình ngược dòng do người dùng đặt tên có trong danh sách kênh, đừng âm thầm thay đổi mô hình đó sang mô hình logic khác có cùng khả năng.
     if requested:
         direct = _direct_channel_routes(
             capability,
@@ -86,7 +86,7 @@ def resolve_logical_model_candidates(
         if direct:
             return direct
 
-    # 默认/请求模型失效时，回落到同能力第一个可解析模型（DeepSeek / Kimi / 其它兼容均可）
+    # Khi mô hình mặc định/yêu cầu không thành công, hãy quay lại mô hình có thể phân tích cú pháp đầu tiên có cùng khả năng (DeepSeek / Kimi / các mô hình tương thích khác đều được chấp nhận)
     for model in snapshot.logical_models:
         if not model.enabled or model.capability != capability:
             continue
@@ -121,7 +121,7 @@ def _direct_channel_routes(
     *,
     preferred_channel_id: str = "",
 ) -> list[ResolvedModelRoute]:
-    """按渠道 models 清单精确匹配用户点名的上游模型。"""
+    """Khớp chính xác với mô hình ngược dòng do người dùng đặt tên theo danh sách mô hình kênh."""
     ordered = list(channels)
     if preferred_channel_id:
         ordered = [
@@ -134,7 +134,7 @@ def _direct_channel_routes(
             continue
         if not channel_supports_model(channel, requested):
             continue
-        # TokenFree 渠道 protocol=openai，resolve_channel_model_capability 会把所有模型判成 text
+        # Giao thức kênh TokenFree=openai, Resolve_channel_model_capability sẽ đánh giá tất cả các mô hình dưới dạng văn bản
         if infer_model_capability(requested) != capability:
             continue
         route = _build_route(capability, requested, requested, channel)
@@ -143,7 +143,7 @@ def _direct_channel_routes(
     return routes
 
 
-# 解析首选逻辑模型路由
+# Giải quyết định tuyến mô hình logic ưu tiên
 def resolve_logical_model(
     capability: LogicalModelCapability,
     requested_model_id: str,
@@ -158,7 +158,7 @@ def resolve_logical_model(
     return candidates[0] if candidates else None
 
 
-# 将前端 alias 映射为逻辑模型 ID
+# Ánh xạ bí danh giao diện người dùng tới ID mô hình logic
 def resolve_logical_model_id(
     capability: LogicalModelCapability,
     model_id: str | None,
@@ -171,7 +171,7 @@ def resolve_logical_model_id(
     return aliases.get(raw.lower(), raw)
 
 
-# 解析上游 endpoint（兼容旧 alias 逻辑）
+# Phân tích điểm cuối ngược dòng (tương thích với logic bí danh cũ)
 def resolve_upstream_model(
     capability: LogicalModelCapability,
     model_id: str | None,
@@ -227,7 +227,7 @@ def _auto_protocol(channel: SystemModelChannel, upstream_model: str) -> str:
     if cap == "audio":
         return "openai"
     if cap in {"image", "video"}:
-        # TokenFree / New API 走 OpenAI 兼容根路径；方舟专有渠道仍用 ark 路径
+        # TokenFree / API mới lấy đường dẫn gốc tương thích với OpenAI; Kênh độc quyền của Ark vẫn sử dụng đường dẫn Ark
         from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID, TOKENFREE_BASE_URL
 
         base = (channel.base_url or "").rstrip("/").lower()

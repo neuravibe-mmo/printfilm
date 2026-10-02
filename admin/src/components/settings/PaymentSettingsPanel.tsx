@@ -14,7 +14,7 @@ import { api } from "@/api/client";
 import { useI18n } from "@/i18n/useI18n";
 import { formatCreditsFromYuan } from "@/lib/utils";
 
-// 易支付与 Token 计费配置
+// Cấu hình thanh toán bằng mã thông báo và thanh toán dễ dàng
 export function PaymentSettingsPanel() {
   const { m, locale } = useI18n();
   const { form, loading, saving, patchField, save } = useAdminModelSettings();
@@ -23,8 +23,8 @@ export function PaymentSettingsPanel() {
   const [smtpPasswordInput, setSmtpPasswordInput] = useState("");
   const [clearSmtpPassword, setClearSmtpPassword] = useState(false);
   /*
-   * tokenfreeBusy 查询 New API 余额中
-   * tokenfreeInfo 余额或错误文案
+   * tokenfreeBusy Truy vấn số dư API mới
+   * Số dư tokenfreeInfo hoặc sao chép lỗi
    */
   const [tokenfreeBusy, setTokenfreeBusy] = useState(false);
   const [tokenfreeInfo, setTokenfreeInfo] = useState<string>("");
@@ -107,7 +107,7 @@ export function PaymentSettingsPanel() {
     setClearSmtpPassword(false);
   }
 
-  // 拉取各模型计费口径表
+  // Kéo bảng cỡ thanh toán của từng mẫu
   async function loadModelRates() {
     setModelRatesBusy(true);
     try {
@@ -121,7 +121,7 @@ export function PaymentSettingsPanel() {
     }
   }
 
-  // 查询 TokenFree / New API 剩余额度
+  // Query TokenFree / Hạn ngạch còn lại của API mới
   async function queryTokenfreeQuota() {
     setTokenfreeBusy(true);
     setTokenfreeInfo("");

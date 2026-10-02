@@ -1,7 +1,7 @@
 import type { AdminDailyUsage, AdminStats, AdminUsageBucket } from "@/api/client";
 import { formatCredits } from "@/lib/utils";
 
-/** 时间窗内日趋势汇总 */
+/** Tóm tắt xu hướng hàng ngày trong khung thời gian */
 export function sumDailyUsage(daily: AdminDailyUsage[]) {
   return daily.reduce(
     (acc, row) => ({
@@ -13,30 +13,30 @@ export function sumDailyUsage(daily: AdminDailyUsage[]) {
   );
 }
 
-/** 按当前图表指标读取桶数值 */
+/** Đọc giá trị nhóm theo chỉ báo biểu đồ hiện tại */
 export function readBucketMetric(row: AdminUsageBucket, metric: DashboardMetric): number {
   if (metric === "cost") return row.cost_fen ?? 0;
   if (metric === "calls") return row.calls;
   return row.charge_fen;
 }
 
-/** 格式化指标展示值 */
+/** Giá trị hiển thị chỉ báo định dạng */
 export function formatDashboardMetric(value: number, metric: DashboardMetric, locale?: string): string {
   if (metric === "calls") return value.toLocaleString();
   return formatCredits(value, locale);
 }
 
-/** 估算毛利（扣费 - 成本） */
+/** Lợi nhuận gộp ước tính (khấu trừ - chi phí) */
 export function calcProfitFen(chargeFen: number, costFen: number): number {
   return chargeFen - costFen;
 }
 
-/** 科普项目总数（各状态之和） */
+/** Tổng số dự án phổ biến khoa học (tổng của từng trạng thái) */
 export function sumProjectStatuses(counts: Record<string, number> | undefined): number {
   return Object.values(counts ?? {}).reduce((sum, n) => sum + n, 0);
 }
 
-/** 漫剧 + 科普项目规模摘要 */
+/** Tóm tắt quy mô dự án phim truyện tranh + phổ biến khoa học */
 export function projectScaleHint(
   stats: AdminStats | null,
   t?: (key: string, vars?: Record<string, string | number>) => string,
@@ -66,7 +66,7 @@ export const DEFAULT_DASHBOARD_FILTERS: DashboardFilterState = {
   metric: "charge",
 };
 
-/** 运维 Tab 固定全量 30 日，不受隐藏筛选影响 */
+/** Tab vận hành và bảo trì được cố định trọn vẹn trong 30 ngày và sẽ không bị ảnh hưởng bởi tính năng lọc ẩn. */
 export const PROJECTS_DASHBOARD_FILTERS: DashboardFilterState = {
   days: "30",
   domain: "all",
@@ -74,7 +74,7 @@ export const PROJECTS_DASHBOARD_FILTERS: DashboardFilterState = {
   metric: "charge",
 };
 
-/** 图表 / 区块标题用的时间范围文案 */
+/** Sao chép phạm vi thời gian cho tiêu đề biểu đồ/khối */
 export function dashboardRangeLabel(
   days: DashboardDays,
   labels?: { today: string; sevenDays: string; fourteenDays: string; thirtyDays: string },
@@ -89,7 +89,7 @@ export function dashboardRangeLabel(
   return `近 ${days} 日`;
 }
 
-/** 拼接 stats API 查询串 */
+/** Nối chuỗi truy vấn API thống kê */
 export function buildStatsQuery(filters: DashboardFilterState): string {
   const params = new URLSearchParams({
     days: filters.days,
@@ -100,7 +100,7 @@ export function buildStatsQuery(filters: DashboardFilterState): string {
   return `/api/admin/stats?${params.toString()}`;
 }
 
-/** 用户排行转为柱状图数据桶 */
+/** Chuyển đổi thứ hạng của người dùng thành nhóm dữ liệu biểu đồ */
 export function topUsersToBuckets(users: import("@/api/client").AdminTopUser[]): AdminUsageBucket[] {
   return users.map((user) => ({
     key: String(user.user_id),
@@ -110,7 +110,7 @@ export function topUsersToBuckets(users: import("@/api/client").AdminTopUser[]):
   }));
 }
 
-/** 柱状图 Y 轴用户简称 */
+/** Biểu đồ thanh Viết tắt của người dùng trục Y */
 export function topUserChartLabel(userId: string, users: import("@/api/client").AdminTopUser[]): string {
   const user = users.find((item) => String(item.user_id) === userId);
   const email = user?.email ?? "";

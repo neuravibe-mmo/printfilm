@@ -1,4 +1,4 @@
-/** 画布节点类型与选择器选项定义 */
+/** Loại nút canvas và định nghĩa tùy chọn bộ chọn */
 import type { LucideIcon } from 'lucide-react'
 import {
   AudioLines,
@@ -24,12 +24,12 @@ export type CanvasAssetNodeData = {
   mediaUrl?: string | null
   textContent?: string
   generating?: boolean
-  /** 视频节点 Seedance 生成参数 */
+  /** Tham số tạo hạt giống của nút video */
   videoOptions?: Record<string, unknown>
   [key: string]: unknown
 }
 
-/** 支持本地图片上传的节点类型 */
+/** Các loại nút hỗ trợ tải lên hình ảnh cục bộ */
 export const CANVAS_UPLOADABLE_KINDS = new Set<CanvasNodeKind>([
   'character',
   'scene',
@@ -37,7 +37,7 @@ export const CANVAS_UPLOADABLE_KINDS = new Set<CanvasNodeKind>([
   'video',
 ])
 
-/** 支持提示词 + AI 生成的节点类型 */
+/** Hỗ trợ các từ nhắc nhở + các loại nút do AI tạo */
 export const CANVAS_GENERATABLE_KINDS = new Set<CanvasNodeKind>([
   'character',
   'scene',
@@ -45,7 +45,7 @@ export const CANVAS_GENERATABLE_KINDS = new Set<CanvasNodeKind>([
   'video',
 ])
 
-/** 节点类型对应的 Drama asset_type */
+/** Drama assets_type tương ứng với loại nút */
 export function canvasKindToAssetType(kind: CanvasNodeKind): string {
   if (kind === 'video') return 'video'
   if (kind === 'audio') return 'audio'
@@ -87,7 +87,7 @@ export function getNodeKindLabel(kind: CanvasNodeKind, locale?: string): string 
   return (CANVAS_NODE_KIND_LABELS[loc] || CANVAS_NODE_KIND_LABELS.vi)[kind] || kind
 }
 
-/** 空画布居中快速新建选项（顺序与设计稿一致） */
+/** Tạo nhanh các tùy chọn mới ở giữa canvas trống (thứ tự phù hợp với bản phác thảo thiết kế) */
 export const CANVAS_NODE_OPTIONS: CanvasNodeOption[] = [
   { id: 'character', get label() { return getNodeKindLabel('character') }, icon: UserRound },
   { id: 'scene', get label() { return getNodeKindLabel('scene') }, icon: Landmark },
@@ -97,7 +97,7 @@ export const CANVAS_NODE_OPTIONS: CanvasNodeOption[] = [
   { id: 'audio', get label() { return getNodeKindLabel('audio') }, icon: AudioLines },
 ]
 
-/** 左侧添加面板选项 */
+/** Thêm tùy chọn bảng điều khiển ở bên trái */
 export const ADD_NODE_OPTIONS: CanvasNodeOption[] = [
   { id: 'character', get label() { return getNodeKindLabel('character') }, icon: UserRound },
   { id: 'scene', get label() { return getNodeKindLabel('scene') }, icon: Landmark },
@@ -153,7 +153,7 @@ export const CANVAS_NODE_DEFAULT_LABEL: Record<CanvasNodeKind, string> = new Pro
   },
 )
 
-/** 节点卡片尺寸（宽 × 高，用于落点居中） */
+/** Kích thước thẻ nút (chiều rộng × chiều cao, dùng để căn giữa điểm thả) */
 export const CANVAS_NODE_SIZE: Record<CanvasNodeKind, { width: number; height: number }> = {
   character: { width: 200, height: 280 },
   scene: { width: 200, height: 280 },
@@ -163,11 +163,11 @@ export const CANVAS_NODE_SIZE: Record<CanvasNodeKind, { width: number; height: n
   audio: { width: 200, height: 100 },
 }
 
-/** 网格吸附步长 */
+/** Kích thước bước hấp phụ của lưới */
 export const CANVAS_SNAP_GRID: [number, number] = [20, 20]
 
-/** 自动保存防抖毫秒 */
+/** Tự động lưu lại mili giây chống rung */
 export const CANVAS_AUTO_SAVE_MS = 2000
 
-/** 历史栈最大深度 */
+/** Độ sâu tối đa của ngăn xếp lịch sử */
 export const MAX_CANVAS_HISTORY = 50

@@ -1,4 +1,4 @@
-/** 浏览器端探测视频真实宽高（legacy 分镜无 params 时使用） */
+/** Phát hiện chiều rộng và chiều cao thực của video ở phía trình duyệt (được sử dụng khi bảng phân cảnh cũ không có thông số) */
 export function probeVideoDimensionsFromUrl(
   url: string,
 ): Promise<{ w: number; h: number } | null> {

@@ -13,7 +13,7 @@ type WorkflowSource = {
   script?: { source?: string | null } | null
 }
 
-/** 解析漫剧工作流：canvas=自由画布；script=大纲分集 */
+/** Phân tích quy trình làm việc của truyện tranh: canvas=free canvas; kịch bản=tập phác thảo */
 export function resolveDramaWorkflow(item: WorkflowSource | null | undefined): DramaWorkflow {
   const raw = String(item?.workflow || item?.params?.workflow || '')
     .trim()
@@ -29,14 +29,14 @@ export function resolveDramaWorkflow(item: WorkflowSource | null | undefined): D
   return 'script'
 }
 
-/** 是否自由画布项目 */
+/** Đây có phải là dự án canvas miễn phí không? */
 export function isCanvasWorkflow(
   item: DramaProject | DramaProjectListItem | WorkflowSource | null | undefined,
 ): boolean {
   return resolveDramaWorkflow(item) === 'canvas'
 }
 
-/** 项目入口路径：画布仅进 canvas，普通进工作台 */
+/** Đường dẫn vào dự án: canvas chỉ vào canvas, bình thường vào bàn làm việc */
 export function dramaProjectEntryPath(
   item: DramaProject | DramaProjectListItem | WorkflowSource,
 ): string {
@@ -46,7 +46,7 @@ export function dramaProjectEntryPath(
   return `/drama/projects/${id}`
 }
 
-/** 列表卡片 meta 文案（需传入 t() 以支持多语言） */
+/** Bản sao meta thẻ danh sách (cần chuyển vào t() để hỗ trợ đa ngôn ngữ) */
 export function formatDramaCardMeta(item: DramaProjectListItem, t: TFunction): string {
   if (isCanvasWorkflow(item)) {
     return `${t('drama.cardMeta.freeCanvas')} · ${t('drama.cardMeta.nodeAssets').replace('{n}', String(item.asset_count || 0))}`

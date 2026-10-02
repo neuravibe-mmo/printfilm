@@ -47,9 +47,9 @@ class User(Base):
     # user | admin
     role: Mapped[str] = mapped_column(String(16), default="user")
     avatar_url: Mapped[str] = mapped_column(String(512), default="")
-    # 联系手机，仅记录，不走短信验证
+    # Liên hệ qua điện thoại di động, chỉ ghi âm, không cần xác minh SMS
     phone: Mapped[str] = mapped_column(String(32), default="")
-    # 用户消费里程碑告警：上次已提醒的累计扣费档位（分）
+    # Cảnh báo cột mốc tiêu dùng của người dùng: mức khấu trừ tích lũy (phút) đã được nhắc lần trước
     billing_alert_last_milestone_fen: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -57,7 +57,7 @@ class User(Base):
 
 
 class BillingAlertNotification(Base):
-    """待展示的用户额度告警（弹窗）。"""
+    """Cảnh báo hạn ngạch người dùng sẽ được hiển thị (cửa sổ bật lên)."""
 
     __tablename__ = "billing_alert_notifications"
 
@@ -115,10 +115,10 @@ class Project(Base):
     cover_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     final_video_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     resolution_mode: Mapped[str] = mapped_column(String(16), default="preview")  # preview | hd
-    # full = 图→视频→配音→合成；image_text = 静图+叠字+配音+Ken Burns（跳过 AI 视频）
-    # 由用户选择，不由模板锁定
+    # full = hình ảnh → video → lồng tiếng → tổng hợp; image_text = ảnh tĩnh + chữ chồng lên nhau + lồng tiếng + Ken Burns (bỏ qua video AI)
+    # Được người dùng chọn, không bị khóa theo mẫu
     pipeline_mode: Mapped[str] = mapped_column(String(32), default="full")
-    # 输出画幅，如 16:9 / 9:16；空则回退模板 default_ratio
+    # Khung đầu ra, chẳng hạn như 16:9 / 9:16; nếu trống, hãy quay lại mẫu default_ratio
     output_ratio: Mapped[str] = mapped_column(String(16), default="")
     # TTS voice id (openspeech speaker or preset alias); empty → template default
     voice_id: Mapped[str] = mapped_column(String(128), default="")
@@ -126,13 +126,13 @@ class Project(Base):
     character_bible: Mapped[str] = mapped_column(Text, default="")
     # Project-level BGM mood lock (same across shots)
     bgm_lock: Mapped[str] = mapped_column(Text, default="")
-    # 科普成片字幕预设：standard | large | split
+    # Mặc định phụ đề phim khoa học nổi tiếng: tiêu chuẩn | lớn | chia đôi
     subtitle_preset: Mapped[str] = mapped_column(String(32), default="")
     # User overrides from studio (optional)
     style_prompt: Mapped[str] = mapped_column(Text, default="")
     character_prompt: Mapped[str] = mapped_column(Text, default="")
     extra_prompt: Mapped[str] = mapped_column(Text, default="")
-    # 科普图/视频模型；空则走后台 TokenFree 默认
+    # Mô hình bản đồ/video khoa học phổ biến; nếu trống, hãy chuyển đến nền Mặc định TokenFree
     image_model: Mapped[str] = mapped_column(String(64), default="")
     video_model: Mapped[str] = mapped_column(String(64), default="")
     ref_image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
@@ -158,9 +158,9 @@ class Shot(Base):
     project_id: Mapped[int] = mapped_column(ForeignKey("projects.id"), index=True)
     shot_no: Mapped[int] = mapped_column(Integer)
     duration: Mapped[float] = mapped_column(Float, default=4.0)
-    narration: Mapped[str] = mapped_column(Text, default="")  # TTS 旁白
-    overlay_title: Mapped[str] = mapped_column(String(128), default="")  # 图文顶部大标题
-    overlay_subtitle: Mapped[str] = mapped_column(String(256), default="")  # 图文顶部副标题（叠字）
+    narration: Mapped[str] = mapped_column(Text, default="")  # TTS tường thuật
+    overlay_title: Mapped[str] = mapped_column(String(128), default="")  # Tiêu đề lớn ở đầu hình ảnh và văn bản
+    overlay_subtitle: Mapped[str] = mapped_column(String(256), default="")  # Phụ đề (chữ chồng nhau) ở đầu ảnh và chữ
     img_prompt: Mapped[str] = mapped_column(Text, default="")
     video_prompt: Mapped[str] = mapped_column(Text, default="")
     # Manju-style timed segment script (@duration + production cues)
@@ -172,7 +172,7 @@ class Shot(Base):
     video_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     last_frame_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     audio_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
-    # 跳过 AI 视频的原因（privacy=真人隐私拦截，静图合成）；NULL 表示正常出视频
+    # Lý do bỏ qua video AI (quyền riêng tư=chặn quyền riêng tư của người thật, tổng hợp hình ảnh tĩnh); NULL có nghĩa là đầu ra video bình thường
     video_skip_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default=ShotStatus.PENDING)
     version: Mapped[int] = mapped_column(Integer, default=1)
@@ -240,7 +240,7 @@ class UsageEvent(Base):
 
 
 class UpstreamUsageDaily(Base):
-    """TokenFree / New API 官方日用量快照，用于与本地 usage_events 对照。"""
+    """TokenFree / Ảnh chụp nhanh mức sử dụng hàng ngày chính thức của API mới, được sử dụng để so sánh với các sự kiện sử dụng cục bộ."""
 
     __tablename__ = "upstream_usage_daily"
 
@@ -285,7 +285,7 @@ class Order(Base):
 
 
 class ToolRun(Base):
-    """独立创作工具一次生成记录，供个人中心回看。"""
+    """Công cụ tạo độc lập tạo hồ sơ cùng một lúc để xem xét trong trung tâm cá nhân."""
 
     __tablename__ = "tool_runs"
 

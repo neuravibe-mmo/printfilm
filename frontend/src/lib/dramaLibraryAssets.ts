@@ -1,12 +1,12 @@
 import type { DramaAsset } from '../api/drama'
 
-/** 画布专用资产 type，不出现在全局/项目资产库列表 */
+/** Loại nội dung dành riêng cho Canvas, không xuất hiện trong danh sách thư viện nội dung toàn cầu/dự án */
 export const DRAMA_CANVAS_ONLY_ASSET_TYPES = new Set(['video', 'audio', 'text'])
 
-/** 已停用的库类型（历史素材/none 不再展示） */
+/** Loại thư viện đã ngừng hoạt động (tài liệu lịch sử/không có tài liệu nào sẽ không còn được hiển thị) */
 export const DRAMA_LIBRARY_DISABLED_TYPES = new Set(['material', 'none'])
 
-// 判断资产是否应出现在资产库（角色/场景/道具/音色等）
+// Xác định xem nội dung có xuất hiện trong thư viện nội dung hay không (nhân vật/cảnh/prop/âm thanh, v.v.)
 export function isDramaLibraryAsset(asset: DramaAsset): boolean {
   const type = (asset.type || '').toLowerCase()
   if (DRAMA_CANVAS_ONLY_ASSET_TYPES.has(type)) return false
@@ -16,7 +16,7 @@ export function isDramaLibraryAsset(asset: DramaAsset): boolean {
   return true
 }
 
-// 过滤出资产库可见项
+// Lọc các mục hiển thị trong thư viện nội dung
 export function filterDramaLibraryAssets(assets: DramaAsset[]): DramaAsset[] {
   return assets.filter(isDramaLibraryAsset)
 }

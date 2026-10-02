@@ -1,4 +1,4 @@
-/** 浏览器内无损拼接本集 MP4；编码不一致时回退服务端统一重编码 */
+/** Ghép nối MP4 của tập này một cách dễ dàng trong trình duyệt; nếu mã hóa không nhất quán, hãy quay lại máy chủ để mã hóa lại thống nhất */
 
 import type { DramaFragment } from '../api/drama'
 import { dramaApi, resolveDramaMediaUrl } from '../api/drama'
@@ -17,7 +17,7 @@ export type EpisodeComposeProgress = {
   total: number
 }
 
-/** 按分镜顺序收集可拼接的视频地址 */
+/** Thu thập các địa chỉ video có thể ghép nối theo trình tự. */
 export function listEpisodeComposeClips(fragments: DramaFragment[]): EpisodeComposeClip[] {
   const clips: EpisodeComposeClip[] = []
   fragments.forEach((fragment, index) => {
@@ -32,12 +32,12 @@ export function listEpisodeComposeClips(fragments: DramaFragment[]): EpisodeComp
   return clips
 }
 
-/** 全片下载文件名 */
+/** Tên file tải phim đầy đủ */
 export function episodeComposeFilename(episodeName: string) {
   return `${sanitizeMediaBasename(episodeName || '本集')}_全片.mp4`
 }
 
-/** 服务端统一重编码拼接并拉回 Blob */
+/** Máy chủ mã hóa lại, ghép nối và kéo lại blob một cách thống nhất */
 async function composeEpisodeVideoServer(
   episodeId: number,
   clips: EpisodeComposeClip[],
@@ -55,7 +55,7 @@ async function composeEpisodeVideoServer(
   return blob
 }
 
-/** 拉取各镜并在本地拼成一条 MP4；无损失败则自动走服务端 */
+/** Kéo từng gương và lắp ráp cục bộ thành MP4; nếu không bị mất thì nó sẽ tự động về máy chủ. */
 export async function composeEpisodeVideoClient(
   clips: EpisodeComposeClip[],
   onProgress?: (progress: EpisodeComposeProgress) => void,
@@ -93,7 +93,7 @@ export async function composeEpisodeVideoClient(
   if (!compat.ok) {
     const episodeId = options?.episodeId
     if (episodeId != null && episodeId > 0) {
-      // Seedance 各镜 HEVC SPS/PPS 常不一致，服务端统一重编码即可
+      // Seedance HEVC SPS/PPS của mỗi máy nhân bản thường không nhất quán, máy chủ có thể mã hóa lại một cách thống nhất
       return composeEpisodeVideoServer(episodeId, clips, onProgress)
     }
     throw new Error(
@@ -107,7 +107,7 @@ export async function composeEpisodeVideoClient(
   return new Blob([copyToArrayBuffer(merged)], { type: 'video/mp4' })
 }
 
-// 拷成独立 ArrayBuffer，避免 Uint8Array 视图在 TS 里不能当 BlobPart
+// Sao chép nó vào một ArrayBuffer độc lập để ngăn chế độ xem Uint8Array bị sử dụng làm BlobPart trong TS
 function copyToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const copy = new ArrayBuffer(bytes.byteLength)
   new Uint8Array(copy).set(bytes)

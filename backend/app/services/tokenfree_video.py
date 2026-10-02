@@ -1,4 +1,4 @@
-"""TokenFree / New API 视频任务：路径映射与 Seedance 请求体包装。
+"""TokenFree / Nhiệm vụ video API mới: ánh xạ đường dẫn và đóng gói nội dung yêu cầu Seedance.
 
 方舟原生是 POST /contents/generations/tasks。TokenFree 走 OpenAI Videos 兼容接口：
 POST /v1/videos、GET /v1/videos/:id、GET /v1/videos/:id/content。
@@ -11,18 +11,18 @@ from typing import Any
 from app.services.media_ref_limits import MAX_REFERENCE_IMAGES
 from app.services.tokenfree_gateway import TOKENFREE_CHANNEL_ID
 
-# 方舟原生异步视频任务前缀
+# Tiền tố tác vụ video không đồng bộ gốc của Ark
 ARK_VIDEO_TASK_PREFIX = "/contents/generations/tasks"
-# TokenFree OpenAI Videos 兼容前缀（相对 /v1）
+# Tiền tố tương thích với Video OpenAI của TokenFree (liên quan đến /v1)
 NEWAPI_VIDEO_TASK_PREFIX = "/videos"
-# 任务成功态（方舟 + New API / OpenAI Videos）
+# Trạng thái nhiệm vụ thành công (Ark + API mới / Video OpenAI)
 VIDEO_SUCCESS_STATUSES = {"succeeded", "success", "completed", "complete"}
-# 任务失败态
+# Trạng thái nhiệm vụ không thành công
 VIDEO_FAILED_STATUSES = {"failed", "cancelled", "canceled", "expired", "failure"}
 
 
 def uses_tokenfree_video(*, base_url: str = "", channel_id: str = "") -> bool:
-    """判断该基址/渠道是否走 New API 视频路径（而非方舟原生）。"""
+    """Xác định xem địa chỉ/kênh cơ sở có sử dụng đường dẫn video API mới (chứ không phải địa chỉ Ark gốc) hay không."""
     if (channel_id or "").strip().lower() == TOKENFREE_CHANNEL_ID:
         return True
     raw = (base_url or "").strip().lower()
@@ -34,7 +34,7 @@ def uses_tokenfree_video(*, base_url: str = "", channel_id: str = "") -> bool:
 
 
 def remap_video_path(path: str, *, base_url: str = "", channel_id: str = "") -> str:
-    """TokenFree 上将方舟任务路径改写成 /videos 与 /videos/{id}。"""
+    """Viết lại đường dẫn nhiệm vụ Ark trên TokenFree thành /videos và /videos/{id}."""
     normalized = path if str(path).startswith("/") else f"/{path}"
     if not uses_tokenfree_video(base_url=base_url, channel_id=channel_id):
         return normalized
@@ -44,14 +44,14 @@ def remap_video_path(path: str, *, base_url: str = "", channel_id: str = "") -> 
 
 
 def tokenfree_video_content_url(base_url: str, task_id: str) -> str:
-    """拼接 GET /v1/videos/{task_id}/content 下载地址。"""
+    """Nối địa chỉ tải xuống GET /v1/videos/{task_id}/content."""
     base = (base_url or "").rstrip("/")
     tid = (task_id or "").strip().lstrip("/")
     return f"{base}/videos/{tid}/content"
 
 
 def is_tokenfree_content_url(url: str) -> bool:
-    """是否为 TokenFree /videos/:id/content 拉取地址（下载需带 Bearer）。"""
+    """Đây có phải là địa chỉ kéo TokenFree /video/:id/content không (Cần có Bearer để tải xuống)."""
     raw = (url or "").strip().lower()
     if "/videos/" not in raw:
         return False
@@ -59,7 +59,7 @@ def is_tokenfree_content_url(url: str) -> bool:
 
 
 def _media_url_from_item(item: dict[str, Any], key: str) -> str | None:
-    """从 content 项取出 image_url / audio_url 的公网地址。"""
+    """Lấy địa chỉ mạng công cộng của image_url/audio_url từ mục nội dung."""
     raw = item.get(key)
     url = raw.get("url") if isinstance(raw, dict) else None
     if isinstance(url, str) and url.strip():
@@ -68,7 +68,7 @@ def _media_url_from_item(item: dict[str, Any], key: str) -> str | None:
 
 
 def wrap_seedance_payload_for_newapi(payload: dict[str, Any]) -> dict[str, Any]:
-    """把方舟 Seedance body 转成 TokenFree POST /v1/videos 请求体。
+    """Chuyển đổi nội dung Ark Seedance thành nội dung yêu cầu TokenFree POST /v1/video.
 
     TokenFree 会把 metadata.input 转成下游插件 `{model, input}`。
     下游 Seedance 只认 reference_image_urls / first_frame_url，不认 content/images。
@@ -76,7 +76,7 @@ def wrap_seedance_payload_for_newapi(payload: dict[str, Any]) -> dict[str, Any]:
     """
     src = dict(payload)
     content = src.get("content")
-    # texts 全部文案；images/audios 按 content 顺序；roles 用来区分首帧 vs 多参考
+    # nhắn tin đều sao chép; hình ảnh/âm thanh theo thứ tự nội dung; vai trò được sử dụng để phân biệt khung đầu tiên với nhiều tham chiếu
     texts: list[str] = []
     images: list[str] = []
     image_roles: list[str] = []
@@ -137,7 +137,7 @@ def wrap_seedance_payload_for_newapi(payload: dict[str, Any]) -> dict[str, Any]:
         meta_input["return_last_frame"] = bool(src.get("return_last_frame"))
     if isinstance(content, list) and content:
         if uses_reference_images:
-            # 下游会把 content 里的图也算进参考图上限，多参考只留文案/音频
+            # Downstream sẽ tính các hình ảnh trong nội dung vào giới hạn trên của hình ảnh tham chiếu. Đối với nhiều tài liệu tham khảo, chỉ bản sao/âm thanh sẽ được giữ lại.
             text_audio = [
                 item
                 for item in content
@@ -151,10 +151,10 @@ def wrap_seedance_payload_for_newapi(payload: dict[str, Any]) -> dict[str, Any]:
     last_frame_url: str | None = None
     if images:
         if uses_reference_images:
-            # 多参考：全部图只走 reference_image_urls（含衔接尾帧）
+            # Nhiều tham chiếu: chỉ reference_image_urls được sử dụng cho tất cả hình ảnh (bao gồm cả khung cuối cùng của kết nối)
             meta_input["reference_image_urls"] = images
         else:
-            # 纯首/尾帧：与 reference_* 互斥，按 role 填
+            # Khung đầu tiên/cuối cùng thuần túy: loại trừ lẫn nhau với tham chiếu_*, điền theo vai trò
             meta_input["images"] = images
             for url, role in zip(images, image_roles):
                 if role == "first_frame" and not first_frame_url:
@@ -187,14 +187,14 @@ def prepare_video_create_body(
     base_url: str = "",
     channel_id: str = "",
 ) -> dict[str, Any]:
-    """按渠道决定是否包装 Seedance 请求体。"""
+    """Xác định xem có nên đóng gói nội dung yêu cầu Seedance theo kênh hay không."""
     if uses_tokenfree_video(base_url=base_url, channel_id=channel_id):
         return wrap_seedance_payload_for_newapi(body)
     return body
 
 
 def unwrap_video_task_payload(data: dict[str, Any] | None) -> dict[str, Any]:
-    """摊平 New API `{data: {...}}` 包装，便于取 status / url / task_id。"""
+    """Làm phẳng bao bì API mới `{data: {...}}` để dễ dàng truy cập vào trạng thái/url/task_id."""
     if not isinstance(data, dict):
         return {}
     inner = data.get("data")
@@ -208,7 +208,7 @@ def unwrap_video_task_payload(data: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def _scalar_task_id(value: Any) -> str | None:
-    """把标量任务 ID 收成非空字符串；忽略明显不是 ID 的状态词。"""
+    """Thu thập ID tác vụ vô hướng dưới dạng chuỗi không trống; bỏ qua các từ trạng thái rõ ràng không phải là ID."""
     if isinstance(value, bool) or value is None:
         return None
     if isinstance(value, (str, int)) and str(value).strip():
@@ -220,7 +220,7 @@ def _scalar_task_id(value: Any) -> str | None:
 
 
 def extract_video_task_id(data: dict[str, Any] | None) -> str | None:
-    """从创建/查询响应取出轮询用任务 ID。
+    """Nhận ID nhiệm vụ thăm dò ý kiến ​​từ phản hồi tạo/truy vấn.
 
     New API 可能同时给 `id`（视频对象）和 `task_id`（查询用）；优先 task_id。
     部分网关把 ID 放在字符串 `data` 里。
@@ -239,7 +239,7 @@ def extract_video_task_id(data: dict[str, Any] | None) -> str | None:
 
 
 def format_video_task_error(err: Any) -> str:
-    """把上游 error 对象收成可读短句。"""
+    """Thu thập đối tượng lỗi ngược dòng thành câu có thể đọc được."""
     if isinstance(err, dict):
         for key in ("message", "msg", "error"):
             value = err.get(key)
@@ -255,7 +255,7 @@ def format_video_task_error(err: Any) -> str:
 
 
 def extract_video_result_url(data: dict[str, Any]) -> str | None:
-    """从任务成功响应中取视频 URL（New API `url` 或方舟 `content.video_url`）。"""
+    """Nhận URL video (API mới `url` hoặc Ark `content.video_url`) từ phản hồi thành công của nhiệm vụ."""
     for key in ("url", "video_url"):
         value = data.get(key)
         if isinstance(value, str) and value.strip().startswith(("http://", "https://", "/")):
@@ -270,7 +270,7 @@ def extract_video_result_url(data: dict[str, Any]) -> str | None:
 
 
 def normalize_video_task_status(status: str) -> str:
-    """把上游状态归一成 running/succeeded/failed。"""
+    """Bình thường hóa trạng thái ngược dòng thành đang chạy/thành công/không thành công."""
     raw = (status or "").strip().lower()
     if raw in VIDEO_SUCCESS_STATUSES:
         return "succeeded"

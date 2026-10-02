@@ -16,7 +16,7 @@ import {
 } from '../../lib/dialog'
 import { useI18n } from '../../i18n'
 
-// 按弹窗类型与语气返回图标
+// Biểu tượng trả về theo loại và âm báo bật lên
 function dialogIcon(kind: DialogRequest['kind'], tone: DialogTone | undefined): LucideIcon {
   if (tone === 'danger') return AlertTriangle
   if (tone === 'success') return CheckCircle2

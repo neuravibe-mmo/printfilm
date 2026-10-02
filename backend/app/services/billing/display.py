@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""用量展示：计费依据标签与筛选。"""
+"""Hiển thị mức sử dụng: thanh toán dựa trên nhãn và lọc."""
 from __future__ import annotations
 
 import json
@@ -35,7 +35,7 @@ _UPSTREAM_COST_JSON_KEYS = (
 
 
 def resolve_billing_basis(*, estimated: bool, raw_usage_json: str | None = None) -> str:
-    """推断计费依据：estimate | upstream_usage | upstream_cost | unknown。"""
+    """Cơ sở thanh toán được suy luận: ước tính | upstream_usage | upstream_cost | không rõ."""
     if estimated:
         return "estimate"
     raw: dict[str, Any] | None = None
@@ -64,7 +64,7 @@ def _raw_usage_jsonb() -> ColumnElement[Any]:
 
 
 def _usage_has_upstream_cost_clause() -> ColumnElement[Any]:
-    """JSON 块内是否含上游费用字段（与 parse_upstream_cost_fen 键集合一致）。"""
+    """Khối JSON có chứa trường chi phí ngược dòng hay không (phù hợp với bộ khóa pars_upstream_cost_fen)."""
     raw = _raw_usage_jsonb()
     usage = raw["usage"]
     return or_(*[usage.has_key(key) for key in _UPSTREAM_COST_JSON_KEYS])
@@ -77,7 +77,7 @@ def _usage_has_upstream_tokens_clause() -> ColumnElement[Any]:
 
 
 def billing_basis_sql_filter(basis: str) -> ColumnElement[bool] | None:
-    """按计费依据生成 UsageEvent SQL 筛选条件；未知 basis 返回 None。"""
+    """Tạo các điều kiện bộ lọc SQL UsageEvent theo cơ sở thanh toán; cơ sở chưa biết trả về Không có."""
     normalized = (basis or "").strip().lower()
     if normalized == "estimate":
         return UsageEvent.estimated.is_(True)

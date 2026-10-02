@@ -1,6 +1,6 @@
 /**
- * 旁白音色绑定：从漫剧 voice 资产选择，写入 project.params.narrationVoiceAudio
- * 供 Seedance 生成时作为全局 reference_audio 注入。
+ * Liên kết giọng nói tường thuật: Chọn từ nội dung giọng nói truyện tranh và ghi vào project.params.narrationVoiceAudio
+ * Được đưa vào dưới dạng tham chiếu toàn cầu_audio khi Seedance được tạo.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AudioLines } from 'lucide-react'
@@ -81,7 +81,7 @@ export function NarratorVoiceBindModal({ project, open, onClose, onUpdated, onEr
         sourceAssetId: selectedVoice.id,
         url: selectedVoice.url,
         label: selectedVoice.name || t('drama.voiceBind.narratorVoice'),
-        // Narrator 端当前不依赖 voicePrompt；但保留字段给后续扩展
+        // Phía Trình tường thuật hiện không dựa vào voicePrompt; nhưng trường này được dành riêng cho việc mở rộng tiếp theo
         voicePrompt:
           selectedVoice.params && typeof selectedVoice.params === 'object' && typeof (selectedVoice.params as any).voicePrompt === 'string'
             ? (selectedVoice.params as any).voicePrompt

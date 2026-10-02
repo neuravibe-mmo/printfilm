@@ -1,4 +1,4 @@
-/** 分镜故事板节点：上方视频，下方提示词；出境资产通过左侧节点连线关联 */
+/** Các nút trong bảng phân cảnh: video ở trên cùng, lời nhắc ở dưới cùng; tài sản gửi đi có liên quan thông qua các kết nối nút ở bên trái */
 import { memo, useCallback, type ChangeEvent } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { Clapperboard, Plus } from 'lucide-react'
@@ -10,7 +10,7 @@ type Props = NodeProps<Node<EpisodeFragmentNodeData>> & {
   onRequestLinkAsset?: (fragmentId: number) => void
 }
 
-// 渲染单个分镜视频节点
+// Kết xuất một nút video bảng phân cảnh duy nhất
 function EpisodeFragmentNodeComponent({
   data,
   selected,

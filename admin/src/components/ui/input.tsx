@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// 管理端统一文本输入
+// Nhập văn bản thống nhất ở phía quản lý
 export function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input

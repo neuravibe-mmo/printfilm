@@ -12,7 +12,7 @@ type StatItem = {
   value: ReactNode;
 };
 
-/** 详情弹窗分区标题 + 内容 */
+/** Chi tiết tiêu đề + nội dung phân vùng cửa sổ bật lên */
 export function AdminDetailSection({
   title,
   children,
@@ -30,7 +30,7 @@ export function AdminDetailSection({
   );
 }
 
-/** 只读 key-value 网格（基本信息） */
+/** Lưới khóa-giá trị chỉ đọc (thông tin cơ bản) */
 export function AdminDetailMeta({ items }: { items: MetaItem[] }) {
   return (
     <dl className="admin-detail-meta">
@@ -47,7 +47,7 @@ export function AdminDetailMeta({ items }: { items: MetaItem[] }) {
   );
 }
 
-/** 费用/指标四宫格 */
+/** Lưới bốn ô vuông chi phí/chỉ báo */
 export function AdminDetailStatGrid({ items }: { items: StatItem[] }) {
   return (
     <div className="admin-detail-stat-grid">
@@ -61,7 +61,7 @@ export function AdminDetailStatGrid({ items }: { items: StatItem[] }) {
   );
 }
 
-/** 弹窗内嵌表格容器 */
+/** Hộp chứa biểu mẫu được nhúng trong cửa sổ bật lên */
 export function AdminDetailTableWrap({
   children,
   className,
@@ -72,7 +72,7 @@ export function AdminDetailTableWrap({
   return <div className={cn("admin-detail-table-wrap", className)}>{children}</div>;
 }
 
-/** 备注/脚本文本块 */
+/** Khối văn bản ghi chú/tập lệnh */
 export function AdminDetailNote({
   children,
   empty = false,

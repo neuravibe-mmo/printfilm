@@ -1,7 +1,7 @@
-/** 漫剧资产是否已有形象图（AI 生成或本地上传） */
+/** Nội dung truyện tranh đã có hình ảnh chưa (do AI tạo hoặc tải lên cục bộ) */
 import type { DramaAsset } from '../api/drama'
 
-// 从 params 中读取可能存在的预览 URL（画布同步等）
+// Đọc URL xem trước có thể có từ các thông số (đồng bộ hóa canvas, v.v.)
 function readParamsMediaUrl(asset: DramaAsset): string {
   const params = asset.params
   if (!params || typeof params !== 'object') return ''
@@ -21,20 +21,20 @@ function readParamsMediaUrl(asset: DramaAsset): string {
   return ''
 }
 
-// 资产是否已有有效形象图
+// Nội dung đã có hình ảnh hợp lệ chưa
 export function dramaAssetHasImage(asset: DramaAsset): boolean {
   if ((asset.cover || '').trim() || (asset.url || '').trim()) return true
   return Boolean(readParamsMediaUrl(asset))
 }
 
-// 是否仍需生图（无图且非纯音频类资产时可批量入队）
+// Bạn vẫn cần tạo hình ảnh (nếu không có hình ảnh và nội dung âm thanh không thuần túy, bạn có thể tham gia nhóm theo đợt)
 export function dramaAssetNeedsImageGeneration(asset: DramaAsset): boolean {
   const kind = (asset.type || '').toLowerCase()
   if (['voice', 'video', 'audio', 'text'].includes(kind)) return false
   return !dramaAssetHasImage(asset)
 }
 
-// 卡片/弹窗生图按钮文案（queueLabel 为排队态文案，有值时优先）
+// Sao chép nút hình ảnh thẻ/cửa sổ bật lên (queueLabel là bản sao trạng thái hàng đợi, ưu tiên được đưa ra khi có giá trị)
 export function dramaAssetImageGenButtonLabel(
   asset: DramaAsset,
   queueLabel: string | null,

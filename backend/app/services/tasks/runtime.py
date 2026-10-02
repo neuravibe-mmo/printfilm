@@ -31,21 +31,21 @@ _watchdog_stop = asyncio.Event()
 _watchdog_intentionally_stopped: bool = True
 
 
-# 启动统一任务平台运行时（Worker 调度 + Selector 轮询 + 看门狗）。
+# Bắt đầu thời gian chạy nền tảng tác vụ hợp nhất (Lập lịch cho nhân viên + Bỏ phiếu chọn + cơ quan giám sát).
 async def start_task_runtime() -> None:
     await start_scheduler()
     await start_poller()
     await start_watchdog()
 
 
-# 停止统一任务平台运行时。
+# Dừng thời gian chạy của nền tảng tác vụ hợp nhất.
 async def stop_task_runtime() -> None:
     await stop_watchdog()
     await stop_poller()
     await stop_scheduler()
 
 
-# 启动看门狗：调度/轮询循环退出或心跳过期时自动拉起。
+# Bắt đầu cơ quan giám sát: tự động bắt đầu khi thoát khỏi vòng lập kế hoạch/bỏ phiếu hoặc hết nhịp tim.
 async def start_watchdog() -> None:
     global _watchdog_task, _watchdog_intentionally_stopped
     if _watchdog_task and not _watchdog_task.done():
@@ -55,7 +55,7 @@ async def start_watchdog() -> None:
     _watchdog_task = asyncio.create_task(_watchdog_loop(), name="task-runtime-watchdog")
 
 
-# 停止看门狗。
+# Dừng cơ quan giám sát lại.
 async def stop_watchdog() -> None:
     global _watchdog_intentionally_stopped
     _watchdog_intentionally_stopped = True
@@ -68,7 +68,7 @@ async def stop_watchdog() -> None:
             pass
 
 
-# 看门狗状态。
+# Trạng thái cơ quan giám sát.
 def watchdog_status() -> str:
     if _watchdog_intentionally_stopped:
         return "stopped"
@@ -77,7 +77,7 @@ def watchdog_status() -> str:
     return "stopped"
 
 
-# 周期检查调度器与 Selector 存活，必要时软重启。
+# Định kỳ kiểm tra bộ lập lịch và Bộ chọn xem có tồn tại không và khởi động lại mềm nếu cần.
 async def _watchdog_loop() -> None:
     while not _watchdog_stop.is_set():
         try:
@@ -90,7 +90,7 @@ async def _watchdog_loop() -> None:
         await asyncio.sleep(interval)
 
 
-# 单次看门狗检查。
+# Kiểm tra cơ quan giám sát duy nhất.
 async def _watchdog_once() -> None:
     if scheduler_status() != "running" or scheduler_tick_stale():
         reason = "dead" if scheduler_status() != "running" else "tick_stale"
@@ -100,7 +100,7 @@ async def _watchdog_once() -> None:
         await restart_poller_loop(reason=f"watchdog:{reason}")
 
 
-# 返回任务平台运行时摘要（槽位 + 循环存活 + 心跳年龄）。
+# Trả về tóm tắt thời gian chạy của nền tảng tác vụ (khe + vòng lặp sống sót + tuổi nhịp tim).
 def runtime_summary() -> dict[str, int | str | float | bool]:
     sched = scheduler_status()
     poll = poller_status()

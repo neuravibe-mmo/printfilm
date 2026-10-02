@@ -11,16 +11,16 @@ type AccountProfileCardProps = {
   onUserChange: (user: User) => void
 }
 
-/** 账号资料：头像、用户名、邮箱、手机号（手机号仅记录） */
+/** Thông tin tài khoản: avatar, tên người dùng, email, số điện thoại di động (chỉ ghi số điện thoại di động) */
 export default function AccountProfileCard({ user, onUserChange }: AccountProfileCardProps) {
   const { t } = useI18n()
   /*
-   * nickname / email / phone 表单值
-   * saveBusy 保存中
-   * saveError 保存失败
-   * saveOk 保存成功提示
-   * avatarBusy 头像上传中
-   * avatarError 头像失败原因
+   * biệt danh / email / giá trị biểu mẫu điện thoại
+   * saveĐang bận tiết kiệm
+   * saveLỗi không lưu được
+   * saveOk nhắc nhở lưu thành công
+   * avatarBusy avatar đang tải lên
+   * avatarError Lý do avatar bị lỗi
    */
   const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
@@ -45,7 +45,7 @@ export default function AccountProfileCard({ user, onUserChange }: AccountProfil
       email.trim() !== (user.email || '') ||
       phone.trim() !== (user.phone || ''))
 
-  // 选择并上传头像
+  // Chọn và tải ảnh đại diện lên
   async function handleAvatarChange(file: File | undefined) {
     if (!file || avatarBusy) return
     setAvatarError('')
@@ -62,7 +62,7 @@ export default function AccountProfileCard({ user, onUserChange }: AccountProfil
     }
   }
 
-  // 保存用户名、邮箱、手机号
+  // Lưu tên người dùng, email và số điện thoại di động
   async function handleSave() {
     if (!user || saveBusy) return
     setSaveError('')

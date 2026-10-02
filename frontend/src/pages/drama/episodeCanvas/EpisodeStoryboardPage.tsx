@@ -1,4 +1,4 @@
-/** 分集分镜故事板全屏画布：按分镜连线，节点含视频 / 出境资产 / 提示词 */
+/** Canvas toàn màn hình của bảng phân cảnh tập: được kết nối bằng bảng phân cảnh, các nút bao gồm video/nội dung bên ngoài/từ nhắc nhở */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Background,
@@ -43,7 +43,7 @@ import './episodeCanvas.css'
 
 const SAVE_DEBOUNCE_MS = 800
 
-// 正文补上 @asset 提及
+// Thêm @asset đề cập đến văn bản
 function ensureAssetMention(content: string, assetId: number): string {
   const token = `@asset:${assetId}`
   if ((content || '').includes(token)) return content || ''
@@ -51,7 +51,7 @@ function ensureAssetMention(content: string, assetId: number): string {
   return trimmed ? `${trimmed} ${token}` : token
 }
 
-// 正文去掉 @asset 提及
+// Xóa đề cập đến @asset khỏi văn bản
 function removeAssetMention(content: string, assetId: number): string {
   return (content || '')
     .replace(new RegExp(`\\s*@asset:${assetId}\\b`, 'g'), ' ')
@@ -60,7 +60,7 @@ function removeAssetMention(content: string, assetId: number): string {
     .trim()
 }
 
-// 鉴权后进入分镜故事板
+// Nhập bảng phân cảnh sau khi xác thực
 export default function EpisodeStoryboardPage() {
   return (
     <RequireAuth>
@@ -71,7 +71,7 @@ export default function EpisodeStoryboardPage() {
   )
 }
 
-// 加载分集并渲染全屏故事板
+// Tải tập và hiển thị bảng phân cảnh toàn màn hình
 function EpisodeStoryboardInner() {
   const { t, locale } = useI18n()
   const { projectId, episodeId } = useParams()
@@ -81,9 +81,9 @@ function EpisodeStoryboardInner() {
   const { fitView } = useReactFlow()
 
   /*
-   * episode / fragments / assets 数据
-   * linkTargetFragId 正在选资产关联的分镜
-   * dirty / busy / error / status 状态
+   * tập/đoạn/dữ liệu nội dung
+   * linkTargetFragId đang chọn bảng phân cảnh liên quan đến nội dung.
+   * bẩn / bận / lỗi / trạng thái
    */
   const [episode, setEpisode] = useState<DramaEpisode | null>(null)
   const [fragments, setFragments] = useState<DramaFragment[]>([])
@@ -109,7 +109,7 @@ function EpisodeStoryboardInner() {
     assetsRef.current = assets
   }, [assets])
 
-  // 结构键：成片 + 关联资产变化时重建；提示词编辑走局部更新
+  // Khóa cấu trúc: thành từng phần + được xây dựng lại khi tài sản liên quan thay đổi; trình soạn thảo từ nhắc nhở thực hiện cập nhật một phần
   const structureKey = fragments
     .map((f) => {
       const aids = collectFragmentAssetIds(f).join(',')
@@ -133,7 +133,7 @@ function EpisodeStoryboardInner() {
     void fitView({ padding: 0.22, duration: 280 })
   }, [nodes.length, fitView])
 
-  // 拉取分集 + 项目资产
+  // Kéo các tập + nội dung dự án
   useEffect(() => {
     if (!eid || !pid) return
     let cancelled = false
@@ -158,7 +158,7 @@ function EpisodeStoryboardInner() {
     }
   }, [eid, pid])
 
-  // 持久化全部分镜（保序，保留成片与引用）
+  // Kiên trì tất cả các bản sao (giữ trật tự, giữ lại các lát cắt và tham chiếu)
   const persistFragments = useCallback(
     async (next: DramaFragment[]) => {
       if (!eid) return
@@ -198,7 +198,7 @@ function EpisodeStoryboardInner() {
     [eid],
   )
 
-  // 防抖保存
+  // Lưu chống rung
   const scheduleSave = useCallback(() => {
     setDirty(true)
     if (saveTimer.current) window.clearTimeout(saveTimer.current)
@@ -207,7 +207,7 @@ function EpisodeStoryboardInner() {
     }, SAVE_DEBOUNCE_MS)
   }, [persistFragments])
 
-  // 刷新单个分镜节点提示词（关联资产变化靠 structureKey 重建）
+  // Làm mới lời nhắc của một nút bảng phân cảnh (các thay đổi nội dung liên quan được xây dựng lại bằng StructureKey)
   const patchFragmentPrompt = useCallback(
     (fragmentId: number, content: string) => {
       setNodes((prev) =>
@@ -222,7 +222,7 @@ function EpisodeStoryboardInner() {
     [setNodes],
   )
 
-  // 改提示词
+  // Thay đổi lời nhắc
   const handlePromptChange = useCallback(
     (fragmentId: number, content: string) => {
       setFragments((prev) =>
@@ -238,7 +238,7 @@ function EpisodeStoryboardInner() {
     [patchFragmentPrompt, scheduleSave],
   )
 
-  // 取消关联出境资产
+  // Hủy liên kết nội dung gửi đi
   const handleUnlinkAsset = useCallback(
     (fragmentId: number, assetId: number) => {
       setFragments((prev) =>
@@ -254,12 +254,12 @@ function EpisodeStoryboardInner() {
     [scheduleSave],
   )
 
-  // 打开关联选择
+  // Mở lựa chọn liên quan
   const handleRequestLinkAsset = useCallback((fragmentId: number) => {
     setLinkTargetFragId(fragmentId)
   }, [])
 
-  // 确认关联资产
+  // Xác nhận nội dung liên quan
   const handlePickAsset = useCallback(
     (asset: DramaAsset) => {
       if (linkTargetFragId == null) return

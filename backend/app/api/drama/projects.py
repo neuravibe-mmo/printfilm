@@ -35,7 +35,7 @@ router = APIRouter()
 
 
 def _project_out(project: DramaProject, usage: DramaProjectUsageStats | None = None) -> DramaProjectOut:
-    # 组装项目详情响应，附带用量统计
+    # Phản hồi chi tiết về dự án lắp ráp, với số liệu thống kê sử dụng
     script = None
     if project.script:
         script = DramaScriptOut.model_validate(project.script)
@@ -180,7 +180,7 @@ async def update_project(
         project.params = body.params
     await db.commit()
 
-    # 镜间衔接开关变化时，动态重排仍排队的分镜视频任务
+    # Khi công tắc kết nối giữa các máy nhân bản thay đổi, các tác vụ video trong bảng phân cảnh vẫn đang xếp hàng sẽ được sắp xếp lại một cách linh hoạt.
     next_link = project_link_last_frame_enabled(project)
     if body.params is not None and prev_link != next_link:
         await rebalance_project_fragment_video_queue(
@@ -203,11 +203,11 @@ async def delete_project(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """删除漫剧项目；先解绑任务/账单外键，避免 FK 阻塞 CASCADE。"""
+    """Xóa dự án truyện tranh; trước tiên hãy hủy liên kết nhiệm vụ/khóa ngoại hóa đơn để tránh FK chặn CASCADE."""
     project = await get_owned_drama_project(db, project_id, user)
     await cancel_tasks_for_scope(db, user.id, drama_project_id=project_id)
 
-    # 保留任务与用量历史，仅清空指向本项目及子表的外键
+    # Giữ lịch sử tác vụ và sử dụng, chỉ xóa các khóa ngoại trỏ đến dự án này và các bảng phụ
     await db.execute(
         update(UsageEvent)
         .where(UsageEvent.drama_project_id == project_id)
@@ -224,7 +224,7 @@ async def delete_project(
             asset_id=None,
         )
     )
-    # 兜底：drama_project_id 为空但仍挂在子表上的任务
+    # Dòng dưới cùng: các nhiệm vụ trong đó drama_project_id trống nhưng vẫn được treo trên bảng phụ
     ep_ids = select(DramaEpisode.id).where(DramaEpisode.project_id == project_id)
     asset_ids = select(DramaAsset.id).where(DramaAsset.project_id == project_id)
     script_ids = select(DramaScript.id).where(DramaScript.project_id == project_id)

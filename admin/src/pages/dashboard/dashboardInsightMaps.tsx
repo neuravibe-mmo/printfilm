@@ -71,7 +71,7 @@ function buildInsightItems(
     });
 }
 
-/** 能力分布洞察卡片 */
+/** Thẻ thông tin chi tiết về phân phối khả năng */
 export function buildCapabilityInsights(
   rows: AdminUsageBucket[],
   metric: DashboardMetric,
@@ -80,7 +80,7 @@ export function buildCapabilityInsights(
   return buildInsightItems(rows, metric, CAPABILITY_META, undefined, t);
 }
 
-/** 领域分布洞察卡片 */
+/** Thẻ thông tin chuyên sâu về phân phối tên miền */
 export function buildDomainInsights(
   rows: AdminUsageBucket[],
   metric: DashboardMetric,

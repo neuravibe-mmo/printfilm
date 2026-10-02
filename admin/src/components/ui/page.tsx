@@ -8,7 +8,7 @@ type PageHeaderProps = {
   className?: string;
 };
 
-// 统一页面标题区（标题由顶栏展示，此处仅描述与操作）
+// Thống nhất khu vực tiêu đề trang (tiêu đề hiển thị ở thanh trên cùng, ở đây chỉ có mô tả và thao tác)
 export function PageHeader({ description, actions, className }: PageHeaderProps) {
   if (!description && !actions) return null;
   return (
@@ -25,7 +25,7 @@ type EmptyStateProps = {
   className?: string;
 };
 
-// 空列表占位
+// Trình giữ chỗ danh sách trống
 export function EmptyState({
   title = "暂无数据",
   description = "换个筛选条件再试试",
@@ -45,7 +45,7 @@ type ToolbarProps = {
   className?: string;
 };
 
-// 筛选 / 搜索工具条（与 AdminFilterBar 一致）
+// Thanh công cụ Lọc/Tìm kiếm (phù hợp với AdminFilterBar)
 export function Toolbar({ children, className }: ToolbarProps) {
   return (
     <div className={cn("admin-filter-bar", className)}>

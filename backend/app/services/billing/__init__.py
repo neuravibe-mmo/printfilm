@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""统一任务计费：预扣 → 记录用量 → 任务结束结算。"""
+"""Thanh toán nhiệm vụ thống nhất: khấu trừ → ghi lại mức sử dụng → thanh toán sau khi hoàn thành nhiệm vụ."""
 from __future__ import annotations
 
 from app.services.billing.context import billing_scope, get_current_task_run_id, set_current_task_run_id

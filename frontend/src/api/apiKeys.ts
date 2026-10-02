@@ -1,4 +1,4 @@
-/** API Key 管理客户端（/api/user/api-keys） */
+/** Ứng dụng quản lý khóa API (/api/user/api-keys) */
 
 function defaultApiBase() {
   if (typeof window !== 'undefined' && window.location?.hostname) {

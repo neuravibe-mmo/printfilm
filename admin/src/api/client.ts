@@ -203,7 +203,7 @@ export type AdminUserRow = {
   created_at?: string | null;
 };
 
-/** @deprecated 遗留 Celery 队列快照，任务中心已改用 /api/admin/tasks */
+/** @không được dùng nữa Ảnh chụp nhanh hàng đợi Legacy Celery, trung tâm tác vụ đã được đổi thành /api/admin/tasks */
 export type AdminOrder = {
   id: number;
   out_trade_no: string;
@@ -380,7 +380,7 @@ export type AdminQueueSummary = {
   sample: AdminQueueTask[];
 };
 
-/** @deprecated 遗留 Celery 队列快照，任务中心已改用 /api/admin/tasks */
+/** @không được dùng nữa Ảnh chụp nhanh hàng đợi Legacy Celery, trung tâm tác vụ đã được đổi thành /api/admin/tasks */
 export type AdminQueuesSnapshot = {
   ok: boolean;
   redis_ok: boolean;
@@ -423,9 +423,9 @@ export type AdminTaskRow = {
   billing_charged_fen?: number;
   billing_refunded_fen?: number;
   billing_status?: string;
-  /** 提交参数（入队 payload） */
+  /** Gửi tham số (tải trọng enqueue) */
   payload?: Record<string, unknown> | null;
-  /** 执行结果 */
+  /** Kết quả thực thi */
   result_payload?: Record<string, unknown> | null;
 };
 

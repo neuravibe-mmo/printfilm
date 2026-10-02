@@ -1,12 +1,12 @@
-"""将异常格式化为可展示、非空的错误文案。"""
+"""Định dạng các ngoại lệ thành văn bản lỗi có thể hiển thị, không trống."""
 
 from __future__ import annotations
 
-# 已建连、等响应超时（不是连不上）
+# Đã thiết lập kết nối, hết thời gian chờ phản hồi (không thể kết nối)
 _READ_TIMEOUT_EXC_NAMES = frozenset({"ReadTimeout"})
-# 已建连、发请求体超时
+# Kết nối đã được thiết lập và nội dung yêu cầu đã hết thời gian chờ.
 _WRITE_TIMEOUT_EXC_NAMES = frozenset({"WriteTimeout"})
-# 建连失败 / 代理不可达（含未细分的 TimeoutException）
+# Không thiết lập được kết nối/Không thể truy cập tác nhân (bao gồm cả Ngoại lệ hết thời gian chờ)
 _CONNECT_EXC_NAMES = frozenset(
     {
         "ConnectError",
@@ -25,7 +25,7 @@ def format_exception_message(
     fallback: str = "未知错误",
     limit: int = 500,
 ) -> str:
-    """生成带类型名的错误文案；ConnectError 等空 message 时补上可读说明。"""
+    """Tạo văn bản lỗi với tên loại; thêm mô tả có thể đọc được khi ConnectError và các tin nhắn trống khác."""
     name = type(exc).__name__
     detail = str(exc).strip()
     if name in _READ_TIMEOUT_EXC_NAMES:

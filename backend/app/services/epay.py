@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Epay (易支付) client for pay.gitcc.com — alipay / wxpay."""
+"""Ứng dụng khách Epay cho pay.gitcc.com — alipay / wxpay."""
 from __future__ import annotations
 
 import hashlib
@@ -75,7 +75,7 @@ def build_submit_fields(
     }
     if clientip:
         fields["clientip"] = clientip
-    # device=jump 只会返回收银台跳转 URL；扫码场景必须用 pc（勿传 jump）
+    # device=jump sẽ chỉ trả về URL chuyển thanh toán; kịch bản quét mã QR phải sử dụng PC (không vượt qua bước nhảy)
     if device:
         fields["device"] = device
     fields["sign"] = sign(fields)
@@ -90,7 +90,7 @@ def _is_image_url(value: str) -> bool:
 
 
 def _is_epay_cashier_url(value: str, api_base: str) -> bool:
-    """易支付收银台 /submit 页，扫码会打开站点而非原生支付码。"""
+    """Trang Thanh toán /gửi thanh toán dễ dàng, việc quét mã sẽ mở trang web thay vì mã thanh toán gốc."""
     v = (value or "").strip().lower()
     if not v.startswith(("http://", "https://")):
         return False
@@ -165,7 +165,7 @@ async def create_mapi_payment(
     elif _is_image_url(img):
         qr_payload = img
 
-    # 有原生扫码内容 → 弹窗二维码；否则若有收银台 payurl → 前端新开易支付站点
+    # Có nội dung quét mã gốc → mã QR bật lên; mặt khác, nếu có thanh toán của nhân viên thu ngân → trang thanh toán dễ dàng mới ở giao diện người dùng
     if qr_payload:
         pay_mode = "qr"
     elif payurl:

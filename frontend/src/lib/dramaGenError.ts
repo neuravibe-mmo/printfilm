@@ -1,4 +1,4 @@
-/** 漫剧生成队列：把上游/平台原始错误翻成可读中文，并附处理建议 */
+/** Hàng đợi tạo truyện tranh: Dịch các lỗi gốc ở thượng nguồn/nền tảng sang tiếng Trung dễ đọc, kèm theo các đề xuất xử lý */
 
 import { dialog } from './dialog'
 import { isBillingError } from './billingError'
@@ -22,24 +22,24 @@ function te(key: string, vars?: Record<string, string | number>): string {
 }
 
 export type DramaGenErrorView = {
-  /** 短标题 */
+  /** Tiêu đề ngắn */
   title: string
-  /** 用户可读说明 */
+  /** Mô tả mà người dùng có thể đọc được */
   message: string
-  /** 建议操作 */
+  /** Hành động được đề xuất */
   suggestion?: string
-  /** 是否余额不足（展示充值跳转） */
+  /** Số dư có đủ không (hiển thị bước nhảy nạp tiền) */
   billingBlocked?: boolean
-  /** 是否上游模型账户欠费（提醒管理员，非用户钱包） */
+  /** Tài khoản mô hình ngược dòng có bị truy thu hay không (nhắc nhở quản trị viên, ví không phải của người dùng) */
   upstreamAccountBlocked?: boolean
 }
 
-/** 是否为上游 Seedream 账户欠费 */
+/** Tài khoản Seedream ngược dòng có bị truy thu không? */
 export function isUpstreamAccountError(message: string): boolean {
   return /AccountOverdueError|上游 Seedream 账户欠费|上游.*账户欠费/i.test(message)
 }
 
-// 从 Seedance JSON 文案里取出 content[n]
+// Nhận nội dung[n] từ bản sao JSON của Seedance
 function extractContentIndex(raw: string): number | null {
   const m = raw.match(/content\[(\d+)\]/i)
   if (!m) return null
@@ -47,14 +47,14 @@ function extractContentIndex(raw: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-/** 判断文案是否像「具体根因」（优先于「重试上限」等包装句） */
+/** Xác định xem bản sao có giống với "nguyên nhân gốc rễ cụ thể" hay không (ưu tiên các câu đóng gói như "giới hạn thử lại") */
 function looksLikeRootCause(text: string): boolean {
   return /PrivacyInformation|InputImageSensitive|SensitiveContentDetected|参考图疑似|参考音频过短|may contain real person|Seedance create error|上一镜失败|无法衔接|分镜已变更|分镜上下文|InputTextSensitive|resource download failed|audio_url|audio duration|Credits insufficient|File type not supported|参考图格式不支持/i.test(
     text,
   )
 }
 
-// 从错误里尽量抽出已标注的槽位名（后端 content_labels）
+// Hãy thử trích xuất các tên vị trí được gắn nhãn từ lỗi (nội dung phụ trợ)
 function extractNamedSlot(text: string): string | null {
   const named = text.match(/(角色|场景|道具|旁白|参考图|音色)「([^」]+)」/)
   if (named) return `${named[1]}「${named[2]}」`
@@ -62,8 +62,8 @@ function extractNamedSlot(text: string): string | null {
 }
 
 /**
- * 从多条候选错误里挑出最具体的根因（例如隐私图审核），
- * 避免只展示「重试超过上限」这类包装文案。
+ * Chọn nguyên nhân cốt lõi cụ thể nhất từ nhiều lỗi ứng cử viên (chẳng hạn như xem xét bản đồ quyền riêng tư),
+ * Tránh chỉ hiển thị bản sao đóng gói như "Thử lại vượt quá giới hạn".
  */
 export function pickRootDramaGenError(
   candidates: Array<string | null | undefined>,
@@ -75,8 +75,8 @@ export function pickRootDramaGenError(
 }
 
 /**
- * 将任务 error / error_message 转为前端展示文案。
- * 已是中文短句时尽量保留，仅补建议。
+ * Chuyển đổi tác vụ error / error_message thành bản sao chép hiển thị ở giao diện người dùng.
+ * Nếu đó đã là một câu ngắn bằng tiếng Trung, hãy cố gắng giữ lại và chỉ thêm gợi ý.
  */
 export function formatDramaGenError(raw: string | null | undefined): DramaGenErrorView {
   const text = String(raw || '').trim()
@@ -198,7 +198,7 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
     }
   }
 
-  // Seedance r2v：reference_audio 须 ≥ 1.8 秒（不是参考图）
+  // Seedance r2v: reference_audio phải ≥ 1,8 giây (không phải hình ảnh tham chiếu)
   if (/audio duration|参考音频过短|1\.8/i.test(text) && /audio|音色|reference_audio|content\[/i.test(text)) {
     const idx = extractContentIndex(text)
     const named = extractNamedSlot(text)
@@ -274,7 +274,7 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
     }
   }
 
-  // 已是较短中文：原样展示，补通用建议
+  // Tiếng Trung đã ngắn hơn: hiển thị nguyên trạng, kèm theo gợi ý bổ sung
   if (!/[{\\[\]"]/.test(text) && text.length <= 120 && /[\u4e00-\u9fff]/.test(text)) {
     return {
       title: te('genFailed'),
@@ -290,7 +290,7 @@ export function formatDramaGenError(raw: string | null | undefined): DramaGenErr
   }
 }
 
-/** 弹窗展示生成失败（含上游欠费 / 用户余额不足等） */
+/** Không thể tạo màn hình bật lên (bao gồm cả các khoản nợ ngược dòng/số dư người dùng không đủ, v.v.) */
 export async function alertDramaGenError(raw: unknown): Promise<void> {
   const text = raw instanceof Error ? raw.message : String(raw || '')
   const view = formatDramaGenError(text)

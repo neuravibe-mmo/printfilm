@@ -1,4 +1,4 @@
-"""对外 REST API：生图 / 生视频 / Seedance 转发。"""
+"""API REST bên ngoài: hình ảnh thô/video thô/chuyển tiếp hạt giống."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ async def generate_image(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(_resolve_api_user),
 ) -> V1GenerationOut:
-    """文生图 / 图生图（Seedream）。"""
+    """Tạo ảnh từ văn bản / Tạo ảnh từ ảnh (Seedream)."""
 
     async def _exec() -> str:
         ark = get_ark()
@@ -57,7 +57,7 @@ async def generate_image(
         prompt = body.prompt.strip()
         if body.image_url:
             refs = [body.image_url.strip()]
-            prompt = f"{prompt}。在保持主体可识别的前提下适度改变风格"
+            prompt = f"{prompt}。Giữ nguyên tính nhận diện của chủ thể, biến đổi phong cách một cách vừa phải"
         size = ratio_to_size(body.ratio)
         try:
             result = await ark.gen_image(
@@ -111,7 +111,7 @@ async def generate_video(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(_resolve_api_user),
 ) -> V1GenerationOut:
-    """首帧图 + 文案 → Seedance 图生视频，返回 task_id。"""
+    """Hình ảnh khung đầu tiên + bản sao → Hình ảnh Seedance để tạo video, trả về task_id."""
 
     async def _exec() -> str:
         ark = get_ark()
@@ -156,7 +156,7 @@ async def forward_seedance(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(_resolve_api_user),
 ) -> V1GenerationOut:
-    """转发 Seedance 多模态 body 到 TokenFree。"""
+    """Chuyển tiếp nội dung đa phương thức Seedance tới TokenFree."""
     if not body.content:
         raise HTTPException(status_code=400, detail="content 不能为空")
     settings = get_settings()
@@ -204,11 +204,11 @@ async def get_task(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(_resolve_api_user),
 ) -> V1GenerationOut:
-    """查询 Seedance 视频任务状态（仅可查询本人提交的任务）。"""
+    """Truy vấn trạng thái của các nhiệm vụ video Seedance (chỉ những nhiệm vụ do tôi gửi mới có thể được truy vấn)."""
     if not task_id.strip():
         raise HTTPException(status_code=400, detail="缺少 task_id")
     tid = task_id.strip()
-    # 归属校验：上游 task_id 本身是可传递的凭据，不校验会拖走他人视频
+    # Xác minh thuộc tính: Bản thân task_id ngược dòng là thông tin xác thực có thể chuyển nhượng. Nếu không được xác minh, video của người khác sẽ bị kéo đi.
     owned = (
         await db.execute(
             select(TaskRun.id)

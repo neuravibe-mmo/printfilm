@@ -19,7 +19,7 @@ import { calcProfitFen, sumDailyUsage, sumProjectStatuses } from "@/pages/dashbo
 import { fenToYuan, formatCredits } from "@/lib/utils";
 import { projectStatusLabel } from "@/lib/statusLabels";
 
-/** 财务账单 Tab 图标指标 */
+/** Chỉ báo biểu tượng tab hóa đơn tài chính */
 export function buildFinanceInsights(
   stats: AdminStats | null,
   upstream: AdminUpstreamUsage | null,
@@ -116,7 +116,7 @@ const STATUS_META: Record<string, { icon: LucideIcon; tone: DashboardInsightItem
   VIDEOING: { icon: Activity, tone: "teal" },
 };
 
-/** 项目运维 Tab 图标指标 */
+/** Các chỉ báo biểu tượng tab Vận hành và Bảo trì Dự án */
 export function buildProjectInsights(
   stats: AdminStats | null,
   periodDaily: ReturnType<typeof sumDailyUsage>,
