@@ -26,8 +26,8 @@ def resolve_llm_api_key() -> str:
     key = (get_settings().openai_api_key or "").strip()
     if not key:
         raise LlmUnavailableError(
-            "未配置 OPENAI_API_KEY，无法调用文字模型。"
-            "请在管理后台「系统设置 → 模型」填写 TokenFree API Key 并选择文本模型。"
+            "Chưa cấu hình OPENAI_API_KEY, không thể gọi mô hình văn bản. "
+            "Vui lòng điền TokenFree API Key và chọn mô hình văn bản trong trang quản trị 'Cài đặt hệ thống → Mô hình'."
         )
     return key
 
@@ -85,7 +85,7 @@ async def chat_completions(
         base = resolve_llm_base_url()
     if not model:
         raise LlmUnavailableError(
-            "未解析到可用文字模型。请在管理后台填写 TokenFree API Key，拉取并选择文本模型。"
+            "Chưa cấu hình mô hình văn bản khả dụng. Vui lòng điền TokenFree API Key trong trang quản trị, đồng bộ và chọn mô hình văn bản."
         )
     # dòng kimi chỉ cho phép nhiệt độ = 0,6, các giá trị khác sẽ là 400
     effective_temperature = 0.6 if model.lower().startswith("kimi") else temperature

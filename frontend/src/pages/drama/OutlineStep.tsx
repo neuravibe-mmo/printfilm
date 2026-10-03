@@ -19,6 +19,7 @@ import Modal from '../../components/ui/Modal'
 import { DramaImageStyleModal } from './DramaImageStyleModal'
 import { DramaProjectSettingsModal } from './DramaProjectSettingsModal'
 import { OutlineEpisodePanel } from './OutlineEpisodePanel'
+import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import { useI18n } from '../../i18n'
 
 type MetaModalKey = 'source' | 'summary' | 'project'
@@ -457,7 +458,7 @@ export function OutlineStep({
             <p className="drama-loader">{t('drama.outline.summaryGenerating')}</p>
           ) : null}
           {summaryError || summaryStatus === 'failed' ? (
-            <p className="drama-error">{summaryError || t('drama.outline.summaryFailed')}</p>
+            <BillingErrorNotice message={summaryError || t('drama.outline.summaryFailed')} className="drama-error" />
           ) : null}
           {summaryEditing && summaryDraft ? (
             <div className="drama-outline-edit">
