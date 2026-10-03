@@ -418,7 +418,7 @@ async def seed_assets_from_script(
     # Create character/scene/prop/material assets from script if missing
     script = project.script
     if not script or not script.summary:
-        raise ValueError("请先生成剧本摘要")
+        raise ValueError("Vui lòng tạo tóm tắt kịch bản trước")
 
     summary = script.summary if isinstance(script.summary, dict) else {}
     story_type = str(summary.get("storyType") or "").strip()
@@ -713,7 +713,7 @@ async def seed_assets_from_episode_body(
     """Hạt giống tăng dần sau khi tạo văn bản: chỉ quét các nhân vật/cảnh trong tập + nhân vật tóm tắt của toàn bộ phim; sẽ không có đạo cụ nào được rút ra."""
     script = project.script
     if not script or not script.summary:
-        raise ValueError("请先生成剧本摘要")
+        raise ValueError("Vui lòng tạo tóm tắt kịch bản trước")
 
     summary = script.summary if isinstance(script.summary, dict) else {}
     story_type = str(summary.get("storyType") or "").strip()
@@ -830,10 +830,10 @@ async def seed_episodes_from_script(
     # Tạo / Chia lại bảng phân cảnh: chia thành ### cảnh và tạo bản sao bảng phân cảnh video
     script = project.script
     if not script:
-        raise ValueError("缺少剧本")
+        raise ValueError("Thiếu kịch bản dự án")
     bodies = _normalize_episode_list(script.episode_content)
     if not bodies:
-        raise ValueError("请先生成分集剧本")
+        raise ValueError("Vui lòng tạo kịch bản tập trước")
 
     assets = list(
         (

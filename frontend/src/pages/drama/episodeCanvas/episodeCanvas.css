@@ -97,6 +97,20 @@
   color: #fff;
 }
 
+.ep-storyboard-btn.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.ep-storyboard-btn.primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
 .ep-storyboard-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;

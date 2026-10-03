@@ -136,7 +136,7 @@ async def episode_script(
     # Enqueue tạo tập hoàn chỉnh hoặc tối ưu hóa tập đơn; thăm dò ý kiến phía trước tập_content_status / tập_optizes_status
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     if not project.script or not project.script.summary:
-        raise HTTPException(status_code=400, detail="请先生成剧本摘要")
+        raise HTTPException(status_code=400, detail="Vui lòng tạo tóm tắt kịch bản trước")
 
     summary = project.script.summary if isinstance(project.script.summary, dict) else {}
     total = resolve_episode_target(summary, project.params, project.script.params)
@@ -210,9 +210,9 @@ async def episode_script(
         mode = generate_mode or "optimize"
         if mode == "optimize":
             if not draft:
-                raise HTTPException(status_code=400, detail="请先输入本集剧本草稿，再让 AI 优化")
+                raise HTTPException(status_code=400, detail="Vui lòng nhập bản thảo kịch bản tập này trước rồi để AI tối ưu")
             if len(draft) < 20:
-                raise HTTPException(status_code=400, detail="剧本草稿至少 20 字")
+                raise HTTPException(status_code=400, detail="Bản thảo kịch bản cần ít nhất 20 ký tự")
         elif mode in {"summary", "full"}:
             cur_creative = creative_in
             if not cur_creative:
@@ -226,7 +226,7 @@ async def episode_script(
                 )
                 cur_creative = str((cur or {}).get("creative") or "").strip()
             if len(cur_creative) < 20:
-                raise HTTPException(status_code=400, detail="请先填写Ý tưởng ban đầu của tập này（至少 20 字）")
+                raise HTTPException(status_code=400, detail="Vui lòng điền ý tưởng ban đầu của tập này trước (ít nhất 20 ký tự)")
         elif mode == "brief":
             cur = next(
                 (
@@ -238,7 +238,7 @@ async def episode_script(
             )
             cur_body = str((cur or {}).get("body") or (cur or {}).get("content") or "").strip()
             if len(cur_body) < 80:
-                raise HTTPException(status_code=400, detail="请先有本集剧本内容，再补齐创意与摘要")
+                raise HTTPException(status_code=400, detail="Vui lòng có nội dung kịch bản tập này trước rồi mới bổ sung ý tưởng và tóm tắt")
 
         params["episode_optimize_status"] = "generating"
         params["episode_optimize_number"] = episode_number
@@ -382,13 +382,13 @@ async def add_episode(
     """Thêm một tập trống theo cách thủ công để người dùng dán tập lệnh rồi tối ưu hóa bằng AI."""
     project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
     if not project.script or not project.script.summary:
-        raise HTTPException(status_code=400, detail="请先生成剧本摘要")
+        raise HTTPException(status_code=400, detail="Vui lòng tạo tóm tắt kịch bản trước")
     params = dict(project.script.params or {})
     if str(params.get("episode_content_status") or "") == "generating":
-        raise HTTPException(status_code=409, detail="全集剧本正在生成，请完成后再加集")
+        raise HTTPException(status_code=409, detail="Kịch bản toàn tập đang được tạo, vui lòng chờ hoàn thành trước khi thêm tập mới")
     existing = _existing_episodes(project.script.episode_content)
     if len(existing) >= MAX_DRAMA_EPISODES:
-        raise HTTPException(status_code=400, detail=f"最多 {MAX_DRAMA_EPISODES} 集")
+        raise HTTPException(status_code=400, detail=f"Tối đa {MAX_DRAMA_EPISODES} tập")
     try:
         episodes, episode_number = append_manual_episode(existing, body.title)
     except ValueError as exc:

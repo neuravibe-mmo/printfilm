@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { dramaApi, resolveDramaMediaUrl, type DramaEpisode, type DramaEpisodeBody, type DramaProject, type DramaScript } from '../../api/drama'
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
+import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import { dialog } from '../../lib/dialog'
 import {
   buildEpisodeContentUpdate,
@@ -823,7 +824,7 @@ export function OutlineEpisodePanel({
         </div>
       </header>
 
-      {localError ? <p className="drama-error">{localError}</p> : null}
+      {localError ? <BillingErrorNotice message={localError} className="drama-error" /> : null}
       {localNotice ? <p className="drama-outline-notice">{localNotice}</p> : null}
       {episodeGenerating ? <p className="drama-loader">{t('drama.outlinePanel.allGenerating')}</p> : null}
       {selectedGenerating ? (

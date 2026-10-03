@@ -56,6 +56,48 @@ export default function BillingErrorNotice({
         : locale === 'en'
           ? `Content of episode ${num} is too short, please complete or AI-optimize it first.`
           : rawText
+  } else if (/请先生成剧本摘要/i.test(rawText)) {
+    text =
+      locale === 'vi'
+        ? 'Vui lòng tạo tóm tắt kịch bản trước.'
+        : locale === 'en'
+          ? 'Please generate script summary first.'
+          : rawText
+  } else if (/请先生成分集剧本/i.test(rawText)) {
+    text =
+      locale === 'vi'
+        ? 'Vui lòng tạo kịch bản tập trước.'
+        : locale === 'en'
+          ? 'Please generate episode script first.'
+          : rawText
+  } else if (/请先填写.*创意或摘要/i.test(rawText) || /请先填写.*Ý tưởng/i.test(rawText)) {
+    text =
+      locale === 'vi'
+        ? 'Vui lòng điền ý tưởng hoặc tóm tắt của tập này trước.'
+        : locale === 'en'
+          ? 'Please fill in this episode creative or summary first.'
+          : rawText
+  } else if (/请先输入.*剧本草稿/i.test(rawText)) {
+    text =
+      locale === 'vi'
+        ? 'Vui lòng nhập bản thảo kịch bản tập này trước rồi để AI tối ưu.'
+        : locale === 'en'
+          ? 'Please enter this episode script draft before AI optimization.'
+          : rawText
+  } else if (/请先有本集剧本内容/i.test(rawText)) {
+    text =
+      locale === 'vi'
+        ? 'Vui lòng có nội dung kịch bản tập này trước rồi mới bổ sung ý tưởng và tóm tắt.'
+        : locale === 'en'
+          ? 'Please have episode script content before adding creative and summary.'
+          : rawText
+  } else if (/全集剧本正在生成/i.test(rawText)) {
+    text =
+      locale === 'vi'
+        ? 'Kịch bản toàn tập đang được tạo, vui lòng chờ hoàn thành trước khi thêm tập mới.'
+        : locale === 'en'
+          ? 'All episode scripts are generating, please wait until complete before adding episodes.'
+          : rawText
   }
 
   const Tag = inline ? 'span' : 'p'

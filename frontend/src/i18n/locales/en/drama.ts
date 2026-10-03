@@ -48,6 +48,7 @@ export const enDrama = {
         "unsaved": "Unsaved",
         "noShots": "No shots yet",
         "noShotsHint": "Please go back to episode edit page to add shots",
+        "addShot": "Add Scene",
         "linkAssetTitle": "Link Appearing Assets",
         "pickAssetHint": "Select characters / scenes / props appearing in this shot",
         "noPickerAssets": "No available assets, please create them on Asset Canvas first",

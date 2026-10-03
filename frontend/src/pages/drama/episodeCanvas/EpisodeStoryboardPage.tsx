@@ -14,7 +14,7 @@ import {
   type NodeTypes,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Plus } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   dramaApi,
@@ -195,8 +195,28 @@ function EpisodeStoryboardInner() {
         setBusy(false)
       }
     },
-    [eid],
+    [eid, t],
   )
+
+  const handleAddFragment = useCallback(async () => {
+    if (!eid || busy) return
+    const newFrag: DramaFragment = {
+      id: 0,
+      episode_id: eid,
+      sort_order: fragments.length,
+      content: '',
+      duration_sec: 8,
+      cover: '',
+      video: '',
+      params: {},
+      asset_ids: [],
+    }
+    const next = [...fragments, newFrag]
+    await persistFragments(next)
+    window.setTimeout(() => {
+      void fitView({ padding: 0.22, duration: 320 })
+    }, 150)
+  }, [eid, busy, fragments, persistFragments, fitView])
 
   // Lưu chống rung
   const scheduleSave = useCallback(() => {
@@ -340,6 +360,16 @@ function EpisodeStoryboardInner() {
         <div className="ep-storyboard-actions">
           <button
             type="button"
+            className="ep-storyboard-btn primary"
+            disabled={busy}
+            onClick={() => void handleAddFragment()}
+            title={t('drama.canvas.addShot')}
+          >
+            <Plus size={15} strokeWidth={2.2} />
+            <span>{t('drama.canvas.addShot')}</span>
+          </button>
+          <button
+            type="button"
             className="ep-storyboard-btn ghost"
             onClick={() => navigate(`/drama/projects/${pid}/canvas`)}
           >
@@ -361,6 +391,15 @@ function EpisodeStoryboardInner() {
           <div className="ep-storyboard-empty">
             <strong>{t('drama.canvas.noShots')}</strong>
             <span>{t('drama.canvas.noShotsHint')}</span>
+            <button
+              type="button"
+              className="ep-storyboard-btn primary"
+              style={{ marginTop: 14 }}
+              onClick={() => void handleAddFragment()}
+            >
+              <Plus size={15} strokeWidth={2.2} />
+              <span>{t('drama.canvas.addShot')}</span>
+            </button>
           </div>
         ) : null}
         <ReactFlow
