@@ -82,10 +82,13 @@ def apply_tokenfree_flat_overlay(flat: dict[str, Any], channels: list[SystemMode
     if channel is None:
         return flat
     out = dict(flat)
-    out["openai_base_url"] = TOKENFREE_BASE_URL
+    current_openai_base = (flat.get("openai_base_url") or "").strip()
+    if not current_openai_base or "tokenfree.com" in current_openai_base:
+        out["openai_base_url"] = TOKENFREE_BASE_URL
     out["ark_base_url"] = TOKENFREE_BASE_URL
     key = (channel.api_key or "").strip()
-    if key:
+    if key and (not current_openai_base or "tokenfree.com" in current_openai_base):
         out["openai_api_key"] = key
+    if key:
         out["ark_api_key"] = key
     return out

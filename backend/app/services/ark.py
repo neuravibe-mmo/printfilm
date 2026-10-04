@@ -69,7 +69,11 @@ from app.services import storage
 from app.services.drama.seedance_i2v_role import resolve_seedance_i2v_image_role
 from app.services.ffmpeg_compose import is_near_silent_audio
 from app.services.drama.llm import _extract_json
-from app.services.llm_client import chat_completions
+from app.services.llm_client import (
+    chat_completions,
+    chatgpt2api_completions,
+    is_chatgpt2api_configured,
+)
 from app.services import seedance_segments as segplan
 
 logger = logging.getLogger(__name__)
@@ -92,15 +96,15 @@ def reraise_upstream_timeout(exc: BaseException, *, kind: str, read_sec: float) 
     """Chuyển đổi thời gian chờ httpx thành RuntimeError có thể đọc được; ReadTimeout có nghĩa là nó được kết nối nhưng hết thời gian chờ kết quả."""
     if isinstance(exc, httpx.ReadTimeout):
         raise RuntimeError(
-            f"{kind}等待上游超时（ReadTimeout）：已连通 TokenFree，但 {read_sec:.0f} 秒内未返回结果，请稍后重试"
+            f"{kind} chờ phản hồi quá thời gian (ReadTimeout): Đã kết nối TokenFree nhưng trong {read_sec:.0f} giây chưa có kết quả, vui lòng thử lại sau"
         ) from exc
     if isinstance(exc, httpx.WriteTimeout):
         raise RuntimeError(
-            f"{kind}发送请求超时（WriteTimeout）：已连通 TokenFree，但 {read_sec:.0f} 秒内未能发完请求，请稍后重试"
+            f"{kind} gửi yêu cầu quá thời gian (WriteTimeout): Đã kết nối TokenFree nhưng trong {read_sec:.0f} giây chưa gửi xong yêu cầu, vui lòng thử lại sau"
         ) from exc
     name = type(exc).__name__
     raise RuntimeError(
-        f"{kind}无法连接上游（{name}）：请检查网络、代理或 TokenFree 是否可达"
+        f"{kind} không thể kết nối tới máy chủ AI ({name}): Vui lòng kiểm tra mạng, proxy hoặc tính khả dụng của TokenFree"
     ) from exc
 
 
@@ -116,10 +120,10 @@ def _raise_seedream_http_error(
     if status_code == 403 and "AccountOverdueError" in snippet:
         logger.error("Seedream AccountOverdueError — upstream Ark account overdue: %s", snippet[:200])
         raise RuntimeError(
-            "上游 Seedream 账户欠费（AccountOverdueError），生图暂不可用，请联系管理员充值 TokenFree 账户"
+            "Tài khoản Seedream đã hết số dư (AccountOverdueError), tạm thời không thể tạo ảnh, vui lòng liên hệ quản trị viên để nạp tài khoản TokenFree"
         )
     logger.warning(
-        "出图上游失败 model=%s tokenfree=%s status=%s body=%s",
+        "Tạo ảnh từ máy chủ AI thất bại model=%s tokenfree=%s status=%s body=%s",
         (model or "").strip() or "-",
         tokenfree,
         status_code,
@@ -128,16 +132,16 @@ def _raise_seedream_http_error(
     if tokenfree:
         if is_tokenfree_input_text_sensitive(status_code=status_code, body=snippet):
             raise RuntimeError(
-                "生图文案未通过内容审核（可能含敏感或历史名人相关表述），"
-                "请修Thay đổi lời nhắc后重试。"
-                f" 详情：{snippet[:240]}"
+                "Mô tả tạo ảnh không vượt qua kiểm duyệt nội dung (có thể chứa từ ngữ nhạy cảm hoặc nhân vật nổi tiếng), "
+                "vui lòng chỉnh sửa lại prompt và thử lại."
+                f" Chi tiết: {snippet[:240]}"
             )
         raise RuntimeError(tokenfree_image_user_error(model=model, status_code=status_code, body=snippet))
     if "InputTextSensitive" in snippet or "InputTextSensitiveContentDetected" in snippet:
         raise RuntimeError(
-            "生图文案未通过内容审核（可能含敏感或历史名人相关表述），"
-            "请修Thay đổi lời nhắc后重试。"
-            f" 详情：{snippet[:240]}"
+            "Mô tả tạo ảnh không vượt qua kiểm duyệt nội dung (có thể chứa từ ngữ nhạy cảm hoặc nhân vật nổi tiếng), "
+            "vui lòng chỉnh sửa lại prompt và thử lại."
+            f" Chi tiết: {snippet[:240]}"
         )
     raise RuntimeError(f"Seedream error {status_code}: {snippet}")
 
@@ -146,11 +150,11 @@ def _fallback_overlay_title(text: str, shot_no: int) -> str:
     """Last resort when LLM omits title — never blind-slice mid-word (e.g. ERP→ER)."""
     raw = re.sub(r"\s+", "", (text or "").strip())
     if not raw:
-        return f"场景{shot_no}"
+        return f"Phân cảnh {shot_no}"
     clause = re.split(r"[，。；！？、,:;]", raw, maxsplit=1)[0].strip()
     if 2 <= len(clause) <= 10 and not _looks_truncated_token(clause, raw):
         return clause
-    return f"场景{shot_no}"
+    return f"Phân cảnh {shot_no}"
 
 
 def _fallback_overlay_subtitle(text: str) -> str:
@@ -164,7 +168,7 @@ def _fallback_overlay_subtitle(text: str) -> str:
     if len(clause) > 22:
         # Prefer a trailing noun-ish chunk over a head that cuts mid-phrase
         for n in range(18, 7, -1):
-            tail = clause[-n:].lstrip("的与和及")
+            tail = clause[-n:].lstrip(" vàvớicùng")
             if 6 <= len(tail) <= 18 and not re.match(r"[A-Za-z0-9]", tail[:1] or ""):
                 if not _looks_truncated_token(tail, clause):
                     return tail
@@ -210,28 +214,28 @@ def _normalize_overlay_subtitle(subtitle: str, text: str) -> str:
 
 # Soften brand / IP names that Seedream often rejects as copyright
 _SEEDREAM_SANITIZE: list[tuple[re.Pattern[str], str]] = [
-    (re.compile(r"(?i)\bspacex\b"), "民营商业航天公司"),
-    (re.compile(r"(?i)\bspace\s*x\b"), "民营商业航天公司"),
-    (re.compile(r"(?i)\bfalcon\s*heavy\b"), "重型运载火箭"),
-    (re.compile(r"(?i)\bfalcon\s*1\b"), "首枚试验运载火箭"),
-    (re.compile(r"(?i)\bfalcon\s*9\b"), "可回收运载火箭"),
-    (re.compile(r"(?i)\bfalcon\b"), "试验运载火箭"),
-    (re.compile(r"(?i)\bstarship\b"), "巨型运载飞船"),
-    (re.compile(r"(?i)\belon\s*musk\b"), "航天企业家"),
-    (re.compile(r"(?i)\btesla\b"), "电动车企业"),
-    (re.compile(r"猎鹰一号"), "首枚试验运载火箭"),
-    (re.compile(r"猎鹰\s*9"), "可回收运载火箭"),
-    (re.compile(r"猎鹰重型"), "重型运载火箭"),
-    (re.compile(r"猎鹰"), "试验运载火箭"),
-    (re.compile(r"马斯克"), "航天企业家"),
-    (re.compile(r"埃隆"), "航天企业家"),
-    (re.compile(r"Space\s*X"), "民营商业航天公司"),
+    (re.compile(r"(?i)\bspacex\b"), "công ty hàng không vũ trụ tư nhân"),
+    (re.compile(r"(?i)\bspace\s*x\b"), "công ty hàng không vũ trụ tư nhân"),
+    (re.compile(r"(?i)\bfalcon\s*heavy\b"), "tên lửa đẩy hạng nặng"),
+    (re.compile(r"(?i)\bfalcon\s*1\b"), "tên lửa đẩy thử nghiệm đầu tiên"),
+    (re.compile(r"(?i)\bfalcon\s*9\b"), "tên lửa đẩy có thể tái sử dụng"),
+    (re.compile(r"(?i)\bfalcon\b"), "tên lửa đẩy thử nghiệm"),
+    (re.compile(r"(?i)\bstarship\b"), "phi thuyền không gian khổng lồ"),
+    (re.compile(r"(?i)\belon\s*musk\b"), "doanh nhân hàng không vũ trụ"),
+    (re.compile(r"(?i)\btesla\b"), "hãng xe điện"),
+    (re.compile(r"猎鹰一号"), "tên lửa đẩy thử nghiệm đầu tiên"),
+    (re.compile(r"猎鹰\s*9"), "tên lửa đẩy có thể tái sử dụng"),
+    (re.compile(r"猎鹰重型"), "tên lửa đẩy hạng nặng"),
+    (re.compile(r"猎鹰"), "tên lửa đẩy thử nghiệm"),
+    (re.compile(r"马斯克"), "doanh nhân hàng không vũ trụ"),
+    (re.compile(r"埃隆"), "doanh nhân hàng không vũ trụ"),
+    (re.compile(r"Space\s*X"), "công ty hàng không vũ trụ tư nhân"),
 ]
 
 # Hướng dẫn bổ sung về phong cách vẽ sau khi đánh giá khuôn mặt thật/thực, giảm xác suất kích hoạt các khuôn mặt giống như ảnh thật
 _SEEDREAM_CG_STYLE = (
-    "用CG厚涂、游戏CG的风格打造的画面，色彩层次丰富，质感细腻逼真，"
-    "真实的光影效果赋予画面生动感"
+    "Hình ảnh phong cách digital art CG, phong cách game CG chất lượng cao, màu sắc nhiều lớp phong phú, chất cảm tinh tế chân thực, "
+    "hiệu ứng ánh sáng chân thực mang lại chiều sâu sống động cho khung hình"
 )
 
 
@@ -239,11 +243,11 @@ def storyboard_name_policy(allow_source_names: bool) -> str:
     """Liệu lời tường thuật có giữ lại tên cửa hàng/tên sản phẩm trong bản sao của người dùng hay không; logo không bao giờ bị ghi vào màn hình."""
     if allow_source_names:
         return (
-            "用户文案里出现的店名、地址、产品名、人名必须在旁白与 title 原样保留，"
-            "禁止改成某店/某品牌；文案没有的名称一律不许编。"
-            "img_prompt 仍禁止烧录真实 logo、商标图形或屏幕可读文字。"
+            "Tên cửa hàng, địa chỉ, tên sản phẩm, tên người xuất hiện trong nội dung của người dùng phải được giữ nguyên trong lời bình (text) và title, "
+            "không được tự ý đổi thành tên chung chung; tuyệt đối không tự bịa thêm các tên không có trong nội dung. "
+            "Trong img_prompt nghiêm cấm yêu cầu vẽ logo thật, biểu tượng thương hiệu hoặc chữ đọc được trên màn hình."
         )
-    return "禁止真实商标/公司名/人名（改用泛称）。"
+    return "Nghiêm cấm dùng nhãn hiệu/tên công ty/tên người thật (hãy dùng danh từ chung)."
 
 
 @dataclass
@@ -383,28 +387,28 @@ def _format_seedance_create_error(
         idx, label = _seedance_content_slot_label(text, content_labels)
         if label:
             return (
-                f"参考图疑似真人：{label}（content[{idx}]，PrivacyInformation），"
-                "请更换该形象为动漫或插画后重试"
+                f"Ảnh tham chiếu nghi ngờ là người thật: {label} (content[{idx}], PrivacyInformation), "
+                "vui lòng thay thế hình ảnh đó bằng phong cách hoạt hình (anime) hoặc tranh vẽ minh họa rồi thử lại"
             )
         if idx >= 0:
             return (
-                f"参考图疑似真人（提交内容第 {idx + 1} 项 / content[{idx}]，PrivacyInformation），"
-                "请更换对应角色/场景形象为动漫或插画后重试"
+                f"Ảnh tham chiếu nghi ngờ là người thật (mục thứ {idx + 1} / content[{idx}], PrivacyInformation), "
+                "vui lòng thay thế hình ảnh nhân vật/bối cảnh tương ứng bằng phong cách hoạt hình hoặc tranh minh họa rồi thử lại"
             )
-        return "参考图疑似真人（PrivacyInformation），请更换角色/场景形象为动漫或插画后重试"
+        return "Ảnh tham chiếu nghi ngờ là người thật (PrivacyInformation), vui lòng thay thế hình ảnh nhân vật/bối cảnh bằng phong cách hoạt hình hoặc minh họa rồi thử lại"
     if "InputTextSensitive" in text or "text sensitive" in text.lower():
-        return "分镜文案未通过内容审核，请修改敏感表述后重试"
+        return "Kịch bản phân cảnh không vượt qua kiểm duyệt nội dung, vui lòng chỉnh sửa từ ngữ nhạy cảm và thử lại"
     if "resource download failed" in text and "audio" in text.lower():
-        return "参考音频无法下载，请检查角色音色绑定后重试"
+        return "Không thể tải âm thanh tham chiếu, vui lòng kiểm tra lại liên kết giọng đọc của nhân vật rồi thử lại"
     # Seedance r2v: thời lượng reference_audio phải ≥ 1,8 giây
     if re.search(r"audio duration.*(?:1\.8|greater than or equal)", text, re.I) or (
         "audio duration" in text.lower() and "content[" in text.lower()
     ):
         idx, label = _seedance_content_slot_label(text, content_labels)
-        who = label or (f"提交内容第 {idx + 1} 项 / content[{idx}]" if idx >= 0 else "某条参考音频")
+        who = label or (f"mục thứ {idx + 1} / content[{idx}]" if idx >= 0 else "âm thanh tham chiếu")
         return (
-            f"参考音频过短：{who}，Seedance 要求时长 ≥ 1.8 秒。"
-            "请打开对应角色/旁白，重新生成或上传更长的试听音频后再生成该分镜。"
+            f"Âm thanh tham chiếu quá ngắn: {who}, dịch vụ tạo video yêu cầu thời lượng ≥ 1.8 giây. "
+            "Vui lòng vào phần nhân vật/lời bình, tạo lại hoặc tải lên file âm thanh nghe thử dài hơn trước khi tạo phân cảnh này."
         )
     return f"Seedance create error {status_code}: {text}"
 
@@ -552,10 +556,10 @@ class ArkGateway:
         user_constraints = ""
         if (character_hint or "").strip():
             user_constraints += (
-                f"用户指定人物设定（必须严格遵守，写入 character_bible）：{(character_hint or '').strip()}。"
+                f"Thiết lập nhân vật do người dùng chỉ định (bắt buộc tuân thủ nghiêm ngặt, ghi vào character_bible): {(character_hint or '').strip()}."
             )
         if (extra_requirements or "").strip():
-            user_constraints += f"用户其他画面要求：{(extra_requirements or '').strip()}。"
+            user_constraints += f"Yêu cầu hình ảnh bổ sung của người dùng: {(extra_requirements or '').strip()}."
 
         mode = (consistency_mode or "character").strip().lower()
         if mode not in {"character", "style", "diverse"}:
@@ -564,50 +568,50 @@ class ArkGateway:
         if mode == "diverse":
             if (character_hint or "").strip():
                 person_rule = (
-                    "character_bible：概括用户人物设定（可换具体个人，但须同类）。"
-                    "【人物硬性】每镜必须出现符合用户人物设定的真人，面容清晰可见"
-                    "（三分之四侧脸或浅景深半身），禁止只拍手部、后脑勺、过肩无脸或空界面无人。"
-                    "img_prompt 须写清该镜人物族裔/发型/服装与可见面容角度，以及面前界面类型；各镜可换人。"
+                    "character_bible: Tóm tắt thiết lập nhân vật của người dùng (có thể đổi cá nhân cụ thể nhưng phải cùng một nhóm đối tượng).\n"
+                    "【YÊU CẦU BẮT BUỘC VỀ NHÂN VẬT】Mỗi phân cảnh phải xuất hiện người thật phù hợp với thiết lập, khuôn mặt rõ nét "
+                    "(góc nghiêng 3/4 hoặc nửa người xóa phông), cấm chỉ quay bàn tay, sau gáy, sau lưng không thấy mặt hoặc màn hình trống không người.\n"
+                    "img_prompt phải miêu tả rõ sắc tộc/kiểu tóc/trang phục và góc nhìn khuôn mặt của nhân vật, cùng bối cảnh giao diện trước mặt; các cảnh có thể đổi người."
                 )
             else:
                 person_rule = (
-                    "character_bible：根据主题与模板系统规则决定是否出人物，不要默认全片必须有人或必须无人。"
-                    "模板要求人在场则写清操作者类型（可不锁同一张脸）；主题以界面/场景/示意图为主则可写「无固定人物」。"
-                    "img_prompt 写清本镜主体与构图，禁止与模板系统附加规则对着干。"
+                    "character_bible: Dựa vào chủ đề và quy tắc mẫu để quyết định có xuất hiện nhân vật hay không, không mặc định cả video phải có người hoặc không có người.\n"
+                    "Nếu mẫu yêu cầu có người thì miêu tả rõ dạng người thao tác; nếu chủ đề tập trung vào giao diện/bối cảnh/sơ đồ thì ghi \"Không có nhân vật cố định\".\n"
+                    "img_prompt miêu tả rõ chủ thể và bố cục của cảnh này, tuyệt đối không đi ngược lại quy tắc của mẫu."
                 )
             consistency = (
-                "必须输出严格 JSON 对象（不要数组、不要 markdown、不要代码围栏）："
+                "Bắt buộc xuất đối tượng JSON nghiêm ngặt (không dùng mảng, không dùng markdown, không dùng khối mã): "
                 '{"character_bible":"...","shots":[...]}。'
                 f"{person_rule}"
-                f"视觉气质仅作底线参考（不要被其颜色绑架）：{style_prefix}。"
+                f"Phong cách thị giác chỉ dùng làm tham khảo cơ bản: {style_prefix}."
                 f"{user_constraints}"
-                "【动态规划】先分析用户内容的领域、产品形态与使用场景，再决定色板与界面类型，"
-                "再拆镜；每镜对应不同操作或能力（总览、接入、工作台、流程、结果、部署、生态等）。"
-                "配色与材质必须贴合内容（浅色SaaS、文档站、深色IDE、终端、架构图、白板均可），"
-                "禁止默认霓虹蓝/赛博大屏/蓝紫渐变HUD，禁止各镜画面雷同，禁止待办任务清单，"
-                "禁止同一仪表盘复制粘贴换字。"
+                "【QUY HOẠCH ĐỘNG】Phân tích lĩnh vực, hình thái sản phẩm và tình huống sử dụng của nội dung, sau đó quyết định bảng màu và loại giao diện trước khi chia cảnh; \n"
+                "mỗi cảnh tương ứng với một thao tác hoặc tính năng khác nhau (tổng quan, tích hợp, không gian làm việc, quy trình, kết quả, triển khai, hệ sinh thái...). \n"
+                "Màu sắc và chất liệu phải bám sát nội dung (SaaS sáng màu, tài liệu hướng dẫn, IDE tối màu, terminal, sơ đồ kiến trúc, bảng vẽ...),\n"
+                "cấm mặc định dùng màu xanh neon/màn hình cyber/HUD gradient tím xanh, cấm các cảnh hình ảnh giống nhau lặp lại, cấm danh sách việc cần làm (todo list),\n"
+                "cấm sao chép cùng một dashboard rồi chỉ đổi chữ."
             )
         elif mode == "style":
             consistency = (
-                "必须输出严格 JSON 对象（不要数组、不要 markdown、不要代码围栏）："
+                "Bắt buộc xuất đối tượng JSON nghiêm ngặt (không dùng mảng, không dùng markdown, không dùng khối mã): "
                 '{"character_bible":"...","shots":[...]}。'
-                "character_bible：可简写「无固定主角」或留空说明；不要强行统一人物外形。"
-                f"画风气质统一：{style_prefix}。"
+                "character_bible: Có thể ghi ngắn gọn «Không có nhân vật chính cố định» hoặc để trống ghi chú; không cần gượng ép thống nhất ngoại hình nhân vật.\n"
+                f"Phong cách nghệ thuật đồng nhất: {style_prefix}.\n"
                 f"{user_constraints}"
-                "各镜场景与构图应随内容变化，只需保持同类画风，禁止镜头间画面几乎一样。"
-                "每镜 img_prompt 只写本镜场景与构图。"
+                "Bối cảnh và bố cục từng cảnh phải thay đổi theo nội dung, chỉ cần giữ cùng loại phong cách nghệ thuật, cấm các cảnh có hình ảnh gần như y hệt nhau.\n"
+                "Mỗi cảnh img_prompt chỉ viết bối cảnh và bố cục của riêng cảnh đó."
             )
         else:
             consistency = (
-                "必须输出严格 JSON 对象（不要数组、不要 markdown、不要代码围栏）："
+                "Bắt buộc xuất đối tượng JSON nghiêm ngặt (không dùng mảng, không dùng markdown, không dùng khối mã): "
                 '{"character_bible":"...","shots":[...]}。'
-                "character_bible：80-160字，固定描述本片反复出现的人物/主体外形"
-                "（年龄感、发型发色、五官气质、体型、服装配色与辨识物），全片唯一设定，禁止每镜改人设。"
-                f"画风要求（全片强制统一）：{style_prefix}。"
+                "character_bible: Viết khoảng 40-90 từ tiếng Việt, mô tả cố định ngoại hình nhân vật/chủ thể xuất hiện xuyên suốt video "
+                "(độ tuổi, kiểu tóc màu tóc, thần thái gương mặt, vóc dáng, phối màu trang phục và vật nhận diện), đây là thiết lập duy nhất cho toàn bộ video, nghiêm cấm đổi thiết lập qua từng cảnh.\n"
+                f"Yêu cầu phong cách nghệ thuật (bắt buộc thống nhất toàn video): {style_prefix}.\n"
                 f"{user_constraints}"
-                "禁止镜头间混用写实摄影/真人脸与插画或动漫；禁止换脸换装换发型。"
-                "每镜 img_prompt 只写本镜场景与构图（景物、动作、光影），不要重复粘贴大段画风/人物锁定原文；"
-                "出现人物时用短句点出与 character_bible 一致的关键特征即可。"
+                "Nghiêm cấm lẫn lộn giữa ảnh chụp người thật và tranh minh họa hoạt hình anime; nghiêm cấm tự ý đổi mặt, đổi trang phục hay đổi kiểu tóc giữa các cảnh.\n"
+                "Mỗi cảnh img_prompt chỉ viết bối cảnh và bố cục của riêng cảnh đó (cảnh vật, hành động, ánh sáng), không sao chép lại đoạn mô tả phong cách/nhân vật dài dòng; "
+                "khi nhân vật xuất hiện chỉ cần nhắc lại các nét đặc trưng chính khớp với character_bible."
             )
         # shot_cap Giới hạn trên của thời lượng bắn một lần (giây); shot_lo/shot_hi bị khóa theo số từ trong bản sao hoặc mẫu
         shot_cap = min(duration_max, max_shot_duration)
@@ -620,106 +624,93 @@ class ArkGateway:
         name_rule = storyboard_name_policy(allow_source_names)
         # Seg_rules Các ràng buộc sản xuất kịch bản theo từng phân đoạn theo từng đoạn khoa học phổ biến (phù hợp với gợi ý truyện tranh, không có @asset)
         segment_rules = (
-            "【segments 生产规范】"
-            "segments 必填；系统会落成 @duration +【字幕：后期叠旁白字幕】/【BGM：后期混音】/"
-            "【旁白·自然语速·同步字幕】生产脚本，成片字幕与配乐由后期合成，不由视频模型烧录。"
-            "因此 kind/text/duration 必须可直接消费。"
-            "段序优先「画面→旁白」交替，首段尽量 kind=visual（保证首帧有料）；"
-            "visual/action 的 text 必须含景别+主体动作+场景/界面类型，禁止空镜与模糊氛围词堆砌；"
-            "narration 的 text 为一句一事、可朗读口播，按约 5 字/秒估 duration（语速自然偏快）；"
-            "旁白 duration 严格跟字数，最多多 1 秒呼吸，禁止把短句拉满到镜长上限或拖腔注水；"
-            "单段 duration 3-12 秒，镜内各段之和约等于本镜 duration，且不超过 "
-            f"{shot_cap} 秒。"
+            "【QUY TẮC TẠO SEGMENTS】\n"
+            "segments là mảng bắt buộc; hệ thống sẽ biên tập kịch bản gồm @duration + phụ đề lời bình + lồng nhạc nền BGM.\n"
+            "Phụ đề và nhạc được ghép ở khâu hậu kỳ, không phải vẽ cứng vào video. Do đó kind/text/duration phải dùng được trực tiếp.\n"
+            "Thứ tự các đoạn ưu tiên xen kẽ: hình ảnh -> lời bình, đoạn đầu tiên nên có kind=visual (đảm bảo khung hình đầu tiên có nội dung);\n"
+            "text của visual/action phải chứa: cỡ cảnh + hành động chủ thể + loại bối cảnh/giao diện, cấm cảnh trống vô nghĩa hoặc từ ngữ mơ hồ;\n"
+            "text của narration là câu thoại đọc trôi chảy, ước tính khoảng 3-4 từ tiếng Việt/giây cho duration (nhịp độ tự nhiên);\n"
+            "duration của lời bình phải bám sát số lượng từ, chỉ thêm tối đa 1 giây nghỉ, cấm kéo dài câu ngắn chạm trần thời lượng;\n"
+            "Mỗi phân đoạn duration từ 3-12 giây, tổng các đoạn trong cảnh xấp xỉ bằng duration của cảnh đó và không vượt quá "
+            f"{shot_cap} giây.\n"
             f"{name_rule}"
-            "character_bible 与 bgm_lock 全片唯一，各镜不得改人设或漂移 BGM 氛围。"
+            "character_bible và bgm_lock là duy nhất cho toàn phim, các cảnh không được tự ý đổi nhân vật hay trôi dạt cảm xúc BGM."
         )
         if pipeline_mode == "image_text":
             diversity_note = (
-                f"拆成 {shot_range} 个分镜，每镜一个独立视觉场景；"
+                f"Chia thành {shot_range} phân cảnh, mỗi cảnh là một khung cảnh thị giác độc lập; "
                 + (
-                    "画风气质可统一，但界面/场景构图必须明显不同。"
+                    "Phong cách thị giác đồng nhất, nhưng bố cục giao diện/bối cảnh phải khác biệt rõ rệt."
                     if mode != "character"
-                    else "但画风与人物必须一致。"
+                    else "Phong cách nghệ thuật và nhân vật phải đồng nhất toàn video."
                 )
             )
             ratio = (output_ratio or "16:9").strip() or "16:9"
-            orient = "竖屏" if ratio == "9:16" else ("方形" if ratio == "1:1" else "横屏")
+            orient = "khung dọc 9:16" if ratio == "9:16" else ("khung vuông 1:1" if ratio == "1:1" else "khung ngang 16:9")
             system = (
-                f"你是{orient}图文短视频编剧。Tất cả các trường (title, subtitle, text, img_prompt, segments...) phải ưu tiên viết bằng tiếng Việt (hoặc ngôn ngữ của văn bản đầu vào)."
+                f"Bạn là biên kịch video ngắn dạng hình ảnh + thuyết minh {orient}. Tất cả các trường (title, subtitle, text, img_prompt, segments...) bắt buộc viết bằng tiếng Việt.\n"
                 f"{consistency}{llm_system_addon}"
-                f"每镜 duration 在 {duration_min}-{shot_cap} 秒。"
-                "这是「静图+叠字+配音」模式：不生成 AI 视频，但需要旁白配音；"
-                "画面禁止出现任何文字/水印/字幕。"
-                "shots 字段说明："
-                "shot(序号)、duration(秒)、"
-                "title(对本镜内容的概括Tiêu đề ngắn，2-8字，语义完整有力；"
-                "必须是总结提炼，禁止从 text 截取前几个字，禁止截断专有名词如 ERP→ER)、"
-                "subtitle(对本镜卖点/要点的一句概括，8-22字，同样禁止原文截取前缀)、"
-                "text(旁白台词，口语化，约匹配该镜时长，可供 TTS 朗读，一般 20-60 字)、"
-                "segments(数组，精确到每一段：每项含 duration 秒、kind=visual|narration、text；"
-                "visual 写景别与画面动作，narration 写口播)、"
-                f"img_prompt({orient} {ratio} 构图画面提示词，留出边缘给文字叠层，主体居中，"
-                f"禁止要求画面内写字；{name_rule})、"
-                "video_prompt(可留空或写轻微推拉)、camera(如：缓慢推近/轻拉远)、bgm(情绪，全片尽量同一氛围)。"
-                "另输出顶层 bgm_lock(全片统一 BGM 氛围一句)。"
+                f"Mỗi phân cảnh duration trong khoảng {duration_min}-{shot_cap} giây.\n"
+                "Đây là chế độ «Hình tĩnh + Chữ phụ đề + Lồng tiếng»: không sinh video AI, cần lời bình lồng tiếng;\n"
+                "Khung hình cấm xuất hiện bất kỳ chữ viết/watermark/phụ đề vẽ cứng nào.\n"
+                "Ý nghĩa các trường trong shots:\n"
+                "- shot: Số thứ tự phân cảnh (số nguyên 1, 2, 3...)\n"
+                "- duration: Thời lượng cảnh (giây)\n"
+                "- title: Tiêu đề tóm tắt ngắn gọn nội dung cảnh, từ 3-8 từ tiếng Việt, mang tính đúc kết súc tích; cấm cắt cụt từ text\n"
+                "- subtitle: Phụ đề tóm tắt ý chính/điểm nhấn của cảnh, từ 8-20 từ tiếng Việt\n"
+                "- text: Lời bình/lời thoại của cảnh, văn phong tự nhiên truyền cảm để đọc TTS, độ dài tương ứng thời lượng cảnh (khoảng 20-50 từ tiếng Việt)\n"
+                "- segments: Mảng chi tiết các phân đoạn trong cảnh: mỗi phần tử gồm duration (giây), kind=\"visual\" hoặc \"narration\", text (nội dung); visual mô tả cỡ cảnh và động tác, narration là câu đọc thoại\n"
+                f"- img_prompt: Câu mô tả hình ảnh {orient} tỉ lệ {ratio} chi tiết (bối cảnh, ánh sáng, góc máy, chủ thể ở giữa, cấm yêu cầu vẽ chữ; {name_rule})\n"
+                "- video_prompt: Có thể để trống hoặc mô tả zoom nhẹ, camera: góc máy (ví dụ: quay cận cảnh, lia máy chậm...), bgm: cảm xúc âm nhạc đồng điệu toàn video\n"
+                "- Trường bgm_lock ở cấp ngoài cùng: tóm tắt 1 câu cảm xúc âm nhạc chủ đạo của toàn bộ video."
                 f"{segment_rules}"
                 f"{diversity_note}"
             )
         else:
             diversity_note = (
-                f"拆成 {shot_range} 个分镜，短镜快切，各镜场景随内容变化，禁止雷同空镜。"
+                f"Chia thành {shot_range} phân cảnh, nhịp cắt cảnh dứt khoát, bối cảnh từng cảnh bám sát nội dung, cấm các cảnh trống lặp lại."
                 if mode != "character"
-                else f"画风与人物必须全片一致；拆成 {shot_range} 镜，短镜快切。"
+                else f"Phong cách nghệ thuật và nhân vật bắt buộc thống nhất toàn bộ video; chia thành {shot_range} phân cảnh."
             )
             system = (
-                "你是短视频分镜编剧。Tất cả các trường (bao gồm title, text, img_prompt, video_prompt, camera, bgm, segments) phải ưu tiên viết bằng tiếng Việt (hoặc ngôn ngữ của kịch bản đầu vào)."
+                "Bạn là biên kịch phân cảnh video ngắn chuyên nghiệp. Tất cả các trường (bao gồm title, text, img_prompt, video_prompt, camera, bgm, segments) phải ưu tiên viết bằng tiếng Việt (hoặc ngôn ngữ của kịch bản đầu vào)."
                 f"{consistency}{llm_system_addon}"
-                f"每镜 duration 在 {duration_min}-{shot_cap} 秒，不要为凑满上限而注水。"
-                "shots 字段说明："
-                "shot(序号)、duration(秒)、"
-                "title(对本镜旁白的概括Tiêu đề ngắn，2-8字，语义完整；"
-                "必须是总结提炼，禁止从 text 截取前缀，禁止截断专有名词如 ERP→ER)、"
-                "subtitle(可选，一句要点概括 8-22字)、"
-                "text(旁白台词，与 segments 中 narration 文案一致或为其摘要)、"
-                "segments(必填数组，精确到每一段：每项 duration、kind=visual|narration|action、text)、"
-                "img_prompt(与首段 visual 一致的中文首帧提示词，含具体景物与构图)、"
-                "video_prompt(可与 segments 画面摘要一致)、"
-                "camera(运镜，如：缓慢上摇/轻推/横移)、bgm(情绪，全片同一氛围)。"
-                "顶层另输出 bgm_lock(全片统一 BGM 氛围一句，与各镜 bgm 一致)。"
-                "img_prompt 与 video_prompt 禁止英文句子，专有名词可保留原文。"
+                f"Thời lượng duration mỗi cảnh trong khoảng {duration_min}-{shot_cap} giây, không kéo dài vô nghĩa để cố làm đầy thời lượng tối đa."
+                "Mô tả các trường trong shots:"
+                "shot (số thứ tự), duration (giây),"
+                "title (tiêu đề ngắn tóm tắt lời bình của cảnh này, 2-8 từ, ngữ nghĩa hoàn chỉnh;"
+                "bắt buộc phải là tóm tắt đúc kết, cấm cắt lấy tiền tố từ text, cấm ngắt cụm từ chuyên ngành như ERP→ER),"
+                "subtitle (tùy chọn, một câu tóm tắt điểm chính 8-22 từ),"
+                "text (lời thoại/lời bình lồng tiếng, đồng nhất với nội dung narration trong segments hoặc là bản tóm tắt của nó),"
+                "segments (mảng bắt buộc, chính xác đến từng đoạn nhỏ: mỗi mục gồm duration, kind=visual|narration|action, text),"
+                "img_prompt (prompt hình ảnh khung hình đầu tiên bằng tiếng Việt mô tả trực quan cụ thể, chi tiết cảnh vật và bố cục),"
+                "video_prompt (prompt chuyển động video, có thể đồng nhất với tóm tắt hình ảnh trong segments),"
+                "camera (chuyển động máy quay, ví dụ: pan chậm lên trên/push in nhẹ/lia ngang), bgm (cảm xúc âm nhạc, thống nhất toàn bộ video)."
+                "Ở cấp cao nhất (root) xuất thêm trường bgm_lock (mô tả một câu về bầu không khí BGM thống nhất toàn video, đồng nhất với bgm của từng cảnh)."
+                "img_prompt và video_prompt cấm dùng câu tiếng Anh, thuật ngữ/danh từ riêng có thể giữ nguyên."
                 f"{segment_rules}"
                 f"{diversity_note}"
             )
         user = (
-            f"输入类型：{source_type}。请先理解内容与应用场景，再拆成精确到每一段的分镜"
-            f"（{shot_range} 镜，短镜快切，禁止拖腔注水）：\n{source_text}"
+            f"Thể loại đầu vào: {source_type}. Hãy thấu hiểu sâu sắc nội dung và bối cảnh sử dụng, sau đó chia thành các phân cảnh chi tiết "
+            f"({shot_range} cảnh, nhịp cắt cảnh súc tích, không câu giờ vô nghĩa):\n{source_text}"
         )
-        json_format = {"type": "json_object"}
-        try:
-            content = await chat_completions(
-                system,
-                user,
-                temperature=0.6,
-                timeout=120.0,
-                response_format=json_format,
-            )
-        except RuntimeError as exc:
-            if "response_format" not in str(exc).lower():
-                raise
-            logger.warning("分镜 LLM 不支持 response_format，降级普通调用: %s", exc)
-            content = await chat_completions(system, user, temperature=0.6, timeout=120.0)
-
-        if not (content or "").strip():
-            logger.warning("分镜 LLM 返回空内容，重试一次 source_type=%s", source_type)
-            retry_user = (
-                f"{user}\n\n"
-                "【重要】请只输出一个完整 JSON 对象，顶层含 character_bible、bgm_lock、shots 数组；"
-                "不要 markdown、不要代码围栏、字符串内不要未转义换行。"
-            )
+        if is_chatgpt2api_configured():
+            content = await chatgpt2api_completions(system, user, timeout=120.0)
+            if not (content or "").strip():
+                logger.warning("Mô hình phân cảnh LLM trả về rỗng, thử lại lần nữa source_type=%s", source_type)
+                retry_user = (
+                    f"{user}\n\n"
+                    "【QUAN TRỌNG】Chỉ xuất một đối tượng JSON hợp lệ duy nhất, cấp cao nhất chứa character_bible, bgm_lock, mảng shots;\n"
+                    "không dùng khối mã markdown, không xuống dòng không thoát chuỗi."
+                )
+                content = await chatgpt2api_completions(system, retry_user, timeout=120.0)
+        else:
+            json_format = {"type": "json_object"}
             try:
                 content = await chat_completions(
                     system,
-                    retry_user,
+                    user,
                     temperature=0.6,
                     timeout=120.0,
                     response_format=json_format,
@@ -727,12 +718,33 @@ class ArkGateway:
             except RuntimeError as exc:
                 if "response_format" not in str(exc).lower():
                     raise
-                content = await chat_completions(
-                    system, retry_user, temperature=0.6, timeout=120.0
+                logger.warning("Mô hình LLM không hỗ trợ response_format, chuyển xuống gọi thông thường: %s", exc)
+                content = await chat_completions(system, user, temperature=0.6, timeout=120.0)
+
+            if not (content or "").strip():
+                logger.warning("Mô hình phân cảnh LLM trả về rỗng, thử lại lần nữa source_type=%s", source_type)
+                retry_user = (
+                    f"{user}\n\n"
+                    "【QUAN TRỌNG】Chỉ xuất một đối tượng JSON hợp lệ duy nhất, cấp cao nhất chứa character_bible, bgm_lock, mảng shots;\n"
+                    "không dùng khối mã markdown, không xuống dòng không thoát chuỗi."
                 )
+                try:
+                    content = await chat_completions(
+                        system,
+                        retry_user,
+                        temperature=0.6,
+                        timeout=120.0,
+                        response_format=json_format,
+                    )
+                except RuntimeError as exc:
+                    if "response_format" not in str(exc).lower():
+                        raise
+                    content = await chat_completions(
+                        system, retry_user, temperature=0.6, timeout=120.0
+                    )
 
         if not (content or "").strip():
-            raise RuntimeError("分镜模型返回空内容，请检查文字模型渠道配置或稍后重试")
+            raise RuntimeError("Mô hình phân cảnh trả về nội dung rỗng, vui lòng kiểm tra cấu hình kênh mô hình văn bản hoặc thử lại sau")
 
         return self._parse_storyboard(
             content,
@@ -755,10 +767,10 @@ class ArkGateway:
         aspect_ratio: str | None = None,
         style_ref_urls: list[str] | None = None,
     ) -> ImageResult:
-        """Gọi TokenFree để tạo bản đồ (gia đình Seedream tập trung vào việc lập bản đồ tại cổng).
+        """Gọi TokenFree để tạo ảnh (dòng Seedream tập trung tạo ảnh tại gateway).
 
-        只软化用户正文并保留设定板前缀；InputTextSensitive 时仍用简化三视图重试，
-        最后一档才缩成「三视图+服装风格」。不做空主体 / CG 厚涂兜底。
+        Chỉ làm mềm nội dung văn bản người dùng và giữ lại tiền tố bảng thiết lập; khi gặp InputTextSensitive vẫn thử lại bằng 3 góc nhìn (three-view) đơn giản hóa,
+        mức cuối cùng mới rút gọn thành «3 góc nhìn + phong cách trang phục». Không dự phòng chủ thể rỗng / CG dày màu.
         """
         resolved = (model or "").strip()
         if not resolved or resolved in {"ark-seedream"} or resolved.startswith("kie-"):
@@ -802,7 +814,7 @@ class ArkGateway:
         last_err: Exception | None = None
         labels = ("softened", "compact", "style_only")
         for idx, candidate in enumerate(attempts):
-            full_prompt = f"{candidate}。避免：{negative}" if negative else candidate
+            full_prompt = f"{candidate}. Tránh: {negative}" if negative else candidate
             try:
                 return await self._seedream_once(
                     full_prompt,
@@ -882,7 +894,7 @@ class ArkGateway:
                 resolved_size = "2K"
         if on_tokenfree:
             if chosen != (upstream_model or "").strip():
-                logger.warning("TokenFree 将 %s 改走 %s，避免 Seedream task_protocol_error", upstream_model, chosen)
+                logger.warning("Hệ thống chuyển %s sang %s để tránh lỗi giao thức Seedream", upstream_model, chosen)
             path = "/responses"
             body = build_tokenfree_image_body(
                 model=chosen,
@@ -930,7 +942,7 @@ class ArkGateway:
                     )
                 data = resp.json()
         except httpx.TimeoutException as exc:
-            reraise_upstream_timeout(exc, kind="生图", read_sec=IMAGE_GEN_READ_SEC)
+            reraise_upstream_timeout(exc, kind="Tạo ảnh", read_sec=IMAGE_GEN_READ_SEC)
 
         if on_tokenfree:
             raise_tokenfree_image_if_failed(data)
@@ -950,8 +962,8 @@ class ArkGateway:
         if not remote:
             remote = self._extract_image_url(data) or extract_tokenfree_image_url(data)
         if not remote:
-            logger.warning("出图响应无图片地址: %s", json.dumps(data, ensure_ascii=False)[:500])
-            raise RuntimeError("出图未返回图片地址，请稍后重试")
+            logger.warning("Phản hồi tạo ảnh không có URL ảnh: %s", json.dumps(data, ensure_ascii=False)[:500])
+            raise RuntimeError("Tạo ảnh không trả về URL ảnh, vui lòng thử lại sau")
 
         dest_dir = storage.project_dir(project_id or 0)
         name = f"shot_{(shot_no or 0):03d}_{uuid.uuid4().hex[:12]}.png"
@@ -981,11 +993,12 @@ class ArkGateway:
             "InputTextSensitive" in text
             or "InputTextSensitiveContentDetected" in text
             or "生图文案未通过内容审核" in text
+            or "Văn bản tạo ảnh không vượt qua kiểm duyệt nội dung" in text
         )
 
     @staticmethod
     def _is_seedream_input_privacy_error(msg: str) -> bool:
-        """Hình ảnh tham chiếu / Đánh chặn quyền riêng tư của người thực từ phía đầu vào (việc thay đổi bản sao sẽ không hợp lệ)."""
+        """Hình ảnh tham chiếu / Chặn quyền riêng tư người thật từ phía đầu vào (thay đổi prompt văn bản cũng không hiệu quả)."""
         text = msg or ""
         return any(
             k in text
@@ -994,7 +1007,7 @@ class ArkGateway:
 
     @staticmethod
     def _is_seedream_policy_error(msg: str) -> bool:
-        """Viết quảng cáo hoặc chặn chiến lược nội dung đầu ra (lỗi trực tiếp ở phía hình ảnh, không sử dụng từ gợi ý)."""
+        """Chặn chính sách nội dung văn bản hoặc đầu ra (lỗi trực tiếp ở phía tạo ảnh, không thể dùng prompt dự phòng)."""
         text = msg or ""
         if ArkGateway._is_seedream_input_privacy_error(text):
             return False
@@ -1008,7 +1021,7 @@ class ArkGateway:
 
     @staticmethod
     def _is_seedance_input_privacy_error(msg: str) -> bool:
-        """Seedance Tham khảo hình ảnh chặn quyền riêng tư của người thật (việc thay đổi bản sao video sẽ không có hiệu lực)."""
+        """Seedance chặn quyền riêng tư người thật từ ảnh tham chiếu (thay đổi prompt kịch bản video sẽ không có tác dụng)."""
         text = msg or ""
         return any(
             k in text
@@ -1016,18 +1029,22 @@ class ArkGateway:
                 "PrivacyInformation",
                 "InputImageSensitive",
                 "参考图疑似真人",
+                "Ảnh tham chiếu nghi vấn là người thật",
                 "may contain real person",
             )
         )
 
     @staticmethod
     def _is_seedance_text_policy_error(msg: str) -> bool:
-        """Seedance copywriting/đánh chặn chiến lược (có thể thêm kiểu CG và thử lại)."""
+        """Seedance chặn nội dung kịch bản / chính sách (có thể thêm phong cách CG và thử lại)."""
         text = msg or ""
         if ArkGateway._is_seedance_input_privacy_error(text):
             return False
         lowered = text.lower()
-        if "分镜文案未通过内容审核" in text:
+        if (
+            "分镜文案未通过内容审核" in text
+            or "Văn bản phân cảnh không vượt qua kiểm duyệt nội dung" in text
+        ):
             return True
         return any(
             k in lowered
@@ -1100,7 +1117,7 @@ class ArkGateway:
     @staticmethod
     def _seedance_prompt_text(prompt: str) -> str:
         """Seedance 2.0 may require JSON text with summary_caption (BodyFormat)."""
-        clean = (prompt or "").strip() or "画面轻微动态，保持主体外形稳定"
+        clean = (prompt or "").strip() or "Chuyển động nhẹ nhàng trong khung hình, giữ chủ thể ổn định"
         clean = re.sub(r"\s+", " ", clean).strip()
         if clean.startswith("{"):
             try:
@@ -1143,7 +1160,7 @@ class ArkGateway:
         # Seedance needs a publicly reachable https image (data URI often rejected / odd errors)
         image_ref = await self._resolve_image_ref(image_url, prefer_https=True)
         # Prefer plain timed script for Seedance 2.5; JSON caption kept as fallback
-        plain = (prompt or "").strip() or "画面轻微动态，保持主体外形稳定"
+        plain = (prompt or "").strip() or "Chuyển động nhẹ nhàng trong khung hình, giữ chủ thể ổn định"
         text = plain if not prompt_as_json else self._seedance_prompt_text(prompt)
         # If prompt looks like manju-style script, always send plain text
         if "@duration:" in plain or "00:" in plain or plain.startswith("【"):
@@ -1267,7 +1284,7 @@ class ArkGateway:
                     raise RuntimeError(_format_seedance_create_error(resp.status_code, resp.text))
                 data = resp.json()
         except httpx.TimeoutException as exc:
-            reraise_upstream_timeout(exc, kind="生视频", read_sec=VIDEO_CREATE_READ_SEC)
+            reraise_upstream_timeout(exc, kind="Tạo video", read_sec=VIDEO_CREATE_READ_SEC)
 
         task_id = extract_video_task_id(data)
         if not task_id:
@@ -1309,7 +1326,7 @@ class ArkGateway:
     ) -> str:
         """Gửi nội dung yêu cầu đa phương thức Seedance (hình ảnh tham chiếu + reference_audio).
 
-        文案/策略拦截时追加 CG 厚涂提示词重试一次；参考图真人隐私拦截不重试。
+        Khi bị chặn bởi nội dung/chính sách, thêm prompt phong cách vẽ CG dày màu và thử lại một lần; không thử lại nếu bị chặn bởi quyền riêng tư do ảnh tham chiếu là người thật.
         """
         if self.mock:
             digest = hashlib.md5(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()[
@@ -1376,7 +1393,7 @@ class ArkGateway:
                         )
                 data = resp.json()
         except httpx.TimeoutException as exc:
-            reraise_upstream_timeout(exc, kind="生视频", read_sec=VIDEO_CREATE_READ_SEC)
+            reraise_upstream_timeout(exc, kind="Tạo video", read_sec=VIDEO_CREATE_READ_SEC)
 
         task_id = extract_video_task_id(data)
         if not task_id:
@@ -1418,6 +1435,9 @@ class ArkGateway:
                         if "参考音频" not in line
                         and "角色音色" not in line
                         and "旁白音色" not in line
+                        and "âm thanh tham chiếu" not in line.lower()
+                        and "chất giọng nhân vật" not in line.lower()
+                        and "chất giọng lời bình" not in line.lower()
                     ]
                     filtered.append({**item, "text": "\n".join(cleaned_lines).strip()})
                     continue
@@ -1433,8 +1453,8 @@ class ArkGateway:
         def _audio_fallback(exc: Exception, *, accepted: bool) -> bool:
             """Chỉ "tải xuống âm thanh tham chiếu không thành công" mới cho phép bạn xóa âm thanh tham chiếu và thử lại; đối với các lỗi khác, tác vụ sẽ không được xây dựng lại.
 
-            上游接受任务后的重提会产生第二个计费任务，故必须严格白名单，
-            隐私拦截/失败/轮询超时等异常必须立即上抛，避免重复扣费。
+            Việc gửi lại sau khi upstream đã tiếp nhận tác vụ sẽ tạo ra tác vụ tính phí thứ hai, vì vậy bắt buộc phải dùng danh sách trắng (whitelist) nghiêm ngặt,
+            các ngoại lệ như chặn quyền riêng tư/thất bại/hết thời gian chờ thăm dò phải được ném ra ngay lập tức để tránh trừ phí trùng lặp.
             """
             nonlocal fallback_body, audio_fallback_used, last_err
             last_err = exc
@@ -1796,7 +1816,7 @@ class ArkGateway:
             additions["model_type"] = 4
         hint = (emotion_hint or "").strip()
         if hint:
-            additions["context_texts"] = [f"用「{hint}」的语气朗读"]
+            additions["context_texts"] = [f"Đọc với ngữ điệu 「{hint}」"]
         if not additions:
             return None
         return json.dumps(additions, ensure_ascii=False)
@@ -1825,7 +1845,7 @@ class ArkGateway:
             or self.settings.volc_tts_speaker
             or "zh_female_cancan_uranus_bigtts"
         )
-        clean = (text or "").strip() or "这一幕。"
+        clean = (text or "").strip() or "Phân cảnh này."
 
         if self.mock:
             digest = hashlib.md5(f"{speaker}:{clean}".encode()).hexdigest()[:8]
@@ -1901,7 +1921,7 @@ class ArkGateway:
                 logger.warning("Ark TTS failed: %s", exc)
 
         logger.error("TTS all providers failed shot=%s", shot_no)
-        raise RuntimeError("配音失败：语音服务暂不可用，请稍后重试")
+        raise RuntimeError("Lồng tiếng thất bại: Dịch vụ giọng nói tạm thời không khả dụng, vui lòng thử lại sau")
 
     def _tts_resource_id(self, speaker: str) -> str:
         if speaker.startswith("S_"):
@@ -2095,11 +2115,11 @@ class ArkGateway:
                 if public and str(public).startswith("https://"):
                     return str(public)
                 raise RuntimeError(
-                    "Seedance 需要公网可访问的图片 URL（请启用 OSS 并确保参考图已上传），"
-                    "本地 /static 图无法被方舟拉取"
+                    "Seedance cần URL hình ảnh truy cập được từ internet (vui lòng bật OSS và đảm bảo ảnh tham chiếu đã được tải lên), "
+                    "ảnh cục bộ /static không thể được hệ thống kéo về"
                 )
             if raw.startswith("data:"):
-                raise RuntimeError("Seedance 不支持 data URI 图片，请使用 Ark CDN https 链接")
+                raise RuntimeError("Dịch vụ video không hỗ trợ ảnh data URI, vui lòng dùng liên kết https hợp lệ")
         if raw.startswith("http://") or raw.startswith("https://") or raw.startswith("data:"):
             return raw
         local = storage.local_path_from_url(raw)
@@ -2200,14 +2220,14 @@ class ArkGateway:
         if source_type == "theme" and len(chunks) <= 1:
             topic = source_text.strip()
             chunks = [
-                f"引入主题：{topic}",
-                f"核心概念解释：{topic}",
-                f"一个关键例子说明{topic}",
-                f"常见误解与澄清",
-                f"总结与启发",
+                f"Giới thiệu chủ đề: {topic}",
+                f"Giải thích khái niệm cốt lõi: {topic}",
+                f"Ví dụ minh họa thực tế cho {topic}",
+                f"Hiểu lầm phổ biến và giải đáp",
+                f"Tổng kết và bài học",
             ]
         if len(chunks) < 3:
-            chunks = chunks + ["补充画面过渡", "收尾总结"]
+            chunks = chunks + ["Chuyển cảnh bổ sung", "Tổng kết kết thúc"]
         # shot_lo/shot_hi phù hợp với phạm vi loại bỏ ống kính chính thức để tránh bị chế giễu và vẫn chỉ sản xuất 5 ống kính
         if shot_range_override:
             shot_lo, shot_hi = shot_range_override
@@ -2215,24 +2235,24 @@ class ArkGateway:
             shot_lo, shot_hi = segplan.suggested_kepu_shot_range(source_text, pipeline_mode=pipeline_mode)
         chunks = chunks[:shot_hi]
         while len(chunks) < shot_lo:
-            chunks.append("补充画面过渡")
+            chunks.append("Chuyển cảnh bổ sung")
         mid = (duration_min + duration_max) // 2
         if pipeline_mode == "image_text":
             mid = min(mid, max(duration_min, 3))
         bible = (
-            f"统一角色：与「{source_text.strip()[:24]}」相关的核心人物，"
-            "中等身材，简洁服饰配色固定，五官清晰可辨，全片外形不变"
+            f"Nhân vật thống nhất: Nhân vật chính liên quan đến «{source_text.strip()[:24]}», "
+            "vóc dáng cân đối, trang phục tối giản phối màu cố định, ngũ quan rõ nét, ngoại hình không đổi suốt video"
         )
         bgm_lock = segplan.infer_bgm_mood(source_text, style_prefix)
         plans: list[ShotPlan] = []
         for i, text in enumerate(chunks, start=1):
             # Mock: invent short summary titles, do not slice narration mid-token
-            topic_bit = re.sub(r"^(引入主题|核心概念解释|一个关键例子说明)[：:]?", "", text).strip()
-            title = f"要点{i}" if len(topic_bit) > 10 else (topic_bit[:8] or f"场景{i}")
+            topic_bit = re.sub(r"^(Giới thiệu chủ đề|Giải thích khái niệm cốt lõi|Ví dụ minh họa thực tế cho|引入主题|核心概念解释|一个关键例子说明)[：:]?", "", text).strip()
+            title = f"Ý chính {i}" if len(topic_bit) > 10 else (topic_bit[:12] or f"Cảnh {i}")
             if "：" in text or ":" in text:
                 title = text.split("：", 1)[0].split(":", 1)[0][-6:] or title
             subtitle = _fallback_overlay_subtitle(text)
-            img = f"{style_prefix}，{bible}，画面表现：{text[:80]}，竖屏构图，顶部留白，画面无文字"
+            img = f"{style_prefix}, {bible}, miêu tả cảnh: {text[:80]}, bố cục khung hình dọc, khoảng trống phía trên, hình ảnh không có chữ"
             beats = [
                 segplan.SegmentBeat(duration=segplan.estimate_visual_duration(img), kind="visual", text=img),
                 segplan.SegmentBeat(
@@ -2253,7 +2273,7 @@ class ArkGateway:
                     img_prompt=img,
                     video_prompt=script,
                     segment_script=script,
-                    camera="缓慢推近" if i % 2 else "轻拉远",
+                    camera="Zoom vào từ từ" if i % 2 else "Thu nhỏ góc máy nhẹ",
                     bgm=bgm_lock,
                 )
             )
@@ -2269,11 +2289,11 @@ class ArkGateway:
     ) -> StoryboardResult:
         raw = (content or "").strip()
         if not raw:
-            raise RuntimeError("分镜 JSON 为空，无法解析")
+            raise RuntimeError("JSON phân cảnh rỗng, không thể phân tích cú pháp")
         try:
             data = _extract_json(raw)
         except json.JSONDecodeError as exc:
-            raise RuntimeError(f"分镜 JSON 解析失败：{exc}") from exc
+            raise RuntimeError(f"Phân tích JSON phân cảnh thất bại: {exc}") from exc
         character_bible = ""
         bgm_lock = ""
         items = data
@@ -2284,22 +2304,22 @@ class ArkGateway:
             bgm_lock = str(data.get("bgm_lock") or data.get("bgm") or "").strip()
             items = data.get("shots") or data.get("storyboard") or data.get("scenes") or []
         if not isinstance(items, list):
-            raise RuntimeError("LLM storyboard JSON 格式无效：需要 shots 数组")
+            raise RuntimeError("Định dạng JSON storyboard không hợp lệ: cần mảng shots")
         if not items:
-            raise RuntimeError("分镜模型未返回任何镜头（shots 为空）")
+            raise RuntimeError("Mô hình phân cảnh không trả về cảnh quay nào (mảng shots rỗng)")
         hi = min(duration_max, max_shot_duration)
         plans: list[ShotPlan] = []
         for i, item in enumerate(items, start=1):
             if not isinstance(item, dict):
                 continue
-            text = str(item.get("text") or item.get("audio_text") or f"镜头{i}")
+            text = str(item.get("text") or item.get("audio_text") or f"Cảnh {i}")
             title = str(item.get("title") or item.get("overlay_title") or "").strip()
             subtitle = str(item.get("subtitle") or item.get("overlay_subtitle") or "").strip()
             title = _normalize_overlay_title(title, text, i)
             subtitle = _normalize_overlay_subtitle(subtitle, text)
             img = str(item.get("img_prompt") or f"{text}")
-            camera = str(item.get("camera", "缓慢横移"))
-            bgm = str(item.get("bgm") or item.get("bgm_mood") or bgm_lock or "平稳")
+            camera = str(item.get("camera", "Lia máy ngang chậm"))
+            bgm = str(item.get("bgm") or item.get("bgm_mood") or bgm_lock or "Nhẹ nhàng, ổn định")
             if not bgm_lock:
                 bgm_lock = bgm
             beats = segplan.parse_beats_from_llm_shot(item, narration_fallback=text)
@@ -2338,7 +2358,7 @@ class ArkGateway:
 
     async def expand_content(self, topic: str, mode: str = "theme") -> dict[str, str]:
         """Expand a short topic into title + theme brief or full narration script."""
-        topic = (topic or "").strip() or "人工智能如何改变日常生活"
+        topic = (topic or "").strip() or "Trí tuệ nhân tạo đang thay đổi cuộc sống hàng ngày như thế nào"
         mode = "script" if mode == "script" else "theme"
         if self.mock:
             return self._mock_expand_content(topic, mode)
@@ -2358,31 +2378,38 @@ class ArkGateway:
                 "title: 8-18 từ. "
                 "content: Một câu chủ đề hoàn chỉnh từ 30-80 từ, nêu rõ đối tượng khán giả và nội dung cốt lõi cần truyền tải; không xuống dòng."
             )
-        content = await chat_completions(
-            system,
-            f"主题/素材：{topic}",
-            temperature=0.6,
-            max_tokens=4096,
-            timeout=90.0,
-        )
+        if is_chatgpt2api_configured():
+            content = await chatgpt2api_completions(
+                system,
+                f"Chủ đề/Ý tưởng: {topic}",
+                timeout=90.0,
+            )
+        else:
+            content = await chat_completions(
+                system,
+                f"Chủ đề/Ý tưởng: {topic}",
+                temperature=0.6,
+                max_tokens=4096,
+                timeout=90.0,
+            )
         return self._parse_expand_content(content or "{}", topic, mode)
 
     def _mock_expand_content(self, topic: str, mode: str) -> dict[str, str]:
-        short = topic[:18].rstrip("？?。.!！") or "科普短片"
-        title = short if len(short) >= 4 else f"{short}的科普"
+        short = topic[:24].rstrip("？?。.!！") or "Video kiến thức đời sống"
+        title = short if len(short) >= 4 else f"Khám phá về {short}"
         if mode == "script":
             content = (
-                f"你有没有想过：{topic.rstrip('？?')}？\n\n"
-                f"今天我们用三分钟，把这件事讲清楚。"
-                f"先从生活里最常见的现象说起，再拆开背后的原理，最后给你一个好记的结论。\n\n"
-                f"很多人第一反应会想当然，但真正关键在于因果链条，而不是表象。"
-                f"弄懂这一点，你就能解释身边更多类似的问题。\n\n"
-                f"记住：观察现象、追问机制、再用例子验证。"
-                f"下一次再遇到{short}相关话题，你也能自信地讲给别人听。"
+                f"Bạn đã bao giờ tự hỏi: {topic.rstrip('？?')} chưa?\n\n"
+                f"Hôm nay chúng ta hãy dành ít phút để làm sáng tỏ điều này.\n"
+                f"Bắt đầu từ những hiện tượng quen thuộc nhất trong đời sống, bóc tách nguyên lý cốt lõi đằng sau và đúc kết thành bài học dễ nhớ.\n\n"
+                f"Rất nhiều người thường suy nghĩ theo cảm tính, nhưng điểm mấu chốt nằm ở chuỗi nguyên nhân và kết quả chứ không phải bề nổi.\n"
+                f"Khi hiểu rõ điều này, bạn sẽ dễ dàng giải thích những hiện tượng tương tự xung quanh mình.\n\n"
+                f"Hãy ghi nhớ: Quan sát hiện tượng, đặt câu hỏi về cơ chế và kiểm chứng bằng thực tế.\n"
+                f"Lần tới khi nhắc đến chủ đề {short}, bạn hoàn toàn có thể tự tin chia sẻ lại với mọi người."
             )
         else:
             content = (
-                f"{topic.rstrip('？?')}：面向普通观众，用生活例子讲清核心原理与常见误区。"
+                f"{topic.rstrip('？?')}: Dành cho khán giả đại chúng, dùng ví dụ đời sống để làm rõ nguyên lý cốt lõi và các hiểu lầm thường gặp."
             )[:100]
         return {"title": title[:24], "content": content}
 

@@ -21,6 +21,11 @@ class LlmUnavailableError(RuntimeError):
     """LLM theo nghĩa đen chưa được định cấu hình hoặc không khả dụng."""
 
 
+def _is_chatgpt2api(base: str) -> bool:
+    b = (base or "").lower().strip()
+    return "chatgpt2api" in b or b.endswith("/chat")
+
+
 # Giải quyết Khóa API LLM (căn chỉnh với manju ResolveOpenaiApiKey)
 def resolve_llm_api_key() -> str:
     key = (get_settings().openai_api_key or "").strip()
@@ -62,7 +67,81 @@ def _message_content(data: dict[str, Any]) -> str:
     return str(reasoning or "")
 
 
-# Gọi trò chuyện/hoàn thành tương thích với OpenAI
+# ==============================================================================
+# 1. HÀM CHUYÊN BIỆT GỌI TỚI CHATGPT2API
+# ==============================================================================
+async def chatgpt2api_completions(
+    system: str,
+    user: str,
+    *,
+    base: str | None = None,
+    api_key: str | None = None,
+    model: str | None = None,
+    timeout: float = 300.0,
+) -> str:
+    """Gọi trực tiếp tới endpoint tùy chỉnh của ChatGPT2API (nhận prompt, trả về result)."""
+    settings = get_settings()
+    target_base = (base or resolve_llm_base_url()).strip().rstrip("/")
+    target_url = target_base if target_base.endswith("/chat") else f"{target_base}/chat"
+    current_key = api_key if api_key is not None else (settings.openai_api_key or "").strip()
+    current_model = (model or settings.model_llm or "chatgpt2api").strip()
+
+    if system and user:
+        prompt_text = f"{system}\n\n{user}"
+    else:
+        prompt_text = (system or user or "").strip()
+
+    payload = {"prompt": prompt_text}
+    headers = {"Content-Type": "application/json"}
+    if current_key and current_key not in ("mock-key-not-used", "chatgpt2api-direct"):
+        headers["Authorization"] = f"Bearer {current_key}"
+
+    logger.info(
+        "Gọi ChatGPT2API model=%s url=%s prompt_len=%s",
+        current_model,
+        target_url,
+        len(prompt_text),
+    )
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        res = await client.post(
+            target_url,
+            headers=headers,
+            json=payload,
+        )
+        if res.status_code >= 400:
+            raise RuntimeError(f"ChatGPT2API error {res.status_code}: {res.text[:800]}")
+        body = (res.text or "").strip()
+        if not body:
+            raise RuntimeError(f"ChatGPT2API trả về phản hồi rỗng (HTTP {res.status_code})")
+        try:
+            data = res.json()
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Phản hồi ChatGPT2API không phải JSON hợp lệ: {body[:200]}") from exc
+
+        if isinstance(data, dict):
+            if data.get("status") == "error":
+                raise RuntimeError(f"ChatGPT2API error: {data.get('message') or data.get('detail') or body}")
+            content = data.get("result") or data.get("text")
+            if not content and "raw" in data and isinstance(data["raw"], dict):
+                content = _message_content(data["raw"])
+            if not content:
+                content = _message_content(data)
+        else:
+            content = str(data)
+
+    logger.info("ChatGPT2API văn bản trả về content_len=%s", len(content or ""))
+    return content or ""
+
+
+def is_chatgpt2api_configured() -> bool:
+    """Kiểm tra xem hệ thống có đang cấu hình sử dụng kênh ChatGPT2API hay không."""
+    base = resolve_llm_base_url()
+    return _is_chatgpt2api(base)
+
+
+# ==============================================================================
+# 2. HÀM CHUẨN OPENAI (100% LOGIC GỐC, KHÔNG CHỨA ĐIỀU HƯỚNG CHATGPT2API)
+# ==============================================================================
 async def chat_completions(
     system: str,
     user: str,
@@ -72,6 +151,7 @@ async def chat_completions(
     timeout: float = 300.0,
     response_format: dict[str, Any] | None = None,
 ) -> str:
+    """Gọi trò chuyện/hoàn thành tương thích với OpenAI (Kimi, DeepSeek, OpenAI, v.v.)."""
     settings = get_settings()
     logical_id = resolve_logical_model_id("text", None)
     route = resolve_logical_model("text", logical_id)
@@ -83,11 +163,13 @@ async def chat_completions(
         api_key = resolve_llm_api_key()
         model = (settings.model_llm or "").strip()
         base = resolve_llm_base_url()
+
     if not model:
         raise LlmUnavailableError(
             "Chưa cấu hình mô hình văn bản khả dụng. Vui lòng điền TokenFree API Key trong trang quản trị, đồng bộ và chọn mô hình văn bản."
         )
-    # dòng kimi chỉ cho phép nhiệt độ = 0,6, các giá trị khác sẽ là 400
+
+    # Dòng kimi chỉ cho phép nhiệt độ = 0,6, các giá trị khác sẽ là 400
     effective_temperature = 0.6 if model.lower().startswith("kimi") else temperature
 
     payload: dict[str, Any] = {

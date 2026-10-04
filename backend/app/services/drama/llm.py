@@ -11,6 +11,8 @@ from app.services.llm_client import (
     DEFAULT_MAX_TOKENS,
     LlmUnavailableError,
     chat_completions,
+    chatgpt2api_completions,
+    is_chatgpt2api_configured,
 )
 
 logger = logging.getLogger(__name__)
@@ -89,6 +91,27 @@ async def drama_chat_json(
 ) -> Any:
     """Call text LLM and parse JSON from the reply."""
     system, user = _ensure_json_word_in_prompt(system, user)
+
+    # 1. Chuyển hướng trực tiếp từ gốc nếu hệ thống cấu hình kênh ChatGPT2API
+    if is_chatgpt2api_configured():
+        content = await chatgpt2api_completions(system, user, timeout=300.0)
+        try:
+            return _extract_json(content)
+        except json.JSONDecodeError as first_error:
+            logger.warning(
+                "JSON 解析失败，重试一次 err=%s content_head=%s",
+                first_error,
+                (content or "")[:200],
+            )
+            retry_user = (
+                f"{user}\n\n"
+                "【重要】上次输出不是合法 JSON。请只输出一个完整、可 json.loads 的 JSON 对象，"
+                "不要 markdown、不要代码围栏、字符串内不要未转义换行。"
+            )
+            retry_content = await chatgpt2api_completions(system, retry_user, timeout=300.0)
+            return _extract_json(retry_content)
+
+    # 2. Logic gọi chuẩn OpenAI (chat_completions)
     json_format = {"type": "json_object"}
     try:
         content = await chat_completions(
@@ -144,6 +167,11 @@ async def drama_chat_text(
     max_tokens: int = 8192,
 ) -> str:
     """Call text LLM and return plain text."""
+    # Chuyển hướng trực tiếp từ gốc nếu hệ thống cấu hình kênh ChatGPT2API
+    if is_chatgpt2api_configured():
+        return await chatgpt2api_completions(system, user, timeout=180.0)
+
+    # Gọi chuẩn OpenAI
     return await chat_completions(
         system,
         user,
