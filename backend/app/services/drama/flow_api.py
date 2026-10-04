@@ -1,0 +1,149 @@
+"""Tích hợp API tạo video Google Veo qua cổng Flow API."""
+from __future__ import annotations
+
+import asyncio
+import base64
+import logging
+from pathlib import Path
+from typing import Any
+
+import httpx
+
+from app.services import storage
+
+logger = logging.getLogger(__name__)
+
+FLOW_BASE_URL = "https://neuravibemmo.dpdns.org/api/flow"
+FLOW_PROJECT_ID = "746c4f17-5aa9-4cf1-b824-f8d0bd7aa6c4"
+
+# Bộ nhớ tạm lưu kết quả: task_id -> {"status": "running"|"succeeded"|"failed", "video_url": "...", "error": "..."}
+_FLOW_TASKS: dict[str, dict[str, Any]] = {}
+
+
+async def _to_base64_data_uri(image_path_or_url: str) -> str | None:
+    raw = (image_path_or_url or "").strip()
+    if not raw:
+        return None
+    if raw.startswith("data:image/"):
+        return raw
+
+    data: bytes | None = None
+    mime = "image/png" if raw.lower().endswith(".png") else "image/jpeg"
+
+    if raw.startswith("http://") or raw.startswith("https://"):
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                res = await client.get(raw)
+                if res.status_code == 200:
+                    data = res.content
+        except Exception as e:
+            logger.warning("Lỗi tải ảnh tham chiếu %s: %s", raw, e)
+    else:
+        p = Path(raw)
+        if not p.is_file():
+            p = storage.to_local_path(raw)
+        if p and p.is_file():
+            data = p.read_bytes()
+
+    if data:
+        b64 = base64.b64encode(data).decode("ascii")
+        return f"data:{mime};base64,{b64}"
+    return None
+
+
+async def upload_image_to_flow(image_ref: str, project_id: str = FLOW_PROJECT_ID) -> str | None:
+    """Upload ảnh lên Flow API lấy media_id."""
+    data_uri = await _to_base64_data_uri(image_ref)
+    if not data_uri:
+        return None
+    mime = "image/png" if "image/png" in data_uri else "image/jpeg"
+    payload = {
+        "image_base64": data_uri,
+        "project_id": project_id,
+        "mime_type": mime,
+        "file_name": f"ref_{mime.split('/')[-1]}",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(f"{FLOW_BASE_URL}/upload-image-b64", json=payload)
+            if resp.status_code == 200:
+                media_id = resp.json().get("media_id")
+                logger.info("Upload ảnh Flow thành công media_id=%s", media_id)
+                return media_id
+            logger.error("Upload ảnh Flow thất bại: HTTP %s %s", resp.status_code, resp.text[:200])
+    except Exception as e:
+        logger.error("Lỗi upload ảnh Flow: %s", e)
+    return None
+
+
+async def _run_flow_generation(
+    task_id: str,
+    prompt: str,
+    image_ref: str | None,
+    aspect_ratio: str = "9:16",
+    project_id: str = FLOW_PROJECT_ID,
+    model_key: str = "abra_r2v_10s",
+) -> None:
+    _FLOW_TASKS[task_id] = {"status": "running"}
+    ref_ids: list[str] = []
+
+    if image_ref:
+        mid = await upload_image_to_flow(image_ref, project_id=project_id)
+        if mid:
+            ref_ids.append(mid)
+
+    payload = {
+        "reference_media_ids": ref_ids,
+        "prompt": prompt or "Beauty Commercial",
+        "project_id": project_id,
+        "scene_id": "",
+        "aspect_ratio": aspect_ratio or "9:16",
+        "model_key": model_key or "abra_r2v_10s",
+    }
+    logger.info("Bắt đầu gọi Flow API tạo video task=%s ref_ids=%s", task_id, ref_ids)
+
+    try:
+        async with httpx.AsyncClient(timeout=240.0) as client:
+            resp = await client.post(
+                f"{FLOW_BASE_URL}/generate-video-veo_3_1_r2v_lite_low_priority",
+                json=payload,
+            )
+            if resp.status_code >= 400:
+                _FLOW_TASKS[task_id] = {"status": "failed", "error": f"Flow HTTP {resp.status_code}: {resp.text[:200]}"}
+                return
+            data = resp.json()
+            video_url = data.get("video_url")
+            if data.get("success") and video_url:
+                logger.info("Flow tạo video thành công task=%s url=%s", task_id, video_url[:60])
+                _FLOW_TASKS[task_id] = {
+                    "status": "succeeded",
+                    "video_url": video_url,
+                    "thumbnail_url": data.get("thumbnail_url"),
+                }
+            else:
+                _FLOW_TASKS[task_id] = {"status": "failed", "error": str(data)}
+    except Exception as e:
+        logger.error("Lỗi Flow tạo video task=%s: %s", task_id, e)
+        _FLOW_TASKS[task_id] = {"status": "failed", "error": str(e)}
+
+
+def submit_flow_video(
+    prompt: str,
+    image_ref: str | None = None,
+    aspect_ratio: str = "9:16",
+) -> str:
+    import uuid
+    task_id = f"flow-{uuid.uuid4().hex[:12]}"
+    asyncio.create_task(
+        _run_flow_generation(
+            task_id=task_id,
+            prompt=prompt,
+            image_ref=image_ref,
+            aspect_ratio=aspect_ratio,
+        )
+    )
+    return task_id
+
+
+def get_flow_video_result(task_id: str) -> dict[str, Any] | None:
+    return _FLOW_TASKS.get(task_id)

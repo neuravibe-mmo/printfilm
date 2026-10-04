@@ -1546,7 +1546,26 @@ class ArkGateway:
         return TaskResult(status="failed", error="poll timeout", provider_task_id=task_id)
 
     async def fetch_task_once(self, task_id: str) -> TaskResult:
-        """Nhiệm vụ Seedance truy vấn đơn, không chặn và chờ đợi."""
+        """Nhiệm vụ Seedance/Flow truy vấn đơn, không chặn và chờ đợi."""
+        if task_id.startswith("flow-"):
+            from app.services.drama.flow_api import get_flow_video_result
+
+            res = get_flow_video_result(task_id)
+            if not res or res.get("status") == "running":
+                return TaskResult(status="running", provider_task_id=task_id)
+            if res.get("status") == "succeeded":
+                return TaskResult(
+                    status="succeeded",
+                    url=res["video_url"],
+                    last_frame_url=res.get("thumbnail_url"),
+                    provider_task_id=task_id,
+                )
+            return TaskResult(
+                status="failed",
+                error=res.get("error", "Lỗi tạo video Flow"),
+                provider_task_id=task_id,
+            )
+
         if self.mock or task_id.startswith("mock-task-"):
             v_url, last_url = self._write_mock_video(task_id)
             return TaskResult(
@@ -1610,6 +1629,26 @@ class ArkGateway:
                     last_local = storage.publish_local(frame_dest)
             except Exception:  # noqa: BLE001
                 logger.warning("failed to save last frame project=%s shot=%s", project_id, shot_no)
+
+        # Nếu không có last_frame_url trả về từ API (ví dụ Flow API trả thumbnail null), trích xuất bằng ffmpeg
+        if not last_local and dest.exists():
+            try:
+                stamp = int(time.time())
+                frame_dest = (
+                    storage.project_dir(project_id)
+                    / f"shot_{shot_no:03d}_{stamp}_last.jpg"
+                )
+                import shutil, subprocess
+                ffmpeg_bin = shutil.which("ffmpeg") or "ffmpeg"
+                subprocess.run(
+                    [ffmpeg_bin, "-y", "-sseof", "-0.5", "-i", str(dest), "-vframes", "1", "-q:v", "2", str(frame_dest)],
+                    capture_output=True, timeout=10,
+                )
+                if frame_dest.exists():
+                    last_local = storage.publish_local(frame_dest)
+            except Exception as e:
+                logger.warning("failed to extract fallback last frame: %s", e)
+
         return video_local, last_local
 
     async def wait_video_assets(

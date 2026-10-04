@@ -1632,31 +1632,25 @@ async def prepare_fragment_video_for_submit(
     )
 
 
-# Giai đoạn gửi Worker: Chỉ HTTP tạo các tác vụ ngược dòng và trả về nhà cung cấp_task_id ngay lập tức (không chặn).
+# Giai đoạn gửi Worker: Sử dụng Flow API tạo video Veo và trả về task_id ngay lập tức
 async def submit_prepared_fragment_video(
     prepared: FragmentVideoPrepared,
     *,
     project_id: int,
 ) -> str:
-    ark = get_ark()
-    if prepared.submit_mode == "kie":
-        raise RuntimeError("已改为 TokenFree 通道，请重新生成本镜视频")
-    if prepared.submit_mode == "seedance_body" and prepared.seedance_body:
-        return await ark.gen_video_seedance_body(
-            prepared.seedance_body,
-            project_id=project_id,
-            content_labels=prepared.content_labels,
-        )
-    if prepared.submit_mode == "i2v" and prepared.image_url:
-        return await ark.gen_video_i2v(
-            prepared.image_url,
-            prepared.prompt,
-            prepared.duration,
-            resolution=prepared.resolution,
-            ratio=prepared.ratio,
-            generate_audio=prepared.generate_audio,
-        )
-    raise RuntimeError("分镜视频提交上下文不完整")
+    from app.services.drama.flow_api import submit_flow_video
+
+    ref_img = None
+    if prepared.reference_image_urls:
+        ref_img = prepared.reference_image_urls[0]
+    elif prepared.image_url:
+        ref_img = prepared.image_url
+
+    return submit_flow_video(
+        prompt=prepared.prompt,
+        image_ref=ref_img,
+        aspect_ratio=prepared.ratio or "9:16",
+    )
 
 
 def serialize_fragment_video_prepared(prepared: FragmentVideoPrepared) -> dict[str, Any]:
