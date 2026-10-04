@@ -108,6 +108,15 @@ async def _run_flow_generation(
     _save_task_state(task_id, {"status": "running", "created_at": time.time()})
     ref_ids: list[str] = []
 
+    # Tự động tối ưu hóa prompt qua ChatGPT2API để Google Veo hiểu chính xác bối cảnh & chuyển động
+    final_prompt = prompt or "Beauty Commercial"
+    try:
+        from app.services.drama.prompt_optimizer import optimize_video_prompt
+
+        final_prompt = await optimize_video_prompt(prompt)
+    except Exception as opt_err:
+        logger.warning("Lỗi tối ưu prompt qua ChatGPT2API: %s", opt_err)
+
     if image_ref:
         mid = await upload_image_to_flow(image_ref, project_id=project_id)
         if mid:
@@ -115,13 +124,13 @@ async def _run_flow_generation(
 
     payload = {
         "reference_media_ids": ref_ids,
-        "prompt": prompt or "Beauty Commercial",
+        "prompt": final_prompt,
         "project_id": project_id,
         "scene_id": "",
         "aspect_ratio": aspect_ratio or "9:16",
         "model_key": model_key or "abra_r2v_10s",
     }
-    logger.info("Bắt đầu gọi Flow API tạo video task=%s ref_ids=%s", task_id, ref_ids)
+    logger.info("Bắt đầu gọi Flow API tạo video task=%s ref_ids=%s prompt=%s", task_id, ref_ids, final_prompt[:80])
 
     try:
         async with httpx.AsyncClient(timeout=240.0) as client:
