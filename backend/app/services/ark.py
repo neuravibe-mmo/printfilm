@@ -785,6 +785,22 @@ class ArkGateway:
             url = storage.publish_local(path) if path and path.exists() else local
             return ImageResult(local_url=url, remote_url=None)
 
+        # Ưu tiên tạo ảnh qua ChatGPT2API
+        try:
+            from app.services.drama.chatgpt_image_api import generate_chatgpt_image
+
+            local_url = await generate_chatgpt_image(
+                prompt,
+                ref_urls=ref_urls,
+                size=size,
+                aspect_ratio=aspect_ratio,
+                project_id=project_id,
+                shot_no=shot_no,
+            )
+            return ImageResult(local_url=local_url, remote_url=None)
+        except Exception as chatgpt_err:
+            logger.warning("ChatGPT2API tạo ảnh thất bại: %s; thử qua Seedream", chatgpt_err)
+
         from app.services.seedream_text_soften import (
             compact_seedream_prompt_for_retry,
             soften_seedream_input_text,
