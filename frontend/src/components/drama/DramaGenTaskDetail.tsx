@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Loader2, X } from 'lucide-react'
 import { tasksApi, type TaskRunOut } from '../../api/tasks'
-import { formatDramaGenError, pickRootDramaGenError } from '../../lib/dramaGenError'
+import { formatDramaGenError, localizeDramaJobMessage, pickRootDramaGenError } from '../../lib/dramaGenError'
 import BillingTopupLink from '../billing/BillingTopupLink'
 import type { DramaGenJob } from '../../lib/dramaGenQueue'
 import { useI18n } from '../../i18n'
@@ -47,7 +47,7 @@ async function listRelatedTasks(job: DramaGenJob): Promise<TaskRunOut[]> {
 
 // Mô tả tiến độ của các nhiệm vụ đang thực hiện
 function activeJobHint(job: DramaGenJob, t: (key: string) => string): string {
-  if (job.message?.trim()) return job.message.trim()
+  if (job.message?.trim()) return localizeDramaJobMessage(job.message.trim())
   if (job.status === 'queued') return t('drama.genQueue.hintQueued')
   if (job.kind === 'video') return t('drama.genQueue.hintVideo')
   return t('drama.genQueue.hintImage')

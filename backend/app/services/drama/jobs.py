@@ -101,7 +101,7 @@ async def _reset_fragment_video_generation(
         status = str(gen.get("status") or "") if isinstance(gen, dict) else ""
         if status not in ACTIVE_VIDEO_GEN_STATUSES:
             continue
-        params["generation"] = {"status": "cancelled", "error": "任务已取消"}
+        params["generation"] = {"status": "cancelled", "error": "Tác vụ đã bị hủy"}
         frag.params = params
         changed += 1
     if changed:
@@ -427,7 +427,7 @@ async def run_episode_scripts_job(
                     existing = [
                         {
                             "episodeNumber": int(item.get("episodeNumber") or 0),
-                            "title": str(item.get("title") or f"第 {item.get('episodeNumber')} 集"),
+                            "title": str(item.get("title") or f"Tập {item.get('episodeNumber')}"),
                             "body": "",
                         }
                         for item in existing
@@ -467,7 +467,7 @@ async def run_episode_scripts_job(
                 count_completed_episodes(existing, total),
                 total,
                 phase="generating",
-                message=f"分集大纲就绪，开始生成 {count_completed_episodes(existing, total)}/{total}",
+                message=f"Đề cương phân tập đã sẵn sàng, bắt đầu tạo {count_completed_episodes(existing, total)}/{total}",
             )
 
             guard = 0
@@ -529,15 +529,15 @@ async def run_episode_scripts_job(
                     done_now,
                     total,
                     phase="generating",
-                    message=f"分集剧本进度 {done_now}/{total}",
+                    message=f"Tiến độ kịch bản phân tập {done_now}/{total}",
                 )
                 guard += 1
                 if guard > max(total * 2, 24):
                     raise RuntimeError(
-                        f"分集生成未完成（{count_completed_episodes(existing, total)}/{total}）"
+                        f"Tạo phân tập chưa hoàn thành ({count_completed_episodes(existing, total)}/{total})"
                     )
                 if not batch:
-                    raise RuntimeError("分集生成无进度")
+                    raise RuntimeError("Tạo phân tập không có tiến triển")
 
             params = dict(script.params or {})
             params["episode_content_status"] = "completed"
@@ -546,8 +546,8 @@ async def run_episode_scripts_job(
             params["episode_content_progress"] = {"done": total, "total": total}
             script.params = params
             await db.commit()
-            await _sync_task_progress(total, total, phase="succeeded", message=f"分集剧本全部完成 {total}/{total}")
-            logger.info("分集剧本全部完成 project_id=%s total=%s", project_id, total)
+            await _sync_task_progress(total, total, phase="succeeded", message=f"Kịch bản phân tập đã hoàn thành {total}/{total}")
+            logger.info("Phân tập kịch bản hoàn thành project_id=%s total=%s", project_id, total)
             return {"ok": True, "project_id": project_id, "total": total}
         except Exception as exc:  # noqa: BLE001
             params = dict(script.params or {})
@@ -614,7 +614,7 @@ async def _run_single_episode_script_job(
         )
         ep_creative = str((current or {}).get("creative") or "").strip()
         ep_summary = str((current or {}).get("summary") or "").strip()
-        ep_title = str((current or {}).get("title") or "").strip() or f"第 {episode_number} 集"
+        ep_title = str((current or {}).get("title") or "").strip() or f"Tập {episode_number}"
         origin = str((current or {}).get("origin") or "")
 
         # Đã có tên nhân vật trang điểm cố định và bị giới hạn ở tiêu đề LLM của một tập duy nhất
@@ -631,7 +631,7 @@ async def _run_single_episode_script_job(
         try:
             if mode == "summary":
                 if len(ep_creative) < 20:
-                    raise ValueError("请先填写Ý tưởng ban đầu của tập này（至少 20 字）")
+                    raise ValueError("Vui lòng điền ý tưởng ban đầu của tập này (ít nhất 20 chữ)")
                 batch = await run_episode_summary_from_creative(
                     summary,
                     existing,
@@ -654,7 +654,7 @@ async def _run_single_episode_script_job(
                 )
             elif mode == "full":
                 if len(ep_creative) < 20:
-                    raise ValueError("请先填写Ý tưởng ban đầu của tập này（至少 20 字）")
+                    raise ValueError("Vui lòng điền ý tưởng ban đầu của tập này (ít nhất 20 chữ)")
                 batch = await run_episode_full_from_creative(
                     summary,
                     existing,
@@ -667,7 +667,7 @@ async def _run_single_episode_script_job(
             elif mode == "brief":
                 ep_body = str((current or {}).get("body") or (current or {}).get("content") or "").strip()
                 if len(ep_body) < 80:
-                    raise ValueError("请先有本集剧本内容，再补齐创意与摘要")
+                    raise ValueError("Vui lòng có nội dung kịch bản tập này trước khi bổ sung ý tưởng và tóm tắt")
                 batch = await run_episode_brief_from_body(
                     summary,
                     existing,
@@ -679,7 +679,7 @@ async def _run_single_episode_script_job(
                 )
             else:
                 if not draft or len(draft) < 20:
-                    raise ValueError("请先输入本集剧本草稿，再让 AI 优化")
+                    raise ValueError("Vui lòng nhập bản thảo kịch bản tập này trước khi để AI tối ưu")
                 batch = await run_episode_script_from_draft(
                     summary,
                     existing,
@@ -759,7 +759,7 @@ async def _run_single_episode_script_job(
                         event_type="task.progress",
                         status=task_row.status,
                         phase="succeeded",
-                        message=f"第 {episode_number} 集已生成（{mode}）",
+                        message=f"Tập {episode_number} đã tạo ({mode})",
                         payload={
                             "episode_number": episode_number,
                             "generate_mode": mode,
@@ -847,7 +847,7 @@ async def run_episode_fragment_plan_job(
         if not (body or "").strip():
             params = dict(episode.params or {})
             params["fragment_plan_status"] = "failed"
-            params["fragment_plan_error"] = "本集剧本正文为空，无法分镜"
+            params["fragment_plan_error"] = "Nội dung kịch bản tập này đang trống, không thể phân cảnh"
             episode.params = params
             await db.commit()
             return {"ok": False, "error": "empty_body"}
@@ -924,7 +924,7 @@ async def run_episode_fragment_plan_job(
                     narr.append(line)
                     if len(narr) >= 3:
                         break
-                locked_summaries.append("；".join(narr) if narr else f"分镜#{frag.sort_order}")
+                locked_summaries.append("；".join(narr) if narr else f"Phân cảnh #{frag.sort_order}")
 
         mode_used = "llm"
         summary = script.summary if script and isinstance(script.summary, dict) else {}
@@ -1048,7 +1048,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
     episode_id = int(task.episode_id or payload.get("episode_id") or 0)
     user_id = int(task.requested_by)
     if fragment_id <= 0 or episode_id <= 0:
-        raise ValueError("任务缺少 episode_id / fragment_id")
+        raise ValueError("Tác vụ thiếu episode_id / fragment_id")
 
     async with AsyncSessionLocal() as db:
         task_row = await get_task_for_runtime(db, task.id)
@@ -1060,11 +1060,11 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
             options=[selectinload(DramaEpisode.project).selectinload(DramaProject.script)],
         )
         if not ep or not ep.project:
-            raise ValueError("分集或项目不存在")
+            raise ValueError("Tập phim hoặc dự án không tồn tại")
         project = ep.project
         user = await db.get(User, user_id)
         if not user:
-            raise ValueError("用户不存在")
+            raise ValueError("Người dùng không tồn tại")
         frag = await db.get(
             DramaEpisodeFragment,
             fragment_id,
@@ -1075,12 +1075,12 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
             ],
         )
         if not frag or frag.episode_id != episode_id:
-            raise ValueError("分镜不存在")
+            raise ValueError("Phân cảnh không tồn tại")
 
         if _is_episode_video_cancelled(episode_id):
             params = dict(frag.params or {})
             params.pop("generation_attempts", None)
-            params["generation"] = {"status": "cancelled", "error": "任务已取消"}
+            params["generation"] = {"status": "cancelled", "error": "Tác vụ đã bị hủy"}
             frag.params = params
             await db.commit()
             return {"ok": False, "cancelled": True}
@@ -1100,8 +1100,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
         attempts = prev_attempts + 1 if nio_phase == "prepare" else int(payload.get("generation_attempts") or prev_attempts + 1)
         if nio_phase == "prepare" and attempts > max_attempts:
             params = dict(frag.params or {})
-            # raise sử dụng copywriting vượt quá giới hạn thuần túy; nối màn hình được chuyển giao cho build_failed_Generation_params/_fail_task
-            limit_msg = f"分镜内部自动重试超过上限（{max_attempts} 次）"
+            limit_msg = f"Tự động thử lại phân cảnh vượt quá giới hạn ({max_attempts} lần)"
             params["generation"] = build_failed_generation_params(
                 gen if isinstance(gen, dict) else None,
                 limit_msg,
@@ -1154,7 +1153,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
                 event_type="task.prepared",
                 status=task_row.status,
                 phase=task_row.current_step_key,
-                message="参考资源就绪，重新入队提交",
+                message="Tài nguyên tham chiếu đã sẵn sàng, gửi lại vào hàng đợi",
             )
             await db.commit()
             return {"deferred": True, "nio_phase": "submit"}
@@ -1194,7 +1193,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
             "phase": "polling",
             "attempts": attempts,
             "attempt_limit": max_attempts,
-            "message": "上游生成中",
+            "message": "Máy chủ AI đang tạo",
             "provider_task_id": provider_task_id,
         }
         frag.params = params
@@ -1219,7 +1218,7 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
             event_type="task.registered",
             status=task_row.status,
             phase=task_row.current_step_key,
-            message="已注册上游，Selector 非阻塞轮询",
+            message="Đã gửi máy chủ AI, đang kiểm tra kết quả",
             payload={"provider_task_id": provider_task_id},
         )
         await db.commit()
@@ -1349,7 +1348,7 @@ async def _settle_cancelled_after_finalized(db: AsyncSession, task_id: int) -> b
         event_type="task.cancelled",
         status="cancelled",
         phase="fragment_video",
-        message="取消在成片收尾窗口内生效，成片已交付，按实际用量结算",
+        message="Hủy có hiệu lực trong giai đoạn hoàn tất, video đã bàn giao, quyết toán theo mức sử dụng thực tế",
     )
     await db.commit()
     return True
@@ -1380,7 +1379,7 @@ async def poll_fragment_video_task(task_id: int) -> None:
 
             frag_probe = await db.get(DramaEpisodeFragment, fragment_id) if fragment_id > 0 else None
             if fragment_id <= 0 or frag_probe is None:
-                await _fail_task(db, task, RuntimeError("分镜已变更，请重新生成"))
+                await _fail_task(db, task, RuntimeError("Phân cảnh đã thay đổi, vui lòng tạo lại"))
                 return
 
             # Phim hoàn chỉnh đã được phát hành: sẽ được ưu tiên hoàn thành và sẽ không bị chặn bởi cửa sổ yêu cầu hoàn thiện
@@ -1401,11 +1400,11 @@ async def poll_fragment_video_task(task_id: int) -> None:
                     return
 
             if task.cancel_requested or _is_episode_video_cancelled(episode_id):
-                await _fail_task(db, task, RuntimeError("任务已取消"))
+                await _fail_task(db, task, RuntimeError("Tác vụ đã bị hủy"))
                 return
 
             if str(payload.get("video_provider") or "") == "kie":
-                await _fail_task(db, task, RuntimeError("已改为 TokenFree 通道，请重新生成本镜视频"))
+                await _fail_task(db, task, RuntimeError("Đã chuyển sang kênh TokenFree, vui lòng tạo lại video phân cảnh này"))
                 return
 
             result = await get_ark().fetch_task_once(task.provider_task_id)
@@ -1422,19 +1421,19 @@ async def poll_fragment_video_task(task_id: int) -> None:
                     prev_gen = params.get("generation") if isinstance(params.get("generation"), dict) else None
                     params["generation"] = build_failed_generation_params(
                         prev_gen if isinstance(prev_gen, dict) else None,
-                        str(result.error or "上游生成失败"),
+                        str(result.error or "Máy chủ AI tạo thất bại"),
                         attempts=attempts,
                         attempt_limit=attempt_limit,
                     )
                     frag.params = params
-                await _fail_task(db, task, RuntimeError(result.error or "上游生成失败"))
+                await _fail_task(db, task, RuntimeError(result.error or "Máy chủ AI tạo thất bại"))
                 return
 
             ep = await db.get(DramaEpisode, episode_id, options=[selectinload(DramaEpisode.project)])
             user = await db.get(User, user_id)
             frag = await db.get(DramaEpisodeFragment, fragment_id)
             if not ep or not ep.project or not user or not frag:
-                await _fail_task(db, task, RuntimeError("分镜已变更，请重新生成"))
+                await _fail_task(db, task, RuntimeError("Phân cảnh đã thay đổi, vui lòng tạo lại"))
                 return
 
             # Yêu cầu khóa hàng: Chỉ người hoàn thiện đầu tiên mới tải xuống được; phần còn lại trong cửa sổ thoát ra sau khi xem xong
@@ -1447,7 +1446,7 @@ async def poll_fragment_video_task(task_id: int) -> None:
                     return
             # Người dùng có thể đã hủy trong khi chờ khóa: từ bỏ tải xuống và giao cho người thi hành để được hoàn lại tiền đầy đủ nếu không được giao.
             if locked.cancel_requested or _is_episode_video_cancelled(episode_id):
-                await _fail_task(db, locked, RuntimeError("任务已取消"))
+                await _fail_task(db, locked, RuntimeError("Tác vụ đã bị hủy"))
                 return
             # Các phần trước và sau khi xác nhận đều đã có sẵn: chỉ sau khi khóa hàng hoàn tất (để tránh phát hành bất thường sau khi áp dụng và yêu cầu và tải xuống lại)
             if _fragment_video_already_applied(frag):
@@ -1633,7 +1632,7 @@ async def run_asset_image_job(
             params = dict(asset.params or {})
             gen = dict(params.get("generation") or {})
             gen["status"] = "generating"
-            gen["message"] = "生图中"
+            gen["message"] = "Đang tạo ảnh"
             params["generation"] = gen
             asset.params = params
             await db.commit()
@@ -1683,7 +1682,7 @@ async def run_asset_image_job(
         except Exception as exc:  # noqa: BLE001
             from app.services.exc_format import format_exception_message
 
-            err_text = format_exception_message(exc, fallback="生图失败", limit=500)
+            err_text = format_exception_message(exc, fallback="Tạo ảnh thất bại", limit=500)
             if asset_id:
                 asset = await db.get(DramaAsset, asset_id)
                 if asset:
@@ -1807,7 +1806,7 @@ async def run_asset_video_job(
         except Exception as exc:  # noqa: BLE001
             from app.services.exc_format import format_exception_message
 
-            err_text = format_exception_message(exc, fallback="生视频失败", limit=500)
+            err_text = format_exception_message(exc, fallback="Tạo video thất bại", limit=500)
             asset = await db.get(DramaAsset, asset_id)
             if asset:
                 params = dict(asset.params or {})

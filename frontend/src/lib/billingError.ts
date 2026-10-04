@@ -1,10 +1,12 @@
 import { dialog } from './dialog'
 
+import { getActiveLocale } from '../i18n/detect'
+
 export const PRICING_PATH = '/pricing'
 
 /** Đây có phải là lỗi chặn số dư/thanh toán không đủ? */
 export function isBillingError(message: string) {
-  return /余额不足|请先充值|402|insufficient_balance/i.test(message)
+  return /余额不足|请先充值|Số dư không đủ|Vui lòng nạp tiền trước|Số dư tài khoản không đủ|402|insufficient_balance/i.test(message)
 }
 
 /** Chuyển tới trang định giá để nạp tiền */
@@ -24,11 +26,24 @@ export async function handleBillingError(
 ): Promise<boolean> {
   const message = err instanceof Error ? err.message : String(err || '')
   if (!isBillingError(message)) return false
+  const locale = getActiveLocale()
+  const isZh = locale === 'zh'
+  const isEn = locale === 'en'
+
+  const title = isZh ? '余额不足' : isEn ? 'Insufficient Balance' : 'Số dư không đủ'
+  const defaultMsg = isZh
+    ? '当前余额不足以开始生成，请先充值。'
+    : isEn
+    ? 'Your current balance is insufficient to start generation. Please top up first.'
+    : 'Số dư hiện tại không đủ để bắt đầu tạo, vui lòng nạp tiền trước.'
+  const confirmText = isZh ? '去充值' : isEn ? 'Top up' : 'Đi nạp tiền'
+  const cancelText = isZh ? '知道了' : isEn ? 'OK' : 'Đã hiểu'
+
   const go = await dialog.confirm({
-    title: '余额不足',
-    message: message || '当前余额不足以开始生成，请先充值。',
-    confirmText: '去充值',
-    cancelText: '知道了',
+    title,
+    message: message || defaultMsg,
+    confirmText,
+    cancelText,
     tone: 'danger',
   })
   if (go) {

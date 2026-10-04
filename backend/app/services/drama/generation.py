@@ -455,7 +455,7 @@ def activate_fragment_video_version(
     params = dict(fragment.params or {}) if isinstance(fragment.params, dict) else {}
     versions_raw = params.get("video_versions")
     if not isinstance(versions_raw, list):
-        raise ValueError("没有可切换的历史版本")
+        raise ValueError("Không có phiên bản lịch sử để chuyển đổi")
     target: dict[str, Any] | None = None
     remaining: list[dict[str, Any]] = []
     for item in versions_raw:
@@ -466,7 +466,7 @@ def activate_fragment_video_version(
             continue
         remaining.append(dict(item))
     if not target or not str(target.get("video") or "").strip():
-        raise ValueError("指定版本不存在")
+        raise ValueError("Phiên bản chỉ định không tồn tại")
 
     from datetime import datetime, timezone
 
@@ -598,7 +598,7 @@ def activate_asset_image_version(
     params = dict(asset.params or {}) if isinstance(asset.params, dict) else {}
     versions_raw = params.get("image_versions")
     if not isinstance(versions_raw, list):
-        raise ValueError("没有可切换的历史版本")
+        raise ValueError("Không có phiên bản lịch sử để chuyển đổi")
     target: dict[str, Any] | None = None
     remaining: list[dict[str, Any]] = []
     for item in versions_raw:
@@ -610,7 +610,7 @@ def activate_asset_image_version(
         remaining.append(dict(item))
     target_url = str((target or {}).get("url") or (target or {}).get("cover") or "").strip()
     if not target or not target_url:
-        raise ValueError("指定版本不存在")
+        raise ValueError("Phiên bản chỉ định không tồn tại")
 
     from datetime import datetime, timezone
 
@@ -1332,7 +1332,7 @@ async def generate_asset_image(
                 project.id,
             )
     if not (url or "").strip():
-        raise RuntimeError("生图成功但未拿到可用图片 URL")
+        raise RuntimeError("Tạo ảnh thành công nhưng không nhận được URL hình ảnh khả dụng")
     logger.info("Seedream 返回 project_id=%s url=%s", project.id, url[:100])
 
     await record_seedream_image_usage(

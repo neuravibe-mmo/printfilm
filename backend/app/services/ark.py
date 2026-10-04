@@ -1498,10 +1498,11 @@ class ArkGateway:
 
     async def poll_task(self, task_id: str) -> TaskResult:
         if self.mock or task_id.startswith("mock-task-"):
+            v_url, last_url = self._write_mock_video(task_id)
             return TaskResult(
                 status="succeeded",
-                url=f"/static/mock/video_{task_id[-8:]}.mp4",
-                last_frame_url=f"/static/mock/last_{task_id[-8:]}.jpg",
+                url=v_url,
+                last_frame_url=last_url,
             )
 
         deadline = time.monotonic() + self.settings.ark_video_poll_timeout
@@ -1547,10 +1548,11 @@ class ArkGateway:
     async def fetch_task_once(self, task_id: str) -> TaskResult:
         """Nhiệm vụ Seedance truy vấn đơn, không chặn và chờ đợi."""
         if self.mock or task_id.startswith("mock-task-"):
+            v_url, last_url = self._write_mock_video(task_id)
             return TaskResult(
                 status="succeeded",
-                url=f"/static/mock/video_{task_id[-8:]}.mp4",
-                last_frame_url=f"/static/mock/last_{task_id[-8:]}.jpg",
+                url=v_url,
+                last_frame_url=last_url,
             )
         try:
             async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_FETCH_READ_SEC, connect=15.0)) as client:
@@ -2198,6 +2200,42 @@ class ArkGateway:
         if jpg_path.exists():
             return f"/static/mock/image_{digest}.jpg"
         return f"/static/mock/image_{digest}.svg"
+
+    def _write_mock_video(self, task_id: str) -> tuple[str, str]:
+        """Tạo video và last frame JPEG mô phỏng thực tế trên đĩa."""
+        suffix = task_id[-8:]
+        root = Path(__file__).resolve().parents[2] / "static" / "mock"
+        root.mkdir(parents=True, exist_ok=True)
+        v_path = root / f"video_{suffix}.mp4"
+        img_path = root / f"last_{suffix}.jpg"
+        if not v_path.exists() or not img_path.exists():
+            w, h = 720, 1280
+            import subprocess, shutil
+            ffmpeg_bin = shutil.which("ffmpeg") or "ffmpeg"
+            try:
+                subprocess.run(
+                    [
+                        ffmpeg_bin, "-y", "-f", "lavfi",
+                        "-i", f"testsrc=size={w}x{h}:rate=24",
+                        "-t", "4",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                        str(v_path),
+                    ],
+                    capture_output=True, timeout=15,
+                )
+                subprocess.run(
+                    [
+                        ffmpeg_bin, "-y", "-sseof", "-0.5",
+                        "-i", str(v_path),
+                        "-vframes", "1",
+                        "-q:v", "2",
+                        str(img_path),
+                    ],
+                    capture_output=True, timeout=10,
+                )
+            except Exception as e:
+                logger.warning("Failed to generate mock video files: %s", e)
+        return f"/static/mock/video_{suffix}.mp4", f"/static/mock/last_{suffix}.jpg"
 
     @staticmethod
     def _is_portrait_size(size: str) -> bool:

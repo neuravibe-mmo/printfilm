@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clapperboard, ImageIcon, Layers, Octagon, Trash2, X } from 'lucide-react'
 import { dramaApi } from '../../api/drama'
 import { DramaGenTaskDetail } from './DramaGenTaskDetail'
-import { formatDramaGenError } from '../../lib/dramaGenError'
+import { formatDramaGenError, localizeDramaJobMessage } from '../../lib/dramaGenError'
 import BillingTopupLink from '../billing/BillingTopupLink'
 import {
   clearFinishedDramaGenJobs,
@@ -209,7 +209,7 @@ export function DramaGenQueuePanel() {
                             <span className="drama-gen-fab-name">{job.title}</span>
                             <span className="drama-gen-fab-type">{jobTypeLabel(job)}</span>
                             {job.message && (job.status === 'queued' || job.status === 'running') ? (
-                              <span className="drama-gen-fab-msg">{job.message}</span>
+                              <span className="drama-gen-fab-msg">{localizeDramaJobMessage(job.message)}</span>
                             ) : null}
                           </div>
                           <span className="drama-gen-fab-status">

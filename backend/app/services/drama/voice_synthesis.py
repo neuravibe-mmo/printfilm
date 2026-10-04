@@ -141,7 +141,7 @@ async def synthesize_voice_asset(
     ark = get_ark()
     prompt = (voice_prompt or "").strip()
     if not prompt:
-        raise ValueError("缺少音色描述 prompt")
+        raise ValueError("Thiếu mô tả âm sắc prompt")
     display_name = normalize_character_name(character_name or asset.name)
     # Seedance reference_audio phải ≥1,8s (vị trí mục tiêu ≥2s); mặc định là sử dụng bản án xét xử dài hơn
     text = (sample_text or "").strip() or build_voice_sample_text(prompt, display_name, short=False)

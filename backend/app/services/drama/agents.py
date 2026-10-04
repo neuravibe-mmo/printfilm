@@ -141,11 +141,11 @@ def _format_neighbor_episode_briefs(episodes: list[dict[str, Any]], number: int,
     others.sort(key=lambda x: abs(int(x.get("episodeNumber") or 0) - number))
     picked = others[:limit]
     if not picked:
-        return "（暂无邻集）"
+        return "（Chưa có tập liền kề）"
     blocks: list[str] = []
     for item in sorted(picked, key=lambda x: int(x.get("episodeNumber") or 0)):
         num = item.get("episodeNumber")
-        title = item.get("title") or f"第 {num} 集"
+        title = item.get("title") or f"Tập {num}"
         creative = str(item.get("creative") or "").strip()
         summary = str(item.get("summary") or "").strip()
         parts = [f"Tập {num}《{title}》"]
@@ -230,8 +230,8 @@ async def run_episode_summary_from_creative(
     """Sáng tạo của tập này → tóm tắt cấp độ tập (có thể cập nhật tiêu đề)."""
     brief = (creative or "").strip()
     if len(brief) < 20:
-        raise ValueError("Ý tưởng ban đầu của tập này至少 20 字")
-    title_text = (title or "").strip() or f"第 {number} 集"
+        raise ValueError("Ý tưởng ban đầu của tập này cần ít nhất 20 chữ")
+    title_text = (title or "").strip() or f"Tập {number}"
     user_parts = [
         *build_single_episode_context(
             project_summary,
@@ -252,11 +252,11 @@ async def run_episode_summary_from_creative(
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list) or not episodes:
-        raise ValueError("模型未返回本集摘要")
+        raise ValueError("Mô hình AI không trả về tóm tắt tập này")
     item = episodes[0] if isinstance(episodes[0], dict) else {}
     out_summary = str(item.get("summary") or item.get("synopsis") or "").strip()
     if len(out_summary) < 40:
-        raise ValueError("本集摘要过短，请重试")
+        raise ValueError("Tóm tắt tập này quá ngắn, vui lòng thử lại")
     out_title = str(item.get("title") or "").strip() or title_text
     return [
         {
@@ -284,8 +284,8 @@ async def run_episode_body_from_brief(
     brief = (creative or "").strip()
     syn = (summary or "").strip()
     if len(brief) < 10 and len(syn) < 40:
-        raise ValueError("请先填写本集创意或摘要")
-    title_text = (title or "").strip() or f"第 {number} 集"
+        raise ValueError("Vui lòng điền ý tưởng hoặc tóm tắt tập này")
+    title_text = (title or "").strip() or f"Tập {number}"
     user_parts = [
         *build_single_episode_context(
             project_summary,
@@ -307,11 +307,11 @@ async def run_episode_body_from_brief(
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list):
-        raise ValueError("模型未返回本集正文")
+        raise ValueError("Mô hình AI không trả về nội dung tập này")
     title_by_num = {number: title_text}
     normalized = _normalize_batch_episodes(episodes, number, number, title_by_num)
     if not normalized:
-        raise ValueError(f"模型未返回第 {number} 集正文")
+        raise ValueError(f"Mô hình AI không trả về nội dung Tập {number}")
     row = normalized[0]
     row["creative"] = brief or str(row.get("creative") or "")
     row["summary"] = syn or str(row.get("summary") or "")
@@ -371,7 +371,7 @@ async def run_episode_full_from_creative(
     out = body_rows[0]
     out["creative"] = str(syn_row.get("creative") or creative).strip()
     out["summary"] = str(syn_row.get("summary") or "").strip()
-    out["title"] = str(out.get("title") or syn_row.get("title") or title or f"第 {number} 集")
+    out["title"] = str(out.get("title") or syn_row.get("title") or title or f"Tập {number}")
     return [out]
 
 
@@ -388,8 +388,8 @@ async def run_episode_brief_from_body(
     """Đã quay văn bản rồi → Đảo ngược nội dung + tóm tắt của tập này (không thay đổi nội dung)."""
     script_body = (body or "").strip()
     if len(script_body) < 80:
-        raise ValueError("本集剧本内容过短，无法反推创意与摘要")
-    title_text = (title or "").strip() or f"第 {number} 集"
+        raise ValueError("Nội dung kịch bản tập này quá ngắn, không thể suy diễn ý tưởng và tóm tắt")
+    title_text = (title or "").strip() or f"Tập {number}"
     user_parts = [
         *build_single_episode_context(
             project_summary,
@@ -410,14 +410,14 @@ async def run_episode_brief_from_body(
     )
     episodes = data.get("episodes") if isinstance(data, dict) else None
     if not isinstance(episodes, list) or not episodes:
-        raise ValueError("模型未返回本集创意与摘要")
+        raise ValueError("Mô hình AI không trả về ý tưởng và tóm tắt tập này")
     item = episodes[0] if isinstance(episodes[0], dict) else {}
     out_creative = str(item.get("creative") or "").strip()
     out_summary = str(item.get("summary") or item.get("synopsis") or "").strip()
     if len(out_creative) < 20:
-        raise ValueError("反推的本集创意过短，请重试")
+        raise ValueError("Ý tưởng tập này suy diễn được quá ngắn, vui lòng thử lại")
     if len(out_summary) < 40:
-        raise ValueError("反推的本集摘要过短，请重试")
+        raise ValueError("Tóm tắt tập này suy diễn được quá ngắn, vui lòng thử lại")
     out_title = str(item.get("title") or "").strip() or title_text
     return [
         {
@@ -438,7 +438,7 @@ async def run_script_summary(
     # Build structured outline from creative brief
     trimmed = (creative or "").strip()
     if len(trimmed) < 10:
-        raise ValueError("原始创意至少需要 10 个字")
+        raise ValueError("Ý tưởng gốc cần ít nhất 10 chữ")
 
     user_message = build_script_summary_user_message(
         trimmed,
@@ -495,7 +495,7 @@ def merge_episode_bodies(
         body = str(item.get("body") or item.get("content") or "")
         creative = str(item.get("creative") or "").strip()
         summary = str(item.get("summary") or item.get("synopsis") or "").strip()
-        title = str(item.get("title") or "").strip() or f"第 {number} 集"
+        title = str(item.get("title") or "").strip() or f"Tập {number}"
         prev = by_number.get(number)
         if prev:
             prev_body = str(prev.get("body") or "")
@@ -585,8 +585,8 @@ def append_manual_episode(
     if next_number < 1:
         next_number = 1
     if next_number > MAX_DRAMA_EPISODES:
-        raise ValueError(f"最多 {MAX_DRAMA_EPISODES} 集")
-    title_text = (title or "").strip() or f"第 {next_number} 集"
+        raise ValueError(f"Tối đa {MAX_DRAMA_EPISODES} tập")
+    title_text = (title or "").strip() or f"Tập {next_number}"
     added = {
         "episodeNumber": next_number,
         "title": title_text,
@@ -758,7 +758,7 @@ async def run_episode_outline(
     data = await drama_chat_json(EPISODE_OUTLINE_SYSTEM, user, max_tokens=4096)
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list) or not episodes:
-        raise ValueError("分集大纲返回格式无效")
+        raise ValueError("Định dạng đề cương phân tập trả về không hợp lệ")
     result: list[dict[str, Any]] = []
     for i, item in enumerate(episodes):
         if not isinstance(item, dict):
@@ -767,14 +767,14 @@ async def run_episode_outline(
             number = int(item.get("episodeNumber") or (i + 1))
         except (TypeError, ValueError):
             number = i + 1
-        title = str(item.get("title") or "").strip() or f"第 {number} 集"
+        title = str(item.get("title") or "").strip() or f"Tập {number}"
         result.append({"episodeNumber": number, "title": title, "body": ""})
     if len(result) < episode_count:
         # Hoàn thành số tập còn thiếu
         have = {int(x["episodeNumber"]) for x in result}
         for n in range(1, episode_count + 1):
             if n not in have:
-                result.append({"episodeNumber": n, "title": f"第 {n} 集", "body": ""})
+                result.append({"episodeNumber": n, "title": f"Tập {n}", "body": ""})
     result.sort(key=lambda x: int(x["episodeNumber"]))
     return result[:episode_count]
 
@@ -851,7 +851,7 @@ async def run_episode_script_batch(
 
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list):
-        raise ValueError("分集剧本返回格式无效")
+        raise ValueError("Định dạng kịch bản phân tập trả về không hợp lệ")
 
     normalized = _normalize_batch_episodes(episodes, start, end, title_by_num)
     # Nếu văn bản quá ngắn, hãy thử lại với dấu nhắc nhấn mạnh.
@@ -878,7 +878,7 @@ async def run_episode_script_batch(
             normalized = _normalize_batch_episodes(retry_eps, start, end, title_by_num)
 
     if not normalized:
-        raise ValueError(f"模型未返回第 {start}–{end} 集正文")
+        raise ValueError(f"Mô hình AI không trả về nội dung Tập {start}–{end}")
     return normalized
 
 
@@ -894,16 +894,16 @@ async def run_episode_script_from_draft(
     number = int(episode_number)
     draft_text = (draft or "").strip()
     if number < 1:
-        raise ValueError("集号无效")
+        raise ValueError("Số tập không hợp lệ")
     if len(draft_text) < 20:
-        raise ValueError("请先输入至少 20 字的分集剧本草稿")
+        raise ValueError("Vui lòng nhập bản thảo kịch bản phân tập ít nhất 20 chữ")
 
     title_by_num = {
         int(item.get("episodeNumber") or 0): str(item.get("title") or "")
         for item in existing
         if isinstance(item, dict)
     }
-    current_title = title_by_num.get(number) or f"第 {number} 集"
+    current_title = title_by_num.get(number) or f"Tập {number}"
     ctx = build_single_episode_context(
         summary,
         existing,
@@ -930,7 +930,7 @@ async def run_episode_script_from_draft(
     )
     episodes = data.get("episodes") if isinstance(data, dict) else data
     if not isinstance(episodes, list):
-        raise ValueError("分集剧本返回格式无效")
+        raise ValueError("Định dạng kịch bản phân tập trả về không hợp lệ")
     normalized = _normalize_batch_episodes(episodes, number, number, title_by_num)
     too_short = [
         item
@@ -956,7 +956,7 @@ async def run_episode_script_from_draft(
         if isinstance(retry_eps, list):
             normalized = _normalize_batch_episodes(retry_eps, number, number, title_by_num)
     if not normalized:
-        raise ValueError(f"模型未返回第 {number} 集正文")
+        raise ValueError(f"Mô hình AI không trả về nội dung Tập {number}")
     origin_item = next(
         (
             item
