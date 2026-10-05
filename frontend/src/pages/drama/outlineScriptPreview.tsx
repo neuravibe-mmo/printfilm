@@ -66,9 +66,9 @@ export function parseOutlineSceneBlocks(text: string): OutlineSceneBlock[] {
   return parts.map((part, index) => {
     const lines = part.split(/\r?\n/)
     const head = (lines[0] || '').replace(/^#+\s*/, '').trim()
-    const labelMatch = head.match(/^(?:场|cảnh|phân cảnh|scene|field)\s*([^\s：:]+)/i)
-    const label = labelMatch ? `Cảnh ${labelMatch[1]}` : `Cảnh ${index + 1}`
-    const title = head.replace(/^(?:场|cảnh|phân cảnh|scene|field)\s*[^\s：:]+[：:\s—\-]*/i, '').trim()
+    const labelMatch = head.match(/^(?:场|cảnh|phân cảnh|phân đoạn|scene|field)\s*([^\s：:]+)/i)
+    const label = labelMatch ? `Phân đoạn ${labelMatch[1]}` : `Phân đoạn ${index + 1}`
+    const title = head.replace(/^(?:场|cảnh|phân cảnh|phân đoạn|scene|field)\s*[^\s：:]+[：:\s—\-]*/i, '').trim()
     const body = lines.slice(1).join('\n').trim()
     return { raw: part, label, title, body }
   })
@@ -402,9 +402,9 @@ export function OutlineScriptPreview({
   }
 
 function formatSceneBlockLabel(label: string, locale: string): string {
-  const m = label.match(/^(?:场|Scene|Cảnh|Phân cảnh)\s*(.+)$/i)
+  const m = label.match(/^(?:场|Scene|Cảnh|Phân cảnh|Phân đoạn)\s*(.+)$/i)
   if (m) {
-    if (locale === 'vi') return `Cảnh ${m[1]}`
+    if (locale === 'vi') return `Phân đoạn ${m[1]}`
     if (locale === 'en') return `Scene ${m[1]}`
     return `场 ${m[1]}`
   }
