@@ -1168,10 +1168,24 @@ class ArkGateway:
         return_last_frame: bool = True,
         generate_audio: bool = False,
         extra_image_urls: list[str] | None = None,
+        model: str | None = None,
     ) -> str:
         if self.mock:
             digest = hashlib.md5(f"{image_url}:{prompt}".encode()).hexdigest()[:10]
             return f"mock-task-{digest}"
+
+        # Ưu tiên tạo video qua Flow API (Google Veo) nếu model là flow-veo hoặc không chỉ định
+        if model in ("flow-veo", "flow", "veo", "google-veo"):
+            try:
+                from app.services.drama.flow_api import submit_flow_video
+
+                return submit_flow_video(
+                    prompt=prompt,
+                    image_ref=image_url,
+                    aspect_ratio=ratio or "9:16",
+                )
+            except Exception as flow_err:
+                logger.warning("Flow API tạo video thất bại: %s; thử qua Seedance", flow_err)
 
         # Seedance needs a publicly reachable https image (data URI often rejected / odd errors)
         image_ref = await self._resolve_image_ref(image_url, prefer_https=True)
@@ -1521,6 +1535,28 @@ class ArkGateway:
                 last_frame_url=last_url,
             )
 
+        if task_id.startswith("flow-"):
+            from app.services.drama.flow_api import get_flow_video_result
+
+            deadline = time.monotonic() + self.settings.ark_video_poll_timeout
+            while time.monotonic() < deadline:
+                res = get_flow_video_result(task_id)
+                if res and res.get("status") == "succeeded":
+                    return TaskResult(
+                        status="succeeded",
+                        url=res["video_url"],
+                        last_frame_url=res.get("thumbnail_url"),
+                        provider_task_id=task_id,
+                    )
+                if res and res.get("status") == "failed":
+                    return TaskResult(
+                        status="failed",
+                        error=res.get("error", "Flow video failed"),
+                        provider_task_id=task_id,
+                    )
+                await asyncio.sleep(float(self.settings.ark_video_poll_interval))
+            return TaskResult(status="failed", error="poll timeout", provider_task_id=task_id)
+
         deadline = time.monotonic() + self.settings.ark_video_poll_timeout
         async with httpx.AsyncClient(timeout=_upstream_timeout(VIDEO_POLL_READ_SEC, connect=15.0)) as client:
             while time.monotonic() < deadline:
@@ -1729,6 +1765,7 @@ class ArkGateway:
                     prompt_as_json=use_json,
                     generate_audio=generate_audio,
                     extra_image_urls=extra_image_urls,
+                    model=model,
                 )
                 return await self.wait_video(
                     task_id,
@@ -1909,7 +1946,7 @@ class ArkGateway:
             dest = Path(__file__).resolve().parents[2] / "static" / "mock" / f"audio_{digest}.mp3"
             dest.parent.mkdir(parents=True, exist_ok=True)
             if not dest.exists() or dest.stat().st_size < 1000:
-                await self._tts_edge(clean, dest)
+                await self._tts_edge(clean, dest, voice_hint=speaker)
             return f"/static/mock/audio_{digest}.mp3"
 
         dest_dir = storage.project_dir(project_id or 0)
@@ -2053,10 +2090,11 @@ class ArkGateway:
         return b"".join(chunks)
 
     async def _tts_edge(self, text: str, dest: Path, voice_hint: str = "") -> None:
-        """Microsoft edge-tts biết mọi thứ. Các kết nối trong nước tới api.msedgeservices.com thường vượt quá 10 giây mặc định, hãy kéo dài thời gian bắt tay và thử lại."""
+        """Microsoft edge-tts chuẩn tiếng Việt (Hoài My & Nam Minh)."""
         import edge_tts
+        from app.services.voices import edge_tts_params_for_speaker
 
-        voice = edge_tts_voice_for_speaker(voice_hint)
+        voice, rate, pitch = edge_tts_params_for_speaker(voice_hint)
         dest.parent.mkdir(parents=True, exist_ok=True)
         last_err: Exception | None = None
         for attempt in range(3):
@@ -2064,6 +2102,8 @@ class ArkGateway:
                 communicate = edge_tts.Communicate(
                     text,
                     voice,
+                    rate=rate,
+                    pitch=pitch,
                     connect_timeout=30,
                     receive_timeout=90,
                 )

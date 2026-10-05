@@ -9,13 +9,13 @@ from app.schemas_routing import DefaultModels, LogicalModel, LogicalModelCapabil
 from app.services.model_routing_config import infer_model_capability, normalize_model_name
 
 
-def _row(*, model_id: str, label: str, recommended: bool, description: str = "") -> dict[str, Any]:
+def _row(*, model_id: str, label: str, recommended: bool, description: str = "", provider: str = "TokenFree") -> dict[str, Any]:
     """Lắp ráp một tùy chọn mô hình mặt trước."""
     return {
         "id": model_id,
         "label": (label or model_id).strip() or model_id,
         "description": description,
-        "provider": "tokenfree",
+        "provider": provider,
         "recommended": recommended,
     }
 
@@ -33,6 +33,30 @@ def build_media_catalog(
     videos: list[dict[str, Any]] = []
     seen_image: set[str] = set()
     seen_video: set[str] = set()
+
+    # REST API mới tích hợp: Ưu tiên đặt làm mặc định
+    images.append(
+        _row(
+            model_id="chatgpt2api",
+            label="ChatGPT Image",
+            recommended=True,
+            description="Mô hình REST API tạo ảnh (neuravibemmo.dpdns.org)",
+            provider="REST API",
+        )
+    )
+    seen_image.add(normalize_model_name("chatgpt2api"))
+
+    videos.append(
+        _row(
+            model_id="flow-veo",
+            label="Google Veo 3.1",
+            recommended=True,
+            description="Mô hình REST API tạo video Flow API (neuravibemmo.dpdns.org)",
+            provider="REST API",
+        )
+    )
+    seen_video.add(normalize_model_name("flow-veo"))
+
     friendly_alias_ids = {"seedream-5.0", "seedream-4.5", "seedance-2.5", "seedance-2"}
     aliased_upstreams = {
         normalize_model_name(binding.upstream_model)
@@ -41,8 +65,12 @@ def build_media_catalog(
         for binding in model.bindings
     }
 
-    default_image = (defaults.image_model or "").strip()
-    default_video = (defaults.video_model or "").strip()
+    default_image = (defaults.image_model or "").strip() or "chatgpt2api"
+    default_video = (defaults.video_model or "").strip() or "flow-veo"
+    if default_image in ("seedream-5.0", ""):
+        default_image = "chatgpt2api"
+    if default_video in ("seedance-2.5", ""):
+        default_video = "flow-veo"
 
     for model in logical_models:
         if not model.enabled:
@@ -54,10 +82,10 @@ def build_media_catalog(
         label = (model.name or mid).strip() or mid
         if model.capability == "image" and key not in seen_image:
             seen_image.add(key)
-            images.append(_row(model_id=mid, label=label, recommended=mid == default_image))
+            images.append(_row(model_id=mid, label=label, recommended=mid == default_image, provider="TokenFree"))
         elif model.capability == "video" and key not in seen_video:
             seen_video.add(key)
-            videos.append(_row(model_id=mid, label=label, recommended=mid == default_video))
+            videos.append(_row(model_id=mid, label=label, recommended=mid == default_video, provider="TokenFree"))
 
     for channel in channels:
         if not channel.enabled:
@@ -97,8 +125,10 @@ def build_media_catalog(
     _ensure_default_in_list(default_video, videos)
     if not images and default_image:
         images.append(_row(model_id=default_image, label=default_image, recommended=True))
-    if not videos and default_video:
-        videos.append(_row(model_id=default_video, label=default_video, recommended=True))
+    if not any(normalize_model_name(r["id"]) == normalize_model_name("seedream-5.0") for r in images):
+        images.append(_row(model_id="seedream-5.0", label="Seedream 5.0", recommended=False, description="Mô hình tạo ảnh ByteDance Seedream", provider="TokenFree"))
+    if not any(normalize_model_name(r["id"]) == normalize_model_name("seedance-2.5") for r in videos):
+        videos.append(_row(model_id="seedance-2.5", label="Seedance 2.5", recommended=False, description="Mô hình chuyển ảnh sang video ByteDance Seedance", provider="TokenFree"))
 
     return {
         "image_models": images,

@@ -67,6 +67,19 @@ export default function StyleConfigPage() {
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const stylePromptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useEffect(() => {
+    const el = stylePromptTextareaRef.current
+    if (!el) return
+    const adjust = () => {
+      el.style.height = 'auto'
+      el.style.height = `${el.scrollHeight}px`
+    }
+    adjust()
+    window.addEventListener('resize', adjust)
+    return () => window.removeEventListener('resize', adjust)
+  }, [stylePrompt])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -335,11 +348,22 @@ export default function StyleConfigPage() {
             <label className="pf-field" style={{ marginTop: '0.75rem' }}>
               <span className="pf-field-label">{t('studio.styleConfig.stylePromptOverride')}</span>
               <textarea
+                ref={stylePromptTextareaRef}
                 className="pf-field-input"
                 value={stylePrompt}
-                onChange={(e) => setStylePrompt(e.target.value)}
-                rows={2}
-                style={{ resize: 'vertical', minHeight: 64 }}
+                onChange={(e) => {
+                  setStylePrompt(e.target.value)
+                  e.target.style.height = 'auto'
+                  e.target.style.height = `${e.target.scrollHeight}px`
+                }}
+                rows={1}
+                style={{
+                  resize: 'none',
+                  overflow: 'hidden',
+                  minHeight: '44px',
+                  lineHeight: '1.5',
+                  boxSizing: 'border-box',
+                }}
               />
             </label>
           </div>
@@ -449,7 +473,7 @@ export default function StyleConfigPage() {
                       {m.recommended ? <span className="pf-model-badge">{t('common.recommended')}</span> : null}
                     </div>
                     <div className="pf-model-opt-desc">{m.description}</div>
-                    <div className="pf-model-opt-provider">TokenFree</div>
+                    <div className="pf-model-opt-provider">{m.provider || 'TokenFree'}</div>
                   </button>
                 ))}
               </div>
@@ -475,7 +499,7 @@ export default function StyleConfigPage() {
                       {m.recommended ? <span className="pf-model-badge">{t('common.recommended')}</span> : null}
                     </div>
                     <div className="pf-model-opt-desc">{m.description}</div>
-                    <div className="pf-model-opt-provider">TokenFree</div>
+                    <div className="pf-model-opt-provider">{m.provider || 'TokenFree'}</div>
                   </button>
                 ))}
               </div>

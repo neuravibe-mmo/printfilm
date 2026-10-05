@@ -9,61 +9,61 @@ from typing import Any
 VOICE_PRESETS: list[dict[str, Any]] = [
     {
         "id": "zh_female_cancan_uranus_bigtts",
-        "label": "灿灿 · 女声旁白",
+        "label": "Cancan · Nữ thuyết minh",
         "gender": "female",
         "speaker": "zh_female_cancan_uranus_bigtts",
     },
     {
         "id": "zh_female_tianmeixiaoyuan_uranus_bigtts",
-        "label": "甜美女声 · 故事",
+        "label": "Nữ ngọt ngào · Kể chuyện",
         "gender": "female",
         "speaker": "zh_female_tianmeixiaoyuan_uranus_bigtts",
     },
     {
         "id": "zh_female_shuangkuaisisi_uranus_bigtts",
-        "label": "爽快女声 · 都市",
+        "label": "Nữ hoạt bát · Đô thị",
         "gender": "female",
         "speaker": "zh_female_shuangkuaisisi_uranus_bigtts",
     },
     {
         "id": "zh_female_vv_uranus_bigtts",
-        "label": "Vivi · 国风女声",
+        "label": "Vivi · Nữ cổ phong",
         "gender": "female",
         "speaker": "zh_female_vv_uranus_bigtts",
     },
     {
         "id": "zh_female_xiaohe_uranus_bigtts",
-        "label": "小何 · 通用女声",
+        "label": "Tiểu Hà · Nữ tiêu chuẩn",
         "gender": "female",
         "speaker": "zh_female_xiaohe_uranus_bigtts",
     },
     {
         "id": "zh_male_shaonianzixin_uranus_bigtts",
-        "label": "少年梓辛 · 男声",
+        "label": "Tử Tân · Thiếu niên nam",
         "gender": "male",
         "speaker": "zh_male_shaonianzixin_uranus_bigtts",
     },
     {
         "id": "zh_male_m191_uranus_bigtts",
-        "label": "云舟 · 稳重男声",
+        "label": "Vân Chu · Nam trầm ấm",
         "gender": "male",
         "speaker": "zh_male_m191_uranus_bigtts",
     },
     {
         "id": "zh_male_taocheng_uranus_bigtts",
-        "label": "小天 · 年轻男声",
+        "label": "Tiểu Thiên · Nam trẻ trung",
         "gender": "male",
         "speaker": "zh_male_taocheng_uranus_bigtts",
     },
     {
         "id": "zh_male_ruyayichen_uranus_bigtts",
-        "label": "儒雅逸辰 · 男声",
+        "label": "Dực Thần · Nam nho nhã",
         "gender": "male",
         "speaker": "zh_male_ruyayichen_uranus_bigtts",
     },
     {
         "id": "zh_male_baqiqingshu_uranus_bigtts",
-        "label": "霸气青叔 · 男声",
+        "label": "Bá Khí · Nam trung niên",
         "gender": "male",
         "speaker": "zh_male_baqiqingshu_uranus_bigtts",
     },
@@ -72,87 +72,127 @@ VOICE_PRESETS: list[dict[str, Any]] = [
 # Giọng nhân vật truyện tranh: ghép các giọng nói khác nhau cho các nhân vật khác nhau theo từ khóa (tránh trường hợp tất cả các thành viên đều có giọng giống nhau)
 DRAMA_SPEAKER_RULES: list[dict[str, Any]] = [
     {
-        "speaker": "zh_male_baqiqingshu_uranus_bigtts",
+        "speaker": "zh_male_baqiqingshu_uranus_bigtts",  # Bá Khí · Nam trung niên / Lão niên uy nghiêm
         "gender": "male",
         "keywords": (
+            "già", "ông", "lão", "ông lão", "trưởng lão", "tộc trưởng", "thủ lĩnh", "chú", "bác", "trung niên",
+            "uy nghiêm", "ông nội", "ông ngoại", "tuổi già", "già nua", "bá khí", "vững chãi",
             "老", "翁", "族老", "长者", "首领", "青叔", "大叔", "威严", "苍", "应龙",
             "爷爷", "祖父", "暮年", "苍老",
         ),
     },
     {
-        "speaker": "zh_male_m191_uranus_bigtts",
+        "speaker": "zh_male_m191_uranus_bigtts",  # Vân Chu · Nam trầm ấm / Đế vương sử thi
         "gender": "male",
         "keywords": (
+            "lãnh tụ", "đế vương", "quân chủ", "đại vương", "vua", "trang trọng", "hùng hồn", "sử thi", "thống soái",
+            "trầm ấm", "hùng vĩ", "nam trưởng thành", "bi tráng", "dày dặn", "nghiêm nghị", "uy dũng", "trầm",
             "领袖", "帝王", "君主", "大王", "治水", "禹", "庄重", "浑厚", "史诗", "统帅",
             "低沉", "恢弘", "成年男", "管风琴", "悲悯", "厚重",
         ),
     },
     {
-        "speaker": "zh_male_ruyayichen_uranus_bigtts",
+        "speaker": "zh_male_ruyayichen_uranus_bigtts",  # Dực Thần · Nam nho nhã / Thư sinh
         "gender": "male",
         "keywords": (
+            "nho nhã", "thư sinh", "mưu sĩ", "học giả", "ôn hòa", "thanh tao", "điềm đạm", "tham mưu",
+            "kiềm chế", "trầm tĩnh", "lạnh lùng", "thanh lịch", "văn nhã",
             "儒雅", "书生", "谋士", "伯益", "文士", "温和", "清朗", "参谋",
             "克制", "颗粒", "偏冷",
         ),
     },
     {
-        "speaker": "zh_male_shaonianzixin_uranus_bigtts",
-        "gender": "male",
-        "keywords": ("少年", "少年音", "清亮", "梓辛", "稚", "青春期", "青壮"),
-    },
-    {
-        "speaker": "zh_male_taocheng_uranus_bigtts",
+        "speaker": "zh_male_shaonianzixin_uranus_bigtts",  # Tử Tân · Thiếu niên nam / Trong trẻo
         "gender": "male",
         "keywords": (
+            "thiếu niên", "giọng thiếu niên", "trong trẻo", "tươi sáng", "ngây thơ", "tuổi trẻ", "dậy thì",
+            "thanh niên trẻ", "lanh lợi", "nhiệt huyết",
+            "少年", "少年音", "清亮", "梓辛", "稚", "青春期", "青壮",
+        ),
+    },
+    {
+        "speaker": "zh_male_taocheng_uranus_bigtts",  # Tiểu Thiên · Nam trẻ trung / Nắng ấm
+        "gender": "male",
+        "keywords": (
+            "trẻ trung", "thanh niên", "chàng trai", "nhanh nhẹn", "tươi vui", "nắng ấm", "sảng khoái", "bé trai",
+            "trẻ em", "chân chất", "tháo vát", "cậu bạn", "ấm áp", "hoạt bát",
             "年轻", "青年", "小哥", "明快", "阳光", "清爽", "童声", "男孩", "儿童",
             "圆润", "憨厚", "小伙",
         ),
     },
     {
-        "speaker": "zh_female_vv_uranus_bigtts",
+        "speaker": "zh_female_vv_uranus_bigtts",  # Vivi · Nữ cổ phong / Nữ vương / Tiên nữ
         "gender": "female",
-        "keywords": ("国风", "古风", "神话", "御姐", "女王", "仙", "神女"),
+        "keywords": (
+            "cổ trang", "cổ phong", "thần thoại", "chị đại", "nữ vương", "tiên nữ", "nữ thần", "quý phái",
+            "kiêu kỳ", "huyền bí", "cao quý",
+            "国风", "古风", "神话", "御姐", "女王", "仙", "神女",
+        ),
     },
     {
-        "speaker": "zh_female_shuangkuaisisi_uranus_bigtts",
+        "speaker": "zh_female_shuangkuaisisi_uranus_bigtts",  # Nữ hoạt bát · Đô thị / Nhanh nhẹn
         "gender": "female",
-        "keywords": ("爽快", "利落", "都市", "干练", "清脆"),
+        "keywords": (
+            "sảng khoái", "dứt khoát", "hiện đại", "đô thị", "nhanh nhẹn", "tháo vát", "trong trẻo", "tự tin",
+            "hoạt bát", "năng động", "cá tính",
+            "爽快", "利落", "都市", "干练", "清脆",
+        ),
     },
     {
-        "speaker": "zh_female_tianmeixiaoyuan_uranus_bigtts",
+        "speaker": "zh_female_tianmeixiaoyuan_uranus_bigtts",  # Nữ ngọt ngào · Kể chuyện / Dịu dàng
         "gender": "female",
-        "keywords": ("温柔", "甜美", "柔和", "亲和", "少女", "姑娘"),
+        "keywords": (
+            "dịu dàng", "ngọt ngào", "nhẹ nhàng", "thân thiện", "thiếu nữ", "cô gái", "đáng yêu",
+            "ấm áp", "trong sáng", "hiền hậu",
+            "温柔", "甜美", "柔和", "亲和", "少女", "姑娘",
+        ),
     },
     {
-        "speaker": "zh_female_xiaohe_uranus_bigtts",
+        "speaker": "zh_female_xiaohe_uranus_bigtts",  # Tiểu Hà · Nữ tiêu chuẩn / Bình dân
         "gender": "female",
-        "keywords": ("通用", "百姓", "群众", "平民", "村妇", "妇人"),
+        "keywords": (
+            "phổ thông", "người dân", "quần chúng", "bình dân", "thôn nữ", "phụ nữ", "người mẹ",
+            "mộc mạc", "chân thật", "đời thường",
+            "通用", "百姓", "群众", "平民", "村妇", "妇人",
+        ),
     },
     {
-        "speaker": "zh_female_cancan_uranus_bigtts",
+        "speaker": "zh_female_cancan_uranus_bigtts",  # Cancan · Nữ thuyết minh / Lời dẫn
         "gender": "female",
-        "keywords": ("旁白", "解说", "叙述", "播报"),
+        "keywords": (
+            "lời dẫn", "người dẫn chuyện", "thuyết minh", "tường thuật", "phát thanh", "kể chuyện", "dẫn chương trình",
+            "chính luận", "tin tức",
+            "旁白", "解说", "叙述", "播报",
+        ),
     },
 ]
 
 MALE_HINTS = (
+    "nam", "đàn ông", "chàng trai", "cậu bé", "ông", "ông lão", "lão", "bác", "chú", "anh", "cụ", "hoàng đế", "vua", "tướng", "chàng", "cha", "bố", "phụ thân", "thầy",
     "男", "少年", "青年男", "老年男", "公子", "王爷", "少爷", "少年音", "大叔", "青壮",
     "将", "伯", "公", "爷爷", "男孩",
 )
-FEMALE_HINTS = ("女", "少女", "女声", "御姐", "小姐", "娘娘", "萝莉", "姑娘", "妇人", "村妇")
+FEMALE_HINTS = (
+    "nữ", "phụ nữ", "cô gái", "bé gái", "bà", "bà lão", "cô", "chị", "em gái", "mẹ", "tiểu thư", "nàng", "hoàng hậu", "mẫu", "mẫu thân", "nữ hiệp",
+    "女", "少女", "女声", "御姐", "小姐", "娘娘", "萝莉", "姑娘", "妇人", "村妇",
+)
 
-# edge-tts xác nhận giọng nam chỉ có Yunxi/Yunjian/Yunyang (Yunxia thực chất là nữ, không có nhân vật nam)
+# Cấu hình giọng Edge-TTS chuẩn tiếng Việt cho từng chất giọng (vi-VN-HoaiMyNeural & vi-VN-NamMinhNeural)
+EDGE_TTS_PARAMS_BY_SPEAKER: dict[str, dict[str, str]] = {
+    "zh_female_cancan_uranus_bigtts": {"voice": "vi-VN-HoaiMyNeural", "rate": "+0%", "pitch": "+0Hz"},
+    "zh_female_tianmeixiaoyuan_uranus_bigtts": {"voice": "vi-VN-HoaiMyNeural", "rate": "-4%", "pitch": "+4Hz"},
+    "zh_female_shuangkuaisisi_uranus_bigtts": {"voice": "vi-VN-HoaiMyNeural", "rate": "+8%", "pitch": "+2Hz"},
+    "zh_female_vv_uranus_bigtts": {"voice": "vi-VN-HoaiMyNeural", "rate": "-6%", "pitch": "-3Hz"},
+    "zh_female_xiaohe_uranus_bigtts": {"voice": "vi-VN-HoaiMyNeural", "rate": "+0%", "pitch": "-1Hz"},
+    "zh_male_shaonianzixin_uranus_bigtts": {"voice": "vi-VN-NamMinhNeural", "rate": "+6%", "pitch": "+6Hz"},
+    "zh_male_m191_uranus_bigtts": {"voice": "vi-VN-NamMinhNeural", "rate": "-5%", "pitch": "-6Hz"},
+    "zh_male_taocheng_uranus_bigtts": {"voice": "vi-VN-NamMinhNeural", "rate": "+5%", "pitch": "+2Hz"},
+    "zh_male_ruyayichen_uranus_bigtts": {"voice": "vi-VN-NamMinhNeural", "rate": "-2%", "pitch": "-2Hz"},
+    "zh_male_baqiqingshu_uranus_bigtts": {"voice": "vi-VN-NamMinhNeural", "rate": "-6%", "pitch": "-8Hz"},
+}
+
 EDGE_TTS_BY_SPEAKER: dict[str, str] = {
-    "zh_male_shaonianzixin_uranus_bigtts": "zh-CN-YunxiNeural",
-    "zh_male_taocheng_uranus_bigtts": "zh-CN-YunxiNeural",
-    "zh_male_m191_uranus_bigtts": "zh-CN-YunjianNeural",
-    "zh_male_baqiqingshu_uranus_bigtts": "zh-CN-YunyangNeural",
-    "zh_male_ruyayichen_uranus_bigtts": "zh-CN-YunjianNeural",
-    "zh_female_cancan_uranus_bigtts": "zh-CN-XiaoxiaoNeural",
-    "zh_female_tianmeixiaoyuan_uranus_bigtts": "zh-CN-XiaoyiNeural",
-    "zh_female_shuangkuaisisi_uranus_bigtts": "zh-CN-liaoning-XiaobeiNeural",
-    "zh_female_vv_uranus_bigtts": "zh-CN-shaanxi-XiaoniNeural",
-    "zh_female_xiaohe_uranus_bigtts": "zh-CN-XiaoxiaoNeural",
+    k: v["voice"] for k, v in EDGE_TTS_PARAMS_BY_SPEAKER.items()
 }
 
 # Template audio_config.voice_preset aliases → speaker
@@ -171,7 +211,7 @@ def list_voices() -> list[dict[str, Any]]:
 
 
 def infer_speaker_gender(speaker: str) -> str | None:
-    """id người nói openpeech → nữ | male (không sử dụng chuỗi con male, zh_female_* sẽ gây ra phán đoán sai)."""
+    """id người nói openspeech → nữ | male."""
     s = (speaker or "").strip().lower()
     if not s:
         return None
@@ -182,20 +222,23 @@ def infer_speaker_gender(speaker: str) -> str | None:
     return None
 
 
-def edge_tts_voice_for_speaker(speaker: str) -> str:
-    """edge-tts Quay lại đầu trang: Lập bản đồ các nơ-ron tiếng Trung khác nhau theo các loa Beanbag để tránh sử dụng cùng một Yunxi cho tất cả các thành viên."""
-    mapped = EDGE_TTS_BY_SPEAKER.get((speaker or "").strip())
-    if mapped:
-        return mapped
-    g = infer_speaker_gender(speaker)
+def edge_tts_params_for_speaker(speaker: str) -> tuple[str, str, str]:
+    """Trả về (voice, rate, pitch) chuẩn tiếng Việt cho từng chất giọng."""
+    s = (speaker or "").strip()
+    if s in EDGE_TTS_PARAMS_BY_SPEAKER:
+        p = EDGE_TTS_PARAMS_BY_SPEAKER[s]
+        return p["voice"], p["rate"], p["pitch"]
+
+    g = infer_speaker_gender(s)
     if g == "male":
-        return "zh-CN-YunxiNeural"
-    if g == "female":
-        return "zh-CN-XiaoxiaoNeural"
-    hint = speaker or ""
-    if "男" in hint and "女" not in hint:
-        return "zh-CN-YunxiNeural"
-    return "zh-CN-XiaoxiaoNeural"
+        return "vi-VN-NamMinhNeural", "+0%", "+0Hz"
+    return "vi-VN-HoaiMyNeural", "+0%", "+0Hz"
+
+
+def edge_tts_voice_for_speaker(speaker: str) -> str:
+    """Trả về voice Edge-TTS chuẩn tiếng Việt."""
+    voice, _, _ = edge_tts_params_for_speaker(speaker)
+    return voice
 
 
 def resolve_speaker(voice_id: str | None, *, template_preset: str | None = None) -> str:
@@ -220,8 +263,9 @@ def infer_drama_speaker_from_prompt(
     asset_id: int = 0,
 ) -> str:
     prompt = f"{character_name} {voice_prompt or ''}"
-    male_score = sum(1 for k in MALE_HINTS if k in prompt)
-    female_score = sum(1 for k in FEMALE_HINTS if k in prompt)
+    prompt_lower = prompt.lower()
+    male_score = sum(1 for k in MALE_HINTS if k in prompt or k in prompt_lower)
+    female_score = sum(1 for k in FEMALE_HINTS if k in prompt or k in prompt_lower)
     if male_score > female_score:
         gender = "male"
     elif female_score > male_score:
@@ -233,7 +277,7 @@ def infer_drama_speaker_from_prompt(
     for rule in DRAMA_SPEAKER_RULES:
         if rule["gender"] != gender:
             continue
-        score = sum(1 for kw in rule["keywords"] if kw in prompt)
+        score = sum(1 for kw in rule["keywords"] if kw in prompt or kw.lower() in prompt_lower)
         if score > 0:
             scored.append((score, str(rule["speaker"])))
 
@@ -258,8 +302,8 @@ def infer_speaker_from_voice_prompt(voice_prompt: str, *, character_name: str = 
 
 
 PREVIEW_TEXT = "Xin chào các bạn, đây là hiệu ứng nghe thử của giọng đọc này, rất phù hợp cho lời dẫn thuyết minh video."
-# Hậu tố tên tệp bộ đệm thử giọng: Tăng giới tính tuyến/cạnh TTS sau khi sửa chữa để tránh tiếp tục phát các mẫu lỗi cũ
-PREVIEW_CACHE_TAG = "v4"
+# Hậu tố tên tệp bộ đệm thử giọng: dùng vi_v1 cho giọng tiếng Việt chuẩn Hoài My / Nam Minh
+PREVIEW_CACHE_TAG = "vi_v1"
 
 
 async def ensure_voice_preview(voice_id: str) -> str:

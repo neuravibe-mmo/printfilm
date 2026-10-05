@@ -87,12 +87,12 @@ HUOKE_TEMPLATES: list[dict] = [
         name="获客·抖音钩子",
         description="竖屏口播节奏：前 3 秒钩子→场景画面→1–2 个可核验体验→到店/下单号召。适合投放获客。",
         style_prefix=(
-            "竖屏获客短视频静帧：门店外立面、产品特写、服务动作或操作界面交替出现，"
-            "强对比自然光，主体清晰、留白便于叠大字，电影级产品演示质感，非卡通非动漫"
+            "Khung hình tĩnh video ngắn thu hút khách màn hình dọc: Mặt tiền cửa hàng, cận cảnh sản phẩm, thao tác dịch vụ hoặc giao diện vận hành luân phiên xuất hiện, "
+            "ánh sáng tự nhiên tương phản mạnh, chủ thể rõ ràng, chừa khoảng trống thuận tiện chèn chữ lớn, chất lượng trình diễn sản phẩm chuẩn điện ảnh, không hoạt hình không anime"
         ),
         negative_prompt=(
-            "卡通，动漫，赛璐璐，二次元，霓虹赛博大屏，任务清单，画面乱码文字，"
-            "字幕水印，logo 乱码，虚假奖杯证书，夸张促销海报堆叠"
+            "Hoạt hình, anime, cel-shaded, 2D, màn hình neon cyber, danh sách nhiệm vụ, chữ rác trên hình, "
+            "watermark phụ đề, logo nhòe, huy hiệu chứng nhận giả, poster giảm giá phóng đại xếp chồng"
         ),
         default_ratio="9:16",
         shot_duration_min=3,
@@ -112,15 +112,15 @@ HUOKE_TEMPLATES: list[dict] = [
             "strength": 0.72,
             "consistency_mode": "style",
             "extra_prompt": (
-                "竖屏主体清晰，顶部与底部留白叠字；各镜构图必须不同；画面内不要出现文字"
+                "Chủ thể màn hình dọc rõ ràng, khoảng trống phía trên và dưới thuận tiện chèn chữ; bố cục mỗi cảnh phải khác biệt; không xuất hiện chữ trong hình"
             ),
         },
         seedance_config={
-            "motion_bias": "轻微手持推进，产品或门店细节切换",
+            "motion_bias": "Đẩy nhẹ tay cầm, chuyển đổi chi tiết sản phẩm hoặc cửa hàng",
             "character_consistency": False,
             "generate_audio": True,
         },
-        audio_config={"voice_preset": "urban_editorial", "bgm_mood": "轻快专业"},
+        audio_config={"voice_preset": "urban_editorial", "bgm_mood": "Nhẹ nhàng chuyên nghiệp"},
         subtitle_config=dict(_HUOKE_SUB_SPLIT),
         sort_order=0,
         photoreal=True,
@@ -132,11 +132,11 @@ HUOKE_TEMPLATES: list[dict] = [
         name="获客·小红书安利",
         description="竖屏闺蜜安利结构：钩子Tiêu đề→第一印象→分点真实体验→推荐给谁。封面信息量高、口语化。",
         style_prefix=(
-            "竖屏生活安利静帧：明亮自然光，浅色桌面或门店角落，产品/空间细节清楚，"
-            "杂志封面气质、留白分层，适合叠Tiêu đề，非浓妆棚拍、非卡通"
+            "Khung hình tĩnh video ngắn chia sẻ đời sống màn hình dọc: Ánh sáng tự nhiên tươi sáng, mặt bàn sáng màu hoặc góc cửa hàng, chi tiết sản phẩm/không gian rõ ràng, "
+            "phong cách bìa tạp chí, khoảng trống phân tầng thuận tiện chèn tiêu đề, không trang điểm đậm studio, không hoạt hình"
         ),
         negative_prompt=(
-            "阴暗脏乱，赛博霓虹，卡通动漫，硬广海报堆字，假抠图，水印乱码"
+            "U ám bừa bộn, cyber neon, hoạt hình anime, poster quảng cáo chèn chữ dày đặc, cắt ghép giả tạo, watermark nhòe mờ"
         ),
         default_ratio="9:16",
         shot_duration_min=4,
@@ -174,11 +174,11 @@ HUOKE_TEMPLATES: list[dict] = [
         name="获客·口碑拆解",
         description="横屏客观详实：总体评价→环境/服务→推荐项+理由→性价比→适合谁。帮别人做决策，不抒情。",
         style_prefix=(
-            "干净讲解静帧：浅色桌面或门店信息分区，产品/空间/价目氛围（无可读文字），"
-            "信息层级清楚、光线均匀，纪录片式克制，非卡通非霓虹"
+            "Khung hình tĩnh thuyết minh sạch sẽ: Mặt bàn sáng màu hoặc khu vực thông tin cửa hàng, không khí sản phẩm/không gian/bảng giá (không có chữ đọc được), "
+            "phân cấp thông tin rõ ràng, ánh sáng đồng đều, tiết chế kiểu phim tài liệu, không hoạt hình không neon"
         ),
         negative_prompt=(
-            "卡通，动漫，夸张表情包，霓虹赛博，假证书奖杯，画面乱码文字，促销爆炸贴"
+            "Hoạt hình, anime, biểu cảm phóng đại, cyber neon, giấy chứng nhận cúp giả, chữ rác trên hình, nhãn dán giảm giá nổ tung"
         ),
         default_ratio="16:9",
         shot_duration_min=5,
@@ -198,14 +198,14 @@ HUOKE_TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.7,
             "consistency_mode": "style",
-            "extra_prompt": "横屏讲解构图，左右或上下留白叠字，画面内不要出现文字，各镜明显不同",
+            "extra_prompt": "Bố cục thuyết minh khung hình ngang, chừa khoảng trống trái phải hoặc trên dưới để chèn chữ, không xuất hiện chữ trong hình, mỗi cảnh khác biệt rõ rệt",
         },
         seedance_config={
-            "motion_bias": "缓慢推近产品或空间细节",
+            "motion_bias": "Đẩy nhẹ từ từ vào chi tiết sản phẩm hoặc không gian",
             "character_consistency": False,
             "generate_audio": True,
         },
-        audio_config={"voice_preset": "narrator_calm", "bgm_mood": "冷静纪实"},
+        audio_config={"voice_preset": "narrator_calm", "bgm_mood": "Điềm tĩnh tài liệu"},
         subtitle_config={
             "font": "SourceHanSans",
             "position": "split",
@@ -223,11 +223,11 @@ HUOKE_TEMPLATES: list[dict] = [
         name="获客·熟人轻推",
         description="竖屏生活化短片：一句真实感受→一个具体细节→一句轻推荐。克制、不像广告，适合转发给熟人。",
         style_prefix=(
-            "竖屏生活纪实静帧：窗光、街角、桌面一角或门店日常，暖色克制，"
-            "真实材质与皮肤，像随手拍的一张，非棚拍硬广、非卡通"
+            "Khung hình tĩnh ký sự đời sống màn hình dọc: Ánh sáng bên cửa sổ, góc phố, một góc bàn hoặc đời thường tại cửa hàng, tông màu ấm tiết chế, "
+            "chất liệu và làn da chân thực, tự nhiên như ảnh chụp ngẫu hứng, không quảng cáo studio cứng nhắc, không hoạt hình"
         ),
         negative_prompt=(
-            "棚拍浓妆，硬广海报，卡通动漫，霓虹赛博，假笑模特，水印乱码，爆炸贴"
+            "Trang điểm đậm studio, poster quảng cáo cứng nhắc, hoạt hình anime, cyber neon, người mẫu cười giả tạo, watermark nhòe mờ, nhãn dán giảm giá"
         ),
         default_ratio="9:16",
         shot_duration_min=4,
@@ -244,15 +244,15 @@ HUOKE_TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.72,
             "consistency_mode": "style",
-            "character_prompt": "生活感路人视角，可露侧脸或只出手部与场景，着装日常，全片气质统一",
-            "extra_prompt": "暖色窗光，竖屏生活感，顶部可留白，画面内不要出现文字",
+            "character_prompt": "Góc nhìn người qua đường giàu cảm giác đời sống, có thể lộ góc nghiêng hoặc chỉ lộ bàn tay và bối cảnh, trang phục thường ngày, phong thái toàn phim đồng nhất",
+            "extra_prompt": "Ánh sáng ấm qua cửa sổ, cảm giác đời thường màn hình dọc, phía trên có thể chừa khoảng trống, không xuất hiện chữ trong hình",
         },
         seedance_config={
-            "motion_bias": "轻微手持呼吸感，缓慢平移",
+            "motion_bias": "Cảm giác rung tay nhẹ, lia máy chậm rãi",
             "character_consistency": False,
             "generate_audio": True,
         },
-        audio_config={"voice_preset": "warm_storyteller", "bgm_mood": "温暖人文"},
+        audio_config={"voice_preset": "warm_storyteller", "bgm_mood": "Ấm áp nhân văn"},
         subtitle_config={"font": "SourceHanSans", "position": "top", "caption_scale": 1.25},
         sort_order=3,
         photoreal=True,

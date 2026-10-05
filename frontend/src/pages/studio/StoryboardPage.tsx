@@ -54,7 +54,7 @@ function csvEscape(value: string | number | null | undefined) {
 }
 
 function downloadStoryboardCsv(project: Project) {
-  const header = ['镜号', '旁白', '画面描述', '时长秒', '状态', '镜头Tiêu đề']
+  const header = ['Số cảnh', 'Lời dẫn', 'Mô tả hình ảnh', 'Thời lượng (s)', 'Trạng thái', 'Tiêu đề cảnh']
   const rows = (project.shots || [])
     .slice()
     .sort((a, b) => a.shot_no - b.shot_no)
@@ -79,6 +79,28 @@ function downloadStoryboardCsv(project: Project) {
   a.download = `${project.title || `project_${project.id}`}_storyboard.csv`
   a.click()
   URL.revokeObjectURL(a.href)
+}
+
+function localizeCueText(text: string): string {
+  if (!text) return ''
+  return text
+    .replace('字幕：后期叠旁白字幕，简体中文逐句同步', 'Phụ đề: Ghép chữ lời dẫn ở hậu kỳ, đồng bộ từng câu')
+    .replace('字幕：底部居中·简体中文·逐句轮换·与口播同步', 'Phụ đề: Căn giữa phía dưới · Đồng bộ lời thoại')
+    .replace('字幕：底部居中·简体中文', 'Phụ đề: Căn giữa phía dưới')
+    .replace('后期混音', 'Hòa âm hậu kỳ')
+    .replace(/，?音量低于人声/, ', âm lượng nhỏ hơn giọng nói')
+}
+
+function localizeBeatText(text: string): string {
+  if (!text) return ''
+  return text
+    .replace(/^【旁白[·・•\s]*自然语速[·・•\s]*同步字幕】/, '【Lời dẫn · Tốc độ tự nhiên · Phụ đề đồng bộ】')
+    .replace(/^【旁白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Lời dẫn · Chậm rõ · Phụ đề đồng bộ】')
+    .replace(/^【旁白[·・•\s]*自然语速】/, '【Lời dẫn · Tốc độ tự nhiên】')
+    .replace(/^【旁白[·・•\s]*慢速清晰】/, '【Lời dẫn · Chậm rõ】')
+    .replace(/^【对白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Đối thoại · Chậm rõ · Phụ đề đồng bộ】')
+    .replace(/^【画面[·・•\s]*无配音仅环境音】/, '【Hình ảnh · Âm thanh môi trường】')
+    .replace(/^【空镜[·・•\s]*可仅环境音与\s*BGM】/, '【Cảnh trống · Âm thanh môi trường & BGM】')
 }
 
 type PreviewState =
@@ -1095,35 +1117,38 @@ title={t('studio.storyboard.respliceTip')}
                             >
                               {cues.length > 0 ? (
                                 <span className="pf-muted" style={{ display: 'block', fontSize: '0.75rem' }}>
-                                  {cues[0]?.replace(/^【|】$/g, '').slice(0, 28)}
+                                  {localizeCueText(cues[0])?.replace(/^【|】$/g, '')}
                                   {cues[1]
-                                    ? ` · ${cues[1].replace(/^【BGM：|】$/g, '').slice(0, 16)}`
+                                    ? ` · ${localizeCueText(cues[1]).replace(/^【(?:BGM[：:]\s*|Nhạc nền[：:]\s*)?/i, '').replace(/】$/, '').slice(0, 32)}…`
                                     : ''}
                                 </span>
                               ) : null}
                               {beats.length > 0 ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
-                                  {beats.slice(0, 4).map((b, i) => (
-                                    <span key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                                      {b.duration > 0 ? (
-                                        <span
-                                          style={{
-                                            flex: '0 0 auto',
-                                            fontSize: '0.72rem',
-                                            background: '#111',
-                                            color: '#fff',
-                                            borderRadius: 4,
-                                            padding: '1px 5px',
-                                          }}
-                                        >
-                                          {b.duration}s
+                                  {beats.slice(0, 4).map((b, i) => {
+                                    const localizedText = localizeBeatText(b.text)
+                                    return (
+                                      <span key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                                        {b.duration > 0 ? (
+                                          <span
+                                            style={{
+                                              flex: '0 0 auto',
+                                              fontSize: '0.72rem',
+                                              background: '#111',
+                                              color: '#fff',
+                                              borderRadius: 4,
+                                              padding: '1px 5px',
+                                            }}
+                                          >
+                                            {b.duration}s
+                                          </span>
+                                        ) : null}
+                                        <span style={{ fontSize: '0.82rem' }}>
+                                          {localizedText.length > 48 ? `${localizedText.slice(0, 48)}…` : localizedText}
                                         </span>
-                                      ) : null}
-                                      <span style={{ fontSize: '0.82rem' }}>
-                                        {b.text.length > 42 ? `${b.text.slice(0, 42)}…` : b.text}
                                       </span>
-                                    </span>
-                                  ))}
+                                    )
+                                  })}
                                   {beats.length > 4 ? (
                                     <span className="pf-muted" style={{ fontSize: '0.75rem' }}>
                                       {t('studio.storyboard.moreSegs').replace('{n}', String(beats.length - 4))}

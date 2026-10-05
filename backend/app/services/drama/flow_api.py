@@ -62,7 +62,7 @@ async def _to_base64_data_uri(image_path_or_url: str) -> str | None:
     else:
         p = Path(raw)
         if not p.is_file():
-            p = storage.to_local_path(raw)
+            p = storage.local_path_from_url(raw)
         if p and p.is_file():
             data = p.read_bytes()
 
@@ -106,33 +106,33 @@ async def _run_flow_generation(
     model_key: str = "abra_r2v_10s",
 ) -> None:
     _save_task_state(task_id, {"status": "running", "created_at": time.time()})
-    ref_ids: list[str] = []
-
-    # Tự động tối ưu hóa prompt qua ChatGPT2API để Google Veo hiểu chính xác bối cảnh & chuyển động
-    final_prompt = prompt or "Beauty Commercial"
     try:
-        from app.services.drama.prompt_optimizer import optimize_video_prompt
+        ref_ids: list[str] = []
 
-        final_prompt = await optimize_video_prompt(prompt)
-    except Exception as opt_err:
-        logger.warning("Lỗi tối ưu prompt qua ChatGPT2API: %s", opt_err)
+        # Tự động tối ưu hóa prompt qua ChatGPT2API để Google Veo hiểu chính xác bối cảnh & chuyển động
+        final_prompt = prompt or "Beauty Commercial"
+        try:
+            from app.services.drama.prompt_optimizer import optimize_video_prompt
 
-    if image_ref:
-        mid = await upload_image_to_flow(image_ref, project_id=project_id)
-        if mid:
-            ref_ids.append(mid)
+            final_prompt = await optimize_video_prompt(prompt)
+        except Exception as opt_err:
+            logger.warning("Lỗi tối ưu prompt qua ChatGPT2API: %s", opt_err)
 
-    payload = {
-        "reference_media_ids": ref_ids,
-        "prompt": final_prompt,
-        "project_id": project_id,
-        "scene_id": "",
-        "aspect_ratio": aspect_ratio or "9:16",
-        "model_key": model_key or "abra_r2v_10s",
-    }
-    logger.info("Bắt đầu gọi Flow API tạo video task=%s ref_ids=%s prompt=%s", task_id, ref_ids, final_prompt[:80])
+        if image_ref:
+            mid = await upload_image_to_flow(image_ref, project_id=project_id)
+            if mid:
+                ref_ids.append(mid)
 
-    try:
+        payload = {
+            "reference_media_ids": ref_ids,
+            "prompt": final_prompt,
+            "project_id": project_id,
+            "scene_id": "",
+            "aspect_ratio": aspect_ratio or "9:16",
+            "model_key": model_key or "abra_r2v_10s",
+        }
+        logger.info("Bắt đầu gọi Flow API tạo video task=%s ref_ids=%s prompt=%s", task_id, ref_ids, final_prompt[:80])
+
         async with httpx.AsyncClient(timeout=240.0) as client:
             resp = await client.post(
                 f"{FLOW_BASE_URL}/generate-video-veo_3_1_r2v_lite_low_priority",

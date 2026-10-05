@@ -19,16 +19,20 @@ KEPU_FULL_SHOT_DURATION_MAX = 12
 
 DURATION_TOKEN_RE = re.compile(r"@duration:(\d+)")
 # Tường thuật khoa học phổ biến: Nhanh hơn một cách tự nhiên; truyện tranh vẫn sử dụng tiền tố chậm (xem drama/build_fragments)
-NARRATION_PREFIX = "【旁白·自然语速·同步字幕】"
+NARRATION_PREFIX = "【Lời dẫn · Tốc độ tự nhiên · Phụ đề đồng bộ】"
+NARRATION_PREFIX_ZH = "【旁白·自然语速·同步字幕】"
 LEGACY_NARRATION_PREFIX = "【旁白·慢速清晰·同步字幕】"
-DIALOGUE_PREFIX = "【对白·慢速清晰·同步字幕】"
-VISUAL_PREFIX = "【画面·无配音仅环境音】"
+DIALOGUE_PREFIX = "【Đối thoại · Chậm rõ · Phụ đề đồng bộ】"
+DIALOGUE_PREFIX_ZH = "【对白·慢速清晰·同步字幕】"
+VISUAL_PREFIX = "【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】"
+VISUAL_PREFIX_ZH = "【画面·无配音仅环境音】"
 VISUAL_PREFIX_VI = "【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】"
 VISUAL_PREFIX_EN = "【Visual · Ambient sound only, no voiceover】"
 
 VISUAL_PREFIXES = (
     VISUAL_PREFIX,
     VISUAL_PREFIX_VI,
+    VISUAL_PREFIX_ZH,
     VISUAL_PREFIX_EN,
     "【画面·无配音仅环境音】",
     "【画面·仅环境音】",
@@ -46,19 +50,25 @@ VISUAL_PREFIXES = (
     "【Empty shot·",
 )
 
-EMPTY_SHOT_PREFIX = "【空镜·可仅环境音与 BGM】"
-SUBTITLE_CUE = "【字幕：后期叠旁白字幕，简体中文逐句同步】"
-DRAMA_SUBTITLE_CUE = "【字幕：底部居中·简体中文·逐句轮换·与口播同步】"
+EMPTY_SHOT_PREFIX = "【Cảnh trống · Chỉ âm thanh môi trường & BGM】"
+EMPTY_SHOT_PREFIX_ZH = "【空镜·可仅环境音与 BGM】"
+SUBTITLE_CUE = "【Phụ đề: Ghép chữ lời dẫn ở hậu kỳ, đồng bộ từng câu】"
+SUBTITLE_CUE_ZH = "【字幕：后期叠旁白字幕，简体中文逐句同步】"
+DRAMA_SUBTITLE_CUE = "【Phụ đề: Căn giữa phía dưới · Tiếng Việt · Luân chuyển từng câu · Đồng bộ lời thoại】"
+DRAMA_SUBTITLE_CUE_ZH = "【字幕：底部居中·简体中文·逐句轮换·与口播同步】"
 DRAMA_SUBTITLE_CUE_VI = "【Phụ đề: Căn giữa phía dưới · Tiếng Việt · Luân chuyển từng câu · Đồng bộ lời thoại】"
 # Dấu hiệu lịch sử, thay thế thống nhất bằng bản hiện tại trước khi gửi
 LEGACY_KEPU_SUBTITLE_CUES = (
     "【字幕：全程简体中文字幕，旁白逐句同步烧录】",
+    SUBTITLE_CUE_ZH,
 )
 LEGACY_DRAMA_SUBTITLE_CUES = (
     "【字幕：底部居中·简体中文·仅标记段落同步】",
     "【字幕：底部居中·简体中文】",
+    DRAMA_SUBTITLE_CUE_ZH,
 )
-DEFAULT_BGM_MOOD = "贴合内容的轻量配乐，情绪平稳，不抢旁白"
+DEFAULT_BGM_MOOD = "Nhạc nền nhẹ nhàng phù hợp nội dung, cảm xúc êm đềm, không lấn át lời dẫn"
+DEFAULT_BGM_MOOD_ZH = "贴合内容的轻量配乐，情绪平稳，不抢旁白"
 DEFAULT_BGM_MOOD_VI = "Nhạc nền nhẹ nhàng phù hợp nội dung, cảm xúc êm đềm, không lấn át lời dẫn"
 SEEDANCE_PRODUCTION_SECTION_HEADER = "【Ràng buộc bắt buộc: Âm thanh, Phụ đề và Nhạc nền / 强制约束：音频、字幕与配乐】"
 
@@ -541,9 +551,9 @@ def script_bgm_mood(segment_script: str) -> str:
 
 def build_production_cues(bgm_mood: str) -> list[str]:
     mood = (bgm_mood or "").strip() or DEFAULT_BGM_MOOD
-    if "音量低于人声" not in mood:
-        mood = f"{mood}，音量低于人声"
-    return [SUBTITLE_CUE, f"【BGM：后期混音 · {mood}】"]
+    if "âm lượng nhỏ hơn giọng nói" not in mood and "音量低于人声" not in mood:
+        mood = f"{mood}, âm lượng nhỏ hơn giọng nói"
+    return [SUBTITLE_CUE, f"【BGM: Hòa âm hậu kỳ · {mood}】"]
 
 
 # Chế độ hậu phụ đề: Loại bỏ tiền tố Cue/"phụ đề đồng bộ" trước khi gửi để tránh trường hợp mô hình vẫn cháy màn hình theo ký tự.
@@ -552,6 +562,10 @@ _POST_SUBTITLE_PREFIX_MAP = (
     ("【旁白·慢速清晰·同步字幕】", "【旁白·慢速清晰】"),
     ("【旁白·自然语速·同步字幕】", "【旁白·自然语速】"),
     ("【内心独白·同步字幕】", "【内心独白】"),
+    ("【Lời dẫn · Tốc độ tự nhiên · Phụ đề đồng bộ】", "【Lời dẫn · Tốc độ tự nhiên】"),
+    ("【Lời dẫn·Tốc độ tự nhiên·Phụ đề đồng bộ】", "【Lời dẫn·Tốc độ tự nhiên】"),
+    ("【Đối thoại · Chậm rõ · Phụ đề đồng bộ】", "【Đối thoại · Chậm rõ】"),
+    ("【Độc thoại nội tâm · Phụ đề đồng bộ】", "【Độc thoại nội tâm】"),
 )
 
 
@@ -563,7 +577,7 @@ def strip_model_burn_subtitle_cues(content: str) -> str:
         if not stripped:
             out.append(raw)
             continue
-        if stripped.startswith("【字幕"):
+        if stripped.startswith("【字幕") or stripped.startswith("【Phụ đề"):
             continue
         line = stripped
         for src, dest in _POST_SUBTITLE_PREFIX_MAP:
@@ -715,7 +729,7 @@ def format_segment_line(kind: str, text: str) -> str:
     if clean.startswith("【"):
         return clean
     k = (kind or "visual").strip().lower()
-    if k in {"narration", "vo", "旁白"}:
+    if k in {"narration", "vo", "旁白", "lời dẫn", "thuyết minh"}:
         return f"{NARRATION_PREFIX}{clean}"
     return clean
 
@@ -763,10 +777,20 @@ def narration_from_script(content: str) -> str:
             not line
             or line.startswith("@duration:")
             or line.startswith("【字幕")
+            or line.startswith("【Phụ đề")
+            or line.startswith("【Subtitle")
             or line.startswith("【BGM")
+            or line.startswith("【Nhạc nền")
         ):
             continue
-        if NARRATION_PREFIX in line or "旁白" in line[:20]:
+        if (
+            NARRATION_PREFIX in line
+            or NARRATION_PREFIX_ZH in line
+            or line.startswith("【旁白")
+            or line.startswith("【Lời dẫn")
+            or "旁白" in line[:25]
+            or "Lời dẫn" in line[:25]
+        ):
             text = re.sub(r"^【[^】]*】", "", line).strip()
             if text:
                 lines.append(text)
@@ -780,27 +804,60 @@ def first_visual_prompt(content: str) -> str:
             not line
             or line.startswith("@duration:")
             or line.startswith("【字幕")
+            or line.startswith("【Phụ đề")
+            or line.startswith("【Subtitle")
             or line.startswith("【BGM")
+            or line.startswith("【Nhạc nền")
         ):
             continue
-        if NARRATION_PREFIX in line or line.startswith("【旁白"):
+        if (
+            NARRATION_PREFIX in line
+            or NARRATION_PREFIX_ZH in line
+            or line.startswith("【旁白")
+            or line.startswith("【Lời dẫn")
+            or "旁白" in line[:25]
+            or "Lời dẫn" in line[:25]
+        ):
             continue
         cleaned = re.sub(r"^【[^】]*】", "", line).strip()
         if cleaned:
             return cleaned
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         line = raw.strip()
-        if line and not line.startswith("@") and not line.startswith("【字幕") and not line.startswith("【BGM"):
+        if (
+            line
+            and not line.startswith("@")
+            and not (
+                line.startswith("【字幕")
+                or line.startswith("【Phụ đề")
+                or line.startswith("【Subtitle")
+                or line.startswith("【BGM")
+                or line.startswith("【Nhạc nền")
+            )
+        ):
             return re.sub(r"^【[^】]*】", "", line).strip()
     return ""
 
 
 def _is_narration_script_line(line: str) -> bool:
-    """Xác định xem dòng kịch bản có phải là lời tường thuật hay không (bao gồm tiền tố cũ và tiền tố mới); mặc dù gợi ý phụ đề có chứa từ "tường thuật" nhưng nó không được tính."""
+    """Xác định xem dòng kịch bản có phải là lời tường thuật hay không (bao gồm cả tiếng Việt và tiếng Trung)."""
     stripped = (line or "").strip()
-    if not stripped or stripped.startswith("【字幕") or stripped.startswith("【BGM"):
+    if (
+        not stripped
+        or stripped.startswith("【字幕")
+        or stripped.startswith("【Phụ đề")
+        or stripped.startswith("【Subtitle")
+        or stripped.startswith("【BGM")
+        or stripped.startswith("【Nhạc nền")
+    ):
         return False
-    return stripped.startswith("【旁白") or NARRATION_PREFIX in stripped or LEGACY_NARRATION_PREFIX in stripped
+    return (
+        stripped.startswith("【旁白")
+        or stripped.startswith("【Lời dẫn")
+        or NARRATION_PREFIX in stripped
+        or NARRATION_PREFIX_ZH in stripped
+        or LEGACY_NARRATION_PREFIX in stripped
+    )
 
 
 def replace_narration_in_script(content: str, narration: str) -> str:
@@ -1036,21 +1093,31 @@ def apply_segment_script_edit(script: str, *, bgm_mood: str | None = None) -> di
         body_lines = [
             ln
             for ln in content.splitlines()
-            if not ln.strip().startswith("【字幕") and not ln.strip().startswith("【BGM")
+            if not (
+                ln.strip().startswith("【字幕")
+                or ln.strip().startswith("【Phụ đề")
+                or ln.strip().startswith("【BGM")
+                or ln.strip().startswith("【Nhạc nền")
+            )
         ]
         content = "\n".join(cues + body_lines).strip()
         if not extract_durations(content):
             body = "\n".join(
                 ln
                 for ln in content.splitlines()
-                if not ln.strip().startswith("【字幕") and not ln.strip().startswith("【BGM")
+                if not (
+                    ln.strip().startswith("【字幕")
+                    or ln.strip().startswith("【Phụ đề")
+                    or ln.strip().startswith("【BGM")
+                    or ln.strip().startswith("【Nhạc nền")
+                )
             ).strip()
             content = build_segment_script(
                 [
                     SegmentBeat(
                         duration=estimate_narration_duration(body),
                         kind="narration",
-                        text=body or "平稳推进",
+                        text=body or "Tiếp tục diễn tiến",
                     )
                 ],
                 bgm_mood=bgm_mood or infer_bgm_mood(content),
