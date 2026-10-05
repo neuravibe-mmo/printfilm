@@ -53,12 +53,12 @@ export function speakerColor(name: string): string {
   return SPEAKER_COLORS[h % SPEAKER_COLORS.length]
 }
 
-// Xóa khối cảnh khỏi văn bản chính của kịch bản quay phim
+// Tách khối cảnh khỏi văn bản chính của kịch bản quay phim
 export function parseOutlineSceneBlocks(text: string): OutlineSceneBlock[] {
   const raw = (text || '').trim()
   if (!raw) return []
-  const scenePattern = /(?=^#{1,3}\s*(?:field|cảnh|scene)\b)/im
-  const hasSceneHeading = /^#{1,3}\s*(?:field|cảnh|scene)\b/im.test(raw)
+  const scenePattern = /(?=^(?:#{1,3}\s*)?(?:cảnh|phân cảnh|scene|field|场|第\s*\d+\s*场)\b)/im
+  const hasSceneHeading = scenePattern.test(raw)
   const parts = raw.split(scenePattern).map((p) => p.trim()).filter(Boolean)
   if (parts.length <= 1 && !hasSceneHeading) {
     return [{ raw, label: 'Toàn văn', title: '', body: raw }]
@@ -66,9 +66,9 @@ export function parseOutlineSceneBlocks(text: string): OutlineSceneBlock[] {
   return parts.map((part, index) => {
     const lines = part.split(/\r?\n/)
     const head = (lines[0] || '').replace(/^#+\s*/, '').trim()
-    const labelMatch = head.match(/^(?:场|cảnh|scene)\s*([^\s：:]+)/i)
-    const label = labelMatch ? `Phân cảnh ${labelMatch[1]}` : `Phân cảnh ${index + 1}`
-    const title = head.replace(/^(?:场|cảnh|scene)\s*[^\s：:]+[：:\s—\-]*/i, '').trim()
+    const labelMatch = head.match(/^(?:场|cảnh|phân cảnh|scene|field)\s*([^\s：:]+)/i)
+    const label = labelMatch ? `Cảnh ${labelMatch[1]}` : `Cảnh ${index + 1}`
+    const title = head.replace(/^(?:场|cảnh|phân cảnh|scene|field)\s*[^\s：:]+[：:\s—\-]*/i, '').trim()
     const body = lines.slice(1).join('\n').trim()
     return { raw: part, label, title, body }
   })
@@ -343,10 +343,14 @@ export function OutlineScriptPreview({
     return <p className="drama-outline-section-empty">{empty}</p>
   }
 
+  const isSingleFullTextBlock =
+    blocks.length === 1 &&
+    (blocks[0].label === '全文' || blocks[0].label === 'Toàn văn' || blocks[0].label === 'Full text')
+
   const summaryBar =
     blocks.length > 0 ? (
       <div className="drama-outline-script-summary">
-        <span>{blocks[0].label === '全文' ? t('drama.scriptPreview.fullText') : t('drama.scriptPreview.sceneCount').replace('{n}', String(blocks.length))}</span>
+        <span>{isSingleFullTextBlock ? t('drama.scriptPreview.fullText') : t('drama.scriptPreview.sceneCount').replace('{n}', String(blocks.length))}</span>
         {hasShotDuration ? (
           <span>
             {t('drama.scriptPreview.shotTotal').replace('{n}', String(shotStats!.fragmentCount)).replace('{dur}', formatClockDuration(displayTotalSec, minLabel, minSecLabel))}
@@ -362,7 +366,7 @@ export function OutlineScriptPreview({
       </div>
     ) : null
 
-  if (blocks.length === 1 && blocks[0].label === '全文') {
+  if (isSingleFullTextBlock) {
     return (
       <div className="drama-outline-scene">
         {summaryBar}
@@ -398,13 +402,13 @@ export function OutlineScriptPreview({
   }
 
 function formatSceneBlockLabel(label: string, locale: string): string {
-  const m = label.match(/^(?:场|Scene|Cảnh)\s*(.+)$/i)
+  const m = label.match(/^(?:场|Scene|Cảnh|Phân cảnh)\s*(.+)$/i)
   if (m) {
     if (locale === 'vi') return `Cảnh ${m[1]}`
     if (locale === 'en') return `Scene ${m[1]}`
     return `场 ${m[1]}`
   }
-  if (label === '全文') {
+  if (label === '全文' || label === 'Toàn văn' || label === 'Full text') {
     if (locale === 'vi') return 'Toàn văn'
     if (locale === 'en') return 'Full text'
     return '全文'

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   BookOpen,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Copy,
@@ -12,7 +13,6 @@ import {
   MoreHorizontal,
   Plus,
   RefreshCw,
-  Maximize2,
   Pencil,
 } from 'lucide-react'
 import { dramaApi, resolveDramaMediaUrl, type DramaEpisode, type DramaEpisodeBody, type DramaProject, type DramaScript } from '../../api/drama'
@@ -31,7 +31,7 @@ import {
   parseEpisodeBodies,
 } from './dramaWorkspaceUtils'
 import { sumFragmentContentDuration } from './dramaEpisodeEditUtils'
-import { OutlineScriptParseModal, OutlineScriptPreview } from './outlineScriptPreview'
+import { OutlineScriptPreview } from './outlineScriptPreview'
 import { useI18n } from '../../i18n'
 
 type SectionKey = 'creative' | 'summary' | 'body'
@@ -75,13 +75,15 @@ type SectionCardProps = {
   /** Tắt nút "Tạo"; tập này vẫn có thể được chỉnh sửa trong khi các tập khác đang được tạo */
   generateBusy?: boolean
   placeholder: string
-  regenerateLabel: string
+  regenerateLabel?: string
+  highlighted?: boolean
+  containerRef?: React.Ref<HTMLElement>
   onToggle: () => void
   onEdit: () => void
   onCancel: () => void
   onSave: () => void
   onDraftChange: (v: string) => void
-  onRegenerate: () => void
+  onRegenerate?: () => void
   onCopy: () => void
   /** Vùng tập lệnh: xem trước phân tích + chỉnh sửa phân đoạn */
   scriptPreview?: ReactNode
@@ -101,6 +103,8 @@ function SectionCard({
   generateBusy,
   placeholder,
   regenerateLabel,
+  highlighted,
+  containerRef,
   onToggle,
   onEdit,
   onCancel,
@@ -113,7 +117,10 @@ function SectionCard({
   const { t } = useI18n()
   const genBusy = generateBusy ?? busy
   return (
-    <article className={`drama-outline-section${open ? ' is-open' : ''}`}>
+    <article
+      ref={containerRef}
+      className={`drama-outline-section is-${sectionKey}${open ? ' is-open' : ''}${highlighted ? ' is-highlighted' : ''}`}
+    >
       <header className="drama-outline-section-head">
         <div className="drama-outline-section-title">
           <span className={`drama-outline-section-icon is-${sectionKey}`} aria-hidden>
@@ -129,10 +136,12 @@ function SectionCard({
             <Pencil size={14} strokeWidth={2} />
             {t('common.edit')}
           </button>
-          <button type="button" className="drama-outline-text-btn" disabled={genBusy} onClick={onRegenerate}>
-            <RefreshCw size={14} strokeWidth={2} />
-            {regenerateLabel}
-          </button>
+          {onRegenerate && regenerateLabel ? (
+            <button type="button" className="drama-outline-text-btn" disabled={genBusy} onClick={onRegenerate}>
+              <RefreshCw size={14} strokeWidth={2} />
+              {regenerateLabel}
+            </button>
+          ) : null}
           <button type="button" className="drama-outline-text-btn" onClick={onCopy}>
             <Copy size={14} strokeWidth={2} />
             {t('common.copy')}
@@ -141,16 +150,14 @@ function SectionCard({
             type="button"
             className="drama-outline-text-btn drama-outline-text-btn-icon"
             onClick={onToggle}
-            aria-label={sectionKey === 'body' ? t('drama.outlinePanel.parsePreview') : open ? t('drama.outlinePanel.collapse') : t('drama.outlinePanel.expand')}
+            aria-label={open ? t('drama.outlinePanel.collapse') : t('drama.outlinePanel.expand')}
           >
-            {sectionKey === 'body' ? (
-              <Maximize2 size={14} strokeWidth={2} />
-            ) : open ? (
+            {open ? (
               <ChevronUp size={14} strokeWidth={2} />
             ) : (
               <ChevronDown size={14} strokeWidth={2} />
             )}
-            {sectionKey === 'body' ? t('drama.outlinePanel.parsePreview') : open ? t('drama.outlinePanel.collapse') : t('drama.outlinePanel.expand')}
+            {open ? t('drama.outlinePanel.collapse') : t('drama.outlinePanel.expand')}
           </button>
         </div>
       </header>
@@ -217,7 +224,6 @@ export function OutlineEpisodePanel({
   const [enterSkillOpen, setEnterSkillOpen] = useState(false)
   const [localError, setLocalError] = useState('')
   const [localNotice, setLocalNotice] = useState('')
-  const [scriptModalOpen, setScriptModalOpen] = useState(false)
   const [episodeCovers, setEpisodeCovers] = useState<Record<number, string>>({})
   const [episodeShotStats, setEpisodeShotStats] = useState<
     Record<number, { fragmentCount: number; totalSec: number }>
@@ -226,6 +232,19 @@ export function OutlineEpisodePanel({
   const [renamingEpisodeNumber, setRenamingEpisodeNumber] = useState<number | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const [highlightedSection, setHighlightedSection] = useState<SectionKey | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const highlightTimerRef = useRef<number | null>(null)
+  const toastTimerRef = useRef<number | null>(null)
+  const summaryCardRef = useRef<HTMLElement | null>(null)
+  const bodyCardRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current)
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     if (menuEpNumber === null) return
@@ -278,7 +297,6 @@ export function OutlineEpisodePanel({
     setTitleDraft(selected?.title || '')
     setLocalError('')
     setLocalNotice('')
-    setScriptModalOpen(false)
   }, [selected?.episodeNumber])
 
   // Kéo các tập đã chia và sử dụng bìa cảnh quay đầu tiên/phim đã hoàn thành làm hình thu nhỏ thư mục
@@ -423,6 +441,7 @@ export function OutlineEpisodePanel({
 
   async function handleGenerate(mode: 'summary' | 'body' | 'full' | 'brief') {
     if (!selected?.episodeNumber) return
+    const hadExistingBody = Boolean(selected.body?.trim())
     const creative = editingSection === 'creative' ? sectionDraft : selected.creative || ''
     if ((mode === 'summary' || mode === 'full') && !isSubstantialEpisodeCreative(creative)) {
       setLocalError(t('drama.outlinePanel.creativeMinChars').replace('{n}', String(MIN_EPISODE_CREATIVE_CHARS)))
@@ -471,6 +490,57 @@ export function OutlineEpisodePanel({
       const created = Number((cur.params || {}).episode_optimize_assets_created || 0)
       if ((mode === 'body' || mode === 'full') && created > 0) {
         setLocalNotice(t('drama.outlinePanel.assetsCreated').replace('{n}', String(created)))
+      }
+      if (mode === 'summary') {
+        setOpenSections((prev) => {
+          const next = new Set(prev)
+          next.add('summary')
+          return next
+        })
+        if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current)
+        setHighlightedSection('summary')
+        highlightTimerRef.current = window.setTimeout(() => {
+          setHighlightedSection(null)
+          highlightTimerRef.current = null
+        }, 5000)
+
+        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+        setToastMessage(t('drama.outlinePanel.summaryGeneratedSuccess') || 'Tóm tắt cốt truyện đã được tạo thành công')
+        toastTimerRef.current = window.setTimeout(() => {
+          setToastMessage(null)
+          toastTimerRef.current = null
+        }, 5000)
+
+        window.setTimeout(() => {
+          summaryCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }, 50)
+      }
+      if (mode === 'body') {
+        setOpenSections((prev) => {
+          const next = new Set(prev)
+          next.add('body')
+          return next
+        })
+        if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current)
+        setHighlightedSection('body')
+        highlightTimerRef.current = window.setTimeout(() => {
+          setHighlightedSection(null)
+          highlightTimerRef.current = null
+        }, 5000)
+
+        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+        const msg = hadExistingBody
+          ? (t('drama.outlinePanel.scriptRegeneratedSuccess') || 'Kịch bản đã được tạo lại thành công')
+          : (t('drama.outlinePanel.scriptGeneratedSuccess') || 'Kịch bản đã được tạo thành công')
+        setToastMessage(msg)
+        toastTimerRef.current = window.setTimeout(() => {
+          setToastMessage(null)
+          toastTimerRef.current = null
+        }, 5000)
+
+        window.setTimeout(() => {
+          bodyCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }, 50)
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('drama.outlinePanel.genFailed')
@@ -562,11 +632,6 @@ export function OutlineEpisodePanel({
   }
 
   function toggleSection(key: SectionKey) {
-    if (key === 'body') {
-      setScriptModalOpen(true)
-      setOpenSections((prev) => new Set(prev).add('body'))
-      return
-    }
     setOpenSections((prev) => {
       const next = new Set(prev)
       if (next.has(key)) next.delete(key)
@@ -848,29 +913,17 @@ export function OutlineEpisodePanel({
           busy={busy}
           generateBusy={generateBusy}
           placeholder={t('drama.outlinePanel.creativePlaceholder').replace('{n}', String(MIN_EPISODE_CREATIVE_CHARS))}
-          regenerateLabel={
-            selectedGenerating && generatingMode === 'brief'
-              ? t('drama.outlinePanel.filling')
-              : selectedGenerating && generatingMode === 'summary'
-                ? t('drama.outlinePanel.generating')
-                : isSubstantialEpisodeCreative(selected.creative)
-                  ? t('drama.outlinePanel.genSummary')
-                  : t('drama.outlinePanel.fillBrief')
-          }
           onToggle={() => toggleSection('creative')}
           onEdit={() => startEdit('creative')}
           onCancel={() => setEditingSection(null)}
           onSave={() => void handleSaveSection('creative')}
           onDraftChange={setSectionDraft}
-          onRegenerate={() =>
-            void handleGenerate(
-              isSubstantialEpisodeCreative(selected.creative) ? 'summary' : 'brief',
-            )
-          }
           onCopy={() => void copyText(selected.creative || '')}
         />
         <SectionCard
           sectionKey="summary"
+          containerRef={summaryCardRef}
+          highlighted={highlightedSection === 'summary'}
           icon={<BookOpen size={18} strokeWidth={1.9} />}
           title={t('drama.outlinePanel.summaryTitle')}
           subtitle={t('drama.outlinePanel.summarySubtitle')}
@@ -886,9 +939,9 @@ export function OutlineEpisodePanel({
               ? t('drama.outlinePanel.filling')
               : selectedGenerating && generatingMode === 'summary'
                 ? t('drama.outlinePanel.generating')
-                : isSubstantialEpisodeCreative(selected.creative)
+                : selected.summary?.trim()
                   ? t('drama.outlinePanel.regen')
-                  : t('drama.outlinePanel.fillBrief')
+                  : t('drama.outlinePanel.genSummary')
           }
           onToggle={() => toggleSection('summary')}
           onEdit={() => startEdit('summary')}
@@ -904,6 +957,8 @@ export function OutlineEpisodePanel({
         />
         <SectionCard
           sectionKey="body"
+          containerRef={bodyCardRef}
+          highlighted={highlightedSection === 'body'}
           icon={<FileText size={18} strokeWidth={1.9} />}
           title={t('drama.outlinePanel.bodyTitle')}
           subtitle={t('drama.outlinePanel.bodySubtitle')}
@@ -914,7 +969,13 @@ export function OutlineEpisodePanel({
           busy={busy}
           generateBusy={generateBusy}
           placeholder={t('drama.outlinePanel.bodyPlaceholder').replace('{n}', String(MIN_EPISODE_BODY_CHARS))}
-          regenerateLabel={selectedGenerating && generatingMode === 'body' ? t('drama.outlinePanel.generating') : t('drama.outlinePanel.genScript')}
+          regenerateLabel={
+            selectedGenerating && generatingMode === 'body'
+              ? t('drama.outlinePanel.generating')
+              : selected.body?.trim()
+                ? t('drama.outlinePanel.regenScript')
+                : t('drama.outlinePanel.genScript')
+          }
           onToggle={() => toggleSection('body')}
           onEdit={() => startEdit('body')}
           onCancel={() => setEditingSection(null)}
@@ -933,19 +994,30 @@ export function OutlineEpisodePanel({
           }
         />
       </div>
-      <OutlineScriptParseModal
-        open={scriptModalOpen}
-        onClose={() => setScriptModalOpen(false)}
-        title={t('drama.outlinePanel.scriptParseTitle').replace('{no}', String(selected.episodeNumber))}
-        text={selected.body || ''}
-      />
     </section>
   )
+
+  const toastElement = toastMessage ? (
+    <div
+      className="drama-outline-toast"
+      role="status"
+      aria-live="polite"
+      onClick={() => {
+        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+        setToastMessage(null)
+        toastTimerRef.current = null
+      }}
+    >
+      <CheckCircle2 size={16} className="drama-outline-toast-icon" />
+      <span>{toastMessage}</span>
+    </div>
+  ) : null
 
   if (children) {
     return (
       <>
         {children({ directory, bodies })}
+        {toastElement}
         <FragmentPlanSkillModal
           open={enterSkillOpen}
           title={t('drama.outlinePanel.enterShot')}
@@ -963,6 +1035,7 @@ export function OutlineEpisodePanel({
     <div className="drama-outline drama-outline-v2">
       {directory}
       <div className="drama-outline-main">{bodies}</div>
+      {toastElement}
       <FragmentPlanSkillModal
         open={enterSkillOpen}
         title={t('drama.outlinePanel.enterShot')}
