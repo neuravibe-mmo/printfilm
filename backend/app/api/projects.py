@@ -1,7 +1,10 @@
 import asyncio
 import io
 import json
+import logging
 import re
+import subprocess
+import time
 import zipfile
 from datetime import datetime
 
@@ -31,11 +34,14 @@ from app.schemas import (
     ProjectUpdate,
     ShotOut,
     ShotReorderIn,
+    ShotTrimIn,
     ShotUpdate,
     VoicePreviewOut,
     VoicePreviewRequest,
     WorkOut,
 )
+
+logger = logging.getLogger(__name__)
 from app.schemas_tasks import TaskCreateRequest, TaskTargetBind
 from app.services import pipeline, storage
 from app.services.bgm import clip_shot_bgm
@@ -1089,6 +1095,59 @@ async def regen_video(
         shot_id=shot_id,
         task_type="shot_regen_video",
     )
+    return await _get_owned_project(db, project_id, user)
+
+
+@router.post("/projects/{project_id}/shots/{shot_id}/trim", response_model=ProjectOut)
+async def trim_shot_video(
+    project_id: int,
+    shot_id: int,
+    payload: ShotTrimIn,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Project:
+    project = await _get_owned_project(db, project_id, user)
+    shot = next((s for s in project.shots if s.id == shot_id), None)
+    if not shot or not shot.video_url:
+        raise HTTPException(status_code=400, detail="Cảnh quay chưa có video để cắt")
+    if payload.end_sec <= payload.start_sec:
+        raise HTTPException(status_code=400, detail="Thời gian kết thúc phải lớn hơn thời gian bắt đầu")
+
+    src_path = storage.local_path_from_url(shot.video_url)
+    pdir = storage.project_dir(project_id)
+    if not src_path or not src_path.exists():
+        if shot.video_url.startswith("http"):
+            src_path = await storage.ensure_local_media(shot.video_url, pdir / f"shot_{shot.shot_no:03d}_src.mp4")
+        else:
+            raise HTTPException(status_code=404, detail="Không tìm thấy tệp video nguồn")
+
+    ts = int(time.time())
+    dest_filename = f"shot_{shot.shot_no:03d}_{ts}_trim.mp4"
+    dest_path = pdir / dest_filename
+
+    cmd = [
+        "ffmpeg", "-y",
+        "-ss", f"{payload.start_sec:.3f}",
+        "-to", f"{payload.end_sec:.3f}",
+        "-i", str(src_path),
+        "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-c:a", "aac",
+        "-movflags", "+faststart",
+        str(dest_path),
+    ]
+    proc = await asyncio.to_thread(subprocess.run, cmd, capture_output=True, text=True)
+    if proc.returncode != 0 or not dest_path.exists():
+        logger.error("FFmpeg trim error: %s", proc.stderr)
+        raise HTTPException(status_code=500, detail="Lỗi khi cắt video")
+
+    target_dur = payload.end_sec - payload.start_sec
+    shot.video_url = storage.publish_local(dest_path)
+    shot.duration = round(target_dur, 3)
+    shot.version += 1
+    project.final_video_url = None
+    _demote_after_edit(project)
+    await db.commit()
     return await _get_owned_project(db, project_id, user)
 
 

@@ -567,6 +567,12 @@ export const api = {
       method: 'POST',
     })
   },
+  trimVideo(projectId: number, shotId: number, startSec: number, endSec: number) {
+    return request<Project>(`/api/projects/${projectId}/shots/${shotId}/trim`, {
+      method: 'POST',
+      body: JSON.stringify({ start_sec: startSec, end_sec: endSec }),
+    })
+  },
   regenAudio(projectId: number, shotId: number) {
     return request<Project>(`/api/projects/${projectId}/shots/${shotId}/regen-audio`, {
       method: 'POST',

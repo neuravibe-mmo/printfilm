@@ -20,6 +20,7 @@ import { scenePromptForDisplay } from '../../promptDisplay'
 import { dialog } from '../../lib/dialog'
 import { handleBillingError } from '../../lib/billingError'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
+import ShotTrimModal from '../../components/studio/ShotTrimModal'
 import {
   effectiveStatus,
   formatMmSs,
@@ -173,6 +174,11 @@ export default function StoryboardPage() {
   const [batchRegenAudio, setBatchRegenAudio] = useState(false)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const segScriptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const [videoDurations, setVideoDurations] = useState<Record<number, number>>({})
+  const [trimmingShot, setTrimmingShot] = useState<{
+    shot: Shot
+    videoDuration: number
+  } | null>(null)
 
   useEffect(() => {
     const el = segScriptTextareaRef.current
@@ -205,6 +211,21 @@ export default function StoryboardPage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : t('common.loadFailed')))
   }, [nav, projectId])
+
+  useEffect(() => {
+    project?.shots.forEach((s) => {
+      if (s.video_url && !videoDurations[s.id]) {
+        const v = document.createElement('video')
+        v.preload = 'metadata'
+        v.src = api.assetUrl(s.video_url, s.version)
+        v.onloadedmetadata = () => {
+          if (v.duration && !isNaN(v.duration) && v.duration > 0) {
+            setVideoDurations((prev) => ({ ...prev, [s.id]: v.duration }))
+          }
+        }
+      }
+    })
+  }, [project?.shots])
 
   useEffect(() => {
     if (!project) return
@@ -565,6 +586,11 @@ export default function StoryboardPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  function openTrimModal(shot: Shot, initialDuration?: number) {
+    const vDur = initialDuration || videoDurations[shot.id] || 10
+    setTrimmingShot({ shot, videoDuration: vDur })
   }
 
   function openShotEdit(shot: Shot, focus = '') {
@@ -1222,24 +1248,37 @@ title={t('studio.storyboard.respliceTip')}
                                 {shotDisplayLabel(displayKind)}
                               </span>
                               {shot.video_url ? (
-                                <button
-                                  type="button"
-                                  className="pf-shot-view-btn"
-                                  onClick={() =>
-                                    setPreview({
-                                      kind: 'shot',
-                                      shotNo: shot.shot_no,
-                                      imageUrl: shot.image_url,
-                                      videoUrl: shot.video_url,
-                                      audioUrl: shot.audio_url,
-                                      caption: shotCaption(shot, t),
-                                      version: shot.version,
-                                    })
-                                  }
-                                >
-                                  <IconPlay size={12} />
-                                  {t('studio.storyboard.viewVideo')}
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    className="pf-shot-view-btn"
+                                    onClick={() =>
+                                      setPreview({
+                                        kind: 'shot',
+                                        shotNo: shot.shot_no,
+                                        imageUrl: shot.image_url,
+                                        videoUrl: shot.video_url,
+                                        audioUrl: shot.audio_url,
+                                        caption: shotCaption(shot, t),
+                                        version: shot.version,
+                                      })
+                                    }
+                                  >
+                                    <IconPlay size={12} />
+                                    {t('studio.storyboard.viewVideo')}
+                                  </button>
+                                  {videoDurations[shot.id] &&
+                                  Math.abs(videoDurations[shot.id] - Number(shot.duration)) > 0.5 ? (
+                                    <button
+                                      type="button"
+                                      className="pf-shot-trim-btn"
+                                      title={t('studio.storyboard.trimTip')}
+                                      onClick={() => openTrimModal(shot, videoDurations[shot.id])}
+                                    >
+                                      ✂ {t('studio.storyboard.trimAction')}
+                                    </button>
+                                  ) : null}
+                                </div>
                               ) : null}
                             </div>
                           </td>
@@ -1296,6 +1335,18 @@ title={t('studio.storyboard.respliceTip')}
                                   >
                                     {t('studio.storyboard.redub')}
                                   </button>
+                                  {shot.video_url ? (
+                                    <button
+                                      type="button"
+                                      disabled={rowBusy}
+                                      onClick={() => {
+                                        setMenuShotId(null)
+                                        openTrimModal(shot, videoDurations[shot.id])
+                                      }}
+                                    >
+                                      ✂ {t('studio.storyboard.trimVideo')}
+                                    </button>
+                                  ) : null}
                                 </div>
                               ) : null}
                             </div>
@@ -1706,6 +1757,20 @@ title={t('studio.storyboard.respliceTip')}
             {preview.kind === 'shot' ? <p className="pf-muted">{preview.caption}</p> : null}
           </div>
         </div>
+      ) : null}
+
+      {trimmingShot && project ? (
+        <ShotTrimModal
+          projectId={project.id}
+          shot={trimmingShot.shot}
+          initialVideoDuration={trimmingShot.videoDuration}
+          onClose={() => setTrimmingShot(null)}
+          onSuccess={(nextProject, newDuration) => {
+            setProject(nextProject)
+            setVideoDurations((prev) => ({ ...prev, [trimmingShot.shot.id]: newDuration }))
+            setTrimmingShot(null)
+          }}
+        />
       ) : null}
     </AppShell>
   )

@@ -4523,6 +4523,383 @@ button.pf-shot-editable:disabled {
   transform: translateY(0);
 }
 
+.pf-shot-trim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #c2410c;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.pf-shot-trim-btn:hover {
+  background: #ffedd5;
+  border-color: #fb923c;
+  box-shadow: 0 2px 4px rgba(234, 88, 12, 0.15);
+  transform: translateY(-1px);
+}
+
+.pf-shot-trim-btn:active {
+  transform: translateY(0);
+}
+
+.modal.pf-trim-modal {
+  width: min(1020px, 96vw) !important;
+  max-width: 1020px !important;
+  max-height: min(92vh, 860px);
+  padding: 0 !important;
+  gap: 0 !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 25px 70px rgba(15, 23, 42, 0.28);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.pf-trim-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--pf-line, #e2e8f0);
+  background: #f8fafc;
+}
+
+.pf-trim-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+  background: #fafbfe;
+}
+
+@media (max-width: 860px) {
+  .pf-trim-modal-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pf-trim-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  min-width: 0;
+}
+
+/* Stats Grid */
+.pf-trim-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.pf-trim-stat-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.pf-trim-stat-label {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pf-trim-stat-val {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pf-trim-stat-highlight {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.pf-trim-stat-highlight .pf-trim-stat-label {
+  color: #c2410c;
+}
+
+.pf-trim-stat-highlight .pf-trim-stat-val {
+  color: #ea580c;
+}
+
+.pf-trim-stat-highlight small {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #9a3412;
+}
+
+/* Timeline Track Card */
+.pf-trim-track-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.pf-trim-track-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.pf-trim-timeline-track {
+  position: relative;
+  height: 20px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pf-trim-timeline-active {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #84cc16 0%, #16a34a 100%);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.08s ease;
+}
+
+.pf-trim-timeline-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  padding: 0 2px;
+}
+
+/* Presets */
+.pf-trim-presets-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pf-trim-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.pf-trim-presets-grid .pf-btn {
+  justify-content: center;
+  font-size: 0.82rem;
+  padding: 0.55rem 0.5rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  white-space: nowrap;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.pf-trim-presets-grid .pf-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* Adjust Box */
+.pf-trim-adjust-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.pf-trim-adjust-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pf-trim-adjust-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.pf-trim-adjust-label strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.pf-trim-stepper-control {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.pf-trim-stepper-control input[type="range"] {
+  flex: 1;
+  accent-color: #84cc16;
+  cursor: pointer;
+  height: 6px;
+}
+
+.pf-trim-stepper-control .pf-step-btn {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.76rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #334155;
+  font-weight: 600;
+  transition: all 0.1s ease;
+}
+
+.pf-trim-stepper-control .pf-step-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Sync card */
+.pf-trim-sync-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #f0fdf4;
+  border: 1px dashed #86efac;
+  border-radius: 12px;
+  padding: 0.85rem 1.15rem;
+  font-size: 0.84rem;
+}
+
+.pf-trim-sync-card strong {
+  color: #166534;
+}
+
+.pf-trim-sync-card .pf-muted {
+  color: #15803d;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+.pf-trim-sync-card button {
+  white-space: nowrap;
+  background: #ffffff;
+  border-color: #86efac;
+  color: #166534;
+  font-weight: 600;
+}
+
+.pf-trim-sync-card button:hover {
+  background: #dcfce7;
+}
+
+/* Right Column: Video Card */
+.pf-trim-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.pf-trim-video-card {
+  background: #090d16;
+  border-radius: 14px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.pf-trim-video-container {
+  width: 100%;
+  min-height: 260px;
+  max-height: 480px;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pf-trim-video-container video {
+  max-height: 480px;
+  max-width: 100%;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.pf-trim-play-preview-btn {
+  color: #f8fafc !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  padding: 0.6rem 1rem !important;
+  font-weight: 500;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.pf-trim-play-preview-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+/* Footer */
+.pf-trim-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.pf-trim-foot-summary {
+  font-size: 0.88rem;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pf-trim-foot-dur {
+  color: #ea580c;
+  font-weight: 600;
+}
+
 .pf-shot-ops {
   display: flex;
   flex-wrap: wrap;

@@ -124,6 +124,11 @@ class ShotReorderIn(BaseModel):
     shot_ids: list[int] = Field(min_length=1)
 
 
+class ShotTrimIn(BaseModel):
+    start_sec: float = Field(default=0.0, ge=0.0)
+    end_sec: float = Field(gt=0.0)
+
+
 class ShotUpdate(BaseModel):
     narration: str | None = None
     overlay_title: str | None = None
