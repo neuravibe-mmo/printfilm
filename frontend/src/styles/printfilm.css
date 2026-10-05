@@ -2701,10 +2701,19 @@
 }
 
 .pf-side-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.45rem;
-  margin-top: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.pf-side-actions .pf-btn {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 .pf-avatar {
@@ -4006,10 +4015,10 @@
   border-radius: 3px;
 }
 
-/* Storyboard：中间列允许收缩，避免分镜表 min-width 把右侧「生成进度」裁切掉 */
+/* Storyboard: 2 cột gồm Cài đặt dự án (trái) và Khu vực chính (phải) */
 .pf-board {
   display: grid;
-  grid-template-columns: minmax(0, 220px) minmax(0, 1fr) minmax(0, 220px);
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
   gap: 1rem;
   width: 100%;
   max-width: 100%;
@@ -4028,8 +4037,25 @@
 
 .pf-outline-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.15fr) minmax(0, 0.95fr);
   gap: 0.85rem;
+}
+
+.pf-outline-grid > .pf-create-col {
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pf-outline-grid > .pf-create-col .pf-tags,
+.pf-outline-grid > .pf-create-col .pf-meter {
+  margin-top: auto;
+}
+
+.pf-board-settings .pf-progress-list li {
+  padding: 0.3rem 0;
+  font-size: 0.82rem;
 }
 
 .pf-shot-card {
@@ -4109,27 +4135,27 @@
 }
 
 .pf-shot-table .col-narr {
-  width: 22%;
+  width: 21%;
   overflow-wrap: break-word;
 }
 
 .pf-shot-table .col-seg {
-  width: 30%;
+  width: 28%;
   overflow-wrap: break-word;
 }
 
 .pf-shot-table .col-dur {
-  width: 4rem;
+  width: 5.2rem;
   white-space: nowrap;
 }
 
 .pf-shot-table .col-status {
-  width: 5.6rem;
+  width: 7.8rem;
   white-space: nowrap;
 }
 
 .pf-shot-table .col-ops {
-  width: 8.4rem;
+  width: 8.8rem;
 }
 
 .pf-shot-thumb-btn {
@@ -4140,6 +4166,41 @@
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
+  position: relative;
+}
+
+.pf-shot-thumb-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.22);
+  transition: all 0.2s ease;
+}
+
+.pf-shot-thumb-btn:hover .pf-shot-thumb-play-overlay {
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.pf-shot-thumb-play-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform 0.2s ease, background 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.pf-shot-thumb-btn:hover .pf-shot-thumb-play-icon {
+  transform: scale(1.1);
+  background: var(--pf-lime);
+  color: #000;
 }
 
 .pf-shot-thumb-btn:hover {
@@ -4294,17 +4355,40 @@ button.pf-shot-editable:disabled {
 .pf-prompt-modal-foot {
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 0.75rem 1.25rem 1.1rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem 1.1rem;
   border-top: 1px solid rgba(17, 19, 24, 0.08);
   background: #fbfcfa;
 }
 
-.pf-prompt-modal-foot-spacer {
-  flex: 1 1 0.5rem;
-  min-width: 0.25rem;
+.pf-prompt-modal-foot-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.pf-prompt-modal-foot-tabs button {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  text-align: center;
+  padding: 0.48rem 0.85rem;
+  white-space: nowrap;
+}
+
+.pf-prompt-modal-foot-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.pf-prompt-modal-foot-actions button {
+  min-width: 76px;
+  justify-content: center;
 }
 
 .pf-prompt-hint {
@@ -4342,7 +4426,10 @@ button.pf-shot-editable:disabled {
 
 .pf-prompt-modal textarea.pf-prompt-segment {
   min-height: 5.5rem;
-  max-height: 13rem;
+  max-height: none;
+  overflow-y: hidden;
+  resize: vertical;
+  field-sizing: content;
 }
 
 .pf-prompt-modal label {
@@ -4356,6 +4443,8 @@ button.pf-shot-editable:disabled {
 
 .pf-prompt-modal textarea,
 .pf-prompt-modal input {
+  width: 100%;
+  box-sizing: border-box;
   font-weight: 400;
   font-size: 0.9rem;
   padding: 0.55rem 0.65rem;
@@ -4369,6 +4458,13 @@ button.pf-shot-editable:disabled {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
+}
+
+.pf-shot-status-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
 }
 
 .pf-shot-status {
@@ -4399,6 +4495,32 @@ button.pf-shot-editable:disabled {
   font-size: 0.65rem;
   font-weight: 800;
   flex-shrink: 0;
+}
+
+.pf-shot-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  background: var(--pf-lime);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.pf-shot-view-btn:hover {
+  background: #a3e600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.pf-shot-view-btn:active {
+  transform: translateY(0);
 }
 
 .pf-shot-ops {

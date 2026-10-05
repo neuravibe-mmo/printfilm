@@ -9,68 +9,87 @@ from urllib.parse import urlparse
 _STYLE_DRIFT_ILLUS = re.compile(
     r"(写实照片|照片级真实|真人实拍|真实人脸|真人脸|摄影棚人像|电影真人剧照|"
     r"超写实皮肤|照片质感|live[\s-]?action|photoreal(?:istic)?|"
-    r"赛璐璐二次元|日系动漫脸|动漫大眼睛|萌系二次元|3D超写实|CGI写实人像)",
+    r"赛璐璐二次元|日系动漫脸|动漫大眼睛|萌系二次元|3D超写实|CGI写实人像|"
+    r"ảnh chụp thực tế|ảnh chân thực|người thật|gương mặt thật|chân dung studio|ảnh tĩnh điện ảnh|"
+    r"da siêu thực|chất liệu ảnh|cel-shaded 2D|mặt anime nhật|mắt to anime|3D siêu thực)",
     re.IGNORECASE,
 )
 
-# Terms that break photoreal / live-action templates
+# Các thuật ngữ phá vỡ mẫu tả thực / người thật
 _STYLE_DRIFT_PHOTO = re.compile(
     r"(卡通简笔画|儿童绘本扁平|赛璐璐二次元|日系动漫脸|萌系二次元|"
-    r"剪纸扁平|像素块|水墨写意|贴纸拼贴|Q版三头身)",
+    r"剪纸扁平|像素块|水墨写意|贴纸拼贴|Q版三头身|"
+    r"hoạt hình nét vẽ đơn giản|tranh truyện thiếu nhi phẳng|anime 2D|gương mặt anime nhật|"
+    r"cắt giấy phẳng|khối pixel|thủy mặc|hình dán collage|chibi 3 đầu thân)",
     re.IGNORECASE,
 )
 
 _EXTRA_NEGATIVE_ILLUS = (
-    "写实照片，真人，真实人脸，摄影棚人像，电影真人剧照，照片级皮肤，"
-    "风格混杂，镜头间画风跳变，另一套画风，赛璐璐二次元与写实混用"
+    "ảnh chụp thực tế, người thật, gương mặt thật, chân dung studio, ảnh tĩnh điện ảnh người thật, da chuẩn ảnh, "
+    "phong cách lẫn lộn, nét vẽ nhảy giữa các cảnh, phong cách vẽ khác, pha trộn anime 2D và tả thực"
 )
 
 _EXTRA_NEGATIVE_PHOTO = (
-    "卡通，动漫，赛璐璐，二次元，扁平插画，剪纸，像素风，水墨写意，"
-    "风格混杂，镜头间画风跳变，另一套画风，插画与写实混用"
+    "hoạt hình, anime, cel-shaded, 2D, minh họa phẳng, cắt giấy, phong cách pixel, thủy mặc, "
+    "phong cách lẫn lộn, nét vẽ nhảy giữa các cảnh, phong cách khác, pha trộn minh họa và tả thực"
 )
 
-_SCENE_TAG = re.compile(r"【场景】\s*(.+?)(?=\n【|\Z)", re.S)
-_LOCK_LINE = re.compile(r"【(?:风格锁定|人物锁定|约束)】[^\n]*")
-_PERSON_SETTING = re.compile(r"(?:人物设定|角色设定)[：:][^\n【]{0,400}")
+_SCENE_TAG = re.compile(r"^【(?:Bối cảnh|场景)】\s*(.+?)(?=\n【|\Z)", re.MULTILINE | re.S)
+_LOCK_LINE = re.compile(
+    r"【(?:Khóa phong cách|Khoá phong cách|Gợi ý phong cách|Khóa nhân vật|Khoá nhân vật|Ràng buộc|风格锁定|人物锁定|约束|风格提示)】[^\n]*"
+)
+_PERSON_SETTING = re.compile(r"(?:Thiết lập nhân vật|Hình tượng nhân vật|人物设定|角色设定)[：:][^\n【]{0,400}")
 
 
 def strip_style_drift(prompt: str, *, photoreal: bool = False) -> str:
     rx = _STYLE_DRIFT_PHOTO if photoreal else _STYLE_DRIFT_ILLUS
     out = rx.sub("", prompt or "")
-    out = re.sub(r"[，,]{2,}", "，", out)
-    return out.strip("，,。 \n\t")
+    out = re.sub(r"[,，]{2,}", ", ", out)
+    return out.strip(",，。 \n\t")
 
 
 def strip_lock_blocks(prompt: str) -> str:
-    """Remove internal lock wrappers for UI / stored scene prompts."""
+    """Xóa các thẻ khóa nội bộ khi hiển thị trên giao diện hoặc lưu trữ lời nhắc cảnh."""
     raw = (prompt or "").strip()
     if not raw:
         return ""
-    # New tagged format
+    # Định dạng thẻ mới
     m = _SCENE_TAG.search(raw)
     if m:
         return m.group(1).strip("，,。 \n\t")
-    # Drop tagged lock lines
+    # Bỏ các dòng thẻ khóa
     out = _LOCK_LINE.sub("", raw)
     out = _PERSON_SETTING.sub("", out)
-    # Legacy: drop comma segments that start with lock tags / boilerplate
-    if "【风格锁定】" in raw or "【人物锁定】" in raw:
+    # Tương thích cũ: bỏ các phân đoạn bắt đầu bằng thẻ khóa / boilerplate
+    lock_prefixes = (
+        "【Khóa phong cách】", "【Khoá phong cách】", "【Gợi ý phong cách】",
+        "【Khóa nhân vật】", "【Khoá nhân vật】", "【Ràng buộc】", "【Bối cảnh】",
+        "【风格锁定】", "【人物锁定】", "【约束】", "【风格提示】", "【场景】",
+        "Thiết lập nhân vật", "Hình tượng nhân vật", "人物设定", "角色设定",
+    )
+    if any(p in raw for p in lock_prefixes):
         kept: list[str] = []
         for part in re.split(r"[，,\n]", raw):
             p = part.strip()
             if not p:
                 continue
-            if p.startswith(("【风格锁定】", "【人物锁定】", "【约束】", "人物设定", "角色设定")):
+            if p.startswith(lock_prefixes):
                 continue
-            if p.startswith(("同一画风", "全片必须保持", "凡出现人物", "禁止写实", "禁止换脸", "画面干净无文字")):
+            if p.startswith((
+                "Cùng một phong cách", "Cùng phong cách", "Toàn phim phải giữ", "Toàn phim đồng nhất",
+                "Mỗi khi xuất hiện", "Cấm tả thực", "Cấm đổi mặt", "Hình ảnh sạch không chữ",
+                "同一画风", "全片必须保持", "凡出现人物", "禁止写实", "禁止换脸", "画面干净无文字",
+            )):
                 continue
-            # Drop mid-lock fragments
-            if "禁止镜头间切换" in p or "必须严格沿用以上外形" in p:
+            # Bỏ các đoạn giữa khóa
+            if any(k in p for k in (
+                "Cấm chuyển đổi giữa các cảnh", "phải tuân thủ nghiêm ngặt ngoại hình trên",
+                "禁止镜头间切换", "必须严格沿用以上外形",
+            )):
                 continue
             kept.append(p)
-        out = "，".join(kept)
-    out = re.sub(r"[，,]{2,}", "，", out)
+        out = ", ".join(kept)
+    out = re.sub(r"[,，]{2,}", ", ", out)
     out = re.sub(r"\s{2,}", " ", out)
     return out.strip("，,。；; \n\t")
 
@@ -84,7 +103,7 @@ def build_locked_image_prompt(
     lock_character: bool = True,
     lock_style: bool = True,
 ) -> str:
-    """Prompt for Seedream. lock_* can be relaxed for diverse / showcase templates."""
+    """Tạo prompt cho Seedream. lock_* có thể nới lỏng cho các mẫu đa dạng / showcase."""
     body = strip_lock_blocks(strip_style_drift(img_prompt, photoreal=photoreal))
     if style_prefix and style_prefix in body:
         body = body.replace(style_prefix, "", 1).strip("，, ")
@@ -92,27 +111,27 @@ def build_locked_image_prompt(
     if lock_style and style_prefix:
         if photoreal:
             parts.append(
-                f"【风格锁定】{style_prefix}。全片统一此画风，禁止卡通动漫与风格跳变"
+                f"【Khóa phong cách】{style_prefix}。Toàn phim đồng nhất phong cách này, cấm hoạt hình anime và nhảy phong cách"
             )
         elif lock_character:
             parts.append(
-                f"【风格锁定】{style_prefix}。全片统一此画风，禁止写实摄影与风格跳变"
+                f"【Khóa phong cách】{style_prefix}。Toàn phim đồng nhất phong cách này, cấm nhiếp ảnh tả thực và nhảy phong cách"
             )
         else:
             parts.append(
-                f"【风格提示】{style_prefix}。"
-                "配色与界面类型优先服从【场景】描述；禁止无脑套用霓虹蓝赛博大屏"
+                f"【Gợi ý phong cách】{style_prefix}。"
+                "Phối màu và loại giao diện ưu tiên tuân theo mô tả bối cảnh; cấm áp đặt bừa bãi màn hình lớn cyber xanh neon"
             )
     if lock_character and (character_bible or "").strip():
         parts.append(
-            f"【人物锁定】{(character_bible or '').strip()}。凡出现人物必须严格沿用以上外形，禁止换脸换装"
+            f"【Khóa nhân vật】{(character_bible or '').strip()}。Mỗi khi xuất hiện nhân vật phải tuân thủ nghiêm ngặt ngoại hình trên, cấm đổi mặt đổi trang phục"
         )
     if body:
-        parts.append(f"【场景】{body}")
+        parts.append(f"【Bối cảnh】{body}")
     if lock_character:
-        parts.append("【约束】同一画风同一人物，画面干净无文字")
+        parts.append("【Ràng buộc】Cùng một phong cách cùng một nhân vật, hình ảnh sạch không chữ")
     else:
-        parts.append("【约束】本镜场景必须独特、与其他镜头构图明显不同，画面干净无文字")
+        parts.append("【Ràng buộc】Bối cảnh cảnh quay này phải độc đáo, bố cục khác biệt rõ rệt với các cảnh khác, hình ảnh sạch không chữ")
     return "\n".join(parts)
 
 
@@ -125,18 +144,18 @@ def merge_negative(
     base = (template_negative or "").strip("，, ")
     extra = _EXTRA_NEGATIVE_PHOTO if photoreal else _EXTRA_NEGATIVE_ILLUS
     parts = [p for p in (base, extra) if p]
-    merged = "，".join(parts)
-    if image_text and "文字" not in merged:
-        merged = f"{merged}，画面文字，字幕，水印，Tiêu đề字"
+    merged = ", ".join(parts)
+    if image_text and not any(k in merged for k in ("chữ", "văn bản", "tiêu đề", "文字")):
+        merged = f"{merged}, chữ trên hình, phụ đề, watermark, chữ tiêu đề"
     return merged
 
 
 def template_consistency_mode(tpl) -> str:
     """Return character | style | diverse.
 
-    - character: cast lock + shot-to-shot image ref chaining (叙事默认)
+    - character: cast lock + shot-to-shot image ref chaining (mặc định dẫn truyện)
     - style: keep style only, no cast lock, no ref chaining
-    - diverse: content-driven independent scenes (开源/产品演示)
+    - diverse: content-driven independent scenes (mã nguồn mở / demo sản phẩm)
     """
     if tpl is None:
         return "character"
@@ -160,7 +179,7 @@ def template_is_photoreal(tpl) -> bool:
     if isinstance(cfg, dict) and cfg.get("photoreal"):
         return True
     cats = getattr(tpl, "category", None) or []
-    return any(c in {"真人感", "写实感"} for c in cats)
+    return any(c in {"Người thật", "Tả thực", "真人感", "写实感"} for c in cats)
 
 
 def _seedream_cfg(tpl) -> dict:
@@ -193,7 +212,7 @@ def template_allow_source_names(tpl) -> bool:
 def template_prompt_defaults(tpl) -> dict[str, str]:
     """Canonical style / character / extra prompts from a template.
 
-    style ← style_prefix；角色/额外 ← seedream_config。
+    style ← style_prefix; nhân vật/yêu cầu thêm ← seedream_config.
     """
     if tpl is None:
         return {"style_prompt": "", "character_prompt": "", "extra_prompt": ""}
@@ -212,7 +231,7 @@ def seedream_ref_urls(*candidates: str | None, limit: int = 2) -> list[str]:
 
     Skip data: URIs (multi‑MB base64 often hangs Seedream) and LAN/localhost URLs
     (Ark cloud cannot fetch them). Prefer prior shot `image_ark_url` CDN links.
-    limit 默认 2（科普锚点镜）；漫剧主体+画风板走 split_seedream_subject_style_refs。
+    limit mặc định 2 (phân cảnh neo kiến thức); chủ thể phim ngắn drama + bảng phong cách dùng split_seedream_subject_style_refs.
     """
     out: list[str] = []
     seen: set[str] = set()

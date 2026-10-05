@@ -438,6 +438,7 @@ export const zhStudio = {
       restoreTemplate: '恢复后台模板',
       shotNo: '镜头 {no}',
       noPreview: '暂无预览',
+      viewVideo: '查看',
       csvShotNo: '镜号',
       csvNarr: '旁白',
       csvImage: '画面描述',

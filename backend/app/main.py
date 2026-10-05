@@ -1,5 +1,6 @@
 from pathlib import Path
 import logging
+import re
 import time
 
 from fastapi import FastAPI, Request
@@ -303,6 +304,18 @@ async def seed_templates() -> None:
             existing = await db.get(Template, data["id"])
             cover = (data.get("preview_cover") or "").strip()
             if existing:
+                # Nếu mẫu cũ còn chứa tiếng Trung thì cập nhật lại nội dung tiếng Việt mới nhất
+                if re.search(r"[\u4e00-\u9fff]", f"{existing.name} {existing.description} {existing.seedream_config}"):
+                    existing.name = data.get("name", existing.name)
+                    existing.description = data.get("description", existing.description)
+                    existing.category = data.get("category", existing.category)
+                    existing.style_prefix = data.get("style_prefix", existing.style_prefix)
+                    existing.negative_prompt = data.get("negative_prompt", existing.negative_prompt)
+                    existing.llm_system_addon = data.get("llm_system_addon", existing.llm_system_addon)
+                    existing.seedream_config = data.get("seedream_config", existing.seedream_config)
+                    existing.seedance_config = data.get("seedance_config", existing.seedance_config)
+                    existing.audio_config = data.get("audio_config", existing.audio_config)
+                    existing.subtitle_config = data.get("subtitle_config", existing.subtitle_config)
                 # Mẫu hiện tại không ghi đè cấu hình nền; chỉ khi bìa vẫn là đường dẫn cục bộ thì OSS mới được cấp lại theo đường dẫn trong thư viện.
                 current = (existing.preview_cover or "").strip()
                 if not current.startswith(("http://", "https://")):

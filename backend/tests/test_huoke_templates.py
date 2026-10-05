@@ -20,11 +20,11 @@ def test_huoke_templates_registered_in_seed():
     for tid in HUOKE_IDS:
         assert tid in by_id, tid
         item = by_id[tid]
-        assert item["category"][0] == "科普"
-        assert "获客" in item["category"]
-        assert "商业" in item["category"]
+        assert item["category"][0] in ("Kiến thức", "科普")
+        assert "Thu hút khách" in item["category"] or "获客" in item["category"]
+        assert "Thương mại" in item["category"] or "商业" in item["category"]
         assert item["llm_system_addon"].startswith(HUOKE_IRON_RULES)
-        assert "店名" in item["llm_system_addon"]
+        assert "Tên quán" in item["llm_system_addon"] or "店名" in item["llm_system_addon"]
         assert item["preview_cover"].endswith(f"{tid}.png")
         cfg = item["seedream_config"]
         assert cfg.get("photoreal") is True
@@ -36,11 +36,11 @@ def test_huoke_templates_registered_in_seed():
 
 def test_huoke_platform_structures_are_distinct():
     addons = {t["id"]: t["llm_system_addon"] for t in HUOKE_TEMPLATES}
-    assert "0-3秒钩子" in addons["huoke_douyin_hook"]
-    assert "第一印象" in addons["huoke_xhs_recommend"]
-    assert "性价比" in addons["huoke_review_facts"]
-    assert "轻推荐" in addons["huoke_soft_invite"]
-    assert "必须 4 镜" not in addons["huoke_douyin_hook"]
+    assert "0-3 giây" in addons["huoke_douyin_hook"] or "0-3秒钩子" in addons["huoke_douyin_hook"]
+    assert "Ấn tượng đầu tiên" in addons["huoke_xhs_recommend"] or "第一印象" in addons["huoke_xhs_recommend"]
+    assert "Chi phí" in addons["huoke_review_facts"] or "性价比" in addons["huoke_review_facts"]
+    assert "Gợi ý nhẹ nhàng" in addons["huoke_soft_invite"] or "gợi ý nhẹ nhàng" in addons["huoke_soft_invite"] or "轻推荐" in addons["huoke_soft_invite"]
+    assert "cố định 4 cảnh" not in addons["huoke_douyin_hook"]
     assert addons["huoke_douyin_hook"] != addons["huoke_xhs_recommend"]
 
 
@@ -49,8 +49,8 @@ def test_huoke_shot_range_and_names_wire_into_pipeline_helpers():
     assert template_shot_range(tpl) == (3, 4)
     assert template_allow_source_names(tpl) is True
     assert template_shot_range(SimpleNamespace(seedream_config={})) is None
-    assert "原样保留" in storyboard_name_policy(True)
-    assert "改用泛称" in storyboard_name_policy(False)
+    assert "giữ nguyên" in storyboard_name_policy(True) or "原样保留" in storyboard_name_policy(True)
+    assert "danh từ chung" in storyboard_name_policy(False) or "改用泛称" in storyboard_name_policy(False)
 
 
 def test_template_ids_unique():

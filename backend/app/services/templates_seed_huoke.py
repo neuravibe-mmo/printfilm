@@ -1,12 +1,12 @@
-"""Mẫu video ngắn thu hút khách hàng (được tích hợp vào thư viện mẫu khoa học phổ biến).
+"""Mẫu video ngắn thu hút khách hàng (được tích hợp vào thư viện mẫu video).
 
-结构来自共创营销 Demo 四平台骨架（小红书 / 抖音 / 点评 / 朋友圈）：
-钩子→印象→分点体验→推荐给谁；0–3 秒钩子→画面→1–2 体验→CTA；
-总体评价→环境服务→推荐理由→性价比→适合谁；一句感受→一个细节→轻推荐。
+Cấu trúc gồm 4 khung sườn tiếp thị (TikTok / Review / Đánh giá / Bạn bè):
+Móc câu → Ấn tượng → Trải nghiệm theo điểm → Gợi ý cho ai; 0–3s Móc câu → Bối cảnh → 1–2 Trải nghiệm → Kêu gọi hành động;
+Đánh giá chung → Môi trường dịch vụ → Lý do khuyên dùng → Tính tương xứng chi phí → Phù hợp với ai; Cảm nhận → Chi tiết → Gợi ý nhẹ nhàng.
 
-铁律：不编造用户没写的体验；卖点只能客观陈述；不用广告法绝对化用语。
-category[0] 固定为「科普」，便于首页科普筛选；另挂「获客」「商业」。
-sort_order 0–3：创建页「热门推荐」与默认模板会优先落到这四条。
+Nguyên tắc: Không bịa đặt trải nghiệm người dùng chưa viết; điểm bán hàng chỉ tường thuật khách quan.
+category[0] là "Kiến thức", phục vụ bộ lọc trang chủ; thêm danh mục "Thu hút khách", "Thương mại".
+sort_order 0–3: Ưu tiên hiển thị tại mục "Gợi ý thịnh hành" trên trang tạo dự án.
 """
 
 # Bốn mẫu được chia sẻ: ranh giới thực tế + ranh giới con người + tuân thủ (viết tiền tố llm_system_addon)
@@ -63,7 +63,7 @@ def _tpl(
         "id": tid,
         "name": name,
         "description": description,
-        "category": ["科普", "获客", "商业"],
+        "category": ["Kiến thức", "Thu hút khách", "Thương mại"],
         "preview_cover": f"/static/templates/covers/{tid}.png",
         "style_prefix": style_prefix,
         "negative_prompt": negative_prompt,
@@ -84,8 +84,8 @@ def _tpl(
 HUOKE_TEMPLATES: list[dict] = [
     _tpl(
         tid="huoke_douyin_hook",
-        name="获客·抖音钩子",
-        description="竖屏口播节奏：前 3 秒钩子→场景画面→1–2 个可核验体验→到店/下单号召。适合投放获客。",
+        name="Thu hút khách · Móc câu TikTok",
+        description="Nhịp điệu video ngắn màn hình dọc: 3 giây đầu móc câu → hình ảnh bối cảnh → 1–2 trải nghiệm kiểm chứng → kêu gọi ghé quán/đặt hàng. Phù hợp chạy quảng cáo thu hút khách.",
         style_prefix=(
             "Khung hình tĩnh video ngắn thu hút khách màn hình dọc: Mặt tiền cửa hàng, cận cảnh sản phẩm, thao tác dịch vụ hoặc giao diện vận hành luân phiên xuất hiện, "
             "ánh sáng tự nhiên tương phản mạnh, chủ thể rõ ràng, chừa khoảng trống thuận tiện chèn chữ lớn, chất lượng trình diễn sản phẩm chuẩn điện ảnh, không hoạt hình không anime"
@@ -129,8 +129,8 @@ HUOKE_TEMPLATES: list[dict] = [
     ),
     _tpl(
         tid="huoke_xhs_recommend",
-        name="获客·小红书安利",
-        description="竖屏闺蜜安利结构：钩子Tiêu đề→第一印象→分点真实体验→推荐给谁。封面信息量高、口语化。",
+        name="Thu hút khách · Review gợi ý",
+        description="Cấu trúc video ngắn chia sẻ gợi ý: Tiêu đề móc câu → ấn tượng ban đầu → trải nghiệm thực tế → gợi ý cho ai. Bìa giàu thông tin, câu từ khẩu ngữ tự nhiên.",
         style_prefix=(
             "Khung hình tĩnh video ngắn chia sẻ đời sống màn hình dọc: Ánh sáng tự nhiên tươi sáng, mặt bàn sáng màu hoặc góc cửa hàng, chi tiết sản phẩm/không gian rõ ràng, "
             "phong cách bìa tạp chí, khoảng trống phân tầng thuận tiện chèn tiêu đề, không trang điểm đậm studio, không hoạt hình"
@@ -155,14 +155,14 @@ HUOKE_TEMPLATES: list[dict] = [
             "ref_images": [],
             "strength": 0.7,
             "consistency_mode": "style",
-            "extra_prompt": "明亮竖屏，顶部大留白叠Tiêu đề，画面内不要出现文字，各镜场景不同",
+            "extra_prompt": "Màn hình dọc tươi sáng, phía trên chừa khoảng trống lớn chèn tiêu đề, trong hình không có chữ, bố cục mỗi cảnh khác biệt",
         },
         seedance_config={
-            "motion_bias": "缓慢平移与轻微推近细节",
+            "motion_bias": "Lia máy chậm và đẩy nhẹ vào chi tiết",
             "character_consistency": False,
             "generate_audio": True,
         },
-        audio_config={"voice_preset": "warm_storyteller", "bgm_mood": "温暖人文"},
+        audio_config={"voice_preset": "warm_storyteller", "bgm_mood": "Ấm áp nhân văn"},
         subtitle_config=dict(_HUOKE_SUB_SPLIT),
         sort_order=1,
         photoreal=True,
@@ -171,8 +171,8 @@ HUOKE_TEMPLATES: list[dict] = [
     ),
     _tpl(
         tid="huoke_review_facts",
-        name="获客·口碑拆解",
-        description="横屏客观详实：总体评价→环境/服务→推荐项+理由→性价比→适合谁。帮别人做决策，不抒情。",
+        name="Thu hút khách · Đánh giá chi tiết",
+        description="Khung hình ngang khách quan, cụ thể: Đánh giá chung → môi trường/dịch vụ → gợi ý trải nghiệm + lý do → độ tương xứng giá trị → phù hợp với ai. Giúp người xem đưa ra quyết định.",
         style_prefix=(
             "Khung hình tĩnh thuyết minh sạch sẽ: Mặt bàn sáng màu hoặc khu vực thông tin cửa hàng, không khí sản phẩm/không gian/bảng giá (không có chữ đọc được), "
             "phân cấp thông tin rõ ràng, ánh sáng đồng đều, tiết chế kiểu phim tài liệu, không hoạt hình không neon"
@@ -220,8 +220,8 @@ HUOKE_TEMPLATES: list[dict] = [
     ),
     _tpl(
         tid="huoke_soft_invite",
-        name="获客·熟人轻推",
-        description="竖屏生活化短片：一句真实感受→一个具体细节→一句轻推荐。克制、不像广告，适合转发给熟人。",
+        name="Thu hút khách · Giới thiệu tự nhiên",
+        description="Video ngắn đời thường màn hình dọc: Cảm nhận chân thực → chi tiết cụ thể → gợi ý nhẹ nhàng. Tự nhiên, không giống quảng cáo lộ liễu, phù hợp gửi bạn bè.",
         style_prefix=(
             "Khung hình tĩnh ký sự đời sống màn hình dọc: Ánh sáng bên cửa sổ, góc phố, một góc bàn hoặc đời thường tại cửa hàng, tông màu ấm tiết chế, "
             "chất liệu và làn da chân thực, tự nhiên như ảnh chụp ngẫu hứng, không quảng cáo studio cứng nhắc, không hoạt hình"

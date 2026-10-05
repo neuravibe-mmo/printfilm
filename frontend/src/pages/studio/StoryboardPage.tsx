@@ -111,6 +111,7 @@ type PreviewState =
       videoUrl: string | null
       audioUrl: string | null
       caption: string
+      version?: number
     }
   | { kind: 'final'; url: string; title: string; bust?: string }
   | null
@@ -171,6 +172,19 @@ export default function StoryboardPage() {
   const [batchDuration, setBatchDuration] = useState('')
   const [batchRegenAudio, setBatchRegenAudio] = useState(false)
   const coverInputRef = useRef<HTMLInputElement>(null)
+  const segScriptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useEffect(() => {
+    const el = segScriptTextareaRef.current
+    if (!el) return
+    const adjust = () => {
+      el.style.height = 'auto'
+      el.style.height = `${el.scrollHeight}px`
+    }
+    adjust()
+    window.addEventListener('resize', adjust)
+    return () => window.removeEventListener('resize', adjust)
+  }, [editing?.segment_script, editing?.video_prompt, editMode])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -985,6 +999,31 @@ title={t('studio.storyboard.respliceTip')}
                 )}
               </ul>
             </article>
+            <aside className="pf-create-col pf-board-settings">
+              <h3>{t('studio.storyboard.genProgress')}</h3>
+              <ul className="pf-progress-list">
+                {progressItems.map((item) => (
+                  <li key={item.label}>
+                    <span>{item.label}</span>
+                    <span>
+                      {item.done ? (
+                        <span className="pf-check">✓</span>
+                      ) : item.run ? (
+                        `${item.pct ?? 0}%`
+                      ) : (
+                        '…'
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="pf-meter" style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
+                <i style={{ width: `${Math.min(100, project.progress)}%` }} />
+              </div>
+              <p className="pf-muted" style={{ margin: '0.35rem 0 0', fontSize: '0.78rem' }}>
+                {statusLabel(project)}
+              </p>
+            </aside>
           </div>
 
           <section className="pf-shot-card">
@@ -1076,6 +1115,7 @@ title={t('studio.storyboard.respliceTip')}
                                   videoUrl: shot.video_url,
                                   audioUrl: shot.audio_url,
                                   caption: shotCaption(shot, t),
+                                  version: shot.version,
                                 })
                               }
                             >
@@ -1090,6 +1130,13 @@ title={t('studio.storyboard.respliceTip')}
                                   {shotGenerating ? t('studio.storyboard.generating') : t('studio.storyboard.pending')}
                                 </div>
                               )}
+                              {shot.video_url ? (
+                                <span className="pf-shot-thumb-play-overlay" title={t('studio.storyboard.viewVideo')}>
+                                  <span className="pf-shot-thumb-play-icon">
+                                    <IconPlay size={14} />
+                                  </span>
+                                </span>
+                              ) : null}
                             </button>
                           </td>
                           <td className="col-narr">
@@ -1162,17 +1209,39 @@ title={t('studio.storyboard.respliceTip')}
                           </td>
                           <td className="col-dur">{formatMmSs(shot.duration)}</td>
                           <td className="col-status">
-                            <span
-                              className={[
-                                'pf-shot-status',
-                                failed ? 'bad' : done ? '' : 'warn',
-                              ]
-                                .filter(Boolean)
-                                .join(' ')}
-                            >
-                              {done && !failed ? <span className="mark">✓</span> : null}
-                              {shotDisplayLabel(displayKind)}
-                            </span>
+                            <div className="pf-shot-status-wrap">
+                              <span
+                                className={[
+                                  'pf-shot-status',
+                                  failed ? 'bad' : done ? '' : 'warn',
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              >
+                                {done && !failed ? <span className="mark">✓</span> : null}
+                                {shotDisplayLabel(displayKind)}
+                              </span>
+                              {shot.video_url ? (
+                                <button
+                                  type="button"
+                                  className="pf-shot-view-btn"
+                                  onClick={() =>
+                                    setPreview({
+                                      kind: 'shot',
+                                      shotNo: shot.shot_no,
+                                      imageUrl: shot.image_url,
+                                      videoUrl: shot.video_url,
+                                      audioUrl: shot.audio_url,
+                                      caption: shotCaption(shot, t),
+                                      version: shot.version,
+                                    })
+                                  }
+                                >
+                                  <IconPlay size={12} />
+                                  {t('studio.storyboard.viewVideo')}
+                                </button>
+                              ) : null}
+                            </div>
                           </td>
                           <td className="col-ops">
                             <div className="pf-shot-ops">
@@ -1266,32 +1335,6 @@ title={t('studio.storyboard.respliceTip')}
             </div>
           </section>
         </div>
-
-        <aside className="pf-create-col pf-board-settings">
-          <h3>{t('studio.storyboard.genProgress')}</h3>
-          <ul className="pf-progress-list">
-            {progressItems.map((item) => (
-              <li key={item.label}>
-                <span>{item.label}</span>
-                <span>
-                  {item.done ? (
-                    <span className="pf-check">✓</span>
-                  ) : item.run ? (
-                    `${item.pct ?? 0}%`
-                  ) : (
-                    '…'
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="pf-meter" style={{ marginTop: '1rem' }}>
-            <i style={{ width: `${Math.min(100, project.progress)}%` }} />
-          </div>
-          <p className="pf-muted" style={{ fontSize: '0.82rem' }}>
-            {statusLabel(project)}
-          </p>
-        </aside>
       </div>
 
       {batchOpen && project ? (
@@ -1460,10 +1503,15 @@ title={t('studio.storyboard.respliceTip')}
                   <label>
                     {t('studio.storyboard.segScript')}
                     <textarea
+                      ref={segScriptTextareaRef}
                       className="pf-prompt-segment"
                       autoFocus={editFocus === 'segment_script' || editMode === 'segment'}
                       value={editing.segment_script || editing.video_prompt || ''}
-                      onChange={(e) => patchEditingScript(e.target.value)}
+                      onChange={(e) => {
+                        patchEditingScript(e.target.value)
+                        e.target.style.height = 'auto'
+                        e.target.style.height = `${e.target.scrollHeight}px`
+                      }}
                       rows={editMode === 'segment' ? 8 : 5}
                       placeholder={SEGMENT_SCRIPT_PLACEHOLDER}
                     />
@@ -1501,68 +1549,69 @@ title={t('studio.storyboard.respliceTip')}
                       onChange={(e) => setEditing({ ...editing, camera: e.target.value })}
                     />
                   </label>
-                  <div className="pf-prompt-modal-row">
-                    <label>
-                      {t('studio.storyboard.durationNote')}
-                      <input
-                        type="number"
-                        value={editing.duration}
-                        onChange={(e) => setEditing({ ...editing, duration: Number(e.target.value) })}
-                      />
-                    </label>
-                  </div>
+                  <label>
+                    {t('studio.storyboard.durationNote')}
+                    <input
+                      type="number"
+                      value={editing.duration}
+                      onChange={(e) => setEditing({ ...editing, duration: Number(e.target.value) })}
+                    />
+                  </label>
                 </>
               ) : null}
             </div>
             <div className="pf-prompt-modal-foot">
-              {editMode !== 'segment' ? (
+              <div className="pf-prompt-modal-foot-tabs">
+                {editMode !== 'segment' ? (
+                  <button
+                    type="button"
+                    className="pf-btn pf-btn-ghost pf-btn-sm"
+                    onClick={() => {
+                      setEditMode('segment')
+                      setEditFocus('segment_script')
+                    }}
+                  >
+                    {t('studio.storyboard.segTab')}
+                  </button>
+                ) : null}
+                {editMode !== 'narration' ? (
+                  <button
+                    type="button"
+                    className="pf-btn pf-btn-ghost pf-btn-sm"
+                    onClick={() => {
+                      setEditMode('narration')
+                      setEditFocus('narration')
+                    }}
+                  >
+                    {t('studio.storyboard.narrTab')}
+                  </button>
+                ) : null}
+                {editMode !== 'full' ? (
+                  <button
+                    type="button"
+                    className="pf-btn pf-btn-ghost pf-btn-sm"
+                    onClick={() => {
+                      setEditMode('full')
+                      setEditFocus('')
+                    }}
+                  >
+                    {t('studio.storyboard.allFields')}
+                  </button>
+                ) : null}
+              </div>
+              <div className="pf-prompt-modal-foot-actions">
+                <button type="button" className="pf-btn pf-btn-ghost" onClick={closeShotEdit}>
+                  {t('common.cancel')}
+                </button>
                 <button
                   type="button"
-                  className="pf-btn pf-btn-ghost pf-btn-sm"
-                  onClick={() => {
-                    setEditMode('segment')
-                    setEditFocus('segment_script')
-                  }}
+                  className="pf-btn pf-btn-lime"
+                  disabled={busy || !editDurationCheck.valid}
+                  onClick={saveShot}
                 >
-                  {t('studio.storyboard.segTab')}
+                  {t('common.save')}
                 </button>
-              ) : null}
-              {editMode !== 'narration' ? (
-                <button
-                  type="button"
-                  className="pf-btn pf-btn-ghost pf-btn-sm"
-                  onClick={() => {
-                    setEditMode('narration')
-                    setEditFocus('narration')
-                  }}
-                >
-                  {t('studio.storyboard.narrTab')}
-                </button>
-              ) : null}
-              {editMode !== 'full' ? (
-                <button
-                  type="button"
-                  className="pf-btn pf-btn-ghost pf-btn-sm"
-                  onClick={() => {
-                    setEditMode('full')
-                    setEditFocus('')
-                  }}
-                >
-                  {t('studio.storyboard.allFields')}
-                </button>
-              ) : null}
-              <span className="pf-prompt-modal-foot-spacer" />
-              <button
-                type="button"
-                className="pf-btn pf-btn-lime"
-                disabled={busy || !editDurationCheck.valid}
-                onClick={saveShot}
-              >
-                {t('common.save')}
-              </button>
-              <button type="button" className="pf-btn pf-btn-ghost" onClick={closeShotEdit}>
-                {t('common.cancel')}
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1641,17 +1690,17 @@ title={t('studio.storyboard.respliceTip')}
             ) : preview.videoUrl ? (
               <video
                 className="preview-media"
-                src={api.assetUrl(preview.videoUrl)}
-                poster={preview.imageUrl ? api.assetUrl(preview.imageUrl) : undefined}
+                src={api.assetUrl(preview.videoUrl, preview.version)}
+                poster={preview.imageUrl ? api.assetUrl(preview.imageUrl, preview.version) : undefined}
                 controls
                 autoPlay
               />
             ) : preview.imageUrl ? (
-              <img className="preview-media" src={api.assetUrl(preview.imageUrl)} alt="" />
+              <img className="preview-media" src={api.assetUrl(preview.imageUrl, preview.version)} alt="" />
             ) : (
               <p className="pf-muted">{t('studio.storyboard.noPreview')}</p>
             )}
-            {preview.kind === 'shot' && preview.audioUrl ? (
+            {preview.kind === 'shot' && preview.audioUrl && !preview.videoUrl ? (
               <audio src={api.assetUrl(preview.audioUrl)} controls style={{ width: '100%' }} />
             ) : null}
             {preview.kind === 'shot' ? <p className="pf-muted">{preview.caption}</p> : null}
