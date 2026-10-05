@@ -16,6 +16,7 @@ export const zhShell = {
     cancel: '取消',
     close: '关闭',
     confirm: '确定',
+    apply: '应用',
     processing: '处理中…',
     delete: '删除',
     download: '下载',
