@@ -39,7 +39,12 @@ def resolve_llm_api_key() -> str:
 
 # Phân tích URL cơ sở tương thích với OpenAI
 def resolve_llm_base_url() -> str:
-    base = (get_settings().openai_base_url or "").strip().rstrip("/")
+    settings = get_settings()
+    base = (settings.openai_base_url or "").strip().rstrip("/")
+    if base and base != "https://www.tokenfree.com/v1":
+        return base
+    if (settings.model_llm or "").strip().lower() == "chatgpt2api":
+        return f"{settings.domain_web_2_api.rstrip('/')}/api/chatgpt2api/chat"
     if base:
         return base
     return "https://api.openai.com/v1"
@@ -135,6 +140,9 @@ async def chatgpt2api_completions(
 
 def is_chatgpt2api_configured() -> bool:
     """Kiểm tra xem hệ thống có đang cấu hình sử dụng kênh ChatGPT2API hay không."""
+    settings = get_settings()
+    if (settings.model_llm or "").strip().lower() == "chatgpt2api":
+        return True
     base = resolve_llm_base_url()
     return _is_chatgpt2api(base)
 

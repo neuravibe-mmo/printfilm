@@ -11,11 +11,16 @@ from typing import Any
 
 import httpx
 
+from app.config import get_settings
 from app.services import storage
 
 logger = logging.getLogger(__name__)
 
-FLOW_BASE_URL = "https://neuravibemmo.dpdns.org/api/flow"
+
+def get_flow_base_url() -> str:
+    return f"{get_settings().domain_web_2_api.rstrip('/')}/api/flow"
+
+
 FLOW_PROJECT_ID = "746c4f17-5aa9-4cf1-b824-f8d0bd7aa6c4"
 
 # Thư mục lưu trạng thái tác vụ trên đĩa (tránh mất khi uvicorn reload)
@@ -86,7 +91,7 @@ async def upload_image_to_flow(image_ref: str, project_id: str = FLOW_PROJECT_ID
     }
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(f"{FLOW_BASE_URL}/upload-image-b64", json=payload)
+            resp = await client.post(f"{get_flow_base_url()}/upload-image-b64", json=payload)
             if resp.status_code == 200:
                 media_id = resp.json().get("media_id")
                 logger.info("Upload ảnh Flow thành công media_id=%s", media_id)
@@ -135,7 +140,7 @@ async def _run_flow_generation(
 
         async with httpx.AsyncClient(timeout=240.0) as client:
             resp = await client.post(
-                f"{FLOW_BASE_URL}/generate-video-veo_3_1_r2v_lite_low_priority",
+                f"{get_flow_base_url()}/generate-video-veo_3_1_r2v_lite_low_priority",
                 json=payload,
             )
             if resp.status_code >= 400:

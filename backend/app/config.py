@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     # Mô hình văn bản: Phiên bản mã nguồn mở đã sửa lỗi API mới TokenFree, mô hình được chọn ở chế độ nền
     openai_api_key: str = ""
     openai_base_url: str = "https://www.tokenfree.com/v1"
+    # Domain REST API dùng chung (Flow video, ChatGPT2API image/chat)
+    domain_web_2_api: str = "https://neuravibemmo.dpdns.org"
     # Ví dụ mặc định là kimi; phiên bản cuối cùng thực tế tuân theo các mô hình kênh phụ trợ + mặc định và có thể được thay đổi thành trò chuyện tìm kiếm sâu, v.v.
     model_llm: str = "kimi-k2.6"
     model_image: str = "doubao-seedream-5-0-260128"

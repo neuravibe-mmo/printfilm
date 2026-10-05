@@ -35,12 +35,15 @@ def build_media_catalog(
     seen_video: set[str] = set()
 
     # REST API mới tích hợp: Ưu tiên đặt làm mặc định
+    from urllib.parse import urlparse
+    domain_label = urlparse(get_settings().domain_web_2_api).netloc or get_settings().domain_web_2_api
+
     images.append(
         _row(
             model_id="chatgpt2api",
             label="ChatGPT Image",
             recommended=True,
-            description="Mô hình REST API tạo ảnh (neuravibemmo.dpdns.org)",
+            description=f"Mô hình REST API tạo ảnh ({domain_label})",
             provider="REST API",
         )
     )
@@ -51,7 +54,7 @@ def build_media_catalog(
             model_id="flow-veo",
             label="Google Veo 3.1",
             recommended=True,
-            description="Mô hình REST API tạo video Flow API (neuravibemmo.dpdns.org)",
+            description=f"Mô hình REST API tạo video Flow API ({domain_label})",
             provider="REST API",
         )
     )

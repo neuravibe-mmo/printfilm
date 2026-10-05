@@ -9,11 +9,14 @@ from typing import Any
 
 import httpx
 
+from app.config import get_settings
 from app.services import storage
 
 logger = logging.getLogger(__name__)
 
-CHATGPT_IMAGE_API_URL = "https://neuravibemmo.dpdns.org/api/chatgpt2api/generate"
+
+def get_chatgpt_image_api_url() -> str:
+    return f"{get_settings().domain_web_2_api.rstrip('/')}/api/chatgpt2api/generate"
 
 
 async def _to_base64_data_uri(image_ref: str) -> str | None:
@@ -94,7 +97,7 @@ async def generate_chatgpt_image(
     logger.info("Gọi ChatGPT2API tạo ảnh: prompt=%s size=%s refs=%s", prompt[:50], target_size, len(images_b64))
 
     async with httpx.AsyncClient(timeout=180.0) as client:
-        resp = await client.post(CHATGPT_IMAGE_API_URL, json=payload)
+        resp = await client.post(get_chatgpt_image_api_url(), json=payload)
         if resp.status_code >= 400:
             err_msg = f"ChatGPT2API HTTP {resp.status_code}: {resp.text[:300]}"
             logger.error("Tạo ảnh thất bại: %s", err_msg)
