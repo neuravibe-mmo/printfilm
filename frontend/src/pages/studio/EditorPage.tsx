@@ -6,6 +6,7 @@ import type { Project, Shot } from '../../api'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
 import ComingSoon from '../../components/ui/ComingSoon'
+import { IconChevronLeft, IconPlus } from '../../components/ui/Icons'
 import { STATUS_CN, shotsByNo } from '../../lib/status'
 import { downloadSingleVideo } from '../../lib/clientDownload'
 
@@ -53,7 +54,6 @@ export default function EditorPage() {
     () => orderedShots.find((s) => s.id === activeShotId),
     [orderedShots, activeShotId],
   )
-  const shotIndex = shot ? orderedShots.findIndex((s) => s.id === shot.id) : -1
 
   const totalDuration = useMemo(
     () => (project?.shots || []).reduce((s, x) => s + (Number(x.duration) || 0), 0),
@@ -110,25 +110,6 @@ export default function EditorPage() {
     }
   }
 
-  /** Đảo ngược thứ tự của gương hiện tại và gương liền kề. */
-  async function moveShot(delta: number) {
-    if (!project || !shot) return
-    const ordered = orderedShots
-    const i = ordered.findIndex((s) => s.id === shot.id)
-    const j = i + delta
-    if (i < 0 || j < 0 || j >= ordered.length) return
-    const ids = ordered.map((s) => s.id)
-    ;[ids[i], ids[j]] = [ids[j], ids[i]]
-    setBusy(true)
-    setError('')
-    try {
-      setProject(await api.reorderShots(project.id, ids))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.editor.moveFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
 
   /** Upload khung tĩnh của gương này lên. Bạn cần phát lại video sau khi thay thế nó. */
   async function onShotImageFile(file: File | null) {
@@ -214,8 +195,13 @@ export default function EditorPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button type="button" className="pf-link" onClick={() => nav(`/studio/${project.id}`)}>
-            {t('studio.editor.backToProject')}
+          <button
+            type="button"
+            className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
+            onClick={() => nav(`/studio/${project.id}`)}
+          >
+            <IconChevronLeft size={16} />
+            {t('studio.editor.backToProject').replace(/^[←\s]+/, '')}
           </button>
           <strong>{project.title}</strong>
           <span className="pf-muted" style={{ fontSize: '0.8rem' }}>
@@ -266,10 +252,17 @@ export default function EditorPage() {
 
       <div className="pf-editor">
         <aside>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <strong>{t('studio.editor.shotList')}</strong>
-            <button type="button" className="pf-link" disabled={busy} onClick={() => void addShot()}>
-              + {t('studio.editor.addShot')}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <strong style={{ fontSize: '0.96rem' }}>{t('studio.editor.shotList')}</strong>
+            <button
+              type="button"
+              className="pf-btn-circle-add"
+              disabled={busy}
+              onClick={() => void addShot()}
+              title={t('studio.editor.addShot')}
+              aria-label={t('studio.editor.addShot')}
+            >
+              <IconPlus size={15} />
             </button>
           </div>
           {orderedShots.map((s) => (
@@ -289,7 +282,7 @@ export default function EditorPage() {
                   {String(s.shot_no).padStart(2, '0')} {s.overlay_title || t('studio.editor.shotLabel')}
                 </strong>
                 <div className="pf-muted" style={{ fontSize: '0.72rem' }}>
-                  {(s.narration || '').slice(0, 28)}
+                  {(s.narration || '').slice(0, 52)}
                 </div>
               </div>
             </button>
@@ -304,24 +297,6 @@ export default function EditorPage() {
               .toString()
               .padStart(2, '0')}
           </p>
-          <div style={{ display: 'flex', gap: 8, marginTop: '0.75rem' }}>
-            <button
-              type="button"
-              className="pf-btn pf-btn-ghost pf-btn-sm"
-              disabled={busy || !shot || shotIndex <= 0}
-              onClick={() => void moveShot(-1)}
-            >
-              {t('studio.editor.moveUp')}
-            </button>
-            <button
-              type="button"
-              className="pf-btn pf-btn-ghost pf-btn-sm"
-              disabled={busy || !shot || shotIndex < 0 || shotIndex >= orderedShots.length - 1}
-              onClick={() => void moveShot(1)}
-            >
-              {t('studio.editor.moveDown')}
-            </button>
-          </div>
         </aside>
 
         <section>

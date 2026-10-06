@@ -5066,7 +5066,7 @@ button.pf-shot-editable:disabled {
 /* Editor */
 .pf-editor {
   display: grid;
-  grid-template-columns: 240px 1fr 300px;
+  grid-template-columns: 300px 1fr 310px;
   gap: 0;
   min-height: calc(100vh - var(--pf-nav-h));
   border-top: 1px solid var(--pf-line);
@@ -5121,6 +5121,40 @@ button.pf-shot-editable:disabled {
   place-items: center;
   color: rgba(255, 255, 255, 0.65);
   font-size: 0.9rem;
+}
+
+.pf-btn-circle-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--pf-line);
+  background: var(--pf-bg);
+  color: var(--pf-ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.pf-btn-circle-add:hover:not(:disabled) {
+  background: var(--pf-lime);
+  border-color: #a8ef00;
+  color: var(--pf-ink);
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(182, 255, 0, 0.35);
+}
+
+.pf-btn-circle-add:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.pf-btn-circle-add svg {
+  display: block;
 }
 
 .pf-scene-item {
@@ -7471,6 +7505,126 @@ button.pf-shot-editable:disabled {
   border: 1px solid var(--pf-line);
   border-radius: 8px;
   padding: 0.55rem 0.7rem;
+}
+
+/* Modal Điều chỉnh hàng loạt */
+.pf-batch-modal {
+  width: min(640px, 100%);
+  max-width: 640px;
+}
+
+.pf-batch-modal-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.pf-batch-select-all {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+}
+
+.pf-batch-select-all label.pf-checkbox-label {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  margin: 0;
+  color: var(--pf-ink);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.pf-batch-select-all label.pf-checkbox-label input[type='checkbox'] {
+  margin: 0;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--pf-ink);
+}
+
+.pf-batch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.pf-batch-shot-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--pf-line, #e2e8f0);
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.pf-batch-shot-item:hover {
+  border-color: rgba(17, 19, 24, 0.25);
+  background: #fbfcf9;
+}
+
+.pf-batch-shot-item.is-selected {
+  border-color: #9fe600;
+  background: #f8ffe8;
+  box-shadow: 0 1px 4px rgba(168, 239, 0, 0.25);
+}
+
+.pf-batch-shot-item input[type='checkbox'] {
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: var(--pf-ink);
+  width: 15px;
+  height: 15px;
+}
+
+.pf-batch-shot-item .thumb {
+  width: 40px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #eee;
+}
+
+.pf-batch-shot-item .thumb.empty {
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--pf-muted);
+  background: #eef0f3;
+}
+
+.pf-batch-shot-item .meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.pf-batch-shot-item .meta .title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pf-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-batch-shot-item .meta .dur {
+  font-size: 0.72rem;
+  color: var(--pf-muted);
 }
 
 .preview-modal {

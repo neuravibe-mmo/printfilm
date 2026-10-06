@@ -1426,51 +1426,75 @@ title={t('studio.storyboard.respliceTip')}
 
       {batchOpen && project ? (
         <div className="modal-backdrop" onClick={() => !busy && setBatchOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal pf-batch-modal" onClick={(e) => e.stopPropagation()}>
             <h3>{t('studio.storyboard.batchPanel')}</h3>
-            <p className="pf-muted" style={{ marginTop: 0 }}>
-              {t('studio.storyboard.batchSelected').replace('{n}', String(batchSelected.length)).replace('{total}', String(project.shots.length))}
-            </p>
-            <div
-              style={{
-                maxHeight: 160,
-                overflow: 'auto',
-                border: '1px solid var(--pf-border, #e5e7eb)',
-                borderRadius: 10,
-                padding: '0.5rem 0.75rem',
-                marginBottom: '0.75rem',
-              }}
-            >
-              <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-                <input
-                  type="checkbox"
-                  checked={batchSelected.length === project.shots.length && project.shots.length > 0}
-                  onChange={(e) =>
-                    setBatchSelected(e.target.checked ? project.shots.map((s) => s.id) : [])
-                  }
-                />
-                {t('studio.storyboard.selectAll')}
-              </label>
+            <div className="pf-batch-modal-head">
+              <div className="pf-batch-select-all">
+                <label className="pf-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={batchSelected.length === project.shots.length && project.shots.length > 0}
+                    onChange={(e) =>
+                      setBatchSelected(e.target.checked ? project.shots.map((s) => s.id) : [])
+                    }
+                  />
+                  <span>{t('studio.storyboard.selectAll')}</span>
+                </label>
+                <span className="pf-muted">
+                  {t('studio.storyboard.batchSelected')
+                    .replace('{n}', String(batchSelected.length))
+                    .replace('{total}', String(project.shots.length))}
+                </span>
+              </div>
+            </div>
+
+            <div className="pf-batch-grid">
               {project.shots
                 .slice()
                 .sort((a, b) => a.shot_no - b.shot_no)
-                .map((s) => (
-                  <label
-                    key={s.id}
-                    style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={batchSelected.includes(s.id)}
-                      onChange={(e) =>
+                .map((s) => {
+                  const isChecked = batchSelected.includes(s.id)
+                  return (
+                    <div
+                      key={s.id}
+                      className={`pf-batch-shot-item ${isChecked ? 'is-selected' : ''}`}
+                      onClick={() =>
                         setBatchSelected((prev) =>
-                          e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id),
+                          isChecked ? prev.filter((id) => id !== s.id) : [...prev, s.id],
                         )
                       }
-                    />
-                    {t('studio.storyboard.shotLabel')} {String(s.shot_no).padStart(2, '0')} · {formatMmSs(Number(s.duration) || 0)}
-                  </label>
-                ))}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setBatchSelected((prev) =>
+                            isChecked ? prev.filter((id) => id !== s.id) : [...prev, s.id],
+                          )
+                        }}
+                      />
+                      {s.image_url ? (
+                        <img
+                          src={api.assetUrl(s.image_url, s.version)}
+                          alt=""
+                          className="thumb"
+                        />
+                      ) : (
+                        <div className="thumb empty">
+                          <span>{String(s.shot_no).padStart(2, '0')}</span>
+                        </div>
+                      )}
+                      <div className="meta">
+                        <strong className="title">
+                          {t('studio.storyboard.shotLabel')} {String(s.shot_no).padStart(2, '0')}
+                        </strong>
+                        <span className="dur">{formatMmSs(Number(s.duration) || 0)}</span>
+                      </div>
+                    </div>
+                  )
+                })}
             </div>
             <label>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
