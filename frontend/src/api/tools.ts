@@ -104,7 +104,7 @@ export async function runStudioTool(payload: ToolRunPayload): Promise<ToolRunRes
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body,
   })
-  if (res.status === 401) throw new Error('未登录')
+  if (res.status === 401) throwApiError(401, '未登录')
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throwApiError(res.status, err.detail, '生成失败')
@@ -118,7 +118,7 @@ export async function pollStudioToolTask(taskId: string): Promise<ToolTaskResult
   const res = await fetch(`${API_BASE}/api/tools/tasks/${encodeURIComponent(taskId)}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   })
-  if (res.status === 401) throw new Error('未登录')
+  if (res.status === 401) throwApiError(401, '未登录')
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(errorMessage(err.detail, '查询失败'))
@@ -133,7 +133,7 @@ export async function listToolRuns(page = 1, pageSize = 8): Promise<ToolRunList>
   const res = await fetch(`${API_BASE}/api/tools/runs?${qs}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   })
-  if (res.status === 401) throw new Error('未登录')
+  if (res.status === 401) throwApiError(401, '未登录')
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(errorMessage(err.detail, '加载失败'))
@@ -147,7 +147,7 @@ export async function getToolRun(runId: number): Promise<ToolRunRecord> {
   const res = await fetch(`${API_BASE}/api/tools/runs/${runId}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   })
-  if (res.status === 401) throw new Error('未登录')
+  if (res.status === 401) throwApiError(401, '未登录')
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(errorMessage(err.detail, '加载失败'))

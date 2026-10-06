@@ -36,7 +36,7 @@ export async function api<T>(
     if (!window.location.pathname.startsWith("/login")) {
       window.location.href = "/login";
     }
-    throw new Error("未登录或登录已失效");
+    throw new Error("Đăng nhập đã hết hạn, vui lòng đăng nhập lại");
   }
   const text = await res.text();
   const data = text ? (JSON.parse(text) as ApiError & T) : ({} as T);
@@ -56,7 +56,7 @@ export async function loginAsAdmin(email: string, password: string): Promise<Adm
   const me = await api<AdminUser>("/api/auth/me");
   if (me.role !== "admin") {
     clearAuth();
-    throw new Error("该账号没有管理员权限");
+    throw new Error("Tài khoản này không có quyền quản trị viên");
   }
   setCachedUser(me);
   return me;
