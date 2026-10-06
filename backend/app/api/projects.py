@@ -999,13 +999,22 @@ async def update_shot(
         if normalized.get("img_prompt"):
             data["img_prompt"] = normalized["img_prompt"]
     if "duration" in data and data["duration"] is not None:
+        from app.services.pipeline import get_shot_duration_bounds
+
         tpl = await db.get(Template, project.template_id)
-        data["duration"] = clamp_shot_duration(
-            float(data["duration"]),
+        lo, hi = get_shot_duration_bounds(
             pipeline_mode=project.pipeline_mode or "full",
             tpl_min=tpl.shot_duration_min if tpl else 2,
             tpl_max=tpl.shot_duration_max if tpl else 8,
         )
+        val = float(data["duration"])
+        if val < lo or val > hi:
+            tpl_name = tpl.name if tpl else ""
+            raise HTTPException(
+                status_code=400,
+                detail=f"Thời lượng cảnh phải từ {int(lo)}s đến {int(hi)}s ({tpl_name or 'theo mẫu phong cách'}).",
+            )
+        data["duration"] = val
     if "bgm_mood" in data and data["bgm_mood"] is not None:
         data["bgm_mood"] = clip_shot_bgm(str(data["bgm_mood"]))
     # Khi văn bản tường thuật thực sự thay đổi (thay đổi trực tiếp tường thuật hoặc tường thuật mới do chuẩn hóa kịch bản đưa ra), toàn bộ đoạn âm thanh liên tục sẽ bị vô hiệu:

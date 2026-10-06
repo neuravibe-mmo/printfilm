@@ -347,7 +347,7 @@ export const viStudio = {
       progress: 'Tiến độ',
       duration: 'Thời lượng',
       aspectRatio: 'Tỷ lệ khung hình',
-      outputMode: 'Cách xuất thành phẩm',
+      outputMode: 'Chế độ xuất',
       imageText: 'Ảnh tĩnh ghép',
       aiVideo: 'AI Video',
       style: 'Phong cách',

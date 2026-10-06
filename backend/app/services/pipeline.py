@@ -203,15 +203,19 @@ def _project_voice(project: Project) -> str:
     return resolve_speaker(getattr(project, "voice_id", None) or "", template_preset=tpl_preset)
 
 
-def clamp_shot_duration(duration: float, *, pipeline_mode: str, tpl_min: int, tpl_max: int) -> float:
-    """Kẹp thời lượng một lần chụp vào phạm vi mẫu; sau đó nhấn chế độ đầy đủ đến giới hạn trên của nhịp điệu khoa học phổ biến."""
+def get_shot_duration_bounds(*, pipeline_mode: str, tpl_min: int, tpl_max: int) -> tuple[float, float]:
+    """Lấy khoảng [lo, hi] thời lượng hợp lệ theo mẫu và pipeline."""
     settings = get_settings()
     if pipeline_mode == "image_text":
-        lo = IMAGE_TEXT_DURATION_MIN
-        hi = IMAGE_TEXT_DURATION_MAX
-    else:
-        hi = min(max(tpl_max, 1), settings.max_shot_duration, segplan.KEPU_FULL_SHOT_DURATION_MAX)
-        lo = max(1, min(tpl_min, hi))
+        return float(IMAGE_TEXT_DURATION_MIN), float(IMAGE_TEXT_DURATION_MAX)
+    hi = float(min(max(tpl_max, 1), settings.max_shot_duration, segplan.KEPU_FULL_SHOT_DURATION_MAX))
+    lo = float(max(1, min(tpl_min, int(hi))))
+    return lo, hi
+
+
+def clamp_shot_duration(duration: float, *, pipeline_mode: str, tpl_min: int, tpl_max: int) -> float:
+    """Kẹp thời lượng một lần chụp vào phạm vi mẫu; sau đó nhấn chế độ đầy đủ đến giới hạn trên của nhịp điệu khoa học phổ biến."""
+    lo, hi = get_shot_duration_bounds(pipeline_mode=pipeline_mode, tpl_min=tpl_min, tpl_max=tpl_max)
     return float(max(lo, min(float(duration), hi)))
 
 

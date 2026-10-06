@@ -649,7 +649,7 @@ export const enStudio = {
         "status": "Status",
         "progress": "Tiến độ",
         "aspectRatio": "Tỷ lệ khung hình",
-        "outputMode": "Cách xuất thành phẩm",
+        "outputMode": "Chế độ xuất",
         "imageText": "Still Image Video",
         "aiVideo": "AI Video",
         "style": "Phong cách",

@@ -480,6 +480,33 @@ export default function StoryboardPage() {
     }
   }
 
+  const minAllowedDuration = template?.shot_duration_min ?? 2
+  const maxAllowedDuration =
+    project?.pipeline_mode === 'image_text'
+      ? 30
+      : (template?.shot_duration_max ?? 8)
+
+  const batchDurationNum = batchDuration.trim() === '' ? null : Number(batchDuration)
+  const batchDurationError = useMemo(() => {
+    if (batchDurationNum === null) return null
+    if (!Number.isFinite(batchDurationNum) || batchDurationNum <= 0) {
+      return t('studio.storyboard.invalidDuration')
+    }
+    if (batchDurationNum < minAllowedDuration) {
+      return `Thời lượng tối thiểu là ${minAllowedDuration}s (theo mẫu ${template?.name || ''}).`
+    }
+    if (batchDurationNum > maxAllowedDuration) {
+      return `Thời lượng tối đa là ${maxAllowedDuration}s (theo mẫu ${template?.name || ''}).`
+    }
+    return null
+  }, [batchDurationNum, minAllowedDuration, maxAllowedDuration, template?.name, t])
+
+  const canApplyBatch =
+    !busy &&
+    batchSelected.length > 0 &&
+    !batchDurationError &&
+    (batchDurationNum !== null || batchRegenAudio)
+
   function openBatchAdjust() {
     if (!project) return
     setBatchSelected((project.shots || []).map((s) => s.id))
@@ -490,11 +517,11 @@ export default function StoryboardPage() {
 
   async function applyBatchAdjust() {
     if (!project || batchSelected.length === 0) return
-    const durationVal = batchDuration.trim() === '' ? null : Number(batchDuration)
-    if (durationVal != null && (!Number.isFinite(durationVal) || durationVal <= 0)) {
-      setError(t('studio.storyboard.invalidDuration'))
+    if (batchDurationError) {
+      setError(batchDurationError)
       return
     }
+    const durationVal = batchDurationNum
     if (durationVal == null && !batchRegenAudio) {
       setError(t('studio.storyboard.setDurationOrRedub'))
       return
@@ -1126,6 +1153,11 @@ title={t('studio.storyboard.respliceTip')}
                       const script = shot.segment_script || shot.video_prompt || ''
                       const { cues, beats } = parseSegmentScript(script)
                       const desc = scenePromptForDisplay(shot.img_prompt).trim()
+                      const canTrim = Boolean(
+                        shot.video_url &&
+                        videoDurations[shot.id] &&
+                        Math.abs(videoDurations[shot.id] - Number(shot.duration)) > 0.5
+                      )
                       return (
                         <tr key={shot.id}>
                           <td className="col-no">{String(shot.shot_no).padStart(2, '0')}</td>
@@ -1192,13 +1224,18 @@ title={t('studio.storyboard.respliceTip')}
                                 <span className="pf-muted" style={{ display: 'block', fontSize: '0.75rem' }}>
                                   {localizeCueText(cues[0])?.replace(/^【|】$/g, '')}
                                   {cues[1]
-                                    ? ` · ${localizeCueText(cues[1]).replace(/^【(?:BGM[：:]\s*|Nhạc nền[：:]\s*)?/i, '').replace(/】$/, '').slice(0, 32)}…`
+                                    ? ` · ${(() => {
+                                        const clean = localizeCueText(cues[1])
+                                          .replace(/^【(?:BGM[：:]\s*|Nhạc nền[：:]\s*)?/i, '')
+                                          .replace(/】$/, '')
+                                        return clean.length > 80 ? `${clean.slice(0, 80)}…` : clean
+                                      })()}`
                                     : ''}
                                 </span>
                               ) : null}
                               {beats.length > 0 ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
-                                  {beats.slice(0, 4).map((b, i) => {
+                                  {beats.slice(0, 6).map((b, i) => {
                                     const localizedText = localizeBeatText(b.text)
                                     return (
                                       <span key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
@@ -1217,14 +1254,14 @@ title={t('studio.storyboard.respliceTip')}
                                           </span>
                                         ) : null}
                                         <span style={{ fontSize: '0.82rem' }}>
-                                          {localizedText.length > 48 ? `${localizedText.slice(0, 48)}…` : localizedText}
+                                          {localizedText.length > 160 ? `${localizedText.slice(0, 160)}…` : localizedText}
                                         </span>
                                       </span>
                                     )
                                   })}
-                                  {beats.length > 4 ? (
+                                  {beats.length > 6 ? (
                                     <span className="pf-muted" style={{ fontSize: '0.75rem' }}>
-                                      {t('studio.storyboard.moreSegs').replace('{n}', String(beats.length - 4))}
+                                      {t('studio.storyboard.moreSegs').replace('{n}', String(beats.length - 6))}
                                     </span>
                                   ) : null}
                                 </div>
@@ -1267,8 +1304,7 @@ title={t('studio.storyboard.respliceTip')}
                                     <IconPlay size={12} />
                                     {t('studio.storyboard.viewVideo')}
                                   </button>
-                                  {videoDurations[shot.id] &&
-                                  Math.abs(videoDurations[shot.id] - Number(shot.duration)) > 0.5 ? (
+                                  {canTrim ? (
                                     <button
                                       type="button"
                                       className="pf-shot-trim-btn"
@@ -1335,7 +1371,7 @@ title={t('studio.storyboard.respliceTip')}
                                   >
                                     {t('studio.storyboard.redub')}
                                   </button>
-                                  {shot.video_url ? (
+                                  {canTrim ? (
                                     <button
                                       type="button"
                                       disabled={rowBusy}
@@ -1437,15 +1473,29 @@ title={t('studio.storyboard.respliceTip')}
                 ))}
             </div>
             <label>
-              {t('studio.storyboard.uniformDuration')}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                <span>{t('studio.storyboard.uniformDuration')}</span>
+                <span className="pf-muted" style={{ fontSize: '0.78rem' }}>
+                  ({minAllowedDuration}s - {maxAllowedDuration}s)
+                </span>
+              </div>
               <input
                 type="number"
-                min={1}
+                min={minAllowedDuration}
+                max={maxAllowedDuration}
                 step={0.5}
-                placeholder={t('studio.storyboard.durationPlaceholder')}
+                placeholder={`VD: ${minAllowedDuration} - ${maxAllowedDuration}`}
                 value={batchDuration}
                 onChange={(e) => setBatchDuration(e.target.value)}
+                style={{
+                  borderColor: batchDurationError ? 'var(--pf-danger, #ef4444)' : undefined,
+                }}
               />
+              {batchDurationError ? (
+                <span style={{ color: 'var(--pf-danger, #ef4444)', fontSize: '0.78rem', marginTop: '0.35rem', display: 'block' }}>
+                  {batchDurationError}
+                </span>
+              ) : null}
             </label>
             <label style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <input
@@ -1459,7 +1509,7 @@ title={t('studio.storyboard.respliceTip')}
               <button
                 type="button"
                 className="pf-btn pf-btn-lime"
-                disabled={busy || batchSelected.length === 0}
+                disabled={!canApplyBatch}
                 onClick={applyBatchAdjust}
               >
                 {t('common.apply')}
