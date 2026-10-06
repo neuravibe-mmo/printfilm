@@ -6,7 +6,7 @@ import type { Project, Shot } from '../../api'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
 import ComingSoon from '../../components/ui/ComingSoon'
-import { IconChevronLeft, IconPlus, IconRedo, IconUndo } from '../../components/ui/Icons'
+import { IconCheck, IconChevronLeft, IconPlus, IconRedo, IconSave, IconUndo } from '../../components/ui/Icons'
 import { STATUS_CN, shotsByNo } from '../../lib/status'
 import { downloadSingleVideo } from '../../lib/clientDownload'
 
@@ -59,6 +59,8 @@ export default function EditorPage() {
   const [error, setError] = useState('')
   const [undoStack, setUndoStack] = useState<UndoAction[]>([])
   const [redoStack, setRedoStack] = useState<UndoAction[]>([])
+  const [draftSavedTime, setDraftSavedTime] = useState<string | null>(null)
+  const [justSavedDraft, setJustSavedDraft] = useState(false)
   const lastCommittedNarrationRef = useRef<{ shotId: number; text: string }>({ shotId: 0, text: '' })
   const narrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const shotFileRef = useRef<HTMLInputElement>(null)
@@ -320,6 +322,46 @@ export default function EditorPage() {
     }
   }
 
+  async function saveDraft() {
+    if (!project) return
+    if (narrationTimerRef.current) clearTimeout(narrationTimerRef.current)
+    setBusy(true)
+    setError('')
+    try {
+      if (shot && narration !== (shot.narration || '')) {
+        const prevText = shot.narration || ''
+        const nextText = narration
+        await api.updateShot(project.id, shot.id, { narration: nextText })
+        lastCommittedNarrationRef.current = { shotId: shot.id, text: nextText }
+        if (prevText !== nextText) {
+          setUndoStack((prevStack) => [
+            ...prevStack,
+            {
+              type: 'narration',
+              label: 'Lưu kịch bản',
+              shotId: shot.id,
+              prevText,
+              nextText,
+              persisted: true,
+            },
+          ])
+          setRedoStack([])
+        }
+      }
+      const refreshed = await api.getProject(project.id)
+      setProject(refreshed)
+      const now = new Date()
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+      setDraftSavedTime(timeStr)
+      setJustSavedDraft(true)
+      setTimeout(() => setJustSavedDraft(false), 2200)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lưu nháp thất bại')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function handleUndo() {
     if (busy || !project) return
 
@@ -468,6 +510,9 @@ export default function EditorPage() {
       } else if (isCmdOrCtrl && e.key.toLowerCase() === 'y') {
         e.preventDefault()
         void handleRedo()
+      } else if (isCmdOrCtrl && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        void saveDraft()
       }
     }
 
@@ -549,8 +594,35 @@ export default function EditorPage() {
             <IconRedo size={14} />
             {t('studio.editor.redo')}
           </button>
-          <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" disabled>
-            {t('studio.editor.saveDraft')} <ComingSoon />
+          <button
+            type="button"
+            className={`pf-btn ${justSavedDraft ? 'pf-btn-lime' : 'pf-btn-ghost'} pf-btn-sm`}
+            disabled={busy}
+            onClick={() => void saveDraft()}
+            title={draftSavedTime ? `Đã lưu nháp lúc ${draftSavedTime} (Ctrl+S)` : 'Lưu nháp (Ctrl+S)'}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              transition: 'all 0.2s ease',
+              position: 'relative',
+            }}
+          >
+            {justSavedDraft ? <IconCheck size={14} /> : <IconSave size={14} />}
+            {justSavedDraft ? 'Đã lưu nháp' : t('studio.editor.saveDraft')}
+            {shot && narration !== (shot.narration || '') && !justSavedDraft && (
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  backgroundColor: '#eab308',
+                  display: 'inline-block',
+                  marginLeft: 1,
+                }}
+                title="Có thay đổi chưa lưu"
+              />
+            )}
           </button>
           <button
             type="button"
