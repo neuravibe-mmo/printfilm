@@ -6,11 +6,43 @@ import type { Project, Shot } from '../../api'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
 import ComingSoon from '../../components/ui/ComingSoon'
-import { IconChevronLeft, IconPlus } from '../../components/ui/Icons'
+import { IconChevronLeft, IconPlus, IconRedo, IconUndo } from '../../components/ui/Icons'
 import { STATUS_CN, shotsByNo } from '../../lib/status'
 import { downloadSingleVideo } from '../../lib/clientDownload'
 
 type PanelTab = 'script' | 'image' | 'voice' | 'transition'
+
+type UndoAction =
+  | {
+      type: 'narration'
+      label: string
+      shotId: number
+      prevText: string
+      nextText: string
+      persisted: boolean
+    }
+  | {
+      type: 'add_shot'
+      label: string
+      createdShotId: number
+      prevActiveShotId: number | null
+    }
+  | {
+      type: 'image_change'
+      label: string
+      shotId: number
+      prevImageUrl: string | null
+      prevVideoUrl: string | null
+      nextImageUrl: string | null
+      nextVideoUrl: string | null
+    }
+  | {
+      type: 'audio_change'
+      label: string
+      shotId: number
+      prevAudioUrl: string | null
+      nextAudioUrl: string | null
+    }
 
 export default function EditorPage() {
   const { t } = useI18n()
@@ -25,6 +57,10 @@ export default function EditorPage() {
   const [narration, setNarration] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [undoStack, setUndoStack] = useState<UndoAction[]>([])
+  const [redoStack, setRedoStack] = useState<UndoAction[]>([])
+  const lastCommittedNarrationRef = useRef<{ shotId: number; text: string }>({ shotId: 0, text: '' })
+  const narrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const shotFileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -44,6 +80,7 @@ export default function EditorPage() {
         if (first) {
           setActiveShotId(first.id)
           setNarration(first.narration || '')
+          lastCommittedNarrationRef.current = { shotId: first.id, text: first.narration || '' }
         }
       })
       .catch((err) => setError(err instanceof Error ? err.message : t('common.loadFailed')))
@@ -61,17 +98,81 @@ export default function EditorPage() {
   )
 
   function selectShot(s: Shot) {
+    if (shot && narration !== lastCommittedNarrationRef.current.text && lastCommittedNarrationRef.current.shotId === shot.id) {
+      const prev = lastCommittedNarrationRef.current.text
+      const next = narration
+      setUndoStack((prevStack) => [
+        ...prevStack,
+        {
+          type: 'narration',
+          label: 'Sửa kịch bản',
+          shotId: shot.id,
+          prevText: prev,
+          nextText: next,
+          persisted: false,
+        },
+      ])
+      setRedoStack([])
+    }
     setActiveShotId(s.id)
     setNarration(s.narration || '')
+    lastCommittedNarrationRef.current = { shotId: s.id, text: s.narration || '' }
+  }
+
+  function handleNarrationChange(value: string) {
+    setNarration(value)
+    if (!shot) return
+
+    if (narrationTimerRef.current) {
+      clearTimeout(narrationTimerRef.current)
+    }
+    narrationTimerRef.current = setTimeout(() => {
+      if (shot && value !== lastCommittedNarrationRef.current.text && lastCommittedNarrationRef.current.shotId === shot.id) {
+        const prev = lastCommittedNarrationRef.current.text
+        const next = value
+        setUndoStack((prevStack) => [
+          ...prevStack,
+          {
+            type: 'narration',
+            label: 'Sửa kịch bản',
+            shotId: shot.id,
+            prevText: prev,
+            nextText: next,
+            persisted: false,
+          },
+        ])
+        setRedoStack([])
+        lastCommittedNarrationRef.current = { shotId: shot.id, text: value }
+      }
+    }, 1200)
   }
 
   async function saveNarration() {
     if (!project || !shot) return
+    if (narrationTimerRef.current) clearTimeout(narrationTimerRef.current)
+    const prevText = shot.narration || ''
+    const nextText = narration
     setBusy(true)
     setError('')
     try {
-      await api.updateShot(project.id, shot.id, { narration })
-      setProject(await api.getProject(project.id))
+      await api.updateShot(project.id, shot.id, { narration: nextText })
+      const next = await api.getProject(project.id)
+      setProject(next)
+      lastCommittedNarrationRef.current = { shotId: shot.id, text: nextText }
+      if (prevText !== nextText) {
+        setUndoStack((prevStack) => [
+          ...prevStack,
+          {
+            type: 'narration',
+            label: 'Lưu kịch bản',
+            shotId: shot.id,
+            prevText,
+            nextText,
+            persisted: true,
+          },
+        ])
+        setRedoStack([])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.saveFailed'))
     } finally {
@@ -82,9 +183,28 @@ export default function EditorPage() {
   async function regenImage() {
     if (!project || !shot) return
     setBusy(true)
+    setError('')
+    const prevData = {
+      shotId: shot.id,
+      prevImageUrl: shot.image_url,
+      prevVideoUrl: shot.video_url,
+    }
     try {
       await api.regenImage(project.id, shot.id)
-      setProject(await api.getProject(project.id))
+      const next = await api.getProject(project.id)
+      setProject(next)
+      const updatedShot = next.shots.find((s) => s.id === shot.id)
+      setUndoStack((prevStack) => [
+        ...prevStack,
+        {
+          type: 'image_change',
+          label: 'Vẽ lại hình ảnh',
+          ...prevData,
+          nextImageUrl: updatedShot?.image_url || null,
+          nextVideoUrl: updatedShot?.video_url || null,
+        },
+      ])
+      setRedoStack([])
     } catch (err) {
       setError(err instanceof Error ? err.message : t('studio.editor.regenFailed'))
     } finally {
@@ -98,11 +218,22 @@ export default function EditorPage() {
     setBusy(true)
     setError('')
     try {
+      const prevActiveId = activeShotId
       const created = await api.createShot(project.id)
       const next = await api.getProject(project.id)
       setProject(next)
       const s = next.shots.find((x) => x.id === created.id)
       if (s) selectShot(s)
+      setUndoStack((prevStack) => [
+        ...prevStack,
+        {
+          type: 'add_shot',
+          label: 'Thêm cảnh',
+          createdShotId: created.id,
+          prevActiveShotId: prevActiveId,
+        },
+      ])
+      setRedoStack([])
     } catch (err) {
       setError(err instanceof Error ? err.message : t('studio.editor.addShotFailed'))
     } finally {
@@ -110,14 +241,31 @@ export default function EditorPage() {
     }
   }
 
-
   /** Upload khung tĩnh của gương này lên. Bạn cần phát lại video sau khi thay thế nó. */
   async function onShotImageFile(file: File | null) {
     if (!project || !shot || !file) return
     setBusy(true)
     setError('')
+    const prevData = {
+      shotId: shot.id,
+      prevImageUrl: shot.image_url,
+      prevVideoUrl: shot.video_url,
+    }
     try {
-      setProject(await api.uploadShotImage(project.id, shot.id, file))
+      const updated = await api.uploadShotImage(project.id, shot.id, file)
+      setProject(updated)
+      const updatedShot = updated.shots.find((s) => s.id === shot.id)
+      setUndoStack((prevStack) => [
+        ...prevStack,
+        {
+          type: 'image_change',
+          label: 'Thay đổi hình ảnh',
+          ...prevData,
+          nextImageUrl: updatedShot?.image_url || null,
+          nextVideoUrl: updatedShot?.video_url || null,
+        },
+      ])
+      setRedoStack([])
     } catch (err) {
       setError(err instanceof Error ? err.message : t('studio.editor.uploadFailed'))
     } finally {
@@ -147,15 +295,185 @@ export default function EditorPage() {
   async function regenAudio() {
     if (!project || !shot) return
     setBusy(true)
+    setError('')
+    const prevAudioUrl = shot.audio_url
     try {
       await api.regenAudio(project.id, shot.id)
-      setProject(await api.getProject(project.id))
+      const next = await api.getProject(project.id)
+      setProject(next)
+      const updatedShot = next.shots.find((s) => s.id === shot.id)
+      setUndoStack((prevStack) => [
+        ...prevStack,
+        {
+          type: 'audio_change',
+          label: 'Lồng tiếng lại',
+          shotId: shot.id,
+          prevAudioUrl,
+          nextAudioUrl: updatedShot?.audio_url || null,
+        },
+      ])
+      setRedoStack([])
     } catch (err) {
       setError(err instanceof Error ? err.message : t('studio.storyboard.redubFailed'))
     } finally {
       setBusy(false)
     }
   }
+
+  async function handleUndo() {
+    if (busy || !project) return
+
+    // 1. If currently unsaved typing in active shot's narration differs from last checkpoint
+    if (shot && narration !== lastCommittedNarrationRef.current.text) {
+      const currentText = narration
+      const targetText = lastCommittedNarrationRef.current.text
+      setNarration(targetText)
+      setRedoStack((prev) => [
+        ...prev,
+        {
+          type: 'narration',
+          label: 'Sửa kịch bản',
+          shotId: shot.id,
+          prevText: targetText,
+          nextText: currentText,
+          persisted: false,
+        },
+      ])
+      return
+    }
+
+    if (undoStack.length === 0) return
+
+    const action = undoStack[undoStack.length - 1]
+    const nextUndoStack = undoStack.slice(0, -1)
+    setBusy(true)
+    setError('')
+
+    try {
+      if (action.type === 'narration') {
+        if (action.persisted) {
+          await api.updateShot(project.id, action.shotId, { narration: action.prevText })
+          const next = await api.getProject(project.id)
+          setProject(next)
+        }
+        setActiveShotId(action.shotId)
+        setNarration(action.prevText)
+        lastCommittedNarrationRef.current = { shotId: action.shotId, text: action.prevText }
+      } else if (action.type === 'add_shot') {
+        const next = await api.deleteShot(project.id, action.createdShotId)
+        setProject(next)
+        const targetId = action.prevActiveShotId && next.shots.some((s) => s.id === action.prevActiveShotId)
+          ? action.prevActiveShotId
+          : next.shots[0]?.id || null
+        setActiveShotId(targetId)
+        const s = next.shots.find((x) => x.id === targetId)
+        if (s) {
+          setNarration(s.narration || '')
+          lastCommittedNarrationRef.current = { shotId: s.id, text: s.narration || '' }
+        }
+      } else if (action.type === 'image_change') {
+        await api.updateShot(project.id, action.shotId, {
+          image_url: action.prevImageUrl || undefined,
+          video_url: action.prevVideoUrl || undefined,
+        })
+        const next = await api.getProject(project.id)
+        setProject(next)
+        setActiveShotId(action.shotId)
+      } else if (action.type === 'audio_change') {
+        await api.updateShot(project.id, action.shotId, {
+          audio_url: action.prevAudioUrl || undefined,
+        })
+        const next = await api.getProject(project.id)
+        setProject(next)
+        setActiveShotId(action.shotId)
+      }
+
+      setUndoStack(nextUndoStack)
+      setRedoStack((prev) => [...prev, action])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Hoàn tác thất bại')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleRedo() {
+    if (busy || !project || redoStack.length === 0) return
+
+    const action = redoStack[redoStack.length - 1]
+    const nextRedoStack = redoStack.slice(0, -1)
+    setBusy(true)
+    setError('')
+
+    try {
+      if (action.type === 'narration') {
+        if (action.persisted) {
+          await api.updateShot(project.id, action.shotId, { narration: action.nextText })
+          const next = await api.getProject(project.id)
+          setProject(next)
+        }
+        setActiveShotId(action.shotId)
+        setNarration(action.nextText)
+        lastCommittedNarrationRef.current = { shotId: action.shotId, text: action.nextText }
+      } else if (action.type === 'add_shot') {
+        const created = await api.createShot(project.id)
+        const next = await api.getProject(project.id)
+        setProject(next)
+        setActiveShotId(created.id)
+        setNarration(created.narration || '')
+        lastCommittedNarrationRef.current = { shotId: created.id, text: created.narration || '' }
+        action.createdShotId = created.id
+      } else if (action.type === 'image_change') {
+        await api.updateShot(project.id, action.shotId, {
+          image_url: action.nextImageUrl || undefined,
+          video_url: action.nextVideoUrl || undefined,
+        })
+        const next = await api.getProject(project.id)
+        setProject(next)
+        setActiveShotId(action.shotId)
+      } else if (action.type === 'audio_change') {
+        await api.updateShot(project.id, action.shotId, {
+          audio_url: action.nextAudioUrl || undefined,
+        })
+        const next = await api.getProject(project.id)
+        setProject(next)
+        setActiveShotId(action.shotId)
+      }
+
+      setRedoStack(nextRedoStack)
+      setUndoStack((prev) => [...prev, action])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Làm lại thất bại')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0
+      const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey
+
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'z') {
+        if (e.shiftKey) {
+          e.preventDefault()
+          void handleRedo()
+        } else {
+          const isTextarea = (e.target as HTMLElement)?.tagName === 'TEXTAREA'
+          if (!isTextarea || narration === lastCommittedNarrationRef.current.text) {
+            e.preventDefault()
+            void handleUndo()
+          }
+        }
+      } else if (isCmdOrCtrl && e.key.toLowerCase() === 'y') {
+        e.preventDefault()
+        void handleRedo()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [undoStack, redoStack, busy, project, narration, shot])
 
   if (!project && !error) {
     return (
@@ -209,11 +527,27 @@ export default function EditorPage() {
           </span>
         </div>
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-          <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" disabled>
-            {t('studio.editor.undo')} <ComingSoon />
+          <button
+            type="button"
+            className="pf-btn pf-btn-ghost pf-btn-sm"
+            disabled={busy || (undoStack.length === 0 && (!shot || narration === lastCommittedNarrationRef.current.text))}
+            onClick={() => void handleUndo()}
+            title={undoStack.length > 0 ? `Hoàn tác: ${undoStack[undoStack.length - 1].label} (Ctrl+Z)` : 'Hoàn tác (Ctrl+Z)'}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+          >
+            <IconUndo size={14} />
+            {t('studio.editor.undo')}
           </button>
-          <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" disabled>
-            {t('studio.editor.redo')} <ComingSoon />
+          <button
+            type="button"
+            className="pf-btn pf-btn-ghost pf-btn-sm"
+            disabled={busy || redoStack.length === 0}
+            onClick={() => void handleRedo()}
+            title={redoStack.length > 0 ? `Làm lại: ${redoStack[redoStack.length - 1].label} (Ctrl+Y)` : 'Làm lại (Ctrl+Y)'}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+          >
+            <IconRedo size={14} />
+            {t('studio.editor.redo')}
           </button>
           <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" disabled>
             {t('studio.editor.saveDraft')} <ComingSoon />
@@ -431,7 +765,7 @@ export default function EditorPage() {
                 {t('studio.editor.scriptContent')}
                 <textarea
                   value={narration}
-                  onChange={(e) => setNarration(e.target.value)}
+                  onChange={(e) => handleNarrationChange(e.target.value)}
                   rows={5}
                   style={{
                     width: '100%',

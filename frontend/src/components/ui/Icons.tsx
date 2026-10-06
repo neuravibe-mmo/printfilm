@@ -233,3 +233,21 @@ export function IconSparkles(p: IconProps) {
     </Svg>
   )
 }
+
+export function IconUndo(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M3 7v6h6" />
+      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+    </Svg>
+  )
+}
+
+export function IconRedo(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M21 7v6h-6" />
+      <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+    </Svg>
+  )
+}

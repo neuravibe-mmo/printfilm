@@ -890,6 +890,33 @@ async def create_shot(
     return shot
 
 
+@router.delete("/projects/{project_id}/shots/{shot_id}", response_model=ProjectOut)
+async def delete_shot(
+    project_id: int,
+    shot_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Project:
+    """Xóa một cảnh quay khỏi dự án và sắp xếp lại số thứ tự."""
+    project = await _get_owned_project(db, project_id, user)
+    _ensure_side_task_allowed(project)
+    shot = next((s for s in project.shots if s.id == shot_id), None)
+    if not shot:
+        raise HTTPException(status_code=404, detail="Cảnh không tồn tại")
+    if len(project.shots) <= 1:
+        raise HTTPException(status_code=400, detail="Không thể xóa cảnh duy nhất còn lại của dự án")
+    await db.delete(shot)
+    await db.flush()
+    await db.refresh(project, attribute_names=["shots"])
+    ordered = sorted(project.shots, key=lambda s: s.shot_no)
+    for idx, s in enumerate(ordered, start=1):
+        s.shot_no = idx
+    _demote_after_edit(project)
+    await db.commit()
+    await db.refresh(project, attribute_names=["shots"])
+    return project
+
+
 @router.post("/projects/{project_id}/shots/reorder", response_model=ProjectOut)
 async def reorder_shots(
     project_id: int,

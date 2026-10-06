@@ -535,6 +535,9 @@ export const api = {
   createShot(projectId: number) {
     return request<Shot>(`/api/projects/${projectId}/shots`, { method: 'POST' })
   },
+  deleteShot(projectId: number, shotId: number) {
+    return request<Project>(`/api/projects/${projectId}/shots/${shotId}`, { method: 'DELETE' })
+  },
   reorderShots(projectId: number, shotIds: number[]) {
     return request<Project>(`/api/projects/${projectId}/shots/reorder`, {
       method: 'POST',

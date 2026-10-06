@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, defaultsFromTemplate } from '../../api'
@@ -191,6 +191,23 @@ export default function StoryboardPage() {
     window.addEventListener('resize', adjust)
     return () => window.removeEventListener('resize', adjust)
   }, [editing?.segment_script, editing?.video_prompt, editMode])
+
+  const autoGrowPrompt = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [])
+
+  useEffect(() => {
+    if (!promptEdit) return
+    const timer = setTimeout(() => {
+      document.querySelectorAll<HTMLTextAreaElement>('.pf-project-prompts-modal textarea').forEach((ta) => {
+        ta.style.height = 'auto'
+        ta.style.height = `${ta.scrollHeight}px`
+      })
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [promptEdit])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -1744,7 +1761,7 @@ title={t('studio.storyboard.respliceTip')}
 
       {promptEdit ? (
         <div className="modal-backdrop" onClick={() => setPromptEdit(null)}>
-          <div className="modal pf-prompt-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal pf-prompt-modal pf-project-prompts-modal" onClick={(e) => e.stopPropagation()}>
             <h3>{t('studio.storyboard.projectPrompts')}</h3>
             <p className="pf-muted" style={{ fontSize: '0.8rem', marginTop: 0 }}>
               {t('studio.storyboard.promptsNote')}
@@ -1752,29 +1769,44 @@ title={t('studio.storyboard.respliceTip')}
             <label>
               {t('studio.storyboard.stylePromptLabel')}
               <textarea
+                ref={autoGrowPrompt}
                 value={promptEdit.style_prompt}
-                onChange={(e) => setPromptEdit({ ...promptEdit, style_prompt: e.target.value })}
-                rows={3}
+                onInput={(e) => autoGrowPrompt(e.currentTarget)}
+                onChange={(e) => {
+                  setPromptEdit({ ...promptEdit, style_prompt: e.target.value })
+                  autoGrowPrompt(e.currentTarget)
+                }}
+                rows={1}
               />
             </label>
             <label>
               {t('studio.storyboard.charPromptLabel')}
               <textarea
+                ref={autoGrowPrompt}
                 autoFocus
                 value={promptEdit.character_prompt}
-                onChange={(e) => setPromptEdit({ ...promptEdit, character_prompt: e.target.value })}
-                rows={3}
+                onInput={(e) => autoGrowPrompt(e.currentTarget)}
+                onChange={(e) => {
+                  setPromptEdit({ ...promptEdit, character_prompt: e.target.value })
+                  autoGrowPrompt(e.currentTarget)
+                }}
+                rows={1}
               />
             </label>
             <label>
               {t('studio.storyboard.extraPromptLabel')}
               <textarea
+                ref={autoGrowPrompt}
                 value={promptEdit.extra_prompt}
-                onChange={(e) => setPromptEdit({ ...promptEdit, extra_prompt: e.target.value })}
-                rows={2}
+                onInput={(e) => autoGrowPrompt(e.currentTarget)}
+                onChange={(e) => {
+                  setPromptEdit({ ...promptEdit, extra_prompt: e.target.value })
+                  autoGrowPrompt(e.currentTarget)
+                }}
+                rows={1}
               />
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
               <button
                 type="button"
                 className="pf-btn pf-btn-lime"

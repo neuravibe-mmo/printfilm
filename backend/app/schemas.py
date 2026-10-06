@@ -139,6 +139,9 @@ class ShotUpdate(BaseModel):
     duration: float | None = Field(default=None, ge=1, le=30)
     camera: str | None = None
     bgm_mood: str | None = None
+    image_url: str | None = None
+    video_url: str | None = None
+    audio_url: str | None = None
 
 
 class ProjectCreate(BaseModel):
