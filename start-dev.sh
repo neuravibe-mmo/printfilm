@@ -28,8 +28,19 @@ echo -e "${BOLD}${BLUE}====================================================${NC}
 # ------------------------------------------------------------------------------
 echo -e "${BLUE}[1/5] Kiểm tra các công cụ hệ thống...${NC}"
 
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}Lỗi: python3 chưa được cài đặt. Vui lòng cài đặt Python 3.12+.${NC}"
+PYTHON_BIN="python3"
+if command -v python3.12 &> /dev/null; then
+    PYTHON_BIN="python3.12"
+elif [ -x "$(brew --prefix python@3.12 2>/dev/null)/bin/python3.12" ]; then
+    PYTHON_BIN="$(brew --prefix python@3.12)/bin/python3.12"
+elif command -v python3.11 &> /dev/null; then
+    PYTHON_BIN="python3.11"
+elif [ -x "$(brew --prefix python@3.11 2>/dev/null)/bin/python3.11" ]; then
+    PYTHON_BIN="$(brew --prefix python@3.11)/bin/python3.11"
+fi
+
+if ! command -v "$PYTHON_BIN" &> /dev/null; then
+    echo -e "${RED}Lỗi: python3 chưa được cài đặt. Vui lòng cài đặt Python 3.11+.${NC}"
     exit 1
 fi
 
@@ -115,7 +126,7 @@ fi
 
 if [ ! -d ".venv" ]; then
     echo -e "${YELLOW}Khởi tạo virtual environment .venv...${NC}"
-    python3 -m venv .venv
+    "$PYTHON_BIN" -m venv .venv
     source .venv/bin/activate
     echo -e "Cài đặt Python dependencies..."
     pip install -q --upgrade pip
