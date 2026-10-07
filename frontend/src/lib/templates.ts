@@ -330,6 +330,126 @@ export const TEMPLATE_TRANSLATIONS: Record<string, TemplateMeta> = {
       vi: 'Khoảng trắng thủy mặc và nét bút phóng khoáng tao nhã, phù hợp lịch sử và các câu chuyện văn hóa.',
     },
   },
+  travel_vlog: {
+    name: {
+      zh: '旅行记录与探索',
+      en: 'Travel Cinematic Vlog',
+      vi: 'Vlog Du lịch & Trải nghiệm',
+    },
+    description: {
+      zh: '壮丽风光与地方人文探索，适合旅行路线、美食与探索短片。',
+      en: 'Cinematic travel landscapes and local culture, ideal for exploration and road trips.',
+      vi: 'Khung cảnh du lịch hùng vĩ, trải nghiệm văn hóa địa phương, ẩm thực và những cung đường khám phá tuyệt đẹp.',
+    },
+  },
+  podcast_clips: {
+    name: {
+      zh: '播客访谈切片',
+      en: 'Studio Podcast Clips',
+      vi: 'Podcast & Đối thoại sâu sắc',
+    },
+    description: {
+      zh: '专业录音棚与麦克风近景，适合干货金句、深度对话与人生感悟。',
+      en: 'Professional studio with mic close-up, perfect for insightful quotes and deep discussions.',
+      vi: 'Không gian phòng thu podcast chuyên nghiệp với micro thu âm, chia sẻ quan điểm sâu sắc và bài học cuộc sống.',
+    },
+  },
+  food_delight: {
+    name: {
+      zh: '美食烹饪与探店',
+      en: 'Foodie & Cooking ASMR',
+      vi: 'Mỹ vị Ẩm thực & Nấu ăn',
+    },
+    description: {
+      zh: '热气腾腾的食物特写与诱人烹饪，适合美食探店、菜谱与治愈吃播。',
+      en: 'Sizzling food close-ups and cooking craft, great for restaurant tours and culinary guides.',
+      vi: 'Đặc tả cận cảnh món ăn thơm ngon bốc khói, công đoạn chế biến điêu luyện và cảm giác thưởng thức hấp dẫn.',
+    },
+  },
+  fitness_workout: {
+    name: {
+      zh: '健身燃脂与运动',
+      en: 'Fitness & Gym Motivation',
+      vi: 'Thể hình & Năng lượng tích cực',
+    },
+    description: {
+      zh: '高能运动氛围与动作示范，适合健身打卡、燃脂教程与自律生活。',
+      en: 'High-energy workout atmosphere, ideal for fitness guides, exercise form, and gym motivation.',
+      vi: 'Động lực tập luyện bùng nổ, hướng dẫn động tác thể hình chuẩn xác và phong cách sống lành mạnh.',
+    },
+  },
+  real_estate: {
+    name: {
+      zh: '豪宅与空间美学',
+      en: 'Luxury Home Tour',
+      vi: 'Bất động sản & Nhà đẹp',
+    },
+    description: {
+      zh: '高级公寓与别墅全景漫游，适合房屋带看、空间设计与居住美学。',
+      en: 'Luxury interior walkthroughs and penthouse tours, perfect for architecture and property showcases.',
+      vi: 'Tour tham quan căn hộ cao cấp, biệt thự sân vườn, thiết kế nội thất sang trọng và không gian sống mơ ước.',
+    },
+  },
+  historical_legend: {
+    name: {
+      zh: '史诗历史与风云',
+      en: 'Epic History & Legends',
+      vi: 'Hào khí Lịch sử & Danh nhân',
+    },
+    description: {
+      zh: '波澜壮阔的战争与名人生平，适合历史事件与纪实科普叙事。',
+      en: 'Dramatic battle scenes and historical biography, suitable for historical events and cultural chronicles.',
+      vi: 'Tái hiện những trận chiến hào hùng, chân dung các bậc vĩ nhân và dấu mốc lịch sử chấn động nhân loại.',
+    },
+  },
+  lofi_chill: {
+    name: {
+      zh: 'Lo-Fi 自习与治愈',
+      en: 'Lo-Fi Chill & Study',
+      vi: 'Không gian Lo-Fi thư giãn & Học bài',
+    },
+    description: {
+      zh: '雨夜暖灯书桌与慵懒猫咪，适合沉浸式学习、专注伴读与解压陪伴。',
+      en: 'Cozy study desk on a rainy night, ideal for deep focus, chill beats, and relaxation.',
+      vi: 'Căn phòng ngủ ấm cúng đêm mưa, góc học tập vintage bên ô cửa sổ, ánh đèn bàn êm dịu thư giãn tâm trí.',
+    },
+  },
+  finance_crypto: {
+    name: {
+      zh: '商业金融与投资',
+      en: 'FinTech & Smart Investing',
+      vi: 'Tài chính & Đầu tư thông minh',
+    },
+    description: {
+      zh: 'K线图表与经济脉络解析，适合财富认知、理财科普与行业观察。',
+      en: 'Market charts and macroeconomic insights, suitable for investment tips and financial literacy.',
+      vi: 'Phân tích thị trường tài chính, biểu đồ nến xanh đỏ, tư duy làm giàu và kiến thức đầu tư dễ hiểu.',
+    },
+  },
+  medical_health: {
+    name: {
+      zh: '家庭医生与健康',
+      en: 'Health & Wellness Guide',
+      vi: 'Bác sĩ gia đình & Sống khỏe',
+    },
+    description: {
+      zh: '专业医生出镜与人体结构解析，适合健康科普、日常护理与用药常识。',
+      en: 'Professional medical advice and anatomical insights, great for wellness tips and healthcare education.',
+      vi: 'Lời khuyên từ bác sĩ chuyên khoa, giải mã bệnh lý thường gặp và cẩm nang chăm sóc sức khỏe gia đình.',
+    },
+  },
+  horror_mystery: {
+    name: {
+      zh: '惊悚怪谈与探秘',
+      en: 'Urban Legend & Spooky Mystery',
+      vi: 'Truyện ma & Bí ẩn đô thị',
+    },
+    description: {
+      zh: '幽暗光影与未解之谜，适合民间怪谈、夜间探秘与悬疑恐怖故事。',
+      en: 'Dark eerie atmosphere and urban legends, tailored for ghost stories and late-night mysteries.',
+      vi: 'Chuyện ma rùng rợn đêm khuya, truyền thuyết đô thị bí ẩn, bầu không khí u tối nghẹt thở và bất ngờ.',
+    },
+  },
 }
 
 // Build reverse lookup maps for zh names to key
