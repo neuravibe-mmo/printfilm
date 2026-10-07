@@ -282,6 +282,8 @@ export const zhStudio = {
       languageVal: '中文（普通话）',
       inputMode: '输入方式',
       creating: '创建中…',
+      nextStepPrefix: '下一步：',
+      nextStepTitle: '风格配置',
       nextStep: '下一步：风格配置',
       aiGenerating: 'AI 生成中…',
       aiGenerating2: '生成中…',

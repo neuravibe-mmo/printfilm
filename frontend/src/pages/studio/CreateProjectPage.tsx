@@ -431,25 +431,43 @@ export default function CreateProjectPage() {
           </div>
           <button
             type="button"
-            className="pf-btn pf-btn-lime pf-btn-block pf-btn-lg pf-btn-icon"
-            style={{ marginTop: '1.25rem' }}
+            className="pf-btn pf-btn-lime pf-btn-block pf-btn-lg"
+            style={{
+              marginTop: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0.65rem 1rem',
+              gap: '0.15rem',
+              lineHeight: 1.25,
+            }}
             disabled={busy || aiBusy || !templateId || !sourceText.trim()}
             onClick={next}
           >
-            {busy ? t('studio.createProject.creating') : t('studio.createProject.nextStep')}
-            {!busy ? <span aria-hidden>→</span> : null}
+            {busy ? (
+              <span>{t('studio.createProject.creating')}</span>
+            ) : (
+              <>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.88, letterSpacing: '0.01em' }}>
+                  {t('studio.createProject.nextStepPrefix')}
+                </span>
+                <span
+                  style={{
+                    fontSize: '1.02rem',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  {t('studio.createProject.nextStepTitle')}
+                  <span aria-hidden>→</span>
+                </span>
+              </>
+            )}
           </button>
-          <button
-            type="button"
-            className="pf-btn pf-btn-ghost pf-btn-block pf-btn-sm pf-btn-icon"
-            style={{ marginTop: '0.55rem' }}
-            disabled={aiBusy || busy}
-            onClick={aiExpand}
-          >
-            <IconSparkles size={14} />
-            {aiBusy ? t('studio.createProject.aiGenerating') : t('studio.createProject.aiHelp')}
-          </button>
-          <p className="pf-muted" style={{ fontSize: '0.78rem', marginTop: '0.5rem' }}>
+          <p className="pf-muted" style={{ fontSize: '0.78rem', marginTop: '0.75rem' }}>
             {t('studio.createProject.styleTip')}
           </p>
         </aside>

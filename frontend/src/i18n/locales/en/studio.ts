@@ -448,6 +448,8 @@ export const enStudio = {
         "languageVal": "Tiếng Việt",
         "inputMode": "Cách nhập",
         "creating": "Đang tạo…",
+        "nextStepPrefix": "Next step:",
+        "nextStepTitle": "Style Configuration",
         "nextStep": "Bước tiếp: Cấu hình phong cách",
         "aiGenerating": "AI đang tạo…",
         "aiGenerating2": "Đang tạo…",

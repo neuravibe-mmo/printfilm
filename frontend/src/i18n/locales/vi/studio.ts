@@ -280,6 +280,8 @@ export const viStudio = {
       languageVal: 'Tiếng Việt',
       inputMode: 'Cách nhập',
       creating: 'Đang tạo…',
+      nextStepPrefix: 'Bước tiếp:',
+      nextStepTitle: 'Cấu hình phong cách',
       nextStep: 'Bước tiếp: Cấu hình phong cách',
       aiGenerating: 'AI đang tạo…',
       aiGenerating2: 'Đang tạo…',
