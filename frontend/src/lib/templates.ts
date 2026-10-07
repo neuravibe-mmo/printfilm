@@ -6,59 +6,107 @@ export type TemplateMeta = {
 }
 
 export const TEMPLATE_TRANSLATIONS: Record<string, TemplateMeta> = {
+  huoke_douyin_hook: {
+    name: {
+      zh: '获客·抖音钩子',
+      en: 'TikTok / Reels · Viral Hook',
+      vi: 'TikTok / Reels · Giữ chân 3s',
+    },
+    description: {
+      zh: '竖屏口播节奏：前 3 秒钩子→场景画面→1–2 个可核验体验→到店/下单号召。适合投放获客。',
+      en: 'Vertical talking-head pacing: 3-second hook -> scene footage -> 1-2 verifiable proof points -> CTA to visit or order. Suitable for lead generation.',
+      vi: 'Nhịp điệu video ngắn màn hình dọc: 3 giây đầu giữ chân người xem → Nêu bối cảnh/nỗi đau → Trải nghiệm thực tế → Kêu gọi hành động.',
+    },
+  },
+  huoke_xhs_recommend: {
+    name: {
+      zh: '获客·小红书安利',
+      en: 'Review & Product Showcase',
+      vi: 'Review & Đề xuất sản phẩm',
+    },
+    description: {
+      zh: '竖屏闺蜜安利结构：钩子标题→第一印象→分点真实体验→推荐给谁。封面信息量高、口语化。',
+      en: 'Friendly recommendation structure: hook title -> first impression -> real breakdown -> who it is for. High-info cover, conversational tone.',
+      vi: 'Cấu trúc video ngắn chia sẻ chân thật: Tiêu đề thu hút → Ấn tượng ban đầu → Phân tích trải nghiệm thực tế → Phù hợp với ai.',
+    },
+  },
+  huoke_review_facts: {
+    name: {
+      zh: '获客·口碑拆解',
+      en: 'In-Depth Product Review',
+      vi: 'Đánh giá & So sánh chi tiết',
+    },
+    description: {
+      zh: '横屏客观详实：总体评价→环境/服务→推荐项+理由→性价比→适合谁。帮别人做决策，不抒情。',
+      en: 'Objective landscape breakdown: overall rating -> environment/service -> recommendations -> ROI -> target fit. Helps decision making.',
+      vi: 'Khung hình ngang khách quan, chi tiết: Nhận định tổng quan → Phân tích dịch vụ/sản phẩm → So sánh giá trị → Khuyên dùng cho ai.',
+    },
+  },
+  huoke_soft_invite: {
+    name: {
+      zh: '获客·熟人轻推',
+      en: 'Everyday Life Vlog',
+      vi: 'Vlog đời thường · Chia sẻ tự nhiên',
+    },
+    description: {
+      zh: '竖屏生活化短片：一句真实感受→一个具体细节→一句轻推荐。克制、不像广告，适合转发给熟人。',
+      en: 'Lifestyle vertical short: one true feeling -> one specific detail -> one subtle recommendation without feeling like an ad. Great for friends and chat groups.',
+      vi: 'Video ngắn gần gũi: Một cảm nhận thật → Chi tiết không gian/sản phẩm → Gợi ý nhẹ nhàng, tự nhiên không gượng gạo.',
+    },
+  },
   opensource_showcase: {
     name: {
       zh: '开源项目展示',
-      en: 'Open Source Showcase',
-      vi: 'Trưng bày dự án mã nguồn mở',
+      en: 'Software & App Demo',
+      vi: 'Giới thiệu phần mềm & App',
     },
     description: {
       zh: '按项目内容动态规划：人物操作系统界面与真实使用场景，适合开源工具与平台介绍。',
-      en: 'Dynamic planning: human operating system interface and real usage scenarios, suitable for open source tools and platform introduction.',
-      vi: 'Quy hoạch theo nội dung: nhân vật thao tác giao diện hệ thống & tình huống thực tế, phù hợp giới thiệu công cụ và nền tảng mã nguồn mở.',
+      en: 'Dynamic planning: human operating system interface and real usage scenarios, suitable for software and tech products.',
+      vi: 'Thao tác giao diện ứng dụng và bối cảnh sử dụng thực tế, phù hợp giới thiệu sản phẩm công nghệ và phần mềm.',
     },
   },
   opensource_live_work: {
     name: {
       zh: '真人工作场景',
-      en: 'Live Work Scene',
-      vi: 'Bối cảnh làm việc người thật',
+      en: 'Workplace PC Operation',
+      vi: 'Thao tác máy tính công sở',
     },
     description: {
       zh: '真人写实工位操作：侧脸/过肩操作系统，适合开源工具与产品工作流科普。',
       en: 'Realistic workstation operations with side/over-shoulder views, suitable for open source tools and workflow walkthroughs.',
-      vi: 'Thao tác tại bàn làm việc người thật: góc nhìn nghiêng/qua vai thao tác hệ thống, phù hợp hướng dẫn công cụ và quy trình làm việc.',
+      vi: 'Góc nhìn qua vai người thao tác laptop/PC tại bàn làm việc, phù hợp hướng dẫn và chia sẻ quy trình làm việc.',
     },
   },
   live_street_interview: {
     name: {
       zh: '真人街访口播',
-      en: 'Street Interview',
-      vi: 'Phỏng vấn đường phố người thật',
+      en: 'Street Interview & Talk',
+      vi: 'Phỏng vấn đường phố (Street Talk)',
     },
     description: {
       zh: '街头/通勤场景的真人出镜口播感，适合观点、体验与轻访谈科普。',
       en: 'Street or commute setting with realistic host presentation, suitable for opinions, reviews, and short interviews.',
-      vi: 'Phong cách người thật xuất hiện nói chuyện trên đường phố/đi làm, phù hợp chia sẻ quan điểm, trải nghiệm và phỏng vấn ngắn.',
+      vi: 'Phong cách người thật xuất hiện nói chuyện trên đường phố, phù hợp chia sẻ quan điểm, trải nghiệm và phỏng vấn ngắn.',
     },
   },
   live_product_desk: {
     name: {
       zh: '真人桌面演示',
-      en: 'Desk Product Demo',
-      vi: 'Trình diễn bàn làm việc người thật',
+      en: 'Hands-on Desk Demo',
+      vi: 'Trên tay & Trình diễn bàn làm việc',
     },
     description: {
       zh: '桌面俯拍/斜俯写实：真人双手演示产品或笔记本流程，适合工具评测与教程。',
       en: 'Top-down or angled desk view: hands demonstrating products or laptop workflows, suitable for reviews and tutorials.',
-      vi: 'Góc quay từ trên xuống bàn làm việc: hai tay người thật thao tác sản phẩm hoặc laptop, phù hợp đánh giá công cụ và hướng dẫn.',
+      vi: 'Góc quay từ trên xuống bàn làm việc: Đôi bàn tay thao tác sản phẩm hoặc laptop, phù hợp unbox và hướng dẫn chi tiết.',
     },
   },
   portrait_story: {
     name: {
       zh: '竖屏图文故事',
-      en: 'Portrait Story',
-      vi: 'Câu chuyện hình ảnh màn dọc',
+      en: 'Portrait Storytelling',
+      vi: 'Kể chuyện hình ảnh (Màn dọc)',
     },
     description: {
       zh: '竖屏插画叙事，电影感构图，适合历史人文短片。',
@@ -69,8 +117,8 @@ export const TEMPLATE_TRANSLATIONS: Record<string, TemplateMeta> = {
   anim_3d: {
     name: {
       zh: '3D 动画',
-      en: '3D Animation',
-      vi: 'Hoạt hình 3D',
+      en: '3D Animation (Pixar Style)',
+      vi: 'Hoạt hình 3D (Pixar Style)',
     },
     description: {
       zh: '电影级三维动画质感，圆润造型与柔和体积光，适合科普讲解与故事短片。',
@@ -81,8 +129,8 @@ export const TEMPLATE_TRANSLATIONS: Record<string, TemplateMeta> = {
   live_cinematic: {
     name: {
       zh: '真人电影感',
-      en: 'Live Cinematic',
-      vi: 'Điện ảnh người thật',
+      en: 'Cinematic Live-Action',
+      vi: 'Thước phim điện ảnh (Cinematic)',
     },
     description: {
       zh: '真人实拍电影质感，戏剧光影与浅景深，适合叙事短片。',
@@ -93,241 +141,193 @@ export const TEMPLATE_TRANSLATIONS: Record<string, TemplateMeta> = {
   live_person: {
     name: {
       zh: '真人感叙事',
-      en: 'Life Story',
-      vi: 'Tự sự người thật đời thường',
+      en: 'Everyday People Life Story',
+      vi: 'Ký sự người thật đời thường',
     },
     description: {
       zh: '生活化真人出镜感，适合人物故事、口播与纪实短片。',
       en: 'Everyday realistic lifestyle feel, suitable for personal stories, vlogs, and documentary shorts.',
-      vi: 'Cảm giác người thật đời thường xuất hiện trước ống kính, phù hợp chuyện nhân vật, vlog nói chuyện và phóng sự tài liệu ngắn.',
+      vi: 'Sinh hoạt đời thường chân thực, phù hợp câu chuyện nhân vật, tâm sự và video ngắn ký sự.',
     },
   },
   photo_realism: {
     name: {
       zh: '写实摄影',
-      en: 'Photorealism',
-      vi: 'Nhiếp ảnh chân thực',
+      en: 'Photo Realism',
+      vi: 'Nhiếp ảnh chân thực (Photo Realism)',
     },
     description: {
       zh: '照片级写实质感，适合产品、风光与纪实科普。',
       en: 'Photo-realistic texture, suitable for products, landscapes, and factual documentaries.',
-      vi: 'Chất lượng ảnh chụp chân thực từng chi tiết, phù hợp sản phẩm, phong cảnh và khoa học phổ biến thực tế.',
+      vi: 'Tái hiện độ chi tiết chân thực như ảnh chụp máy ảnh ống kính cao cấp, màu sắc tự nhiên.',
     },
   },
   film_cinematic: {
     name: {
       zh: '电影感胶片',
-      en: 'Film Cinematic',
-      vi: 'Thước phim nhựa điện ảnh',
+      en: '35mm Classic Film',
+      vi: 'Điện ảnh phim nhựa 35mm',
     },
     description: {
       zh: '宽银幕胶片质感与戏剧光影，适合叙事短片与氛围故事。',
       en: 'Widescreen film grain with dramatic atmosphere, suitable for storytelling and moody pieces.',
-      vi: 'Chất lượng phim nhựa màn ảnh rộng với ánh sáng giàu cảm xúc, phù hợp phim ngắn tự sự và câu chuyện giàu bầu không khí.',
+      vi: 'Màu phim nhựa điện ảnh cổ điển, hiệu ứng hạt grain tự nhiên và độ tương phản giàu cảm xúc.',
     },
   },
   noir_thriller: {
     name: {
       zh: '黑色悬疑',
       en: 'Noir Thriller',
-      vi: 'Trinh thám u tối (Noir)',
+      vi: 'Trinh thám & Kịch tính (Noir)',
     },
     description: {
       zh: '高对比光影与冷调氛围，适合悬疑、案件与暗夜叙事。',
       en: 'High contrast lighting with cool tones, suitable for suspense, mystery, and nighttime tales.',
-      vi: 'Ánh sáng tương phản cao và bầu không khí tông lạnh, phù hợp chủ đề ly kỳ, phá án và câu chuyện màn đêm.',
+      vi: 'Tông màu tối, tương phản bóng đổ sắc nét bí ẩn, phù hợp chuyện trinh thám và án mạng.',
     },
   },
   vox_papercut: {
     name: {
       zh: 'Vox剪纸科普',
-      en: 'Vox Papercut',
-      vi: 'Vox cắt giấy khoa học',
+      en: 'Vox Motion Explainer',
+      vi: 'Giải thích đồ họa (Vox Explainer)',
     },
     description: {
       zh: '低饱和扁平剪纸，以人物操作电脑/系统界面为主画面，适合硬核科普与产品讲解。',
       en: 'Low-saturation flat papercut style focusing on computer and UI operations, suitable for explainers and product guides.',
-      vi: 'Cắt giấy phẳng độ bão hòa thấp, lấy thao tác giao diện máy tính làm khung hình chính, phù hợp khoa học chuyên sâu và giới thiệu sản phẩm.',
+      vi: 'Đồ họa cắt giấy chuyển động sống động, rất phù hợp video giải thích kiến thức, khoa học và kinh tế.',
     },
   },
   docu_warm: {
     name: {
       zh: '温暖纪实',
-      en: 'Warm Documentary',
-      vi: 'Ký sự ấm áp',
+      en: 'Humanitarian Documentary',
+      vi: 'Phim tài liệu nhân văn',
     },
     description: {
       zh: '纪实插画气质与暖色调，适合人物故事与人文纪录短片。',
       en: 'Documentary illustration tone with warm palette, suitable for human interest and cultural stories.',
-      vi: 'Minh họa phóng sự với tông màu ấm áp, phù hợp câu chuyện con người và phim tài liệu nhân văn ngắn.',
+      vi: 'Tông màu điện ảnh ấm áp chân tình, phù hợp ghi lại nét đẹp lao động, làng nghề và con người.',
     },
   },
   kids_flat: {
     name: {
       zh: '儿童绘本扁平',
-      en: 'Kids Flat Picture Book',
-      vi: 'Sách tranh phẳng trẻ em',
+      en: 'Kids & Education Illustration',
+      vi: 'Minh họa thiếu nhi & Giáo dục',
     },
     description: {
       zh: '柔和配色与圆润造型，适合儿童科普与故事。',
       en: 'Soft colors and rounded shapes, suitable for kids education and storytelling.',
-      vi: 'Phối màu dịu nhẹ và hình khối bo tròn, phù hợp kiến thức và câu chuyện cho trẻ em.',
+      vi: 'Nét vẽ phẳng đáng yêu, màu sắc tươi sáng, phù hợp truyện tranh thiếu nhi và nội dung giáo dục.',
     },
   },
   soft_anime: {
     name: {
       zh: '柔光动漫',
-      en: 'Soft Anime',
-      vi: 'Anime ánh sáng dịu',
+      en: 'Japanese Anime (Ghibli Style)',
+      vi: 'Anime Nhật Bản (Ghibli Style)',
     },
     description: {
       zh: '日系柔光赛璐璐，适合青春故事与情感短片。',
       en: 'Japanese soft anime cel shading, suitable for youth stories and emotional narratives.',
-      vi: 'Phong cách cel-shading ánh sáng dịu kiểu Nhật, phù hợp câu chuyện thanh xuân và cảm xúc.',
+      vi: 'Nét vẽ 2D trong trẻo, phong cách hoạt hình Nhật Bản ấm áp, phù hợp video tự sự và cảm xúc.',
     },
   },
   chalk_whiteboard: {
     name: {
       zh: '粉笔白板手绘',
-      en: 'Chalkboard Sketch',
-      vi: 'Bảng phấn vẽ tay',
+      en: 'Chalkboard & Lecture',
+      vi: 'Bảng vẽ phấn & Bài giảng',
     },
     description: {
       zh: '黑板粉笔讲解风，突出人物操作系统/画流程图的课堂演示。',
       en: 'Chalkboard explainer style highlighting teacher/user diagramming and flow demonstrations.',
-      vi: 'Phong cách giảng giải bảng đen phấn trắng, làm nổi bật thao tác vẽ sơ đồ tư duy trên lớp học.',
+      vi: 'Nét vẽ phấn trên bảng đen truyền thống, phù hợp cho bài giảng học tập, công thức và hướng dẫn.',
     },
   },
   cyber_neon: {
     name: {
       zh: '赛博霓虹',
-      en: 'Cyber Neon',
-      vi: 'Cyber neon tương lai',
+      en: 'Futuristic Cyberpunk',
+      vi: 'Cyberpunk Viễn tưởng',
     },
     description: {
       zh: '霓虹夜城与未来感，适合科技、都市与科幻话题。',
       en: 'Neon nightscapes with futuristic vibes, suitable for tech, urban, and sci-fi topics.',
-      vi: 'Thành phố đêm rực rỡ neon và hơi thở tương lai, phù hợp công nghệ, đô thị và khoa học viễn tưởng.',
+      vi: 'Ánh sáng neon tương lai, thành phố đêm viễn tưởng huyền ảo và công nghệ hiện đại.',
     },
   },
   epic_fantasy: {
     name: {
       zh: '奇幻史诗',
-      en: 'Epic Fantasy',
-      vi: 'Sử thi kỳ ảo',
+      en: 'Epic Fantasy World',
+      vi: 'Thế giới kỳ ảo (Fantasy)',
     },
     description: {
       zh: '宏大场景与奇幻光影，适合神话、冒险与世界观短片。',
       en: 'Grand scales and mystical lighting, suitable for mythology, adventure, and fantasy world-building.',
-      vi: 'Bối cảnh hoành tráng và ánh sáng ma mị huyền ảo, phù hợp thần thoại, phiêu lưu và thế giới giả tưởng.',
+      vi: 'Khung cảnh thần thoại hoành tráng, lâu đài, ma thuật và phong cách sử thi kỳ vĩ.',
     },
   },
   magazine_collage: {
     name: {
       zh: '杂志拼贴',
-      en: 'Magazine Collage',
-      vi: 'Cắt dán tạp chí',
+      en: 'Magazine Collage Pop',
+      vi: 'Cắt dán tạp chí (Collage Pop)',
     },
     description: {
       zh: '剪报拼贴与印刷纹理，适合文化话题与品牌故事。',
       en: 'Newspaper clipping collages with print textures, suitable for cultural topics and brand stories.',
-      vi: 'Cắt dán báo chí kết hợp vân in ấn cổ điển, phù hợp chủ đề văn hóa và câu chuyện thương hiệu.',
+      vi: 'Phong cách cắt ghép hình ảnh và đồ họa báo chí hiện đại, cá tính, thời thượng.',
     },
   },
   brand_clean: {
     name: {
       zh: '极简品牌',
-      en: 'Clean Brand',
-      vi: 'Thương hiệu tối giản',
+      en: 'Minimalist Brand Ad',
+      vi: 'Quảng cáo thương hiệu tối giản',
     },
     description: {
       zh: '干净色块与强留白，适合产品解说与品牌短片。',
       en: 'Clean solid colors with ample negative space, suitable for product explainers and brand videos.',
-      vi: 'Mảng màu sạch sẽ và khoảng trống tinh tế, phù hợp giải thích sản phẩm và video thương hiệu.',
+      vi: 'Phong cách sạch sẽ, hiện đại và cao cấp, phù hợp video giới thiệu sản phẩm và thương hiệu.',
     },
   },
   pixel_retro: {
     name: {
-      zh: '像素复古科普',
-      en: 'Pixel Retro',
-      vi: 'Pixel cổ điển khoa học',
+      zh: '复古像素科普',
+      en: 'Pixel Game 8-bit / 16-bit',
+      vi: 'Game Pixel 8-bit / 16-bit',
     },
     description: {
-      zh: '8-bit/16-bit 像素风，适合科技史与游戏化讲解。',
-      en: '8-bit/16-bit pixel art style, suitable for tech history and gamified explainers.',
-      vi: 'Phong cách pixel 8-bit / 16-bit, phù hợp lịch sử công nghệ và diễn giải dạng trò chơi.',
+      zh: '像素艺术与怀旧感，适合极客、游戏与趣味科普。',
+      en: 'Pixel art with nostalgic vibes, suitable for geek culture, games, and fun science topics.',
+      vi: 'Phong cách đồ họa điểm ảnh Pixel hoài niệm tuổi thơ, vui nhộn và độc đáo.',
     },
   },
   retro_vhs: {
     name: {
-      zh: '复古 VHS',
-      en: 'Retro VHS',
-      vi: 'Băng từ VHS hoài niệm',
+      zh: '复古磁带',
+      en: '90s VHS Tape Retro',
+      vi: 'Băng từ VHS thập niên 90',
     },
     description: {
-      zh: '磁带录像与扫描线质感，适合怀旧故事与年代感内容。',
-      en: 'Tape recording with scanlines, suitable for nostalgia and period pieces.',
-      vi: 'Chất cảm băng từ và đường quét scanlines, phù hợp câu chuyện hoài niệm và nội dung dấu ấn thời đại.',
+      zh: '磁带噪点与扫描线质感，适合怀旧年代感叙事。',
+      en: 'VHS tape noise and scanline textures, suitable for nostalgic period stories.',
+      vi: 'Chất cảm băng từ và đường quét scanlines, phù hợp câu chuyện hoài niệm và dấu ấn thời đại.',
     },
   },
   ink_guofeng: {
     name: {
       zh: '水墨国风',
-      en: 'Ink Guofeng',
-      vi: 'Thủy mặc cổ phong',
+      en: 'Artistic Ink Wash',
+      vi: 'Tranh thủy mặc nghệ thuật',
     },
     description: {
       zh: '水墨留白与写意笔触，适合历史与文化短故事。',
       en: 'Ink wash textures with expressive strokes, suitable for historical and cultural stories.',
       vi: 'Khoảng trắng thủy mặc và nét bút phóng khoáng tao nhã, phù hợp lịch sử và các câu chuyện văn hóa.',
-    },
-  },
-  huoke_douyin_hook: {
-    name: {
-      zh: '获客·抖音钩子',
-      en: 'Customer Acquisition · Hook',
-      vi: 'Thu hút khách · Hook mở đầu',
-    },
-    description: {
-      zh: '竖屏口播节奏：前 3 秒钩子→场景画面→1–2 个可核验体验→到店/下单号召。适合投放获客。',
-      en: 'Vertical talking-head pacing: 3-second hook -> scene footage -> 1-2 verifiable proof points -> CTA to visit or order. Suitable for lead generation.',
-      vi: 'Nhịp điệu màn dọc: 3 giây đầu giữ chân → bối cảnh trải nghiệm → 1–2 điểm kiểm chứng thực tế → kêu gọi ghé quán/đặt hàng. Phù hợp chạy quảng cáo thu hút khách.',
-    },
-  },
-  huoke_xhs_recommend: {
-    name: {
-      zh: '获客·小红书安利',
-      en: 'Customer Acquisition · Review',
-      vi: 'Thu hút khách · Đề xuất chia sẻ',
-    },
-    description: {
-      zh: '竖屏闺蜜安利结构：钩子Tiêu đề→第一印象→分点真实体验→推荐给谁。封面信息量高、口语化。',
-      en: 'Friendly recommendation structure: hook title -> first impression -> real breakdown -> who it is for. High-info cover, conversational tone.',
-      vi: 'Cấu trúc chia sẻ gần gũi màn dọc: tiêu đề lôi cuốn → ấn tượng đầu tiên → phân tích trải nghiệm thật → phù hợp với ai. Bìa nhiều thông tin, lời thoại tự nhiên.',
-    },
-  },
-  huoke_review_facts: {
-    name: {
-      zh: '获客·口碑拆解',
-      en: 'Customer Acquisition · Fact Breakdown',
-      vi: 'Thu hút khách · Phân tích đánh giá',
-    },
-    description: {
-      zh: '横屏客观详实：总体评价→环境/服务→推荐项+理由→性价比→适合谁。帮别人做决策，不抒情。',
-      en: 'Objective landscape breakdown: overall rating -> environment/service -> recommendations -> ROI -> target fit. Helps decision making.',
-      vi: 'Khách quan chi tiết màn ngang: đánh giá tổng quan → không gian/dịch vụ → gợi ý kèm lý do → giá trị mang lại → phù hợp ai. Giúp người xem quyết định.',
-    },
-  },
-  huoke_soft_invite: {
-    name: {
-      zh: '获客·熟人轻推',
-      en: 'Customer Acquisition · Soft Referral',
-      vi: 'Thu hút khách · Gợi ý nhẹ nhàng',
-    },
-    description: {
-      zh: '竖屏生活化短片：一句真实感受→一个具体细节→一句轻推荐。克制、不像广告，适合转发给熟人。',
-      en: 'Lifestyle vertical short: one true feeling -> one specific detail -> one subtle recommendation without feeling like an ad. Great for friends and chat groups.',
-      vi: 'Video ngắn đời thường màn dọc: một cảm nhận thật → một chi tiết cụ thể → lời gợi ý tự nhiên. Tinh tế, không lộ liễu quảng cáo, phù hợp gửi cho bạn bè.',
     },
   },
 }
@@ -336,11 +336,12 @@ export const TEMPLATE_TRANSLATIONS: Record<string, TemplateMeta> = {
 const NAME_TO_KEY: Record<string, string> = {}
 for (const [key, meta] of Object.entries(TEMPLATE_TRANSLATIONS)) {
   NAME_TO_KEY[meta.name.zh] = key
-  // cũng chuẩn hóa các biến thể dấu chấm: Thu hút khách hàng·Móc Douyin vs Thu hút khách hàng·Móc Douyin
   const spaced = meta.name.zh.replace(/·/g, ' · ')
   if (spaced !== meta.name.zh) NAME_TO_KEY[spaced] = key
   const unspaced = meta.name.zh.replace(/ · /g, '·')
   if (unspaced !== meta.name.zh) NAME_TO_KEY[unspaced] = key
+  if (meta.name.vi) NAME_TO_KEY[meta.name.vi] = key
+  if (meta.name.en) NAME_TO_KEY[meta.name.en] = key
 }
 
 function resolveKey(target: { id?: string; name?: string } | string): string | undefined {
@@ -361,17 +362,18 @@ export function getTemplateName(
   explicitLocale?: Locale,
 ): string {
   const locale = explicitLocale || getActiveLocale()
-  if (typeof target === 'object' && target !== null) {
-    if (locale === 'vi' && target.name_vi) return target.name_vi
-    if (locale === 'en' && target.name_en) return target.name_en
-    if (locale === 'zh' && target.name) return target.name
-  }
   const key = resolveKey(target)
   if (key && TEMPLATE_TRANSLATIONS[key]?.name?.[locale]) {
     return TEMPLATE_TRANSLATIONS[key].name[locale]
   }
+  if (typeof target === 'object' && target !== null) {
+    if (locale === 'vi' && target.name_vi) return target.name_vi
+    if (locale === 'en' && target.name_en) return target.name_en
+    if (locale === 'zh' && target.name) return target.name
+    if (target.name) return target.name
+  }
   if (typeof target === 'string') return target
-  return target.name || target.id || ''
+  return target.id || ''
 }
 
 /** Lấy mô tả hiển thị theo ngôn ngữ hiện tại: ưu tiên prop từ database (description_vi, description_en) */
@@ -380,17 +382,18 @@ export function getTemplateDescription(
   explicitLocale?: Locale,
 ): string {
   const locale = explicitLocale || getActiveLocale()
-  if (typeof target === 'object' && target !== null) {
-    if (locale === 'vi' && target.description_vi) return target.description_vi
-    if (locale === 'en' && target.description_en) return target.description_en
-    if (locale === 'zh' && target.description) return target.description
-  }
   const key = resolveKey(target)
   if (key && TEMPLATE_TRANSLATIONS[key]?.description?.[locale]) {
     return TEMPLATE_TRANSLATIONS[key].description[locale]
   }
+  if (typeof target === 'object' && target !== null) {
+    if (locale === 'vi' && target.description_vi) return target.description_vi
+    if (locale === 'en' && target.description_en) return target.description_en
+    if (locale === 'zh' && target.description) return target.description
+    if (target.description) return target.description
+  }
   if (typeof target === 'string') return target
-  return target.description || ''
+  return ''
 }
 
 /** Lấy danh mục hiển thị theo ngôn ngữ hiện tại: ưu tiên prop từ database (category_vi, category_en) */
@@ -403,4 +406,3 @@ export function getTemplateCategories(
   if (locale === 'en' && target.category_en?.length) return target.category_en
   return target.category || []
 }
-

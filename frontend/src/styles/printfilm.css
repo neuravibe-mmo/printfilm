@@ -3580,6 +3580,50 @@
   margin-bottom: 0.85rem;
 }
 
+.pf-tab-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.pf-tab-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  width: 250px;
+  background: #1e232a;
+  color: #f8fafc;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  font-weight: 400;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+  transform: translateY(4px);
+  white-space: normal;
+  text-align: left;
+}
+
+.pf-tab-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 24px;
+  border-width: 5px 5px 0 5px;
+  border-style: solid;
+  border-color: #1e232a transparent transparent transparent;
+}
+
+.pf-tab-tooltip-wrapper:hover .pf-tab-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
 .pf-field {
   display: block;
   margin-bottom: 0.85rem;
@@ -3624,16 +3668,18 @@
 
 .pf-textarea-wrap textarea {
   width: 100%;
-  min-height: 180px;
+  min-height: 120px;
   border: 1px solid var(--pf-line);
   border-radius: 12px;
   padding: 0.9rem;
-  padding-bottom: 1.6rem;
-  resize: vertical;
+  padding-bottom: 2rem;
+  resize: none;
+  overflow: hidden;
   background: #fff;
   font: inherit;
   line-height: 1.55;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
 }
 
 .pf-textarea-wrap textarea:focus {
@@ -3650,8 +3696,23 @@
   color: var(--pf-muted);
 }
 
+.pf-ai-rewrite-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  text-align: center;
+}
+
+.pf-ai-rewrite-hint {
+  font-size: 0.78rem;
+  color: var(--pf-muted);
+}
+
 .pf-inspire {
-  margin-top: 1rem;
+  margin: 0.85rem 0 1rem;
 }
 
 .pf-inspire-head {
@@ -3659,6 +3720,79 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
+}
+
+.pf-inspire-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pf-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pf-help-icon-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pf-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.pf-help-icon-btn:hover,
+.pf-help-icon-btn.active {
+  color: var(--pf-ink);
+  transform: scale(1.1);
+}
+
+.pf-tooltip-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: -8px;
+  z-index: 60;
+  width: 280px;
+  background: #1e232a;
+  color: #f8fafc;
+  padding: 0.7rem 0.85rem;
+  border-radius: 9px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  font-weight: 400;
+  animation: pfTooltipFadeIn 0.15s ease;
+}
+
+.pf-tooltip-popover::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 12px;
+  border-width: 0 5px 5px 5px;
+  border-style: solid;
+  border-color: transparent transparent #1e232a transparent;
+}
+
+.pf-tooltip-popover p {
+  margin: 0;
+}
+
+@keyframes pfTooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .pf-chips {

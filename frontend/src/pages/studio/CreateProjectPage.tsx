@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, defaultsFromTemplate } from '../../api'
@@ -7,7 +7,7 @@ import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
 import Stepper from '../../components/ui/Stepper'
 import PillTabs from '../../components/ui/PillTabs'
-import { IconChevronLeft, IconRefresh, IconSparkles } from '../../components/ui/Icons'
+import { IconChevronLeft, IconHelp, IconRefresh, IconSparkles } from '../../components/ui/Icons'
 import { CATEGORY_ORDER, getCategoryLabel } from '../../lib/categories'
 import { getTemplateDescription, getTemplateName } from '../../lib/templates'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
@@ -164,6 +164,31 @@ export default function CreateProjectPage() {
   const [busy, setBusy] = useState(false)
   const [aiBusy, setAiBusy] = useState(false)
   const [error, setError] = useState('')
+  const [showInspirationTooltip, setShowInspirationTooltip] = useState(false)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Tự động điều chỉnh chiều cao textarea theo nội dung, không xuất hiện thanh cuộn
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.max(120, textareaRef.current.scrollHeight)}px`
+    }
+  }, [sourceText, inputTab])
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        setShowInspirationTooltip(false)
+      }
+    }
+    if (showInspirationTooltip) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showInspirationTooltip])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -190,11 +215,14 @@ export default function CreateProjectPage() {
 
   const filtered = useMemo(() => {
     let list = templates
-    if (category === t('studio.createProject.featured')) list = [...templates].sort((a, b) => a.sort_order - b.sort_order).slice(0, 8)
-    else if (category !== t('studio.createProject.all')) {
-      // category is a localized label; match by finding the raw key whose label matches
+    if (category === t('studio.createProject.featured')) {
+      list = [...templates].sort((a, b) => a.sort_order - b.sort_order).slice(0, 8)
+    } else if (category !== t('studio.createProject.all')) {
       const rawKey = CATEGORY_ORDER.find((k) => getCategoryLabel(k) === category)
-      list = rawKey ? list.filter((tpl) => (tpl.category || []).includes(rawKey)) : list
+      list = list.filter((tpl) => {
+        const cats = tpl.category || []
+        return (rawKey && cats.includes(rawKey)) || cats.includes(category) || cats.some((c) => getCategoryLabel(c) === category)
+      })
     }
     if (q.trim()) {
       const s = q.trim().toLowerCase()
@@ -207,7 +235,7 @@ export default function CreateProjectPage() {
       )
     }
     return list
-  }, [templates, category, q, locale])
+  }, [templates, category, q, locale, t])
 
   const selected = templates.find((t) => t.id === templateId)
   const sourceType = inputTab === t('studio.createProject.tabScript') ? 'script' : 'theme'
@@ -305,7 +333,7 @@ export default function CreateProjectPage() {
           <div className="pf-search">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('studio.createProject.searchPlaceholder')} />
           </div>
-          <PillTabs items={categories.slice(0, 6)} value={category} onChange={setCategory} ariaLabel={t('studio.createProject.templateCategory')} />
+          <PillTabs items={categories.slice(0, 9)} value={category} onChange={setCategory} ariaLabel={t('studio.createProject.templateCategory')} />
           <div className="pf-tpl-list" style={{ marginTop: '0.75rem' }}>
             {filtered.map((tpl) => (
               <button
@@ -314,7 +342,7 @@ export default function CreateProjectPage() {
                 className={templateId === tpl.id ? 'pf-tpl-mini selected' : 'pf-tpl-mini'}
                 onClick={() => setTemplateId(tpl.id)}
               >
-                <img src={api.assetUrl(tpl.preview_cover)} alt="" />
+                <img src={api.assetUrl(tpl.preview_cover, 'v2')} alt="" />
                 <div>
                   <strong>{getTemplateName(tpl, locale)}</strong>
                   <span>
@@ -329,77 +357,53 @@ export default function CreateProjectPage() {
         <section className="pf-create-col">
           <h3>{t('studio.createProject.inputContent')}</h3>
           <div className="pf-input-tabs">
-            {[t('studio.createProject.tabTheme'), t('studio.createProject.tabScript')].map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                className={['pf-pill', inputTab === tab ? 'lime active' : ''].join(' ')}
-                onClick={() => setInputTab(tab)}
-              >
-                {tab}
-              </button>
+            {[
+              {
+                id: 'theme',
+                label: t('studio.createProject.tabTheme'),
+                tooltip: t('studio.createProject.tabThemeTooltip'),
+              },
+              {
+                id: 'script',
+                label: t('studio.createProject.tabScript'),
+                tooltip: t('studio.createProject.tabScriptTooltip'),
+              },
+            ].map((tab) => (
+              <div key={tab.id} className="pf-tab-tooltip-wrapper">
+                <button
+                  type="button"
+                  className={['pf-pill', inputTab === tab.label ? 'lime active' : ''].join(' ')}
+                  onClick={() => setInputTab(tab.label)}
+                >
+                  {tab.label}
+                </button>
+                <div className="pf-tab-tooltip" role="tooltip">
+                  {tab.tooltip}
+                </div>
+              </div>
             ))}
-          </div>
-
-          <label className="pf-field">
-            <span className="pf-field-label">{t('studio.createProject.projectName')}</span>
-            <input
-              className="pf-field-input"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value)
-                setTitleTouched(true)
-              }}
-              onBlur={() => {
-                if (isDefaultTitle(title, t('studio.createProject.untitled')) && sourceText.trim()) {
-                  setTitle(deriveTitle(sourceText, t('studio.createProject.untitled')))
-                  setTitleTouched(false)
-                }
-              }}
-              placeholder={t('studio.createProject.titlePlaceholder')}
-            />
-          </label>
-
-          <div className="pf-textarea-wrap">
-            <div className="pf-textarea-toolbar">
-              <button
-                type="button"
-                className="pf-btn pf-btn-ai pf-btn-sm pf-btn-icon"
-                disabled={aiBusy || busy}
-                onClick={aiExpand}
-              >
-                <IconSparkles size={14} />
-                {aiBusy ? t('studio.createProject.aiGenerating2') : sourceType === 'script' ? t('studio.createProject.aiExpandScript') : t('studio.createProject.aiGenTheme')}
-              </button>
-              <span className="pf-muted" style={{ fontSize: '0.75rem' }}>
-                {sourceType === 'script' ? t('studio.createProject.aiExpandHint') : t('studio.createProject.aiGenHint')}
-              </span>
-            </div>
-            <textarea
-              value={sourceText}
-              onChange={(e) => {
-                const next = e.target.value.slice(0, sourceType === 'theme' ? 250 : 8000)
-                setSourceText(next)
-                if (!titleTouched || isDefaultTitle(title, t('studio.createProject.untitled'))) {
-                  setTitle(deriveTitle(next, t('studio.createProject.untitled')))
-                }
-              }}
-              placeholder={
-                sourceType === 'theme'
-                  ? t('studio.createProject.exampleTheme')
-                  : t('studio.createProject.exampleScript')
-              }
-            />
-            {sourceType === 'theme' ? (
-              <span className="pf-char-count">{sourceText.length}/250</span>
-            ) : (
-              <span className="pf-char-count">{sourceText.length} {t('studio.createProject.chars')}</span>
-            )}
           </div>
 
           <div className="pf-inspire">
             <div className="pf-inspire-head">
-              <strong>{t('studio.createProject.inspirations')}</strong>
+              <div className="pf-inspire-title-wrap">
+                <strong>{t('studio.createProject.inspirations')}</strong>
+                <div className="pf-tooltip-wrapper" ref={tooltipRef}>
+                  <button
+                    type="button"
+                    className={`pf-help-icon-btn ${showInspirationTooltip ? 'active' : ''}`}
+                    aria-label="Thông tin gợi ý"
+                    onClick={() => setShowInspirationTooltip((prev) => !prev)}
+                  >
+                    <IconHelp size={15} />
+                  </button>
+                  {showInspirationTooltip ? (
+                    <div className="pf-tooltip-popover" role="tooltip">
+                      <p>{t('studio.createProject.themeTip')}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
               <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon" onClick={shuffleInspirations}>
                 <IconRefresh size={14} />
                 {t('studio.createProject.changeBatch')}
@@ -423,8 +427,62 @@ export default function CreateProjectPage() {
             </p>
           </div>
 
-          <div className="pf-hint" style={{ marginTop: '1rem' }}>
-            {t('studio.createProject.themeTip')}
+          <label className="pf-field">
+            <span className="pf-field-label">{t('studio.createProject.projectName')}</span>
+            <input
+              className="pf-field-input"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value)
+                setTitleTouched(true)
+              }}
+              onBlur={() => {
+                if (isDefaultTitle(title, t('studio.createProject.untitled')) && sourceText.trim()) {
+                  setTitle(deriveTitle(sourceText, t('studio.createProject.untitled')))
+                  setTitleTouched(false)
+                }
+              }}
+              placeholder={t('studio.createProject.titlePlaceholder')}
+            />
+          </label>
+
+          <div className="pf-textarea-wrap">
+            <textarea
+              ref={textareaRef}
+              value={sourceText}
+              onChange={(e) => {
+                const next = e.target.value.slice(0, sourceType === 'theme' ? 250 : 8000)
+                setSourceText(next)
+                if (!titleTouched || isDefaultTitle(title, t('studio.createProject.untitled'))) {
+                  setTitle(deriveTitle(next, t('studio.createProject.untitled')))
+                }
+              }}
+              placeholder={
+                sourceType === 'theme'
+                  ? t('studio.createProject.exampleTheme')
+                  : t('studio.createProject.exampleScript')
+              }
+            />
+            {sourceType === 'theme' ? (
+              <span className="pf-char-count">{sourceText.length}/250</span>
+            ) : (
+              <span className="pf-char-count">{sourceText.length} {t('studio.createProject.chars')}</span>
+            )}
+          </div>
+
+          <div className="pf-ai-rewrite-footer">
+            <button
+              type="button"
+              className="pf-btn pf-btn-ai pf-btn-sm pf-btn-icon"
+              disabled={aiBusy || busy}
+              onClick={aiExpand}
+            >
+              <IconSparkles size={14} />
+              {aiBusy ? t('studio.createProject.aiGenerating2') : sourceType === 'script' ? t('studio.createProject.aiExpandScript') : t('studio.createProject.aiGenTheme')}
+            </button>
+            <span className="pf-muted pf-ai-rewrite-hint">
+              {sourceType === 'script' ? t('studio.createProject.aiExpandHint') : t('studio.createProject.aiGenHint')}
+            </span>
           </div>
           {error ? <BillingErrorNotice message={error} /> : null}
         </section>
@@ -434,7 +492,7 @@ export default function CreateProjectPage() {
           {selected ? (
             <div style={{ marginBottom: '0.85rem' }}>
               <img
-                src={api.assetUrl(selected.preview_cover)}
+                src={api.assetUrl(selected.preview_cover, 'v2')}
                 alt=""
                 style={{ width: '100%', borderRadius: 12, aspectRatio: '16/9', objectFit: 'cover' }}
               />

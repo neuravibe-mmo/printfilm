@@ -20,9 +20,9 @@ from app.services.templates_seed_huoke import HUOKE_TEMPLATES
 TEMPLATES: list[dict] = [
     {
         "id": "opensource_showcase",
-        "name": "Giới thiệu dự án mã nguồn mở",
-        "description": "Lập kế hoạch linh hoạt theo nội dung: người thao tác giao diện phần mềm và bối cảnh sử dụng thực tế, phù hợp cho công cụ và nền tảng mã nguồn mở.",
-        "category": ["Mã nguồn mở", "Đồ họa chữ", "Thương mại"],
+        "name": "Giới thiệu phần mềm & App",
+        "description": "Thao tác giao diện ứng dụng và bối cảnh sử dụng thực tế, phù hợp giới thiệu sản phẩm công nghệ và phần mềm.",
+        "category": ["Công nghệ", "Review & Bán hàng"],
         "preview_cover": "/static/templates/covers/opensource_showcase.png",
         "style_prefix": (
             "Ảnh tĩnh trình diễn sản phẩm chất lượng cao: Nhân vật ngồi trước bàn làm việc thực tế thao tác phần mềm/trang tài liệu/bảng làm việc, "
@@ -84,9 +84,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "opensource_live_work",
-        "name": "Bối cảnh người thật làm việc",
-        "description": "Người thật thao tác tại bàn làm việc: Góc nhìn nghiêng/qua vai thao tác hệ thống, phù hợp cho công cụ mã nguồn mở và quy trình làm việc sản phẩm.",
-        "category": ["Mã nguồn mở", "Người thật", "Hiện thực"],
+        "name": "Thao tác máy tính công sở",
+        "description": "Góc nhìn qua vai người thao tác laptop/PC tại bàn làm việc, phù hợp hướng dẫn và chia sẻ quy trình làm việc.",
+        "category": ["Công nghệ", "Người thật"],
         "preview_cover": "/static/templates/covers/opensource_live_work.png",
         "style_prefix": (
             "Nhiếp ảnh người thật hiện thực, bàn làm việc văn phòng thực tế, góc nhìn nghiêng hoặc qua vai thao tác laptop/màn hình đôi, "
@@ -141,8 +141,8 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "live_street_interview",
-        "name": "Phỏng vấn đường phố người thật",
-        "description": "Cảm giác người thật xuất hiện nói chuyện trên đường phố hoặc khi đi làm, phù hợp chia sẻ quan điểm, trải nghiệm và phỏng vấn ngắn.",
+        "name": "Phỏng vấn đường phố (Street Talk)",
+        "description": "Phong cách người thật xuất hiện nói chuyện trên đường phố, phù hợp chia sẻ quan điểm, trải nghiệm và phỏng vấn ngắn.",
         "category": ["Người thật", "Phim tài liệu"],
         "preview_cover": "/static/templates/covers/live_street_interview.png",
         "style_prefix": (
@@ -177,9 +177,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "live_product_desk",
-        "name": "Người thật trình diễn trên bàn",
-        "description": "Góc quay từ trên xuống hoặc chéo xuống hiện thực: Hai bàn tay người thật thao tác sản phẩm hoặc laptop, phù hợp đánh giá công cụ và hướng dẫn.",
-        "category": ["Người thật", "Hiện thực", "Thương mại"],
+        "name": "Trên tay & Trình diễn bàn làm việc",
+        "description": "Góc quay từ trên xuống bàn làm việc: Đôi bàn tay thao tác sản phẩm hoặc laptop, phù hợp unbox và hướng dẫn chi tiết.",
+        "category": ["Công nghệ", "Review & Bán hàng"],
         "preview_cover": "/static/templates/covers/live_product_desk.png",
         "style_prefix": (
             "Nhiếp ảnh người thật trình diễn sản phẩm trên bàn, góc nhìn chéo xuống hoặc qua vai, mặt bàn gỗ/sáng màu, laptop và bàn tay rõ ràng, "
@@ -220,9 +220,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "portrait_story",
-        "name": "Câu chuyện tranh chữ màn hình dọc",
-        "description": "Tự sự bằng tranh minh họa màn hình dọc, bố cục điện ảnh, phù hợp cho video lịch sử nhân văn ngắn.",
-        "category": ["Đồ họa chữ", "Điện ảnh", "Câu chuyện"],
+        "name": "Kể chuyện hình ảnh (Màn dọc)",
+        "description": "Kể chuyện bằng tranh minh họa màn hình dọc, bố cục điện ảnh, phù hợp video ngắn lịch sử nhân văn.",
+        "category": ["Kể chuyện", "Điện ảnh"],
         "preview_cover": "/static/templates/covers/portrait_story.png",
         "style_prefix": "Tranh minh họa khái niệm 2D đồng nhất, ánh sáng tinh tế và bố cục điện ảnh, không nhiếp ảnh hiện thực, không anime cel-shaded Nhật Bản, chủ thể màn hình dọc lệch giữa xuống dưới, phía trên chừa khoảng trống để chèn chữ, hình ảnh sạch sẽ không có chữ",
         "negative_prompt": "Ảnh chụp hiện thực, người thật, khuôn mặt người thật, studio nhiếp ảnh, ảnh đoàn phim người thật, anime cel-shaded Nhật, chữ trên hình, phụ đề, watermark, tiêu đề chữ, logo, mờ",
@@ -254,9 +254,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "anim_3d",
-        "name": "Hoạt hình 3D",
-        "description": "Chất lượng hoạt hình 3D điện ảnh, tạo hình tròn trịa và ánh sáng thể tích dịu nhẹ, phù hợp giải thích khoa học và phim ngắn cốt truyện.",
-        "category": ["3D", "Anime", "Khoa học"],
+        "name": "Hoạt hình 3D (Pixar Style)",
+        "description": "Chất lượng hoạt hình 3D chuẩn điện ảnh, tạo hình tròn trịa với ánh sáng thể tích dịu nhẹ.",
+        "category": ["Hoạt hình & 3D", "Kiến thức"],
         "preview_cover": "/static/templates/covers/anim_3d.png",
         "style_prefix": (
             "Kết xuất hoạt hình 3D điện ảnh, phong cách Pixar/DreamWorks, tạo hình tròn trịa đường nét rõ ràng, "
@@ -308,8 +308,8 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "live_cinematic",
-        "name": "Điện ảnh người thật",
-        "description": "Chất lượng phim điện ảnh quay người thật, ánh sáng kịch tính và độ sâu trường ảnh nông, phù hợp phim ngắn tự sự.",
+        "name": "Thước phim điện ảnh (Cinematic)",
+        "description": "Chất lượng phim điện ảnh người thật quay thực tế, ánh sáng kịch tính và độ sâu trường ảnh nông.",
         "category": ["Điện ảnh", "Người thật"],
         "preview_cover": "/static/templates/covers/live_cinematic.png",
         "style_prefix": "Nhiếp ảnh điện ảnh người thật, đánh sáng chuẩn điện ảnh và độ sâu trường ảnh nông, chất cảm phim nhựa hạt nhẹ, chỉnh màu cam xanh teal-orange, da hiện thực và chất liệu chân thực, bố cục màn hình rộng, không hoạt hình anime",
@@ -337,9 +337,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "live_person",
-        "name": "Tự sự người thật đời sống",
-        "description": "Cảm giác người thật đời sống, phù hợp cho câu chuyện nhân vật, thuyết minh và phim tài liệu ngắn.",
-        "category": ["Người thật", "Câu chuyện"],
+        "name": "Ký sự người thật đời thường",
+        "description": "Sinh hoạt đời thường chân thực, phù hợp câu chuyện nhân vật, tâm sự và video ngắn ký sự.",
+        "category": ["Người thật", "Đời sống"],
         "preview_cover": "/static/templates/covers/live_person.png",
         "style_prefix": "Nhiếp ảnh đời sống người thật, ánh sáng tự nhiên và ánh sáng môi trường dịu nhẹ, ngũ quan và kết cấu da chân thực, bố cục tài liệu, không trang điểm đậm studio, không hoạt hình anime",
         "negative_prompt": "Hoạt hình, anime, cel-shaded, 2D, làm mịn da quá đà, người giả CGI, tranh minh họa phẳng, watermark, chữ trên hình",
@@ -366,9 +366,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "photo_realism",
-        "name": "Nhiếp ảnh hiện thực",
-        "description": "Chất lượng hiện thực cấp độ ảnh chụp, phù hợp cho sản phẩm, phong cảnh và khoa học tài liệu.",
-        "category": ["Hiện thực", "Nhiếp ảnh"],
+        "name": "Nhiếp ảnh chân thực (Photo Realism)",
+        "description": "Tái hiện độ chi tiết chân thực như ảnh chụp máy ảnh ống kính cao cấp, màu sắc tự nhiên.",
+        "category": ["Người thật", "Điện ảnh"],
         "preview_cover": "/static/templates/covers/photo_realism.png",
         "style_prefix": "Nhiếp ảnh hiện thực cấp độ ảnh chụp, chi tiết sắc nét và chất liệu chân thực, màu sắc tự nhiên, dải tương phản động cao HDR, chụp cận cảnh hoặc phong cảnh, không hoạt hình không tranh vẽ không anime",
         "negative_prompt": "Hoạt hình, anime, cel-shaded, tranh minh họa phẳng, nét cọ sơn dầu, cắt giấy, pixel, sai màu HDR quá đà, watermark, chữ trên hình",
@@ -395,9 +395,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "film_cinematic",
-        "name": "Phim nhựa điện ảnh",
-        "description": "Chất cảm phim nhựa màn ảnh rộng và ánh sáng kịch tính, phù hợp cho phim ngắn tự sự và câu chuyện giàu bầu không khí.",
-        "category": ["Điện ảnh", "Phim nhựa"],
+        "name": "Điện ảnh phim nhựa 35mm",
+        "description": "Màu phim nhựa điện ảnh cổ điển, hiệu ứng hạt grain tự nhiên và độ tương phản giàu cảm xúc.",
+        "category": ["Điện ảnh", "Retro"],
         "preview_cover": "/static/templates/covers/film_cinematic.png",
         "style_prefix": "Tranh minh họa khái niệm điện ảnh, bố cục màn ảnh rộng, hạt film nhựa và tối góc nhẹ, ánh sáng kịch tính (sáng nghiêng/ngược sáng), tông màu cam xanh, độ sâu trường ảnh nông giàu không khí, không nhiếp ảnh hiện thực, không anime cel-shaded",
         "negative_prompt": "Ảnh chụp hiện thực, người thật, khuôn mặt người thật, anime Nhật Bản, cel-shaded, nhãn dán phẳng, cháy sáng, watermark, chữ trên hình, hoạt hình nét vẽ đơn giản",
@@ -423,9 +423,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "noir_thriller",
-        "name": "Noir giật gân hồi hộp",
-        "description": "Ánh sáng tương phản cao và bầu không khí lạnh, phù hợp cho trinh thám, vụ án và tự sự đêm tối.",
-        "category": ["Giật gân", "Điện ảnh"],
+        "name": "Trinh thám & Kịch tính (Noir)",
+        "description": "Tông màu tối, tương phản bóng đổ sắc nét bí ẩn, phù hợp chuyện trinh thám và án mạng.",
+        "category": ["Điện ảnh", "Kịch tính"],
         "preview_cover": "/static/templates/covers/noir_thriller.png",
         "style_prefix": "Tranh minh họa khái niệm phim đen Noir, ranh giới sáng tối tương phản cao, tông xám xanh lạnh điểm xuyết ít ánh sáng ấm, không khí đêm mưa hoặc đèn bàn trong phòng, bóng đen và góc nghiêng mặt, không nhiếp ảnh hiện thực",
         "negative_prompt": "Màu phấn tươi sáng, tranh truyện thiếu nhi, thiếu nữ anime Nhật, ảnh chụp hiện thực, người thật, cận cảnh máu me, watermark, chữ trên hình",
@@ -451,9 +451,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "vox_papercut",
-        "name": "Vox cắt giấy khoa học",
-        "description": "Cắt giấy phẳng độ bão hòa thấp, với nhân vật thao tác máy tính/giao diện hệ thống làm khung hình chính, phù hợp giải thích kiến thức chuyên sâu và sản phẩm.",
-        "category": ["Khoa học", "Cắt giấy"],
+        "name": "Giải thích đồ họa (Vox Explainer)",
+        "description": "Đồ họa cắt giấy chuyển động sống động, rất phù hợp video giải thích kiến thức, khoa học và kinh tế.",
+        "category": ["Kiến thức", "Đồ họa"],
         "preview_cover": "/static/templates/covers/vox_papercut.png",
         "style_prefix": (
             "Tranh minh họa phẳng cắt giấy Vox, viền giấy xếp lớp, độ bão hòa thấp, bóng cắt sạch sẽ, phong thái video thuyết minh khoa học; "
@@ -500,9 +500,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "docu_warm",
-        "name": "Tài liệu ấm áp",
-        "description": "Chất cảm tranh minh họa tài liệu và tông màu ấm, phù hợp câu chuyện nhân vật và phim tài liệu ngắn nhân văn.",
-        "category": ["Phim tài liệu", "Điện ảnh"],
+        "name": "Phim tài liệu nhân văn",
+        "description": "Tông màu điện ảnh ấm áp chân tình, phù hợp ghi lại nét đẹp lao động, làng nghề và con người.",
+        "category": ["Phim tài liệu", "Người thật"],
         "preview_cover": "/static/templates/covers/docu_warm.png",
         "style_prefix": "Tranh minh họa khái niệm tài liệu ấm áp, cảm giác ánh sáng tự nhiên, tông nâu ấm và trắng be dịu nhẹ, chi tiết bối cảnh đời sống, bố cục phim tài liệu, không ảnh chụp hiện thực, không anime cel-shaded",
         "negative_prompt": "Cyber neon, thiếu nữ anime Nhật, máu me, hoạt hình phóng đại, ảnh chụp hiện thực, người thật, watermark, chữ trên hình",
@@ -528,9 +528,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "kids_flat",
-        "name": "Tranh truyện thiếu nhi phẳng",
-        "description": "Phối màu dịu nhẹ và tạo hình tròn trịa, phù hợp cho khoa học và câu chuyện thiếu nhi.",
-        "category": ["Thiếu nhi", "Tranh truyện"],
+        "name": "Minh họa thiếu nhi & Giáo dục",
+        "description": "Nét vẽ phẳng đáng yêu, màu sắc tươi sáng, phù hợp truyện tranh thiếu nhi và nội dung giáo dục.",
+        "category": ["Hoạt hình & 3D", "Kiến thức"],
         "preview_cover": "/static/templates/covers/kids_flat.png",
         "style_prefix": "Tranh minh họa phẳng phong cách tranh truyện thiếu nhi, màu phấn dịu nhẹ, tạo hình tròn trịa, nhân vật thân thiện, hậu cảnh tinh giản",
         "negative_prompt": "Kinh dị, tăm tối, ảnh chụp hiện thực, kết cấu phức tạp, máu me",
@@ -556,9 +556,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "soft_anime",
-        "name": "Anime ánh sáng dịu",
-        "description": "Anime cel-shaded ánh sáng dịu Nhật Bản, phù hợp câu chuyện thanh xuân và phim ngắn cảm xúc.",
-        "category": ["Anime", "Câu chuyện"],
+        "name": "Anime Nhật Bản (Ghibli Style)",
+        "description": "Nét vẽ 2D trong trẻo, phong cách hoạt hình Nhật Bản ấm áp, phù hợp video tự sự và cảm xúc.",
+        "category": ["Hoạt hình & 3D", "Anime"],
         "preview_cover": "/static/templates/covers/soft_anime.png",
         "style_prefix": "Anime cel-shaded ánh sáng dịu Nhật Bản, nét vẽ sạch sẽ, bầu trời chuyển màu dịu dàng, mắt to ngũ quan tinh tế, thiết lập nhân vật đồng nhất, không nhiếp ảnh hiện thực, không thủy mặc, không cắt giấy",
         "negative_prompt": "Ảnh chụp hiện thực, người thật, khuôn mặt người thật, thủy mặc, cắt giấy, pixel art, máu me kinh dị, watermark, chữ trên hình, pha trộn phong cách Chibi Q-version",
@@ -584,9 +584,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "chalk_whiteboard",
-        "name": "Bút phấn bảng trắng vẽ tay",
-        "description": "Phong cách giảng giải bút phấn bảng đen, làm nổi bật nhân vật thao tác hệ thống / vẽ sơ đồ quy trình.",
-        "category": ["Khoa học", "Vẽ tay"],
+        "name": "Bảng vẽ phấn & Bài giảng",
+        "description": "Nét vẽ phấn trên bảng đen truyền thống, phù hợp cho bài giảng học tập, công thức và hướng dẫn.",
+        "category": ["Kiến thức", "Giáo dục"],
         "preview_cover": "/static/templates/covers/chalk_whiteboard.png",
         "style_prefix": (
             "Phong cách giảng giải bảng phấn đen và bảng trắng vẽ tay, nét cọ phấn, mũi tên sơ đồ; "
@@ -622,9 +622,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "cyber_neon",
-        "name": "Cyber Neon",
-        "description": "Thành phố đêm ánh sáng neon và cảm giác tương lai, phù hợp cho chủ đề công nghệ, đô thị và khoa học viễn tưởng.",
-        "category": ["Khoa học viễn tưởng", "Cyber"],
+        "name": "Cyberpunk Viễn tưởng",
+        "description": "Ánh sáng neon tương lai, thành phố đêm viễn tưởng huyền ảo và công nghệ hiện đại.",
+        "category": ["Điện ảnh", "Khoa học viễn tưởng"],
         "preview_cover": "/static/templates/covers/cyber_neon.png",
         "style_prefix": "Tranh minh họa khái niệm Cyberpunk, tương phản hồng xanh neon, đường phố đêm mưa phản chiếu, bóng hình đô thị tương lai, cảnh đêm tương phản cao, không nhiếp ảnh hiện thực, không tranh truyện thiếu nhi",
         "negative_prompt": "Bãi biển nắng ban ngày, màu nước đồng quê, màu phấn trẻ em, ảnh chụp hiện thực, người thật, thủy mặc chừa trắng, watermark, chữ trên hình",
@@ -650,9 +650,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "epic_fantasy",
-        "name": "Sử thi kỳ ảo",
-        "description": "Bối cảnh hùng vĩ và ánh sáng kỳ ảo, phù hợp cho thần thoại, phiêu lưu và phim ngắn thế giới quan.",
-        "category": ["Kỳ ảo", "Điện ảnh"],
+        "name": "Thế giới kỳ ảo (Fantasy)",
+        "description": "Khung cảnh thần thoại hoành tráng, lâu đài, ma thuật và phong cách sử thi kỳ vĩ.",
+        "category": ["Điện ảnh", "Kỳ ảo"],
         "preview_cover": "/static/templates/covers/epic_fantasy.png",
         "style_prefix": "Tranh minh họa khái niệm sử thi kỳ ảo, đại cảnh hùng vĩ và trung cảnh người hùng, ánh hoàng hôn và luồng sáng thần thánh, lâu đài đá và biển mây, bố cục kịch tính, không nhiếp ảnh hiện thực, không đô thị hiện đại",
         "negative_prompt": "Thành phố hiện đại, giao diện điện thoại, ảnh chụp hiện thực, người thật, nét vẽ đơn giản trẻ em, cyber neon, watermark, chữ trên hình",
@@ -678,9 +678,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "magazine_collage",
-        "name": "Cắt dán tạp chí",
-        "description": "Cắt dán báo và vân in ấn, phù hợp cho chủ đề văn hóa và câu chuyện thương hiệu.",
-        "category": ["Thương mại", "Cắt dán"],
+        "name": "Cắt dán tạp chí (Collage Pop)",
+        "description": "Phong cách cắt ghép hình ảnh và đồ họa báo chí hiện đại, cá tính, thời thượng.",
+        "category": ["Nghệ thuật", "Review & Bán hàng"],
         "preview_cover": "/static/templates/covers/magazine_collage.png",
         "style_prefix": "Cắt dán chất liệu giấy tạp chí, viền rách xé, chất cảm in lưới chấm hạt, cắt dán xếp lớp, bố cục đồ họa phẳng táo bạo",
         "negative_prompt": "Vector thuần khiết, da hiện thực, màu sắc bẩn thỉu xám xịt",
@@ -706,9 +706,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "brand_clean",
-        "name": "Thương hiệu tối giản",
-        "description": "Mảng màu sạch sẽ và khoảng trống lớn, phù hợp giải thích sản phẩm và phim ngắn thương hiệu.",
-        "category": ["Thương mại", "Tối giản"],
+        "name": "Quảng cáo thương hiệu tối giản",
+        "description": "Phong cách sạch sẽ, hiện đại và cao cấp, phù hợp video giới thiệu sản phẩm và thương hiệu.",
+        "category": ["Review & Bán hàng", "Thương mại"],
         "preview_cover": "/static/templates/covers/brand_clean.png",
         "style_prefix": "Tranh minh họa khái niệm thương hiệu tối giản, diện tích khoảng trống lớn, bảng màu giới hạn (trắng đen + 1 màu nhấn), bố cục hình học, cảm giác sản phẩm tinh tế, không nhiếp ảnh hiện thực, không cắt dán lộn xộn",
         "negative_prompt": "Chất liệu lộn xộn, cyber neon, máu me, màu phấn trẻ em xếp đống, ảnh chụp hiện thực, người thật, watermark, chữ loạn trên hình",
@@ -734,9 +734,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "pixel_retro",
-        "name": "Pixel hoài cổ khoa học",
-        "description": "Phong cách pixel 8-bit/16-bit, phù hợp cho lịch sử công nghệ và giải thích dạng trò chơi.",
-        "category": ["Hoài cổ", "Pixel"],
+        "name": "Game Pixel 8-bit / 16-bit",
+        "description": "Phong cách đồ họa điểm ảnh Pixel hoài niệm tuổi thơ, vui nhộn và độc đáo.",
+        "category": ["Retro", "Hoạt hình & 3D"],
         "preview_cover": "/static/templates/covers/pixel_retro.png",
         "style_prefix": "Tranh pixel hoài cổ, bảng màu giới hạn 16-bit, các khối pixel sắc nét, bối cảnh trò chơi đơn giản, không khử răng cưa",
         "negative_prompt": "Dải chuyển màu mượt mà, ảnh chụp hiện thực, pixel bị nhòe mờ",
@@ -765,9 +765,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "retro_vhs",
-        "name": "Băng từ VHS hoài cổ",
-        "description": "Chất cảm băng từ video và đường quét scanline, phù hợp cho câu chuyện hoài niệm và nội dung mang tính thời đại.",
-        "category": ["Hoài cổ", "Điện ảnh"],
+        "name": "Băng từ VHS thập niên 90",
+        "description": "Chất cảm băng từ và đường quét scanlines, phù hợp câu chuyện hoài niệm và dấu ấn thời đại.",
+        "category": ["Retro", "Điện ảnh"],
         "preview_cover": "/static/templates/covers/retro_vhs.png",
         "style_prefix": "Tranh minh họa khái niệm VHS hoài cổ, quang sai màu nhẹ và gợi ý đường quét scanline, tông màu thập niên 1980–90, bố cục khung tivi bo góc, bầu không khí hoài niệm, không ảnh chụp hiện thực, không UI siêu nét hiện đại",
         "negative_prompt": "Quảng cáo hiện đại siêu nét, cyber neon xếp đống, ảnh chụp hiện thực, người thật, màu phấn trẻ em, watermark, chữ rác trên hình",
@@ -793,9 +793,9 @@ TEMPLATES: list[dict] = [
     },
     {
         "id": "ink_guofeng",
-        "name": "Thủy mặc cổ phong",
-        "description": "Thủy mặc chừa trắng và nét vẽ ý cảnh, phù hợp cho lịch sử và câu chuyện văn hóa ngắn.",
-        "category": ["Cổ phong", "Thủy mặc"],
+        "name": "Tranh thủy mặc nghệ thuật",
+        "description": "Khoảng trắng thủy mặc và nét bút phóng khoáng tao nhã, phù hợp lịch sử và các câu chuyện văn hóa.",
+        "category": ["Nghệ thuật", "Cổ phong"],
         "preview_cover": "/static/templates/covers/ink_guofeng.png",
         "style_prefix": "Tranh minh họa thủy mặc tả ý, nét cọ giàu sức biểu cảm, khoảng trống chừa trắng lớn, bầu không khí thi vị, sắc mực thanh nhã, không nhiếp ảnh hiện thực",
         "negative_prompt": "Ảnh chụp hiện thực, người thật, khuôn mặt người thật, neon, cyberpunk, anime Nhật, hoạt hình Âu Mỹ, chữ trên hình, phụ đề, watermark",

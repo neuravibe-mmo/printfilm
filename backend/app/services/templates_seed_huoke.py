@@ -48,6 +48,7 @@ def _tpl(
     audio_config: dict,
     subtitle_config: dict,
     sort_order: int,
+    category: list[str] | None = None,
     photoreal: bool = False,
     shot_count_min: int = 3,
     shot_count_max: int = 5,
@@ -63,7 +64,7 @@ def _tpl(
         "id": tid,
         "name": name,
         "description": description,
-        "category": ["Kiến thức", "Thu hút khách", "Thương mại"],
+        "category": category or ["TikTok / Reels", "Marketing"],
         "preview_cover": f"/static/templates/covers/{tid}.png",
         "style_prefix": style_prefix,
         "negative_prompt": negative_prompt,
@@ -84,8 +85,9 @@ def _tpl(
 HUOKE_TEMPLATES: list[dict] = [
     _tpl(
         tid="huoke_douyin_hook",
-        name="Thu hút khách · Móc câu TikTok",
-        description="Nhịp điệu video ngắn màn hình dọc: 3 giây đầu móc câu → hình ảnh bối cảnh → 1–2 trải nghiệm kiểm chứng → kêu gọi ghé quán/đặt hàng. Phù hợp chạy quảng cáo thu hút khách.",
+        name="TikTok / Reels · Giữ chân 3s",
+        description="Nhịp điệu video ngắn màn hình dọc: 3 giây đầu giữ chân người xem → Nêu bối cảnh/nỗi đau → Trải nghiệm thực tế → Kêu gọi hành động.",
+        category=["TikTok / Reels", "Marketing"],
         style_prefix=(
             "Khung hình tĩnh video ngắn thu hút khách màn hình dọc: Mặt tiền cửa hàng, cận cảnh sản phẩm, thao tác dịch vụ hoặc giao diện vận hành luân phiên xuất hiện, "
             "ánh sáng tự nhiên tương phản mạnh, chủ thể rõ ràng, chừa khoảng trống thuận tiện chèn chữ lớn, chất lượng trình diễn sản phẩm chuẩn điện ảnh, không hoạt hình không anime"
@@ -129,8 +131,9 @@ HUOKE_TEMPLATES: list[dict] = [
     ),
     _tpl(
         tid="huoke_xhs_recommend",
-        name="Thu hút khách · Review gợi ý",
-        description="Cấu trúc video ngắn chia sẻ gợi ý: Tiêu đề móc câu → ấn tượng ban đầu → trải nghiệm thực tế → gợi ý cho ai. Bìa giàu thông tin, câu từ khẩu ngữ tự nhiên.",
+        name="Review & Đề xuất sản phẩm",
+        description="Cấu trúc video ngắn chia sẻ chân thật: Tiêu đề thu hút → Ấn tượng ban đầu → Phân tích trải nghiệm thực tế → Phù hợp với ai.",
+        category=["Review & Bán hàng", "Marketing"],
         style_prefix=(
             "Khung hình tĩnh video ngắn chia sẻ đời sống màn hình dọc: Ánh sáng tự nhiên tươi sáng, mặt bàn sáng màu hoặc góc cửa hàng, chi tiết sản phẩm/không gian rõ ràng, "
             "phong cách bìa tạp chí, khoảng trống phân tầng thuận tiện chèn tiêu đề, không trang điểm đậm studio, không hoạt hình"
@@ -171,8 +174,9 @@ HUOKE_TEMPLATES: list[dict] = [
     ),
     _tpl(
         tid="huoke_review_facts",
-        name="Thu hút khách · Đánh giá chi tiết",
-        description="Khung hình ngang khách quan, cụ thể: Đánh giá chung → môi trường/dịch vụ → gợi ý trải nghiệm + lý do → độ tương xứng giá trị → phù hợp với ai. Giúp người xem đưa ra quyết định.",
+        name="Đánh giá & So sánh chi tiết",
+        description="Khung hình ngang khách quan, chi tiết: Nhận định tổng quan → Phân tích dịch vụ/sản phẩm → So sánh giá trị → Khuyên dùng cho ai.",
+        category=["Review & Bán hàng", "Đánh giá"],
         style_prefix=(
             "Khung hình tĩnh thuyết minh sạch sẽ: Mặt bàn sáng màu hoặc khu vực thông tin cửa hàng, không khí sản phẩm/không gian/bảng giá (không có chữ đọc được), "
             "phân cấp thông tin rõ ràng, ánh sáng đồng đều, tiết chế kiểu phim tài liệu, không hoạt hình không neon"
@@ -220,8 +224,9 @@ HUOKE_TEMPLATES: list[dict] = [
     ),
     _tpl(
         tid="huoke_soft_invite",
-        name="Thu hút khách · Giới thiệu tự nhiên",
-        description="Video ngắn đời thường màn hình dọc: Cảm nhận chân thực → chi tiết cụ thể → gợi ý nhẹ nhàng. Tự nhiên, không giống quảng cáo lộ liễu, phù hợp gửi bạn bè.",
+        name="Vlog đời thường · Chia sẻ tự nhiên",
+        description="Video ngắn gần gũi: Một cảm nhận thật → Chi tiết không gian/sản phẩm → Gợi ý nhẹ nhàng, tự nhiên không gượng gạo.",
+        category=["Đời sống", "Vlog"],
         style_prefix=(
             "Khung hình tĩnh ký sự đời sống màn hình dọc: Ánh sáng bên cửa sổ, góc phố, một góc bàn hoặc đời thường tại cửa hàng, tông màu ấm tiết chế, "
             "chất liệu và làn da chân thực, tự nhiên như ảnh chụp ngẫu hứng, không quảng cáo studio cứng nhắc, không hoạt hình"
