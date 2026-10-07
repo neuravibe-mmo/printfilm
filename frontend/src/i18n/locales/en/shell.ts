@@ -134,6 +134,8 @@ export const enShell = {
     forgotSent: 'If that email is registered, a reset link will be sent',
     resetSuccess: 'Password updated. Sign in with your new password',
     resetTokenMissing: 'Invalid reset link. Please request a new one',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
   },
   create: {
     title: 'Start creating',

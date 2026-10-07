@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { loginAsAdmin } from "@/api/client";
 import { useI18n } from "@/i18n";
@@ -12,6 +13,7 @@ export function LoginPage() {
 
   const [email, setEmail] = useState("hoangkien0705@gmail.com");
   const [password, setPassword] = useState("123456Aa@");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Submit credentials and enter dashboard
@@ -68,14 +70,26 @@ export function LoginPage() {
             </div>
             <div className="login-field">
               <label htmlFor="password">{t("login.password")}</label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="login-password-wrap">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="login-password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <button className="login-submit" type="submit" disabled={loading}>
               {loading ? t("login.submitting") : t("login.submit")}

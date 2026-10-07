@@ -133,6 +133,8 @@ export const zhShell = {
     forgotSent: '若该邮箱已注册，将收到重置邮件',
     resetSuccess: '密码已更新，请使用新密码登录',
     resetTokenMissing: '重置链接无效，请重新申请找回密码',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
   },
   create: {
     title: '开始创作',

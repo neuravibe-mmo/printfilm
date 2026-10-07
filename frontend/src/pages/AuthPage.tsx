@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { api } from '../api'
 import BrandMark from '../components/BrandMark'
 import LanguageSwitch from '../components/layout/LanguageSwitch'
@@ -44,6 +45,8 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const resetToken = (params.get('token') || '').trim()
 
   // Chuyển đổi chế độ và đồng bộ hóa URL (tiếp tục)
@@ -53,6 +56,8 @@ export default function AuthPage() {
     setNotice('')
     setPassword('')
     setConfirmPassword('')
+    setShowPassword(false)
+    setShowConfirmPassword(false)
     if (next === 'register') setNickname('')
     const nextParams = new URLSearchParams()
     if (nextPath && nextPath !== '/') nextParams.set('next', nextPath)
@@ -195,29 +200,53 @@ export default function AuthPage() {
           {(mode === 'login' || mode === 'register' || mode === 'reset') && (
             <label>
               {mode === 'reset' ? t('auth.newPassword') : t('auth.password')}
-              <input
-                type="password"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  if (error) setError('')
-                }}
-              />
+              <div className="auth-password-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    if (error) setError('')
+                  }}
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                  title={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </label>
           )}
           {mode === 'reset' && (
             <label>
               {t('auth.confirmPassword')}
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value)
-                  if (error) setError('')
-                }}
-              />
+              <div className="auth-password-wrapper">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value)
+                    if (error) setError('')
+                  }}
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                  title={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </label>
           )}
           {notice ? <p className="auth-notice" role="status">{notice}</p> : null}

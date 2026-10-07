@@ -212,6 +212,39 @@
   box-shadow: 0 0 0 3px rgba(31, 92, 72, 0.15);
 }
 
+.login-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.login-password-wrap input {
+  width: 100%;
+  padding-right: 2.5rem;
+}
+
+.login-password-toggle {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0.3rem;
+  color: #71717a;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.login-password-toggle:hover {
+  color: #18181b;
+}
+
 .login-submit {
   margin-top: 0.5rem;
   width: 100%;
