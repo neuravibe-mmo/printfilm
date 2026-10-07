@@ -3504,6 +3504,8 @@
   border-radius: var(--pf-radius);
   padding: 1rem;
   min-height: 420px;
+  display: flex;
+  flex-direction: column;
 }
 
 .pf-create-col h3 {
@@ -3529,8 +3531,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
-  max-height: 62vh;
-  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  padding-bottom: 0.5rem;
 }
 
 .pf-tpl-mini {
@@ -3677,6 +3682,15 @@
   border-color: var(--pf-ink);
   background: color-mix(in srgb, var(--pf-lime) 28%, #fff);
   transform: translateY(-1px);
+}
+
+.pf-chip.active,
+.pf-chip.selected {
+  border-color: #111;
+  background: var(--pf-lime);
+  color: #111;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px rgba(182, 255, 0, 0.45);
 }
 
 .pf-chip:disabled {
@@ -7705,6 +7719,10 @@ button.pf-shot-editable:disabled {
   .pf-editor,
   .pf-history-layout {
     grid-template-columns: 1fr;
+  }
+
+  .pf-create .pf-tpl-list {
+    max-height: 380px;
   }
 
   .pf-history-side {

@@ -160,6 +160,7 @@ export default function CreateProjectPage() {
   const [title, setTitle] = useState(INSPIRATION_POOL[0].title)
   const [titleTouched, setTitleTouched] = useState(false)
   const [inspPage, setInspPage] = useState(0)
+  const [selectedInspiration, setSelectedInspiration] = useState<string | null>(INSPIRATION_POOL[0].title)
   const [busy, setBusy] = useState(false)
   const [aiBusy, setAiBusy] = useState(false)
   const [error, setError] = useState('')
@@ -215,14 +216,15 @@ export default function CreateProjectPage() {
 
   // Điền ví dụ cảm hứng vào chủ đề/bản sao và đồng bộ hóa tiêu đề ngắn
   function applyInspiration(item: Inspiration) {
+    setSelectedInspiration(item.title)
     if (sourceType === 'script') {
       setInputTab(t('studio.createProject.tabScript'))
       setSourceText(item.script.slice(0, 8000))
     } else {
       setInputTab(t('studio.createProject.tabTheme'))
-      setSourceText(item.theme.slice(0, 100))
+      setSourceText(item.theme.slice(0, 250))
     }
-    setTitle(item.title.slice(0, 24))
+    setTitle(item.title.slice(0, 80))
     setTitleTouched(false)
     setError('')
   }
@@ -238,9 +240,9 @@ export default function CreateProjectPage() {
     try {
       const mode = sourceType === 'script' ? 'script' : 'theme'
       const result = await api.expandContent(seed, mode)
-      setSourceText(result.content.slice(0, mode === 'theme' ? 100 : 8000))
+      setSourceText(result.content.slice(0, mode === 'theme' ? 250 : 8000))
       if (!titleTouched || isDefaultTitle(title, t('studio.createProject.untitled'))) {
-        setTitle(result.title.slice(0, 24))
+        setTitle(result.title.slice(0, 80))
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('studio.createProject.aiGenFailed'))
@@ -283,7 +285,7 @@ export default function CreateProjectPage() {
   }
 
   return (
-    <AppShell active="studio" wide>
+    <AppShell active="studio" wide hideFooter>
       <header className="pf-page-head">
         <div className="pf-page-head-row">
           <div>
@@ -376,7 +378,7 @@ export default function CreateProjectPage() {
             <textarea
               value={sourceText}
               onChange={(e) => {
-                const next = e.target.value.slice(0, sourceType === 'theme' ? 100 : 8000)
+                const next = e.target.value.slice(0, sourceType === 'theme' ? 250 : 8000)
                 setSourceText(next)
                 if (!titleTouched || isDefaultTitle(title, t('studio.createProject.untitled'))) {
                   setTitle(deriveTitle(next, t('studio.createProject.untitled')))
@@ -389,7 +391,7 @@ export default function CreateProjectPage() {
               }
             />
             {sourceType === 'theme' ? (
-              <span className="pf-char-count">{sourceText.length}/100</span>
+              <span className="pf-char-count">{sourceText.length}/250</span>
             ) : (
               <span className="pf-char-count">{sourceText.length} {t('studio.createProject.chars')}</span>
             )}
@@ -408,7 +410,7 @@ export default function CreateProjectPage() {
                 <button
                   key={item.title}
                   type="button"
-                  className="pf-chip"
+                  className={['pf-chip', selectedInspiration === item.title ? 'active' : ''].filter(Boolean).join(' ')}
                   title={sourceType === 'script' ? item.script.slice(0, 80) : item.theme}
                   onClick={() => applyInspiration(item)}
                 >

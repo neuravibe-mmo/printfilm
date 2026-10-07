@@ -541,7 +541,7 @@ class ArkGateway:
         shot_range_override: tuple[int, int] | None = None,
         allow_source_names: bool = False,
     ) -> StoryboardResult:
-        if self.mock:
+        if not is_chatgpt2api_configured() and self.mock:
             return await asyncio.to_thread(
                 self._mock_storyboard,
                 source_text,
@@ -2493,7 +2493,7 @@ class ArkGateway:
         """Expand a short topic into title + theme brief or full narration script."""
         topic = (topic or "").strip() or "Trí tuệ nhân tạo đang thay đổi cuộc sống hàng ngày như thế nào"
         mode = "script" if mode == "script" else "theme"
-        if self.mock:
+        if not is_chatgpt2api_configured() and self.mock:
             return self._mock_expand_content(topic, mode)
 
         if mode == "script":
@@ -2512,11 +2512,15 @@ class ArkGateway:
                 "content: Một câu chủ đề hoàn chỉnh từ 30-80 từ, nêu rõ đối tượng khán giả và nội dung cốt lõi cần truyền tải; không xuống dòng."
             )
         if is_chatgpt2api_configured():
-            content = await chatgpt2api_completions(
-                system,
-                f"Chủ đề/Ý tưởng: {topic}",
-                timeout=90.0,
-            )
+            try:
+                content = await chatgpt2api_completions(
+                    system,
+                    f"Chủ đề/Ý tưởng: {topic}",
+                    timeout=90.0,
+                )
+            except Exception as exc:
+                logger.warning("Lỗi gọi chatgpt2api expand_content: %s, dùng fallback mock", exc)
+                return self._mock_expand_content(topic, mode)
         else:
             content = await chat_completions(
                 system,
@@ -2566,10 +2570,10 @@ class ArkGateway:
         if not content:
             return self._mock_expand_content(topic, mode)
         if mode == "theme":
-            content = content.replace("\n", " ").strip()[:100]
+            content = content.replace("\n", " ").strip()[:250]
         else:
             content = content[:8000]
-        return {"title": title[:24], "content": content}
+        return {"title": title[:80], "content": content}
 
 
 _gateway: ArkGateway | None = None

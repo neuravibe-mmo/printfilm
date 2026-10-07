@@ -101,11 +101,20 @@ async def chatgpt2api_completions(
     if current_key and current_key not in ("mock-key-not-used", "chatgpt2api-direct"):
         headers["Authorization"] = f"Bearer {current_key}"
 
+    # Tạo chuỗi lệnh cURL hoàn chỉnh để debug/kiểm tra
+    curl_hdrs = " ".join([f"-H '{k}: {v}'" for k, v in headers.items()])
+    escaped_body = json.dumps(payload, ensure_ascii=False).replace("'", "'\\''")
+    curl_command = f"curl -X POST '{target_url}' {curl_hdrs} -d '{escaped_body}'"
+
     logger.info(
-        "Gọi ChatGPT2API model=%s url=%s prompt_len=%s",
+        "Gọi ChatGPT2API model=%s url=%s prompt_len=%s\n"
+        "══════════════════════════════ [cURL Request] ══════════════════════════════\n"
+        "%s\n"
+        "════════════════════════════════════════════════════════════════════════════",
         current_model,
         target_url,
         len(prompt_text),
+        curl_command,
     )
     async with httpx.AsyncClient(timeout=timeout) as client:
         res = await client.post(

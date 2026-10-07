@@ -256,7 +256,7 @@ export default function StyleConfigPage() {
   }
 
   return (
-    <AppShell active="studio" wide>
+    <AppShell active="studio" wide hideFooter>
       <header className="pf-page-head">
         <div className="pf-page-head-row">
           <div>
