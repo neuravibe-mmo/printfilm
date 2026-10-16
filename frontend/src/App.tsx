@@ -13,7 +13,6 @@ import GuidePage from './pages/GuidePage'
 import { PrivacyPage, TermsPage } from './pages/LegalDocPage'
 import ContactPage from './pages/ContactPage'
 import SettingsPage from './pages/SettingsPage'
-import PricingPage from './pages/PricingPage'
 import StudioPage from './pages/StudioPage'
 import TemplatesPage from './pages/TemplatesPage'
 import CreateProjectPage from './pages/studio/CreateProjectPage'
@@ -47,7 +46,7 @@ export default function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/pricing" element={<Navigate to="/" replace />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/studio/new" element={<CreateProjectPage />} />
         <Route path="/studio/:id/style" element={<StyleConfigPage />} />

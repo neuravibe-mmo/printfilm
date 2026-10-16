@@ -2,7 +2,7 @@ import { dialog } from './dialog'
 
 import { getActiveLocale } from '../i18n/detect'
 
-export const PRICING_PATH = '/pricing'
+export const PRICING_PATH = '/settings?tab=billing'
 
 /** Đây có phải là lỗi chặn số dư/thanh toán không đủ? */
 export function isBillingError(message: string) {

@@ -307,11 +307,6 @@ export default function SettingsPage() {
               </div>
               <MonthlyUsageCard variant="compact" showTopup={false} />
               <UsageChargeRecords variant="compact" />
-              <div className="pf-settings-actions">
-                <Link className="pf-btn pf-btn-lime pf-btn-sm" to="/pricing">
-                  {t('settings.goTopup')}
-                </Link>
-              </div>
             </section>
           ) : null}
 

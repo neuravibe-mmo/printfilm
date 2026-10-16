@@ -86,8 +86,6 @@ export default function HelpPage() {
           <p className="pf-muted">
             {t('help.morePrefix')}{' '}
             <Link to="/settings">{t('help.profile')}</Link>
-            {t('help.moreMid')}{' '}
-            <Link to="/pricing">{t('help.pricing')}</Link>
             {t('help.moreMid2')}{' '}
             <Link to="/terms">{t('help.terms')}</Link>、<Link to="/privacy">{t('help.privacy')}</Link>
             {t('help.moreOr')}

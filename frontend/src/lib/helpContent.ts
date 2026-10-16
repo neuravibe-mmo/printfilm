@@ -25,7 +25,7 @@ const HELP_CATS_ZH: HelpCatItem[] = [
   { id: 'kepu', title: 'AI短视频', desc: '分镜流水线与成片', href: '/history' },
   { id: 'tools', title: '创作工具', desc: '文生图 / 图生图 / 视频', href: '/tools' },
   { id: 'settings', title: '个人中心', desc: '项目 · 记录 · 下载', href: '/settings?tab=tools' },
-  { id: 'billing', title: '充值说明', desc: '按量计费，余额永久有效', href: '/pricing' },
+  { id: 'billing', title: '充值说明', desc: '按量计费，余额永久有效', href: '/help#faq' },
 ]
 
 const HELP_CATS_VI: HelpCatItem[] = [
@@ -34,7 +34,7 @@ const HELP_CATS_VI: HelpCatItem[] = [
   { id: 'kepu', title: 'Video AI ngắn', desc: 'Pipeline phân cảnh và thành phẩm', href: '/history' },
   { id: 'tools', title: 'Công cụ sáng tác', desc: 'Text-to-Image / Image-to-Image / Video', href: '/tools' },
   { id: 'settings', title: 'Hồ sơ cá nhân', desc: 'Dự án · Lịch sử · Tải xuống', href: '/settings?tab=tools' },
-  { id: 'billing', title: 'Hướng dẫn nạp tiền', desc: 'Tính phí theo lượng, số dư không hết hạn', href: '/pricing' },
+  { id: 'billing', title: 'Hướng dẫn nạp tiền', desc: 'Tính phí theo lượng, số dư không hết hạn', href: '/help#faq' },
 ]
 
 const HELP_CATS_EN: HelpCatItem[] = [
@@ -43,7 +43,7 @@ const HELP_CATS_EN: HelpCatItem[] = [
   { id: 'kepu', title: 'AI short video', desc: 'Board pipeline and film', href: '/history' },
   { id: 'tools', title: 'Creation tools', desc: 'T2I / I2I / Video', href: '/tools' },
   { id: 'settings', title: 'Account', desc: 'Projects · History · Downloads', href: '/settings?tab=tools' },
-  { id: 'billing', title: 'Top-up', desc: 'Usage billing, no expiry', href: '/pricing' },
+  { id: 'billing', title: 'Top-up', desc: 'Usage billing, no expiry', href: '/help#faq' },
 ]
 
 export function getHelpCats(): HelpCatItem[] {

@@ -56,11 +56,11 @@ export const viPages = {
     proTipLabel: 'Mẹo thực chiến: ',
     tabs: {
       all: 'Tất cả hướng dẫn',
-      consistency: '👤 Nhất quán nhân vật',
-      drama: '🎭 Phim nhiều tập',
-      kepu: '🎬 Video AI Pipeline',
-      canvas: '📐 Canvas & Góc máy',
-      tips: '💡 Mẹo chi phí',
+      consistency: 'Nhất quán nhân vật',
+      drama: 'Phim nhiều tập',
+      kepu: 'Video AI Pipeline',
+      canvas: 'Canvas & Góc máy',
+      tips: 'Mẹo chi phí',
     },
     items: [
       {
@@ -200,7 +200,7 @@ export const viPages = {
       { id: 'kepu', title: 'Video ngắn AI', desc: 'Dây chuyền phân cảnh & thành phẩm', href: '/history' },
       { id: 'tools', title: 'Công cụ sáng tác', desc: 'Text-to-Image / Image-to-Image / Video', href: '/tools' },
       { id: 'settings', title: 'Hồ sơ cá nhân', desc: 'Dự án · Lịch sử · Tải xuống', href: '/settings?tab=tools' },
-      { id: 'billing', title: 'Hướng dẫn nạp tiền', desc: 'Trả theo dùng, số dư không hết hạn', href: '/pricing' },
+      { id: 'billing', title: 'Hướng dẫn nạp tiền', desc: 'Trả theo dùng, số dư không hết hạn', href: '/help#faq' },
     ],
     steps: [
       {

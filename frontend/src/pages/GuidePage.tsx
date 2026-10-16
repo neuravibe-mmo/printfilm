@@ -3,16 +3,28 @@ import { Link } from 'react-router-dom'
 import {
   Film,
   Users,
+  User,
   Video,
   Sparkles,
   ArrowRight,
   Camera,
   Lightbulb,
+  Drama,
+  Clapperboard,
 } from 'lucide-react'
 import AppShell from '../components/layout/AppShell'
 import { useI18n } from '../i18n'
 
 type Category = 'all' | 'drama' | 'consistency' | 'kepu' | 'canvas' | 'tips'
+
+const TAB_ICONS: Record<Category, React.ComponentType<{ size?: number; strokeWidth?: number }> | null> = {
+  all: null,
+  consistency: User,
+  drama: Drama,
+  kepu: Clapperboard,
+  canvas: Camera,
+  tips: Lightbulb,
+}
 
 const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   'character-consistency': Users,
@@ -106,25 +118,30 @@ export default function GuidePage() {
         >
           {catTabs.map((tab) => {
             const active = selectedCat === tab.id
+            const TabIcon = TAB_ICONS[tab.id]
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setSelectedCat(tab.id)}
                 style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '7px',
                   padding: '8px 16px',
                   borderRadius: '12px',
-                  border: active ? '1px solid #65a30d' : '1px solid var(--pf-line, #e2e8f0)',
+                  border: active ? '1px solid #65a30d' : '1px solid #cbd5e1',
                   background: active ? '#c4f135' : '#ffffff',
                   color: active ? '#1a2e05' : 'var(--pf-ink, #0f172a)',
-                  fontWeight: active ? 700 : 500,
+                  fontWeight: active ? 700 : 550,
                   fontSize: '0.9rem',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
-                  boxShadow: active ? '0 2px 8px rgba(196, 241, 53, 0.35)' : 'none',
+                  boxShadow: active ? '0 2px 8px rgba(196, 241, 53, 0.35)' : '0 1px 2px rgba(0, 0, 0, 0.04)',
                 }}
               >
-                {tab.label}
+                {TabIcon ? <TabIcon size={16} strokeWidth={1.9} /> : null}
+                <span>{tab.label}</span>
               </button>
             )
           })}

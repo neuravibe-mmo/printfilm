@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { api, type UsageSummary } from '../../api'
 import { useI18n } from '../../i18n'
 import { formatCredits } from '../../lib/dramaUsage'
@@ -14,14 +13,12 @@ function formatTokens(n: number) {
 type MonthlyUsageCardProps = {
   /** thẻ cài đặt/giá cả được nhúng nhỏ gọn; kiểu thanh bên độc lập của bảng điều khiển */
   variant?: 'panel' | 'compact'
-  /** Có hiển thị nút "Chuyển đến Nạp tiền" hay không (có thể đóng khi tính năng nạp tiền trực tiếp có sẵn trên trang định giá) */
   showTopup?: boolean
 }
 
 /** Thẻ sử dụng tháng này: Token/phí/số dư, để tái sử dụng trên trang định giá và trung tâm cá nhân */
 export default function MonthlyUsageCard({
   variant = 'panel',
-  showTopup = true,
 }: MonthlyUsageCardProps) {
   const { t, locale } = useI18n()
   const [usage, setUsage] = useState<UsageSummary | null>(null)
@@ -76,11 +73,6 @@ export default function MonthlyUsageCard({
 
       <div className="pf-usage-foot">
         <span className="pf-muted">{t('billing.monthlyUsage.calls').replace('{n}', String(usage?.calls ?? 0))}</span>
-        {showTopup ? (
-          <Link to="/pricing" className="pf-btn pf-btn-lime pf-btn-sm">
-            {t('billing.monthlyUsage.topupBtn')}
-          </Link>
-        ) : null}
       </div>
     </div>
   )

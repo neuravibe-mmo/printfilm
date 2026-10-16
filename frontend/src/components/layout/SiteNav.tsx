@@ -11,7 +11,7 @@ import { USER_UPDATED_EVENT } from '../../lib/userEvents'
 import { useI18n } from '../../i18n'
 import LanguageSwitch from './LanguageSwitch'
 
-export type NavActive = 'home' | 'drama' | 'kepu' | 'tools' | 'assets' | 'pricing' | 'templates' | 'studio' | 'history' | 'guide'
+export type NavActive = 'home' | 'drama' | 'kepu' | 'tools' | 'assets' | 'templates' | 'studio' | 'history' | 'guide'
 
 type Props = {
   active?: NavActive
@@ -32,7 +32,6 @@ function normalizeActive(active: NavActive | undefined, pathname: string): NavAc
     return 'kepu'
   }
   if (pathname.startsWith('/tools')) return 'tools'
-  if (pathname.startsWith('/pricing')) return 'pricing'
   if (pathname === '/') return 'home'
   return undefined
 }
@@ -97,9 +96,6 @@ export default function SiteNav({ active }: Props) {
       </NavLink>
       <NavLink to="/assets" className={() => isActive('assets')}>
         {t('nav.assets')}
-      </NavLink>
-      <NavLink to="/pricing" className={() => isActive('pricing')}>
-        {t('nav.pricing')}
       </NavLink>
       <NavLink to="/guide" className={() => isActive('guide')}>
         {t('nav.guide')}

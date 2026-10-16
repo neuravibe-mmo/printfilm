@@ -56,11 +56,11 @@ export const enPages = {
     proTipLabel: 'Pro Tip: ',
     tabs: {
       all: 'All Guides',
-      consistency: '👤 Character Consistency',
-      drama: '🎭 Multi-Episode Drama',
-      kepu: '🎬 AI Video Pipeline',
-      canvas: '📐 Canvas & Camera',
-      tips: '💡 Budget & Debugging',
+      consistency: 'Character Consistency',
+      drama: 'Multi-Episode Drama',
+      kepu: 'AI Video Pipeline',
+      canvas: 'Canvas & Camera',
+      tips: 'Budget & Debugging',
     },
     items: [
       {
@@ -200,7 +200,7 @@ export const enPages = {
       { id: 'kepu', title: 'AI Short Video', desc: 'Storyboard pipeline', href: '/history' },
       { id: 'tools', title: 'Tools', desc: 'Text-to-image / video', href: '/tools' },
       { id: 'settings', title: 'Account', desc: 'Projects · runs · downloads', href: '/settings?tab=tools' },
-      { id: 'billing', title: 'Billing', desc: 'Pay as you go, no expiry', href: '/pricing' },
+      { id: 'billing', title: 'Billing', desc: 'Pay as you go, no expiry', href: '/help#faq' },
     ],
     steps: [
       {
