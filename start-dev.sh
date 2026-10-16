@@ -85,7 +85,20 @@ fi
 if [ "$PG_RUNNING" = false ] || [ "$REDIS_RUNNING" = false ]; then
     if command -v brew &> /dev/null; then
         echo -e "${YELLOW}Thử khởi động qua Homebrew services...${NC}"
-        [ "$PG_RUNNING" = false ] && brew services start postgresql@16 2>/dev/null || true
+        if [ "$PG_RUNNING" = false ]; then
+            # Dọn dẹp postmaster.pid cũ nếu postgres bị crash/tắt đột ngột
+            for pg_dir in /opt/homebrew/var/postgresql* /usr/local/var/postgresql*; do
+                if [ -f "$pg_dir/postmaster.pid" ]; then
+                    pid=$(head -n 1 "$pg_dir/postmaster.pid" 2>/dev/null)
+                    if [ -n "$pid" ] && ! ps -p "$pid" -o comm= 2>/dev/null | grep -q postgres; then
+                        echo -e "${YELLOW}Dọn dẹp lock file cũ: $pg_dir/postmaster.pid...${NC}"
+                        rm -f "$pg_dir/postmaster.pid"
+                    fi
+                fi
+            done
+            PG_FORMULA=$(brew list --formula 2>/dev/null | grep -E '^postgresql(@[0-9]+)?$' | head -n 1)
+            [ -n "$PG_FORMULA" ] && brew services start "$PG_FORMULA" 2>/dev/null || brew services start postgresql 2>/dev/null || true
+        fi
         [ "$REDIS_RUNNING" = false ] && brew services start redis 2>/dev/null || true
         sleep 2
     fi
@@ -106,8 +119,9 @@ if [ "$PG_RUNNING" = false ] || [ "$REDIS_RUNNING" = false ]; then
             PG_RUNNING=true
             REDIS_RUNNING=true
         else
+            PG_FORMULA=$(brew list --formula 2>/dev/null | grep -E '^postgresql(@[0-9]+)?$' | head -n 1)
             echo -e "${RED}Lỗi: Không tìm thấy PostgreSQL hoặc Redis đang chạy, và Docker cũng chưa được bật.${NC}"
-            echo -e "${RED}Vui lòng chạy 'brew services start postgresql@16' và 'brew services start redis' hoặc bật Docker Desktop.${NC}"
+            echo -e "${RED}Vui lòng chạy 'brew services start ${PG_FORMULA:-postgresql}' và 'brew services start redis' hoặc bật Docker Desktop.${NC}"
             exit 1
         fi
     fi
