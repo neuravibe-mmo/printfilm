@@ -1082,6 +1082,92 @@ async def update_shot(
     return shot
 
 
+@router.get("/projects/{project_id}/shots/{shot_id}/prompt-preview")
+async def get_shot_prompt_preview(
+    project_id: int,
+    shot_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Lấy thông tin chi tiết prompt và các ảnh tham chiếu được dùng khi tạo ảnh cho phân cảnh."""
+    cond = [Project.id == project_id]
+    if not getattr(user, "is_admin", False):
+        cond.append(Project.user_id == user.id)
+
+    result = await db.execute(
+        select(Project)
+        .where(*cond)
+        .options(selectinload(Project.shots), selectinload(Project.template))
+    )
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Dự án không tồn tại")
+    shot = next((s for s in project.shots if s.id == shot_id), None)
+    if not shot:
+        raise HTTPException(status_code=404, detail="Phân cảnh không tồn tại")
+
+    from app.services.pipeline import (
+        _locked_shot_prompt,
+        _project_base_refs,
+        previous_usable_shot,
+        _project_image_negative,
+        _image_size_for,
+        _project_output_ratio,
+    )
+    from app.services.kepu_continuity import image_refs_for_shot, shot_image_ref
+
+    shot_no = shot.shot_no
+    prev = previous_usable_shot(list(project.shots), shot_no)
+    base_refs = _project_base_refs(project)
+    ref_urls = image_refs_for_shot(prev, base_refs)
+
+    detailed_refs = []
+    prev_ref = (prev.image_url or prev.image_ark_url) if prev else None
+    if prev_ref:
+        detailed_refs.append({
+            "url": prev_ref,
+            "type": "previous_shot",
+            "label": f"Cảnh liền trước (Cảnh {prev.shot_no:02d})",
+            "shot_no": prev.shot_no,
+        })
+    if project.ref_image_url:
+        detailed_refs.append({
+            "url": project.ref_image_url,
+            "type": "project_ref",
+            "label": "Ảnh tham chiếu dự án (Sản phẩm / Nhân vật)",
+            "shot_no": None,
+        })
+    tpl_refs = list(((project.template.seedream_config or {}).get("ref_images") or [])) if project.template else []
+    for idx, t_url in enumerate(tpl_refs, start=1):
+        detailed_refs.append({
+            "url": t_url,
+            "type": "template_ref",
+            "label": f"Ảnh mẫu phong cách #{idx}",
+            "shot_no": None,
+        })
+
+    full_prompt = _locked_shot_prompt(project, shot.img_prompt)
+    negative = _project_image_negative(project)
+    aspect_ratio = _project_output_ratio(project) or "16:9"
+    image_size = _image_size_for(project)
+    image_model = (getattr(project, "image_model", None) or "").strip()
+    style_prefix = project.template.style_prefix if project.template else ""
+
+    return {
+        "shot_id": shot.id,
+        "shot_no": shot.shot_no,
+        "full_prompt": full_prompt,
+        "raw_prompt": shot.img_prompt,
+        "style_prefix": style_prefix,
+        "negative_prompt": negative,
+        "ref_urls": ref_urls,
+        "detailed_refs": detailed_refs,
+        "image_model": image_model,
+        "aspect_ratio": aspect_ratio,
+        "image_size": image_size,
+    }
+
+
 @router.post("/projects/{project_id}/shots/{shot_id}/regen-image", response_model=ProjectOut)
 async def regen_image(
     project_id: int,

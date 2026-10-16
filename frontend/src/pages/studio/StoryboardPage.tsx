@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FileText, MoreVertical, Scissors, Volume2 } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, defaultsFromTemplate } from '../../api'
@@ -21,6 +22,7 @@ import { dialog } from '../../lib/dialog'
 import { handleBillingError } from '../../lib/billingError'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import ShotTrimModal from '../../components/studio/ShotTrimModal'
+import ShotPromptModal from '../../components/studio/ShotPromptModal'
 import {
   effectiveStatus,
   formatMmSs,
@@ -168,6 +170,8 @@ export default function StoryboardPage() {
   } | null>(null)
   const [preview, setPreview] = useState<PreviewState>(null)
   const [menuShotId, setMenuShotId] = useState<number | null>(null)
+  const [imgMenuShotId, setImgMenuShotId] = useState<number | null>(null)
+  const [promptModalShot, setPromptModalShot] = useState<Shot | null>(null)
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchSelected, setBatchSelected] = useState<number[]>([])
   const [batchDuration, setBatchDuration] = useState('')
@@ -259,13 +263,14 @@ export default function StoryboardPage() {
   }, [project?.id, project?.status, project?.active_tasks])
 
   useEffect(() => {
-    if (menuShotId == null) return
+    if (menuShotId == null && imgMenuShotId == null) return
     function onDoc() {
       setMenuShotId(null)
+      setImgMenuShotId(null)
     }
     document.addEventListener('click', onDoc)
     return () => document.removeEventListener('click', onDoc)
-  }, [menuShotId])
+  }, [menuShotId, imgMenuShotId])
 
   const running = isProjectBusy(project)
   const step = project ? kepuStepIndex('board', project) : 2
@@ -1345,60 +1350,94 @@ title={t('studio.storyboard.respliceTip')}
                               >
                                 {t('common.edit')}
                               </button>
-                              <button
-                                type="button"
-                                className="op"
-                                disabled={rowBusy}
-                                onClick={() => regenImage(shot)}
-                              >
-                                {shot.image_url ? t('studio.storyboard.redrawImage') : t('studio.storyboard.genImage')}
-                              </button>
-                              {isFullPipeline ? (
+                              <div className="pf-shot-op-row">
                                 <button
                                   type="button"
-                                  className="op op-video"
-                                  disabled={rowBusy || !shot.image_url}
-                                  title={!shot.image_url ? t('studio.storyboard.needImageFirst') : undefined}
-                                  onClick={() => regenVideo(shot)}
+                                  className="op"
+                                  disabled={rowBusy}
+                                  onClick={() => regenImage(shot)}
                                 >
-                                  {shot.video_url ? t('studio.storyboard.regenVideo') : t('studio.storyboard.genVideo')}
+                                  {shot.image_url ? t('studio.storyboard.redrawImage') : t('studio.storyboard.genImage')}
                                 </button>
-                              ) : null}
-                              <button
-                                type="button"
-                                className="more"
-                                aria-label={t('studio.storyboard.moreOps')}
-                                disabled={rowBusy}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setMenuShotId((id) => (id === shot.id ? null : shot.id))
-                                }}
-                              >
-                                ⋮
-                              </button>
-                              {menuShotId === shot.id ? (
-                                <div className="pf-shot-menu" onClick={(e) => e.stopPropagation()}>
-                                  <button
-                                    type="button"
-                                    disabled={rowBusy}
-                                    onClick={() => {
-                                      setMenuShotId(null)
-                                      regenAudio(shot)
-                                    }}
-                                  >
-                                    {t('studio.storyboard.redub')}
-                                  </button>
-                                  {canTrim ? (
+                                <button
+                                  type="button"
+                                  className="more"
+                                  aria-label={t('studio.storyboard.imageOps') || 'Tác vụ hình ảnh'}
+                                  disabled={rowBusy}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setMenuShotId(null)
+                                    setImgMenuShotId((id) => (id === shot.id ? null : shot.id))
+                                  }}
+                                >
+                                  <MoreVertical size={16} strokeWidth={2} />
+                                </button>
+                                {imgMenuShotId === shot.id ? (
+                                  <div className="pf-shot-menu" onClick={(e) => e.stopPropagation()}>
                                     <button
                                       type="button"
-                                      disabled={rowBusy}
                                       onClick={() => {
-                                        setMenuShotId(null)
-                                        openTrimModal(shot, videoDurations[shot.id])
+                                        setImgMenuShotId(null)
+                                        setPromptModalShot(shot)
                                       }}
                                     >
-                                      ✂ {t('studio.storyboard.trimVideo')}
+                                      <FileText size={14} strokeWidth={2} />
+                                      <span>{t('studio.storyboard.viewPrompt') || 'Xem Prompt'}</span>
                                     </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                              {isFullPipeline ? (
+                                <div className="pf-shot-op-row">
+                                  <button
+                                    type="button"
+                                    className="op op-video"
+                                    disabled={rowBusy || !shot.image_url}
+                                    title={!shot.image_url ? t('studio.storyboard.needImageFirst') : undefined}
+                                    onClick={() => regenVideo(shot)}
+                                  >
+                                    {shot.video_url ? t('studio.storyboard.regenVideo') : t('studio.storyboard.genVideo')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="more"
+                                    aria-label={t('studio.storyboard.moreOps')}
+                                    disabled={rowBusy}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setImgMenuShotId(null)
+                                      setMenuShotId((id) => (id === shot.id ? null : shot.id))
+                                    }}
+                                  >
+                                    <MoreVertical size={16} strokeWidth={2} />
+                                  </button>
+                                  {menuShotId === shot.id ? (
+                                    <div className="pf-shot-menu" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        type="button"
+                                        disabled={rowBusy}
+                                        onClick={() => {
+                                          setMenuShotId(null)
+                                          regenAudio(shot)
+                                        }}
+                                      >
+                                        <Volume2 size={14} strokeWidth={2} />
+                                        <span>{t('studio.storyboard.redub')}</span>
+                                      </button>
+                                      {canTrim ? (
+                                        <button
+                                          type="button"
+                                          disabled={rowBusy}
+                                          onClick={() => {
+                                            setMenuShotId(null)
+                                            openTrimModal(shot, videoDurations[shot.id])
+                                          }}
+                                        >
+                                          <Scissors size={14} strokeWidth={2} />
+                                          <span>{t('studio.storyboard.trimVideo')}</span>
+                                        </button>
+                                      ) : null}
+                                    </div>
                                   ) : null}
                                 </div>
                               ) : null}
@@ -1876,6 +1915,16 @@ title={t('studio.storyboard.respliceTip')}
             setVideoDurations((prev) => ({ ...prev, [trimmingShot.shot.id]: newDuration }))
             setTrimmingShot(null)
           }}
+        />
+      ) : null}
+
+      {promptModalShot && project ? (
+        <ShotPromptModal
+          projectId={project.id}
+          shot={promptModalShot}
+          open={Boolean(promptModalShot)}
+          onClose={() => setPromptModalShot(null)}
+          onEditShot={(s) => openShotEdit(s)}
         />
       ) : null}
     </AppShell>

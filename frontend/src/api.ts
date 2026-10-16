@@ -121,6 +121,27 @@ export type Shot = {
   version: number
 }
 
+export type ShotPromptRef = {
+  url: string
+  type: 'previous_shot' | 'project_ref' | 'template_ref'
+  label: string
+  shot_no?: number | null
+}
+
+export type ShotPromptPreview = {
+  shot_id: number
+  shot_no: number
+  full_prompt: string
+  raw_prompt: string
+  style_prefix: string
+  negative_prompt: string
+  ref_urls: string[]
+  detailed_refs: ShotPromptRef[]
+  image_model: string
+  aspect_ratio: string
+  image_size: string
+}
+
 export type VoicePreset = {
   id: string
   label: string
@@ -564,6 +585,9 @@ export const api = {
     return request<Project>(`/api/projects/${projectId}/shots/${shotId}/regen-image`, {
       method: 'POST',
     })
+  },
+  getShotPromptPreview(projectId: number, shotId: number) {
+    return request<ShotPromptPreview>(`/api/projects/${projectId}/shots/${shotId}/prompt-preview`)
   },
   regenVideo(projectId: number, shotId: number) {
     return request<Project>(`/api/projects/${projectId}/shots/${shotId}/regen-video`, {
