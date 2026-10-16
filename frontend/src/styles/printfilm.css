@@ -8656,6 +8656,7 @@ button.pf-shot-editable:disabled {
 .pf-dot-green { background: #10b981; }
 .pf-dot-blue { background: #3b82f6; }
 .pf-dot-red { background: #ef4444; }
+.pf-dot-amber { background: #f59e0b; }
 
 .pf-prompt-part-val {
   font-size: 0.88rem;

@@ -56,8 +56,15 @@ function csvEscape(value: string | number | null | undefined) {
   return s
 }
 
-function downloadStoryboardCsv(project: Project) {
-  const header = ['Số cảnh', 'Lời dẫn', 'Mô tả hình ảnh', 'Thời lượng (s)', 'Trạng thái', 'Tiêu đề cảnh']
+function downloadStoryboardCsv(project: Project, t: (key: string) => string) {
+  const header = [
+    t('studio.storyboard.csvShotNo'),
+    t('studio.storyboard.csvNarr'),
+    t('studio.storyboard.csvImage'),
+    t('studio.storyboard.csvDurSec'),
+    t('studio.storyboard.csvStatus'),
+    t('studio.storyboard.csvTitle'),
+  ]
   const rows = (project.shots || [])
     .slice()
     .sort((a, b) => a.shot_no - b.shot_no)
@@ -84,8 +91,17 @@ function downloadStoryboardCsv(project: Project) {
   URL.revokeObjectURL(a.href)
 }
 
-function localizeCueText(text: string): string {
+function localizeCueText(text: string, locale?: string): string {
   if (!text) return ''
+  if (locale === 'zh') return text
+  if (locale === 'en') {
+    return text
+      .replace('字幕：后期叠旁白字幕，简体中文逐句同步', 'Subtitles: Post-production voiceover overlay, sentence-by-sentence sync')
+      .replace('字幕：底部居中·简体中文·逐句轮换·与口播同步', 'Subtitles: Bottom center · Synced with voiceover')
+      .replace('字幕：底部居中·简体中文', 'Subtitles: Bottom center')
+      .replace('后期混音', 'Post-mix')
+      .replace(/，?音量低于人声/, ', volume lower than voice')
+  }
   return text
     .replace('字幕：后期叠旁白字幕，简体中文逐句同步', 'Phụ đề: Ghép chữ lời dẫn ở hậu kỳ, đồng bộ từng câu')
     .replace('字幕：底部居中·简体中文·逐句轮换·与口播同步', 'Phụ đề: Căn giữa phía dưới · Đồng bộ lời thoại')
@@ -94,8 +110,19 @@ function localizeCueText(text: string): string {
     .replace(/，?音量低于人声/, ', âm lượng nhỏ hơn giọng nói')
 }
 
-function localizeBeatText(text: string): string {
+function localizeBeatText(text: string, locale?: string): string {
   if (!text) return ''
+  if (locale === 'zh') return text
+  if (locale === 'en') {
+    return text
+      .replace(/^【旁白[·・•\s]*自然语速[·・•\s]*同步字幕】/, '【Voiceover · Natural pace · Synced subtitles】')
+      .replace(/^【旁白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Voiceover · Slow & clear · Synced subtitles】')
+      .replace(/^【旁白[·・•\s]*自然语速】/, '【Voiceover · Natural pace】')
+      .replace(/^【旁白[·・•\s]*慢速清晰】/, '【Voiceover · Slow & clear】')
+      .replace(/^【对白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Dialogue · Slow & clear · Synced subtitles】')
+      .replace(/^【画面[·・•\s]*无配音仅环境音】/, '【Visuals · Ambient sound only】')
+      .replace(/^【空镜[·・•\s]*可仅环境音与\s*BGM】/, '【Cutaway · Ambient sound & BGM】')
+  }
   return text
     .replace(/^【旁白[·・•\s]*自然语速[·・•\s]*同步字幕】/, '【Lời dẫn · Tốc độ tự nhiên · Phụ đề đồng bộ】')
     .replace(/^【旁白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Lời dẫn · Chậm rõ · Phụ đề đồng bộ】')
@@ -149,7 +176,7 @@ function isProjectBusy(project: Project | null): boolean {
 }
 
 export default function StoryboardPage() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { id } = useParams()
   const projectId = Number(id)
   const nav = useNavigate()
@@ -515,10 +542,14 @@ export default function StoryboardPage() {
       return t('studio.storyboard.invalidDuration')
     }
     if (batchDurationNum < minAllowedDuration) {
-      return `Thời lượng tối thiểu là ${minAllowedDuration}s (theo mẫu ${template?.name || ''}).`
+      return t('studio.storyboard.batchDurationMin')
+        .replace('{min}', String(minAllowedDuration))
+        .replace('{template}', template?.name || '')
     }
     if (batchDurationNum > maxAllowedDuration) {
-      return `Thời lượng tối đa là ${maxAllowedDuration}s (theo mẫu ${template?.name || ''}).`
+      return t('studio.storyboard.batchDurationMax')
+        .replace('{max}', String(maxAllowedDuration))
+        .replace('{template}', template?.name || '')
     }
     return null
   }, [batchDurationNum, minAllowedDuration, maxAllowedDuration, template?.name, t])
@@ -957,7 +988,7 @@ title={t('studio.storyboard.respliceTip')}
               type="button"
               className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
               disabled={shots.length === 0}
-              onClick={() => downloadStoryboardCsv(project)}
+              onClick={() => downloadStoryboardCsv(project, t)}
             >
               <IconDownload size={14} />
               {t('studio.storyboard.exportDraft')}
@@ -1244,10 +1275,10 @@ title={t('studio.storyboard.respliceTip')}
                             >
                               {cues.length > 0 ? (
                                 <span className="pf-muted" style={{ display: 'block', fontSize: '0.75rem' }}>
-                                  {localizeCueText(cues[0])?.replace(/^【|】$/g, '')}
+                                  {localizeCueText(cues[0], locale)?.replace(/^【|】$/g, '')}
                                   {cues[1]
                                     ? ` · ${(() => {
-                                        const clean = localizeCueText(cues[1])
+                                        const clean = localizeCueText(cues[1], locale)
                                           .replace(/^【(?:BGM[：:]\s*|Nhạc nền[：:]\s*)?/i, '')
                                           .replace(/】$/, '')
                                         return clean.length > 80 ? `${clean.slice(0, 80)}…` : clean
@@ -1258,7 +1289,7 @@ title={t('studio.storyboard.respliceTip')}
                               {beats.length > 0 ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
                                   {beats.slice(0, 6).map((b, i) => {
-                                    const localizedText = localizeBeatText(b.text)
+                                    const localizedText = localizeBeatText(b.text, locale)
                                     return (
                                       <span key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
                                         {b.duration > 0 ? (
@@ -1362,7 +1393,7 @@ title={t('studio.storyboard.respliceTip')}
                                 <button
                                   type="button"
                                   className="more"
-                                  aria-label={t('studio.storyboard.imageOps') || 'Tác vụ hình ảnh'}
+                                  aria-label={t('studio.storyboard.imageOps')}
                                   disabled={rowBusy}
                                   onClick={(e) => {
                                     e.stopPropagation()
@@ -1382,7 +1413,7 @@ title={t('studio.storyboard.respliceTip')}
                                       }}
                                     >
                                       <FileText size={14} strokeWidth={2} />
-                                      <span>{t('studio.storyboard.viewPrompt') || 'Xem Prompt'}</span>
+                                      <span>{t('studio.storyboard.viewPrompt')}</span>
                                     </button>
                                   </div>
                                 ) : null}
@@ -1460,7 +1491,7 @@ title={t('studio.storyboard.respliceTip')}
                   type="button"
                   className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
                   disabled={shots.length === 0}
-                  onClick={() => downloadStoryboardCsv(project)}
+                  onClick={() => downloadStoryboardCsv(project, t)}
                 >
                   <IconDownload size={15} />
                   {t('studio.storyboard.exportScript')}
@@ -1564,7 +1595,9 @@ title={t('studio.storyboard.respliceTip')}
                 min={minAllowedDuration}
                 max={maxAllowedDuration}
                 step={0.5}
-                placeholder={`VD: ${minAllowedDuration} - ${maxAllowedDuration}`}
+                placeholder={t('studio.storyboard.batchDurationPlaceholder')
+                  .replace('{min}', String(minAllowedDuration))
+                  .replace('{max}', String(maxAllowedDuration))}
                 value={batchDuration}
                 onChange={(e) => setBatchDuration(e.target.value)}
                 style={{

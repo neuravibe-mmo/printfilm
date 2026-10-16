@@ -39,7 +39,9 @@ export default function ShotPromptModal({
   const [copied, setCopied] = useState(false)
   const [previewImg, setPreviewImg] = useState<string | null>(null)
   const [showBreakdown, setShowBreakdown] = useState(false)
+  const [showRefHelp, setShowRefHelp] = useState(false)
   const helpAnchorRef = useRef<HTMLDivElement>(null)
+  const refHelpAnchorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -48,6 +50,7 @@ export default function ShotPromptModal({
     setError(null)
     setCopied(false)
     setShowBreakdown(false)
+    setShowRefHelp(false)
 
     api
       .getShotPromptPreview(projectId, shot.id)
@@ -67,18 +70,22 @@ export default function ShotPromptModal({
     return () => {
       cancelled = true
     }
-  }, [open, projectId, shot.id])
+  }, [open, projectId, shot.id, t])
 
   useEffect(() => {
-    if (!showBreakdown) return
+    if (!showBreakdown && !showRefHelp) return
     const handleClickOutside = (e: MouseEvent) => {
       if (helpAnchorRef.current && !helpAnchorRef.current.contains(e.target as Node)) {
         setShowBreakdown(false)
+      }
+      if (refHelpAnchorRef.current && !refHelpAnchorRef.current.contains(e.target as Node)) {
+        setShowRefHelp(false)
       }
     }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowBreakdown(false)
+        setShowRefHelp(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -87,7 +94,7 @@ export default function ShotPromptModal({
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [showBreakdown])
+  }, [showBreakdown, showRefHelp])
 
   const copyPromptText = async (textToCopy: string) => {
     try {
@@ -274,6 +281,69 @@ export default function ShotPromptModal({
             <div className="pf-prompt-card-title">
               <Images size={18} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-amber" />
               <strong>{t('studio.storyboard.refImagesTitle') || 'Ảnh tham chiếu (Reference Images)'}</strong>
+              <div className="pf-prompt-help-anchor" ref={refHelpAnchorRef}>
+                <button
+                  type="button"
+                  className={`pf-prompt-help-btn ${showRefHelp ? 'is-active' : ''}`}
+                  onClick={() => setShowRefHelp((prev) => !prev)}
+                  title={t('studio.storyboard.refHelpAria') || 'Xem nguồn gốc ảnh tham chiếu'}
+                  aria-label={t('studio.storyboard.refHelpAria') || 'Xem nguồn gốc ảnh tham chiếu'}
+                  aria-expanded={showRefHelp}
+                >
+                  <CircleHelp size={16} strokeWidth={2} />
+                </button>
+
+                {showRefHelp ? (
+                  <div className="pf-prompt-tooltip-popover" role="tooltip">
+                    <div className="pf-prompt-tooltip-arrow" />
+                    <div className="pf-prompt-tooltip-header">
+                      <div className="pf-prompt-tooltip-title">
+                        <Images size={15} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-amber" />
+                        <strong>{t('studio.storyboard.refHelpTitle') || 'Nguồn gốc ảnh tham chiếu'}</strong>
+                      </div>
+                      <button
+                        type="button"
+                        className="pf-prompt-tooltip-close"
+                        onClick={() => setShowRefHelp(false)}
+                        aria-label={t('common.close') || 'Đóng'}
+                      >
+                        <X size={14} strokeWidth={2} />
+                      </button>
+                    </div>
+                    <div className="pf-prompt-tooltip-body">
+                      <div className="pf-prompt-part">
+                        <div className="pf-prompt-part-label">
+                          <span className="pf-dot pf-dot-blue" />
+                          <strong>{t('studio.storyboard.refSourcePrevTitle') || '1. Ảnh của cảnh liền trước:'}</strong>
+                        </div>
+                        <div className="pf-prompt-part-val">
+                          {t('studio.storyboard.refSourcePrevDesc') || 'Từ Cảnh 02 trở đi, hệ thống lấy ảnh cảnh trước để giữ tính nhất quán về nhân vật, trang phục và phong cách (Cảnh 01 không có).'}
+                        </div>
+                      </div>
+
+                      <div className="pf-prompt-part">
+                        <div className="pf-prompt-part-label">
+                          <span className="pf-dot pf-dot-green" />
+                          <strong>{t('studio.storyboard.refSourceProjTitle') || '2. Ảnh tham chiếu của Dự án:'}</strong>
+                        </div>
+                        <div className="pf-prompt-part-val">
+                          {t('studio.storyboard.refSourceProjDesc') || 'Ảnh sản phẩm, nhân vật hoặc tài sản thương hiệu do bạn tải lên khi tạo/cài đặt dự án.'}
+                        </div>
+                      </div>
+
+                      <div className="pf-prompt-part">
+                        <div className="pf-prompt-part-label">
+                          <span className="pf-dot pf-dot-amber" />
+                          <strong>{t('studio.storyboard.refSourceTplTitle') || '3. Ảnh phong cách từ Template:'}</strong>
+                        </div>
+                        <div className="pf-prompt-part-val">
+                          {t('studio.storyboard.refSourceTplDesc') || 'Ảnh mẫu phong cách được thiết lập sẵn trong Template để định hình tone màu và đường nét.'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               <span className="pf-prompt-count-pill">{t('studio.storyboard.imagesCountPill', { count: refs.length }) || `${refs.length} ảnh`}</span>
             </div>
 
