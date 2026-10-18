@@ -22,6 +22,8 @@ from app.deps import get_current_user
 from app.models import Project, ProjectStatus, Shot, ShotStatus, UsageEvent, User, Work
 from app.models_tasks import TaskRun
 from app.schemas import (
+    CharacterPromptGenerateOut,
+    CharacterPromptGenerateRequest,
     ContentExpandOut,
     ContentExpandRequest,
     PageMeta,
@@ -151,6 +153,163 @@ async def expand_content(
         content=result["content"],
         task_id=task.id,
     )
+
+
+@router.post("/content/character-prompt", response_model=CharacterPromptGenerateOut)
+async def generate_character_prompt_endpoint(
+    body: CharacterPromptGenerateRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> CharacterPromptGenerateOut:
+    """Generate a rich, cinematic character prompt using vision analysis + LLM API (neuravibemmo.dpdns.org)."""
+    import base64
+    import httpx
+    from app.services.llm_client import chatgpt2api_completions
+    from app.config import get_settings
+    from app.services import storage
+
+    settings = get_settings()
+    topic = (body.topic or "").strip()
+    template_name = (body.template_name or "").strip()
+    template_style = (body.template_style or "").strip()
+    seed = (body.seed_prompt or "").strip()
+    ref_url = (body.ref_image_url or "").strip()
+
+    if not ref_url and body.project_id:
+        proj = await db.get(Project, body.project_id)
+        if proj and proj.ref_image_url:
+            ref_url = proj.ref_image_url
+
+    # 1. Trích xuất ảnh tham chiếu nếu có để chạy Gemini Vision
+    img_bytes: bytes | None = None
+    mime = "image/png"
+    if ref_url:
+        if ref_url.startswith("data:image/"):
+            try:
+                header, b64 = ref_url.split(",", 1)
+                mime = header.split(";")[0].replace("data:", "")
+                img_bytes = base64.b64decode(b64)
+            except Exception as e:
+                logger.warning("Lỗi giải mã base64 ref_image_url: %s", e)
+        elif ref_url.startswith("http://") or ref_url.startswith("https://"):
+            try:
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    r = await client.get(ref_url)
+                    if r.status_code == 200:
+                        img_bytes = r.content
+                        mime = r.headers.get("content-type", "image/png")
+            except Exception as e:
+                logger.warning("Lỗi tải ảnh tham chiếu từ %s: %s", ref_url, e)
+        else:
+            p = storage.local_path_from_url(ref_url)
+            if (not p or not p.exists()) and body.project_id:
+                p = storage.project_dir(body.project_id) / Path(ref_url).name
+            if p and p.is_file():
+                img_bytes = p.read_bytes()
+                mime = "image/png" if p.suffix.lower() == ".png" else "image/jpeg"
+
+    if not img_bytes and body.project_id:
+        p_dir = storage.project_dir(body.project_id)
+        for cand in p_dir.glob("ref_image.*"):
+            if cand.is_file():
+                img_bytes = cand.read_bytes()
+                mime = "image/png" if cand.suffix.lower() == ".png" else "image/jpeg"
+                break
+
+    # 2. Phân tích đặc điểm nhân vật qua Vision API (neuravibemmo.dpdns.org)
+    visual_analysis = ""
+    if img_bytes:
+        try:
+            async with httpx.AsyncClient(timeout=35.0) as client:
+                vision_url = f"{settings.domain_web_2_api.rstrip('/')}/api/custom/detect-character-gender"
+                vision_resp = await client.post(
+                    vision_url,
+                    files={"image": ("ref_image.png", img_bytes, mime)},
+                    data={
+                        "prompt": (
+                            "Phân tích chi tiết đặc điểm ngoại hình nhân vật trong ảnh: "
+                            "giới tính, độ tuổi ước tính, kiểu và màu tóc, khuôn mặt, biểu cảm, trang phục, dáng người, phong cách tổng thể "
+                            "bằng tiếng Việt để làm prompt vẽ nhân vật."
+                        )
+                    },
+                )
+                if vision_resp.status_code == 200:
+                    v_json = vision_resp.json()
+                    raw_data = v_json.get("raw") or ""
+                    if isinstance(raw_data, str) and raw_data.strip().startswith("{"):
+                        try:
+                            parsed = json.loads(raw_data)
+                            if not parsed.get("error"):
+                                lines = []
+                                field_labels = {
+                                    "gender": "Giới tính",
+                                    "estimated_age": "Độ tuổi",
+                                    "hair_style_color": "Kiểu tóc và màu tóc",
+                                    "hair_description": "Kiểu tóc và màu tóc",
+                                    "hair": "Kiểu tóc và màu tóc",
+                                    "face_features": "Khuôn mặt",
+                                    "face_description": "Khuôn mặt",
+                                    "expression": "Biểu cảm và thần thái",
+                                    "demeanor": "Biểu cảm và thần thái",
+                                    "clothing": "Trang phục",
+                                    "body_shape": "Vóc dáng",
+                                    "overall_style": "Phong cách tổng thể",
+                                }
+                                for k, val in parsed.items():
+                                    if val and not str(val).lower().startswith("không"):
+                                        label = field_labels.get(k, k)
+                                        lines.append(f"- {label}: {val}")
+                                if lines:
+                                    visual_analysis = "\n".join(lines)
+                        except Exception:
+                            visual_analysis = raw_data
+                    elif isinstance(raw_data, str) and raw_data.strip():
+                        visual_analysis = raw_data
+        except Exception as err:
+            logger.warning("Lỗi phân tích ảnh tham chiếu bằng Vision API: %s", err)
+
+    # 3. Xây dựng prompt cho ChatGPT2API
+    system_prompt = (
+        "Bạn là chuyên gia thiết kế nhân vật và đạo diễn hình ảnh cho video AI (Midjourney, Stable Diffusion, Veo, Kling). "
+        "Nhiệm vụ của bạn là tạo ra một đoạn mô tả ngoại hình ngắn gọn, súc tích (1-2 câu tiếng Việt) về nhân vật chính, "
+        "bao gồm: độ tuổi, vóc dáng, kiểu tóc, trang phục đặc trưng, biểu cảm và thần thái phù hợp nhất. "
+        "ĐẶC BIỆT LƯU Ý: Nếu có thông tin phân tích từ ảnh tham chiếu, bạn BẮT BUỘC PHẢI giữ chính xác 100% các đặc điểm nhận dạng cốt lõi "
+        "(giới tính, kiểu tóc, màu tóc, trang phục, độ tuổi, cử chỉ biểu cảm) của ảnh tham chiếu, tuyệt đối không tự ý thay đổi giới tính hay trang phục khác. "
+        "Yêu cầu định dạng: CHỈ trả về trực tiếp đoạn văn bản mô tả nhân vật, tuyệt đối không thêm lời chào, không thêm ngoặc kép, không thêm lời dẫn."
+    )
+
+    user_parts = []
+    if visual_analysis:
+        user_parts.append(
+            "ĐẶC ĐIỂM NHẬN DIỆN TỪ ẢNH THAM CHIẾU (PHẢI TUÂN THỦ TUYỆT ĐỐI 100% CÁC CHI TIẾT NÀY):\n"
+            + visual_analysis
+        )
+    if topic:
+        user_parts.append(f"Chủ đề / bối cảnh video: {topic}")
+    if template_name:
+        user_parts.append(f"Phong cách mẫu: {template_name}")
+    if template_style:
+        user_parts.append(f"Gợi ý phong cách: {template_style}")
+    if seed:
+        user_parts.append(f"Ý tưởng ban đầu của người dùng (hãy mở rộng và tinh chỉnh từ ý này): {seed}")
+
+    if not user_parts:
+        user_parts.append("Nhân vật trẻ trung, hiện đại, năng động phù hợp làm video ngắn.")
+
+    user_prompt = "\n\n".join(user_parts)
+
+    try:
+        result = await chatgpt2api_completions(
+            system=system_prompt,
+            user=user_prompt,
+            base=f"{settings.domain_web_2_api.rstrip('/')}/api/chatgpt2api",
+            timeout=60.0,
+        )
+        cleaned = result.strip().strip('"').strip("'")
+        return CharacterPromptGenerateOut(character_prompt=cleaned)
+    except Exception as exc:
+        logger.warning("Lỗi gọi chatgpt2api character prompt: %s", exc)
+        raise HTTPException(status_code=502, detail=f"AI sinh mô tả nhân vật thất bại: {exc}")
 
 
 async def _get_owned_project(db: AsyncSession, project_id: int, user: User) -> Project:

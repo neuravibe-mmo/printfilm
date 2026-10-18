@@ -255,6 +255,19 @@ class ContentExpandOut(BaseModel):
     task_id: int | None = None
 
 
+class CharacterPromptGenerateRequest(BaseModel):
+    topic: str = Field(default="", max_length=2000)
+    template_name: str = Field(default="", max_length=200)
+    template_style: str = Field(default="", max_length=2000)
+    seed_prompt: str = Field(default="", max_length=2000)
+    ref_image_url: str = Field(default="", max_length=2000)
+    project_id: int | None = None
+
+
+class CharacterPromptGenerateOut(BaseModel):
+    character_prompt: str
+
+
 class VoicePreviewRequest(BaseModel):
     voice_id: str = Field(min_length=1, max_length=128)
 

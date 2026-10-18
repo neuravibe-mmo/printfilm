@@ -52,6 +52,7 @@ export default function StyleConfigPage() {
   const [mediaCatalog, setMediaCatalog] = useState<MediaModelsCatalog | null>(null)
   const [busy, setBusy] = useState(false)
   const [uploadingRef, setUploadingRef] = useState(false)
+  const [aiGeneratingChar, setAiGeneratingChar] = useState(false)
   const [previewBusy, setPreviewBusy] = useState<string | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -240,6 +241,29 @@ export default function StyleConfigPage() {
     }
   }
 
+  async function handleAiGenerateCharacter() {
+    if (!project) return
+    setAiGeneratingChar(true)
+    setError('')
+    try {
+      const res = await api.generateCharacterPrompt({
+        topic: project.source_text || project.title || '',
+        template_name: currentTpl?.name || '',
+        template_style: currentTpl?.style_prefix || '',
+        seed_prompt: characterPrompt.trim(),
+        ref_image_url: project.ref_image_url || '',
+        project_id: project.id,
+      })
+      if (res.character_prompt) {
+        setCharacterPrompt(res.character_prompt)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI tạo mô tả nhân vật thất bại')
+    } finally {
+      setAiGeneratingChar(false)
+    }
+  }
+
   async function generate() {
     if (!project) return
     stopPreview()
@@ -326,9 +350,11 @@ export default function StyleConfigPage() {
             onChangePrompt={setCharacterPrompt}
             refImageUrl={project.ref_image_url}
             uploadingRef={uploadingRef}
+            aiGenerating={aiGeneratingChar}
             onUploadRefImage={handleUploadRefImage}
             onRemoveRefImage={handleRemoveRefImage}
             onPasteRefImage={handlePasteRefImage}
+            onAiGenerate={handleAiGenerateCharacter}
           />
 
           <VoicePickerSection

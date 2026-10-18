@@ -8,9 +8,11 @@ type CharacterConfigSectionProps = {
   onChangePrompt: (val: string) => void
   refImageUrl?: string | null
   uploadingRef: boolean
+  aiGenerating?: boolean
   onUploadRefImage: (file: File) => Promise<void>
   onRemoveRefImage: () => Promise<void>
   onPasteRefImage: () => Promise<void>
+  onAiGenerate?: () => Promise<void>
 }
 
 export default function CharacterConfigSection({
@@ -18,9 +20,11 @@ export default function CharacterConfigSection({
   onChangePrompt,
   refImageUrl,
   uploadingRef,
+  aiGenerating,
   onUploadRefImage,
   onRemoveRefImage,
   onPasteRefImage,
+  onAiGenerate,
 }: CharacterConfigSectionProps) {
   const { t } = useI18n()
   const charPromptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -61,16 +65,19 @@ export default function CharacterConfigSection({
             type="button"
             className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
             title="AI Generate"
+            disabled={aiGenerating || uploadingRef}
+            onClick={onAiGenerate}
             style={{
               height: '26px',
               padding: '0 0.5rem',
               fontSize: '0.78rem',
               color: 'var(--pf-lime, #d4ff00)',
-              cursor: 'pointer',
+              cursor: aiGenerating ? 'not-allowed' : 'pointer',
+              opacity: aiGenerating ? 0.7 : 1,
             }}
           >
             <IconSparkles size={13} />
-            <span>AI Generate</span>
+            <span>{aiGenerating ? t('studio.styleConfig.generating') : 'AI Generate'}</span>
           </button>
         </div>
         <textarea

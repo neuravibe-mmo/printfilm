@@ -640,6 +640,19 @@ export const api = {
       body: JSON.stringify({ topic, mode }),
     })
   },
+  generateCharacterPrompt(body: {
+    topic: string
+    template_name?: string
+    template_style?: string
+    seed_prompt?: string
+    ref_image_url?: string
+    project_id?: number
+  }) {
+    return request<{ character_prompt: string }>('/api/content/character-prompt', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
   publish(projectId: number) {
     return request<Work>(`/api/projects/${projectId}/publish`, { method: 'POST' })
   },
