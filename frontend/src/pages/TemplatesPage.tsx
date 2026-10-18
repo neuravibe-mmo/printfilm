@@ -57,7 +57,7 @@ export default function TemplatesPage() {
 
   function openTemplate(item: Template) {
     if (!localStorage.getItem('token')) {
-      nav('/auth')
+      nav(`/auth?next=${encodeURIComponent(`/studio/new?template=${item.id}`)}`)
       return
     }
     nav(`/studio/new?template=${item.id}`)

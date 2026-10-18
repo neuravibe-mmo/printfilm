@@ -149,7 +149,7 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
-      nav('/auth')
+      nav('/auth?next=/history', { replace: true })
       return
     }
     api.templates().then((list) => {

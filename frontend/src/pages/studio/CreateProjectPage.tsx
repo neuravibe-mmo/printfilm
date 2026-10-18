@@ -79,10 +79,10 @@ export default function CreateProjectPage() {
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
-      nav('/auth')
+      nav('/auth?next=/studio/new', { replace: true })
       return
     }
-    api.me().catch(() => nav('/auth'))
+    api.me().catch(() => nav('/auth?next=/studio/new', { replace: true }))
     api.templates().then((list) => {
       setTemplates(list)
       const fromUrl = params.get('template') || ''

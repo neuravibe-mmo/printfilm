@@ -242,7 +242,7 @@ export default function StoryboardPage() {
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
-      nav('/auth')
+      nav(`/auth?next=${encodeURIComponent(location.pathname)}`, { replace: true })
       return
     }
     if (!projectId) {

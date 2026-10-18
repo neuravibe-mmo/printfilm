@@ -131,6 +131,7 @@ export const enShell = {
     toLogin: 'Already have an account? Sign in',
     forgotLink: 'Forgot password?',
     backToLogin: 'Back to sign in',
+    backHome: 'Home',
     forgotSent: 'If that email is registered, a reset link will be sent',
     resetSuccess: 'Password updated. Sign in with your new password',
     resetTokenMissing: 'Invalid reset link. Please request a new one',

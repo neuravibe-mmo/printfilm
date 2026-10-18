@@ -130,6 +130,7 @@ export const zhShell = {
     toLogin: '已有账号？登录',
     forgotLink: '忘记密码？',
     backToLogin: '返回登录',
+    backHome: '返回首页',
     forgotSent: '若该邮箱已注册，将收到重置邮件',
     resetSuccess: '密码已更新，请使用新密码登录',
     resetTokenMissing: '重置链接无效，请重新申请找回密码',

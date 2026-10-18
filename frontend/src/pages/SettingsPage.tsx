@@ -89,7 +89,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
-      nav('/auth')
+      nav('/auth?next=/settings', { replace: true })
       return
     }
     api
@@ -97,7 +97,7 @@ export default function SettingsPage() {
       .then(setUser)
       .catch(() => {
         localStorage.removeItem('token')
-        nav('/auth')
+        nav('/auth?next=/settings', { replace: true })
       })
     api.wallet().then(setWallet).catch(() => undefined)
   }, [nav])

@@ -130,6 +130,7 @@ export const viShell = {
     toLogin: 'Đã có tài khoản? Đăng nhập',
     forgotLink: 'Quên mật khẩu?',
     backToLogin: 'Quay lại đăng nhập',
+    backHome: 'Trang chủ',
     forgotSent: 'Nếu email đã được đăng ký, bạn sẽ nhận được thư đặt lại mật khẩu',
     resetSuccess: 'Mật khẩu đã được cập nhật, vui lòng đăng nhập bằng mật khẩu mới',
     resetTokenMissing: 'Liên kết đặt lại không hợp lệ, vui lòng yêu cầu lại',

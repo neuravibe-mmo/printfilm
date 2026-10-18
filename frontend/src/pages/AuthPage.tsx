@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { api } from '../api'
 import BrandMark from '../components/BrandMark'
 import LanguageSwitch from '../components/layout/LanguageSwitch'
 import { useI18n } from '../i18n'
 import { isValidAuthPassword, isValidEmailInput } from '../lib/validateAuthForm'
+import { dispatchUserUpdated } from '../lib/userEvents'
 
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset'
 
@@ -14,6 +15,7 @@ type AuthMode = 'login' | 'register' | 'forgot' | 'reset'
 function safeNextPath(raw: string | null, fallback = '/') {
   if (!raw) return fallback
   if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('://')) return fallback
+  if (raw === '/auth' || raw.startsWith('/auth?') || raw.startsWith('/auth/')) return fallback
   return raw
 }
 
@@ -31,6 +33,13 @@ export default function AuthPage() {
   const { t } = useI18n()
   const [params, setSearchParams] = useSearchParams()
   const nextPath = safeNextPath(params.get('next'), '/')
+  const isAlreadyLoggedIn = Boolean(localStorage.getItem('token'))
+
+  useEffect(() => {
+    if (localStorage.getItem('token')) {
+      nav(nextPath, { replace: true })
+    }
+  }, [nav, nextPath])
   /*
    * chế độ biểu mẫu hiện tại
    * các trường biểu mẫu email/mật khẩu/xác nhậnMật khẩu/biệt danh
@@ -141,7 +150,8 @@ export default function AuthPage() {
           ? await api.login(trimmedEmail, password)
           : await api.register(trimmedEmail, password, nickname.trim())
       localStorage.setItem('token', res.access_token)
-      nav(nextPath)
+      api.me().then(dispatchUserUpdated).catch(() => undefined)
+      nav(nextPath, { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.fail'))
     } finally {
@@ -167,12 +177,22 @@ export default function AuthPage() {
           ? t('auth.sendReset')
           : t('auth.savePassword')
 
+  if (isAlreadyLoggedIn) {
+    return null
+  }
+
   return (
     <div className="auth-shell">
       <div className="auth-panel">
         <div className="auth-panel-top">
-          <BrandMark />
-          <LanguageSwitch />
+          <Link to="/" className="auth-back-link" title={t('auth.backHome')}>
+            <ArrowLeft size={16} />
+            <span>{t('auth.backHome')}</span>
+          </Link>
+          <div className="auth-panel-top-right">
+            <BrandMark />
+            <LanguageSwitch />
+          </div>
         </div>
         <h1>{title}</h1>
         <form onSubmit={onSubmit} className="stack" noValidate>
