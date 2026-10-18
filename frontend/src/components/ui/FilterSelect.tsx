@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
 export type FilterOption = {
@@ -59,7 +59,7 @@ export default function FilterSelect({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="pf-filter-trigger-label">{current?.label || '请选择'}</span>
+        <span className="pf-filter-trigger-label">{current?.label || ''}</span>
         <ChevronDown size={15} strokeWidth={2} className="pf-filter-chevron" aria-hidden />
       </button>
       {open ? (
@@ -78,7 +78,8 @@ export default function FilterSelect({
                     setOpen(false)
                   }}
                 >
-                  {opt.label}
+                  <span className="pf-filter-option-label">{opt.label}</span>
+                  {selected ? <Check size={14} className="pf-filter-check" aria-hidden /> : null}
                 </button>
               </li>
             )

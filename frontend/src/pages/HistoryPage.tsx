@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import type { Project } from '../api'
 import BillingErrorNotice from '../components/billing/BillingErrorNotice'
 import AppShell from '../components/layout/AppShell'
 import PillTabs from '../components/ui/PillTabs'
+import FilterSelect, { type FilterOption } from '../components/ui/FilterSelect'
 import Pagination from '../components/ui/Pagination'
 import StatCard from '../components/ui/StatCard'
 import {
@@ -115,6 +116,15 @@ export default function HistoryPage() {
       items.some((p) => (isRunning(p.status) && p.progress < 100) || hasActiveTasks(p)) ||
       stats.generating > 0,
     [items, stats.generating],
+  )
+
+  const typeOptions: FilterOption[] = useMemo(
+    () => [
+      { value: '', label: t('history.typeAll') },
+      { value: 'full', label: t('history.typeFull') },
+      { value: 'image_text', label: t('history.typeImageText') },
+    ],
+    [t],
   )
 
   // Tìm kiếm chống rung
@@ -295,9 +305,6 @@ export default function HistoryPage() {
             <IconPlus size={16} />
             {t('history.newKepu')}
           </button>
-          <Link to="/drama" className="pf-btn pf-btn-ghost pf-btn-sm">
-            {t('history.goDrama')}
-          </Link>
         </div>
       </div>
 
@@ -341,16 +348,13 @@ export default function HistoryPage() {
               ariaLabel={t('history.statusAria')}
             />
             <div className="pf-history-filter-right">
-              <select
-                className="pf-type-select"
+              <FilterSelect
+                label={t('history.typeAria')}
                 value={typeMode}
-                aria-label={t('history.typeAria')}
-                onChange={(e) => setTypeMode(e.target.value as '' | 'full' | 'image_text')}
-              >
-                <option value="">{t('history.typeAll')}</option>
-                <option value="full">{t('history.typeFull')}</option>
-                <option value="image_text">{t('history.typeImageText')}</option>
-              </select>
+                options={typeOptions}
+                onChange={(val) => setTypeMode(val as '' | 'full' | 'image_text')}
+                className="pf-history-type-select"
+              />
               <label className="pf-search-field">
                 <IconSearch size={15} />
                 <input

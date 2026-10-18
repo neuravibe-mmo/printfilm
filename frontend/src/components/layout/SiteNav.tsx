@@ -5,8 +5,6 @@ import type { User } from '../../api'
 import UserAvatar from '../UserAvatar'
 import BrandMark from '../BrandMark'
 import { IconHelp } from '../ui/Icons'
-import Button from '../ui/Button'
-import CreateChoiceModal from '../ui/CreateChoiceModal'
 import { USER_UPDATED_EVENT } from '../../lib/userEvents'
 import { useI18n } from '../../i18n'
 import LanguageSwitch from './LanguageSwitch'
@@ -47,7 +45,6 @@ export default function SiteNav({ active }: Props) {
    */
   const [user, setUser] = useState<User | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [createOpen, setCreateOpen] = useState(false)
 
   const current = normalizeActive(active, location.pathname)
 
@@ -68,15 +65,6 @@ export default function SiteNav({ active }: Props) {
   useEffect(() => {
     setMenuOpen(false)
   }, [location.pathname])
-
-  // Nếu bạn chưa đăng nhập, vui lòng đăng nhập; nếu bạn đã đăng nhập, lựa chọn truyện tranh/khoa học đại chúng sẽ bật lên.
-  function goCreate() {
-    if (!user && !localStorage.getItem('token')) {
-      nav('/auth?next=/')
-      return
-    }
-    setCreateOpen(true)
-  }
 
   const isActive = (key: NavActive) => (current === key ? 'active' : undefined)
 
@@ -131,9 +119,6 @@ export default function SiteNav({ active }: Props) {
             {t('nav.login')}
           </Link>
         )}
-        <Button variant="lime" size="sm" icon onClick={goCreate}>
-          {t('nav.startCreate')}
-        </Button>
         <button
           type="button"
           className="pf-nav-burger"
@@ -151,7 +136,6 @@ export default function SiteNav({ active }: Props) {
           <nav className="pf-nav-drawer-links">{centerLinks}</nav>
         </div>
       ) : null}
-      <CreateChoiceModal open={createOpen} onClose={() => setCreateOpen(false)} />
     </header>
   )
 }

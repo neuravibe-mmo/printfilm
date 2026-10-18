@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useI18n } from '../../i18n'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api, defaultsFromTemplate } from '../../api'
@@ -52,7 +53,9 @@ export default function CreateProjectPage() {
 
   const [error, setError] = useState('')
   const [showInspirationTooltip, setShowInspirationTooltip] = useState(false)
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const helpBtnRef = useRef<HTMLButtonElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Tự động điều chỉnh chiều cao textarea theo nội dung, không xuất hiện thanh cuộn
@@ -65,8 +68,13 @@ export default function CreateProjectPage() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      // Keep open if clicking inside the wrapper or inside the portal tooltip
+      const insideWrapper = tooltipRef.current?.contains(target)
+      const insidePortal = (target as Element)?.closest?.('.pf-tooltip-portal')
+      if (!insideWrapper && !insidePortal) {
         setShowInspirationTooltip(false)
+        setTooltipPos(null)
       }
     }
     if (showInspirationTooltip) {
@@ -295,18 +303,44 @@ export default function CreateProjectPage() {
                 <strong>{t('studio.createProject.inspirations')}</strong>
                 <div className="pf-tooltip-wrapper" ref={tooltipRef}>
                   <button
+                    ref={helpBtnRef}
                     type="button"
                     className={`pf-help-icon-btn ${showInspirationTooltip ? 'active' : ''}`}
                     aria-label="Thông tin gợi ý"
-                    onClick={() => setShowInspirationTooltip((prev) => !prev)}
+                    onClick={() => {
+                      if (showInspirationTooltip) {
+                        setShowInspirationTooltip(false)
+                        setTooltipPos(null)
+                      } else {
+                        const rect = helpBtnRef.current?.getBoundingClientRect()
+                        if (rect) {
+                          setTooltipPos({
+                            top: rect.bottom + 8,
+                            left: rect.left - 8,
+                          })
+                        }
+                        setShowInspirationTooltip(true)
+                      }
+                    }}
                   >
                     <IconHelp size={15} />
                   </button>
-                  {showInspirationTooltip ? (
-                    <div className="pf-tooltip-popover" role="tooltip">
-                      <p>{t('studio.createProject.themeTip')}</p>
-                    </div>
-                  ) : null}
+                  {showInspirationTooltip && tooltipPos &&
+                    createPortal(
+                      <div
+                        className="pf-tooltip-popover pf-tooltip-portal"
+                        role="tooltip"
+                        style={{
+                          position: 'fixed',
+                          top: tooltipPos.top,
+                          left: tooltipPos.left,
+                        }}
+                      >
+                        <p>{t('studio.createProject.themeTip')}</p>
+                      </div>,
+                      document.body
+                    )
+                  }
                 </div>
               </div>
               <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon" onClick={shuffleInspirations}>

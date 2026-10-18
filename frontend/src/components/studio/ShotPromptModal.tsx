@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertTriangle,
   Check,
@@ -40,8 +40,6 @@ export default function ShotPromptModal({
   const [previewImg, setPreviewImg] = useState<string | null>(null)
   const [showBreakdown, setShowBreakdown] = useState(false)
   const [showRefHelp, setShowRefHelp] = useState(false)
-  const helpAnchorRef = useRef<HTMLDivElement>(null)
-  const refHelpAnchorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -74,24 +72,14 @@ export default function ShotPromptModal({
 
   useEffect(() => {
     if (!showBreakdown && !showRefHelp) return
-    const handleClickOutside = (e: MouseEvent) => {
-      if (helpAnchorRef.current && !helpAnchorRef.current.contains(e.target as Node)) {
-        setShowBreakdown(false)
-      }
-      if (refHelpAnchorRef.current && !refHelpAnchorRef.current.contains(e.target as Node)) {
-        setShowRefHelp(false)
-      }
-    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setShowBreakdown(false)
         setShowRefHelp(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
     document.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [showBreakdown, showRefHelp])
@@ -125,7 +113,7 @@ export default function ShotPromptModal({
         open={open}
         onClose={onClose}
         title={t('studio.storyboard.promptModalTitle', { no: shot.shot_no }) || `Chi tiết Prompt & Tham chiếu · Cảnh ${String(shot.shot_no).padStart(2, '0')}`}
-        size="lg"
+        size="xl"
         footer={
           <div className="pf-prompt-modal-footer">
             {onEditShot ? (
@@ -194,67 +182,16 @@ export default function ShotPromptModal({
               <div className="pf-prompt-card-title">
                 <FileText size={18} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-blue" />
                 <strong>{t('studio.storyboard.fullPromptLabel') || 'Nội dung Prompt đầy đủ (gửi tới AI)'}</strong>
-                <div className="pf-prompt-help-anchor" ref={helpAnchorRef}>
-                  <button
-                    type="button"
-                    className={`pf-prompt-help-btn ${showBreakdown ? 'is-active' : ''}`}
-                    onClick={() => setShowBreakdown((prev) => !prev)}
-                    title={t('studio.storyboard.viewBreakdown') || 'Xem phân rã thành phần Prompt'}
-                    aria-label={t('studio.storyboard.viewBreakdown') || 'Xem phân rã thành phần Prompt'}
-                    aria-expanded={showBreakdown}
-                  >
-                    <CircleHelp size={16} strokeWidth={2} />
-                  </button>
-
-                  {showBreakdown ? (
-                    <div className="pf-prompt-tooltip-popover" role="tooltip">
-                      <div className="pf-prompt-tooltip-arrow" />
-                      <div className="pf-prompt-tooltip-header">
-                        <div className="pf-prompt-tooltip-title">
-                          <Layers size={15} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-purple" />
-                          <strong>{t('studio.storyboard.promptBreakdownTitle') || 'Phân rã thành phần Prompt'}</strong>
-                        </div>
-                        <button
-                          type="button"
-                          className="pf-prompt-tooltip-close"
-                          onClick={() => setShowBreakdown(false)}
-                          aria-label={t('common.close') || 'Đóng'}
-                        >
-                          <X size={14} strokeWidth={2} />
-                        </button>
-                      </div>
-                      <div className="pf-prompt-tooltip-body">
-                        <div className="pf-prompt-part">
-                          <div className="pf-prompt-part-label">
-                            <span className="pf-dot pf-dot-green" />
-                            <strong>{t('studio.storyboard.breakdownSceneVisual') || 'Bối cảnh cảnh quay (Scene Visual Prompt):'}</strong>
-                          </div>
-                          <div className="pf-prompt-part-val">{activeRaw || t('studio.storyboard.emptyVal') || '(Trống)'}</div>
-                        </div>
-
-                        {data?.style_prefix ? (
-                          <div className="pf-prompt-part">
-                            <div className="pf-prompt-part-label">
-                              <span className="pf-dot pf-dot-blue" />
-                              <strong>{t('studio.storyboard.breakdownStylePrefix') || 'Khóa phong cách từ Mẫu (Style Prefix):'}</strong>
-                            </div>
-                            <div className="pf-prompt-part-val">{data.style_prefix}</div>
-                          </div>
-                        ) : null}
-
-                        {data?.negative_prompt ? (
-                          <div className="pf-prompt-part">
-                            <div className="pf-prompt-part-label">
-                              <span className="pf-dot pf-dot-red" />
-                              <strong>{t('studio.storyboard.breakdownNegativePrompt') || 'Prompt loại trừ (Negative Prompt):'}</strong>
-                            </div>
-                            <div className="pf-prompt-part-val pf-prompt-neg">{data.negative_prompt}</div>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                <button
+                  type="button"
+                  className={`pf-prompt-help-btn ${showBreakdown ? 'is-active' : ''}`}
+                  onClick={() => setShowBreakdown((prev) => !prev)}
+                  title={t('studio.storyboard.viewBreakdown') || 'Xem phân rã thành phần Prompt'}
+                  aria-label={t('studio.storyboard.viewBreakdown') || 'Xem phân rã thành phần Prompt'}
+                  aria-expanded={showBreakdown}
+                >
+                  <CircleHelp size={16} strokeWidth={2} />
+                </button>
               </div>
               <button
                 type="button"
@@ -271,17 +208,65 @@ export default function ShotPromptModal({
                 <span>{copied ? (t('studio.storyboard.copiedPrompt') || 'Đã sao chép') : (t('studio.storyboard.copyPrompt') || 'Sao chép Prompt')}</span>
               </button>
             </div>
+
+            {showBreakdown ? (
+              <div className="pf-prompt-breakdown-card" role="region" aria-label="Phân rã prompt">
+                <div className="pf-prompt-breakdown-header">
+                  <div className="pf-prompt-breakdown-title">
+                    <Layers size={15} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-purple" />
+                    <strong>{t('studio.storyboard.promptBreakdownTitle') || 'Phân rã thành phần Prompt'}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="pf-prompt-tooltip-close"
+                    onClick={() => setShowBreakdown(false)}
+                    aria-label={t('common.close') || 'Đóng'}
+                  >
+                    <X size={14} strokeWidth={2} />
+                  </button>
+                </div>
+                <div className="pf-prompt-breakdown-body">
+                  <div className="pf-prompt-part">
+                    <div className="pf-prompt-part-label">
+                      <span className="pf-dot pf-dot-green" />
+                      <strong>{t('studio.storyboard.breakdownSceneVisual') || 'Bối cảnh cảnh quay (Scene Visual Prompt):'}</strong>
+                    </div>
+                    <div className="pf-prompt-part-val">{activeRaw || t('studio.storyboard.emptyVal') || '(Trống)'}</div>
+                  </div>
+
+                  {data?.style_prefix ? (
+                    <div className="pf-prompt-part">
+                      <div className="pf-prompt-part-label">
+                        <span className="pf-dot pf-dot-blue" />
+                        <strong>{t('studio.storyboard.breakdownStylePrefix') || 'Khóa phong cách từ Mẫu (Style Prefix):'}</strong>
+                      </div>
+                      <div className="pf-prompt-part-val">{data.style_prefix}</div>
+                    </div>
+                  ) : null}
+
+                  {data?.negative_prompt ? (
+                    <div className="pf-prompt-part">
+                      <div className="pf-prompt-part-label">
+                        <span className="pf-dot pf-dot-red" />
+                        <strong>{t('studio.storyboard.breakdownNegativePrompt') || 'Prompt loại trừ (Negative Prompt):'}</strong>
+                      </div>
+                      <div className="pf-prompt-part-val pf-prompt-neg">{data.negative_prompt}</div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
             <div className="pf-prompt-box">
               <pre className="pf-prompt-text">{activePrompt || t('studio.storyboard.emptyPrompt') || '(Chưa có nội dung prompt)'}</pre>
             </div>
           </div>
 
-          {/* Section 3: Reference Images */}
+          {/* Section 2: Reference Images */}
           <div className="pf-prompt-card">
-            <div className="pf-prompt-card-title">
-              <Images size={18} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-amber" />
-              <strong>{t('studio.storyboard.refImagesTitle') || 'Ảnh tham chiếu (Reference Images)'}</strong>
-              <div className="pf-prompt-help-anchor" ref={refHelpAnchorRef}>
+            <div className="pf-prompt-card-header">
+              <div className="pf-prompt-card-title">
+                <Images size={18} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-amber" />
+                <strong>{t('studio.storyboard.refImagesTitle') || 'Ảnh tham chiếu (Reference Images)'}</strong>
                 <button
                   type="button"
                   className={`pf-prompt-help-btn ${showRefHelp ? 'is-active' : ''}`}
@@ -292,60 +277,59 @@ export default function ShotPromptModal({
                 >
                   <CircleHelp size={16} strokeWidth={2} />
                 </button>
-
-                {showRefHelp ? (
-                  <div className="pf-prompt-tooltip-popover" role="tooltip">
-                    <div className="pf-prompt-tooltip-arrow" />
-                    <div className="pf-prompt-tooltip-header">
-                      <div className="pf-prompt-tooltip-title">
-                        <Images size={15} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-amber" />
-                        <strong>{t('studio.storyboard.refHelpTitle') || 'Nguồn gốc ảnh tham chiếu'}</strong>
-                      </div>
-                      <button
-                        type="button"
-                        className="pf-prompt-tooltip-close"
-                        onClick={() => setShowRefHelp(false)}
-                        aria-label={t('common.close') || 'Đóng'}
-                      >
-                        <X size={14} strokeWidth={2} />
-                      </button>
-                    </div>
-                    <div className="pf-prompt-tooltip-body">
-                      <div className="pf-prompt-part">
-                        <div className="pf-prompt-part-label">
-                          <span className="pf-dot pf-dot-blue" />
-                          <strong>{t('studio.storyboard.refSourcePrevTitle') || '1. Ảnh của cảnh liền trước:'}</strong>
-                        </div>
-                        <div className="pf-prompt-part-val">
-                          {t('studio.storyboard.refSourcePrevDesc') || 'Từ Cảnh 02 trở đi, hệ thống lấy ảnh cảnh trước để giữ tính nhất quán về nhân vật, trang phục và phong cách (Cảnh 01 không có).'}
-                        </div>
-                      </div>
-
-                      <div className="pf-prompt-part">
-                        <div className="pf-prompt-part-label">
-                          <span className="pf-dot pf-dot-green" />
-                          <strong>{t('studio.storyboard.refSourceProjTitle') || '2. Ảnh tham chiếu của Dự án:'}</strong>
-                        </div>
-                        <div className="pf-prompt-part-val">
-                          {t('studio.storyboard.refSourceProjDesc') || 'Ảnh sản phẩm, nhân vật hoặc tài sản thương hiệu do bạn tải lên khi tạo/cài đặt dự án.'}
-                        </div>
-                      </div>
-
-                      <div className="pf-prompt-part">
-                        <div className="pf-prompt-part-label">
-                          <span className="pf-dot pf-dot-amber" />
-                          <strong>{t('studio.storyboard.refSourceTplTitle') || '3. Ảnh phong cách từ Template:'}</strong>
-                        </div>
-                        <div className="pf-prompt-part-val">
-                          {t('studio.storyboard.refSourceTplDesc') || 'Ảnh mẫu phong cách được thiết lập sẵn trong Template để định hình tone màu và đường nét.'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
               </div>
               <span className="pf-prompt-count-pill">{t('studio.storyboard.imagesCountPill', { count: refs.length }) || `${refs.length} ảnh`}</span>
             </div>
+
+            {showRefHelp ? (
+              <div className="pf-prompt-breakdown-card is-ref" role="region" aria-label="Nguồn gốc ảnh tham chiếu">
+                <div className="pf-prompt-breakdown-header">
+                  <div className="pf-prompt-breakdown-title">
+                    <Images size={15} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-amber" />
+                    <strong>{t('studio.storyboard.refHelpTitle') || 'Nguồn gốc ảnh tham chiếu'}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="pf-prompt-tooltip-close"
+                    onClick={() => setShowRefHelp(false)}
+                    aria-label={t('common.close') || 'Đóng'}
+                  >
+                    <X size={14} strokeWidth={2} />
+                  </button>
+                </div>
+                <div className="pf-prompt-breakdown-body">
+                  <div className="pf-prompt-part">
+                    <div className="pf-prompt-part-label">
+                      <span className="pf-dot pf-dot-blue" />
+                      <strong>{t('studio.storyboard.refSourcePrevTitle') || '1. Ảnh của cảnh liền trước:'}</strong>
+                    </div>
+                    <div className="pf-prompt-part-val">
+                      {t('studio.storyboard.refSourcePrevDesc') || 'Từ Cảnh 02 trở đi, hệ thống lấy ảnh cảnh trước để giữ tính nhất quán về nhân vật, trang phục và phong cách (Cảnh 01 không có).'}
+                    </div>
+                  </div>
+
+                  <div className="pf-prompt-part">
+                    <div className="pf-prompt-part-label">
+                      <span className="pf-dot pf-dot-green" />
+                      <strong>{t('studio.storyboard.refSourceProjTitle') || '2. Ảnh tham chiếu của Dự án:'}</strong>
+                    </div>
+                    <div className="pf-prompt-part-val">
+                      {t('studio.storyboard.refSourceProjDesc') || 'Ảnh sản phẩm, nhân vật hoặc tài sản thương hiệu do bạn tải lên khi tạo/cài đặt dự án.'}
+                    </div>
+                  </div>
+
+                  <div className="pf-prompt-part">
+                    <div className="pf-prompt-part-label">
+                      <span className="pf-dot pf-dot-amber" />
+                      <strong>{t('studio.storyboard.refSourceTplTitle') || '3. Ảnh phong cách từ Template:'}</strong>
+                    </div>
+                    <div className="pf-prompt-part-val">
+                      {t('studio.storyboard.refSourceTplDesc') || 'Ảnh mẫu phong cách được thiết lập sẵn trong Template để định hình tone màu và đường nét.'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             {refs.length > 0 ? (
               <div className="pf-prompt-refs-grid">
