@@ -1,45 +1,32 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
-import { useI18n } from '../../i18n'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, defaultsFromTemplate, resolveVoiceId } from '../../api'
-import type { MediaModelOption, MediaModelsCatalog, PipelineMode, Project, Template, VoicePreset } from '../../api'
-import AppShell from '../../components/layout/AppShell'
-import Stepper from '../../components/ui/Stepper'
-import ComingSoon from '../../components/ui/ComingSoon'
-import { IconChevronLeft, IconPlay } from '../../components/ui/Icons'
+import type { MediaModelsCatalog, PipelineMode, Project, Template, VoicePreset } from '../../api'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
+import AppShell from '../../components/layout/AppShell'
+import CharacterConfigSection from '../../components/studio/style/CharacterConfigSection'
+import ModelPickerSection from '../../components/studio/style/ModelPickerSection'
+import OutputModeSection from '../../components/studio/style/OutputModeSection'
+import ProjectInfoSidebar from '../../components/studio/style/ProjectInfoSidebar'
+import RatioPickerSection from '../../components/studio/style/RatioPickerSection'
+import StyleOverviewSidebar from '../../components/studio/style/StyleOverviewSidebar'
+import StylePromptSection from '../../components/studio/style/StylePromptSection'
+import VoicePickerSection, { voiceKey } from '../../components/studio/style/VoicePickerSection'
+import { IconChevronLeft } from '../../components/ui/Icons'
+import Stepper from '../../components/ui/Stepper'
+import { useI18n } from '../../i18n'
 import { handleBillingError } from '../../lib/billingError'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
-import { getCategoryLabel } from '../../lib/categories'
-import { getTemplateName } from '../../lib/templates'
-
-// OUTPUT_MODES moved inside component
-
-const RATIOS: { id: string; label: string; w: number; h: number }[] = [
-  { id: '16:9', label: '16:9', w: 36, h: 20 },
-  { id: '9:16', label: '9:16', w: 18, h: 32 },
-  { id: '1:1', label: '1:1', w: 24, h: 24 },
-  { id: '4:3', label: '4:3', w: 28, h: 21 },
-  { id: '21:9', label: '21:9', w: 40, h: 17 },
-]
-
-/** Khung hình có dọc (chiều cao > chiều rộng) hay không, được sử dụng cho thẻ xem trước và tỷ lệ xem trước theo thời gian thực */
-/** Phím loa được chia sẻ bởi card âm thanh và khả năng nghe API */
-function voiceKey(v: VoicePreset): string {
-  return v.speaker || v.id
-}
-
-function isPortraitRatio(ratio: string | undefined | null): boolean {
-  const raw = String(ratio || '').trim()
-  const m = raw.match(/^(\d+(?:\.\d+)?)\s*[:/x]\s*(\d+(?:\.\d+)?)$/i)
-  if (!m) return false
-  return Number(m[2]) > Number(m[1])
-}
 
 export default function StyleConfigPage() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const OUTPUT_MODES: { id: PipelineMode; label: string; desc: string; image: string }[] = [
-    { id: 'full', label: t('studio.styleConfig.modeFullLabel'), desc: t('studio.styleConfig.modeFullDesc'), image: '/mode-presets/full.jpg' },
+    {
+      id: 'full',
+      label: t('studio.styleConfig.modeFullLabel'),
+      desc: t('studio.styleConfig.modeFullDesc'),
+      image: '/mode-presets/full.jpg',
+    },
     {
       id: 'image_text',
       label: t('studio.styleConfig.modeImageTextLabel'),
@@ -55,6 +42,7 @@ export default function StyleConfigPage() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [voices, setVoices] = useState<VoicePreset[]>([])
   const [stylePrompt, setStylePrompt] = useState('')
+  const [characterPrompt, setCharacterPrompt] = useState('')
   const [extraPrompt, setExtraPrompt] = useState('')
   const [voiceId, setVoiceId] = useState('')
   const [pipelineMode, setPipelineMode] = useState<PipelineMode>('full')
@@ -63,23 +51,11 @@ export default function StyleConfigPage() {
   const [videoModel, setVideoModel] = useState('')
   const [mediaCatalog, setMediaCatalog] = useState<MediaModelsCatalog | null>(null)
   const [busy, setBusy] = useState(false)
+  const [uploadingRef, setUploadingRef] = useState(false)
   const [previewBusy, setPreviewBusy] = useState<string | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const stylePromptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
-
-  useEffect(() => {
-    const el = stylePromptTextareaRef.current
-    if (!el) return
-    const adjust = () => {
-      el.style.height = 'auto'
-      el.style.height = `${el.scrollHeight}px`
-    }
-    adjust()
-    window.addEventListener('resize', adjust)
-    return () => window.removeEventListener('resize', adjust)
-  }, [stylePrompt])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -104,6 +80,7 @@ export default function StyleConfigPage() {
       .then((p) => {
         setProject(p)
         setStylePrompt(p.style_prompt || '')
+        setCharacterPrompt(p.character_prompt || '')
         setExtraPrompt(p.extra_prompt || '')
         setVoiceId(p.voice_id || '')
         setPipelineMode(p.pipeline_mode || 'full')
@@ -141,6 +118,7 @@ export default function StyleConfigPage() {
     if (!stylePrompt) {
       const d = defaultsFromTemplate(currentTpl)
       setStylePrompt((v) => v || d.style_prompt)
+      setCharacterPrompt((v) => v || d.character_prompt)
       setExtraPrompt((v) => v || d.extra_prompt)
       setVoiceId((v) => v || d.voice_id)
     }
@@ -150,10 +128,6 @@ export default function StyleConfigPage() {
     if (!project || project.output_ratio || !currentTpl?.default_ratio) return
     setRatio(currentTpl.default_ratio)
   }, [project?.id, project?.output_ratio, currentTpl?.default_ratio])
-
-  function pickRatio(r: (typeof RATIOS)[0]) {
-    setRatio(r.id)
-  }
 
   function stopPreview() {
     audioRef.current?.pause()
@@ -200,6 +174,72 @@ export default function StyleConfigPage() {
     }
   }
 
+  async function handleUploadRefImage(file: File) {
+    if (!project) return
+    setUploadingRef(true)
+    setError('')
+    try {
+      const updated = await api.uploadRefImage(project.id, file)
+      setProject(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploadingRef(false)
+    }
+  }
+
+  async function handleRemoveRefImage() {
+    if (!project) return
+    setUploadingRef(true)
+    setError('')
+    try {
+      const updated = await api.updateProject(project.id, { ref_image_url: null })
+      setProject(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Remove failed')
+    } finally {
+      setUploadingRef(false)
+    }
+  }
+
+  async function handlePasteRefImage() {
+    if (!project) return
+    setError('')
+    try {
+      if (!navigator.clipboard?.read) {
+        setError(t('studio.styleConfig.clipboardNotSupported'))
+        return
+      }
+      setUploadingRef(true)
+      const items = await navigator.clipboard.read()
+      let imageBlob: Blob | null = null
+      for (const item of items) {
+        const imageType = item.types.find((type) => type.startsWith('image/'))
+        if (imageType) {
+          imageBlob = await item.getType(imageType)
+          break
+        }
+      }
+      if (!imageBlob) {
+        const text = await navigator.clipboard.readText().catch(() => '')
+        if (text && (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('/static/'))) {
+          const updated = await api.updateProject(project.id, { ref_image_url: text.trim() })
+          setProject(updated)
+          return
+        }
+        setError(t('studio.styleConfig.noClipboardImage'))
+        return
+      }
+      const file = new File([imageBlob], 'pasted_character.png', { type: imageBlob.type || 'image/png' })
+      const updated = await api.uploadRefImage(project.id, file)
+      setProject(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Paste failed')
+    } finally {
+      setUploadingRef(false)
+    }
+  }
+
   async function generate() {
     if (!project) return
     stopPreview()
@@ -207,17 +247,15 @@ export default function StyleConfigPage() {
     setError('')
     try {
       const d = currentTpl ? defaultsFromTemplate(currentTpl) : null
-      /*
-       * Từ nhắc kiểu styleOut; nếu nó giống với mẫu, hãy để trống và đọc thông tin cơ bản khi tạo
-       * extraOut thêm từ nhắc nhở
-       */
       const styleOut = stylePrompt.trim()
+      const charOut = characterPrompt.trim()
       const extraOut = extraPrompt.trim()
       const sameStyle = Boolean(d) && styleOut === d!.style_prompt
+      const sameChar = Boolean(d) && charOut === (d!.character_prompt || '')
       const sameExtra = Boolean(d) && extraOut === d!.extra_prompt
       await api.updateProject(project.id, {
         style_prompt: sameStyle ? '' : styleOut,
-        character_prompt: '',
+        character_prompt: sameChar ? '' : charOut,
         extra_prompt: sameExtra ? '' : extraOut,
         voice_id: voiceId,
         pipeline_mode: pipelineMode,
@@ -246,7 +284,6 @@ export default function StyleConfigPage() {
     }
   }
 
-  // Khi quá trình tải dự án ban đầu không thành công, nó không được xâm nhập vào trang chính (có quyền truy cập không trống vào project.xxx bên dưới, điều này sẽ gây ra lỗi màn hình trắng)
   if (!project) {
     return (
       <AppShell active="studio">
@@ -264,7 +301,7 @@ export default function StyleConfigPage() {
               <IconChevronLeft size={18} />
               {t('studio.styleConfig.backBtn')}
             </button>
-            <h1 className="pf-page-title">{project?.title || t('studio.styleConfig.pageTitle')}</h1>
+            <h1 className="pf-page-title">{project.title || t('studio.styleConfig.pageTitle')}</h1>
           </div>
           <Stepper
             steps={kepuSteps(pipelineMode)}
@@ -275,327 +312,69 @@ export default function StyleConfigPage() {
       </header>
 
       <div className="pf-style-layout">
-        <aside className="pf-create-col">
-          <h3>{t('studio.styleConfig.projectInfo')}</h3>
-          {currentTpl ? (
-            <div>
-              <div
-                className={[
-                  'pf-style-side-thumb',
-                  isPortraitRatio(currentTpl.default_ratio) ? 'portrait' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <img src={api.assetUrl(currentTpl.preview_cover)} alt="" />
-              </div>
-              <p style={{ margin: '0.5rem 0 0', fontWeight: 600 }}>{getTemplateName(currentTpl, locale)}</p>
-              <div className="pf-tags">
-                {currentTpl.category.map((c) => (
-                  <span key={c}>{getCategoryLabel(c)}</span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <ul className="pf-meta-list" style={{ marginTop: '0.85rem' }}>
-            <li>
-              <span>{t('studio.styleConfig.theme')}</span>
-              <span style={{ maxWidth: '55%', textAlign: 'right' }}>
-                {(project?.source_text || '').slice(0, 40)}
-              </span>
-            </li>
-            <li>
-              <span>{t('studio.styleConfig.duration')}</span>
-              <span>{t('studio.styleConfig.durationVal')}</span>
-            </li>
-            <li>
-              <span>{t('studio.styleConfig.shotsCount')}</span>
-              <span>{t('studio.styleConfig.shotsAuto')}</span>
-            </li>
-          </ul>
-          <button type="button" className="pf-btn pf-btn-ghost pf-btn-block pf-btn-sm" disabled>
-            {t('studio.styleConfig.previewTemplate')} <ComingSoon />
-          </button>
-        </aside>
+        <ProjectInfoSidebar project={project} template={currentTpl} />
 
         <section className="pf-create-col">
-          <div className="pf-style-block">
-            <h3>{t('studio.styleConfig.styleSection')}</h3>
-            <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0 0 0.65rem' }}>
-              {t('studio.styleConfig.styleLocked')}
-            </p>
-            {currentTpl ? (
-              <div
-                className={[
-                  'pf-style-opt',
-                  'selected',
-                  isPortraitRatio(currentTpl.default_ratio) ? 'portrait' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-                style={{ maxWidth: 280, textAlign: 'left' }}
-              >
-                <span className="pf-style-opt-media">
-                  <img src={api.assetUrl(currentTpl.preview_cover)} alt="" />
-                  {currentTpl.default_ratio ? (
-                    <span className="pf-style-opt-ratio">{currentTpl.default_ratio}</span>
-                  ) : null}
-                </span>
-                <div className="cap">{getTemplateName(currentTpl, locale)}</div>
-                <div className="cap-sub">{t('studio.styleConfig.templateStyle')}</div>
-              </div>
-            ) : null}
-            <label className="pf-field" style={{ marginTop: '0.75rem' }}>
-              <span className="pf-field-label">{t('studio.styleConfig.stylePromptOverride')}</span>
-              <textarea
-                ref={stylePromptTextareaRef}
-                className="pf-field-input"
-                value={stylePrompt}
-                onChange={(e) => {
-                  setStylePrompt(e.target.value)
-                  e.target.style.height = 'auto'
-                  e.target.style.height = `${e.target.scrollHeight}px`
-                }}
-                rows={1}
-                style={{
-                  resize: 'none',
-                  overflow: 'hidden',
-                  minHeight: '44px',
-                  lineHeight: '1.5',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </label>
-          </div>
+          <StylePromptSection
+            template={currentTpl}
+            stylePrompt={stylePrompt}
+            onChangeStylePrompt={setStylePrompt}
+          />
 
-          <div className="pf-style-block">
-            <h3>
-              {t('studio.styleConfig.voiceLabel')}
-              <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" disabled>
-                {t('studio.styleConfig.moreVoices')} <ComingSoon />
-              </button>
-            </h3>
-            <div className="pf-voice-row">
-              {voices.map((v) => {
-                const vid = voiceKey(v)
-                const selected = voiceId === vid
-                const loading = previewBusy === vid
-                const playing = playingId === vid
-                return (
-                  <div
-                    key={v.id}
-                    className={selected ? 'pf-voice-card selected' : 'pf-voice-card'}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => selectVoice(v)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        selectVoice(v)
-                      }
-                    }}
-                  >
-                    <strong className="pf-voice-name">{v.label}</strong>
-                    <span className="pf-voice-meta">
-                      {v.gender === 'female' ? t('studio.styleConfig.female') : v.gender === 'male' ? t('studio.styleConfig.male') : v.gender}
-                    </span>
-                    <button
-                      type="button"
-                      className={[
-                        'pf-btn',
-                        'pf-btn-sm',
-                        'pf-btn-icon',
-                        playing ? 'pf-btn-lime' : 'pf-btn-ghost',
-                        'pf-voice-preview',
-                      ].join(' ')}
-                      disabled={loading || busy}
-                      onClick={(e) => previewVoice(v, e)}
-                    >
-                      {loading ? (
-                        t('studio.styleConfig.generating')
-                      ) : playing ? (
-                        t('studio.styleConfig.playing')
-                      ) : (
-                        <>
-                          <IconPlay size={12} />
-                          {t('studio.styleConfig.preview')}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-            {selectedVoice ? (
-              <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0.55rem 0 0' }}>
-                {t('studio.styleConfig.currentVoiceHint').replace('{label}', selectedVoice.label)}
-              </p>
-            ) : null}
-          </div>
+          <CharacterConfigSection
+            characterPrompt={characterPrompt}
+            onChangePrompt={setCharacterPrompt}
+            refImageUrl={project.ref_image_url}
+            uploadingRef={uploadingRef}
+            onUploadRefImage={handleUploadRefImage}
+            onRemoveRefImage={handleRemoveRefImage}
+            onPasteRefImage={handlePasteRefImage}
+          />
 
-          <div className="pf-style-block">
-            <h3>{t('studio.styleConfig.pipelineSection')}</h3>
-            <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0 0 0.65rem' }}>
-              {t('studio.styleConfig.pipelineHint')}
-            </p>
-            <div className="pf-style-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-              {OUTPUT_MODES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={pipelineMode === m.id ? 'pf-style-opt selected' : 'pf-style-opt'}
-                  onClick={() => setPipelineMode(m.id)}
-                >
-                  <img src={m.image} alt="" />
-                  <div className="cap">{m.label}</div>
-                  <div className="cap-sub">{m.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <VoicePickerSection
+            voices={voices}
+            voiceId={voiceId}
+            onSelectVoice={selectVoice}
+            onPreviewVoice={previewVoice}
+            previewBusy={previewBusy}
+            playingId={playingId}
+            busy={busy}
+          />
+
+          <OutputModeSection
+            modes={OUTPUT_MODES}
+            pipelineMode={pipelineMode}
+            onChangeMode={setPipelineMode}
+          />
 
           {mediaCatalog ? (
-            <div className="pf-style-block">
-              <h3>{t('studio.styleConfig.imageModelSection')}</h3>
-              <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0 0 0.65rem' }}>
-                {t('studio.styleConfig.imageModelHint')}
-              </p>
-              <div className="pf-model-grid">
-                {mediaCatalog.image_models.map((m: MediaModelOption) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={imageModel === m.id ? 'pf-model-opt selected' : 'pf-model-opt'}
-                    onClick={() => setImageModel(m.id)}
-                  >
-                    <div className="pf-model-opt-title">
-                      <span>{m.label}</span>
-                      {m.recommended ? <span className="pf-model-badge">{t('common.recommended')}</span> : null}
-                    </div>
-                    <div className="pf-model-opt-desc">{m.description}</div>
-                    <div className="pf-model-opt-provider">{m.provider || 'TokenFree'}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ModelPickerSection
+              catalog={mediaCatalog}
+              imageModel={imageModel}
+              onChangeImageModel={setImageModel}
+              videoModel={videoModel}
+              onChangeVideoModel={setVideoModel}
+              showVideoModel={pipelineMode === 'full'}
+            />
           ) : null}
 
-          {mediaCatalog && pipelineMode === 'full' ? (
-            <div className="pf-style-block">
-              <h3>{t('studio.styleConfig.videoModelSection')}</h3>
-              <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0 0 0.65rem' }}>
-                {t('studio.styleConfig.videoModelHint')}
-              </p>
-              <div className="pf-model-grid">
-                {mediaCatalog.video_models.map((m: MediaModelOption) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className={videoModel === m.id ? 'pf-model-opt selected' : 'pf-model-opt'}
-                    onClick={() => setVideoModel(m.id)}
-                  >
-                    <div className="pf-model-opt-title">
-                      <span>{m.label}</span>
-                      {m.recommended ? <span className="pf-model-badge">{t('common.recommended')}</span> : null}
-                    </div>
-                    <div className="pf-model-opt-desc">{m.description}</div>
-                    <div className="pf-model-opt-provider">{m.provider || 'TokenFree'}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="pf-style-block">
-            <h3>{t('studio.styleConfig.outputRatio')}</h3>
-            <div className="pf-ratio-row">
-              {RATIOS.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  className={ratio === r.id ? 'pf-ratio selected' : 'pf-ratio'}
-                  onClick={() => pickRatio(r)}
-                >
-                  <div className="box" style={{ width: r.w, height: r.h }} />
-                  {r.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <RatioPickerSection ratio={ratio} onChangeRatio={setRatio} />
         </section>
 
-        <aside className="pf-create-col">
-          <h3>{t('studio.styleConfig.livePreview')}</h3>
-          <div
-            className={[
-              'pf-editor-preview',
-              isPortraitRatio(ratio) ? 'portrait' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={{ marginBottom: '0.85rem' }}
-          >
-            {currentTpl ? (
-              <img src={api.assetUrl(currentTpl.preview_cover)} alt="" />
-            ) : (
-              <span className="empty">{t('studio.styleConfig.previewPlaceholder')}</span>
-            )}
-          </div>
-          <p className="pf-muted" style={{ fontSize: '0.8rem' }}>
-            {t('studio.styleConfig.previewNote')}
-          </p>
-          <h3 style={{ marginTop: '1rem' }}>{t('studio.styleConfig.configOverview')}</h3>
-          <ul className="pf-meta-list">
-            <li>
-              <span>{t('studio.styleConfig.style')}</span>
-              <span>{currentTpl?.name || '—'}</span>
-            </li>
-            <li>
-              <span>{t('studio.styleConfig.character')}</span>
-              <span>{t('studio.styleConfig.charByAI')}</span>
-            </li>
-            <li>
-              <span>{t('studio.styleConfig.voiceConfig')}</span>
-              <span>{selectedVoice?.label || t('studio.styleConfig.default')}</span>
-            </li>
-            <li>
-              <span>{t('studio.styleConfig.ratio')}</span>
-              <span>{ratio}</span>
-            </li>
-            <li>
-              <span>{t('studio.styleConfig.pipeline')}</span>
-              <span>{pipelineMode === 'image_text' ? t('studio.styleConfig.modeImageTextLabel') : t('studio.styleConfig.modeFullLabel')}</span>
-            </li>
-          </ul>
-          {selectedVoice ? (
-            <button
-              type="button"
-              className="pf-btn pf-btn-ghost pf-btn-block pf-btn-sm pf-btn-icon"
-              style={{ marginTop: '0.75rem' }}
-              disabled={busy || previewBusy === voiceKey(selectedVoice)}
-              onClick={(e) => previewVoice(selectedVoice, e)}
-            >
-              <IconPlay size={14} />
-              {playingId === voiceKey(selectedVoice)
-                ? t('studio.styleConfig.stopPreview')
-                : t('studio.styleConfig.previewVoice').replace('{label}', selectedVoice.label)}
-            </button>
-          ) : null}
-          {error ? <BillingErrorNotice message={error} style={{ marginTop: '0.75rem' }} /> : null}
-          <button
-            type="button"
-            className="pf-btn pf-btn-lime pf-btn-block pf-btn-lg pf-btn-icon"
-            style={{ marginTop: '0.75rem' }}
-            disabled={busy || Boolean(previewBusy)}
-            onClick={generate}
-          >
-            {busy ? t('studio.styleConfig.starting') : project.shots?.length ? t('studio.styleConfig.saveAndContinue') : t('studio.styleConfig.genStoryboard')}
-            {!busy ? <span aria-hidden>→</span> : null}
-          </button>
-          <p className="pf-muted" style={{ fontSize: '0.78rem', marginTop: '0.5rem' }}>
-            {t('studio.styleConfig.submitHint')}
-          </p>
-        </aside>
+        <StyleOverviewSidebar
+          project={project}
+          template={currentTpl}
+          ratio={ratio}
+          characterPrompt={characterPrompt}
+          selectedVoice={selectedVoice}
+          pipelineMode={pipelineMode}
+          busy={busy}
+          previewBusy={previewBusy}
+          playingId={playingId}
+          error={error}
+          onPreviewVoice={previewVoice}
+          onGenerate={generate}
+        />
       </div>
     </AppShell>
   )

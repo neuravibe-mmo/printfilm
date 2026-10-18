@@ -435,6 +435,7 @@ export const api = {
       bgm_lock?: string
       subtitle_preset?: string
       cover_url?: string | null
+      ref_image_url?: string | null
     },
   ) {
     return request<Project>(`/api/projects/${id}`, {
@@ -464,6 +465,28 @@ export const api = {
             ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
             : res.statusText
       throw new Error(message || '封面上传失败')
+    }
+    return res.json() as Promise<Project>
+  },
+  async uploadRefImage(id: number, file: File) {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${API_BASE}/api/projects/${id}/ref-image`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      const detail = err.detail
+      const message =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
+            : res.statusText
+      throw new Error(message || 'Tải ảnh tham chiếu thất bại')
     }
     return res.json() as Promise<Project>
   },

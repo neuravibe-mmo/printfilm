@@ -678,6 +678,47 @@ async def upload_project_cover(
     return await _get_owned_project(db, project_id, user)
 
 
+@router.post("/projects/{project_id}/ref-image", response_model=ProjectOut)
+async def upload_project_ref_image(
+    project_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Project:
+    """Upload a character or subject reference image for the project."""
+    project = await _get_owned_project(db, project_id, user)
+    if project.status in _RUNNING_STATUSES:
+        raise HTTPException(status_code=409, detail="生成进行中，无法更换参考图")
+
+    content_type = (file.content_type or "").lower()
+    allowed = {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+    }
+    ext = allowed.get(content_type)
+    if not ext:
+        suffix = Path(file.filename or "").suffix.lower()
+        if suffix in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+            ext = ".jpg" if suffix == ".jpeg" else suffix
+        else:
+            raise HTTPException(status_code=400, detail="仅支持 JPG / PNG / WebP / GIF")
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="空文件")
+    if len(raw) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="参考图不能超过 8MB")
+
+    dest = storage.project_dir(project_id) / f"ref_image{ext}"
+    dest.write_bytes(raw)
+    project.ref_image_url = storage.publish_local(dest)
+    await db.commit()
+    return await _get_owned_project(db, project_id, user)
+
+
 @router.post("/projects/{project_id}/generate", response_model=ProjectOut)
 async def generate_project(
     project_id: int,
