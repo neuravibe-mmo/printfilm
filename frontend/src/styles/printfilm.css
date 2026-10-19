@@ -3864,6 +3864,64 @@
   z-index: 9999 !important;
 }
 
+/* Reusable HoverTooltip Portal Component */
+.pf-hover-tooltip-portal {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.pf-hover-tooltip-bubble {
+  position: relative;
+  background: #181b21;
+  color: #f8fafc;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.5), 0 8px 16px -4px rgba(0, 0, 0, 0.35);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  animation: pfTooltipFadeIn 0.16s ease-out;
+}
+
+.pf-hover-tooltip-arrow {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: #181b21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transform: rotate(45deg);
+}
+
+.pf-hover-tooltip-bubble.bottom .pf-hover-tooltip-arrow {
+  top: -5px;
+  border-bottom: none;
+  border-right: none;
+}
+
+.pf-hover-tooltip-bubble.top .pf-hover-tooltip-arrow {
+  bottom: -5px;
+  border-top: none;
+  border-left: none;
+}
+
+.pf-hover-tooltip-title {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #38bdf8;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pf-hover-tooltip-content {
+  color: #e2e8f0;
+  font-size: 0.77rem;
+  line-height: 1.48;
+}
+
+
 .pf-chips {
   display: flex;
   flex-wrap: wrap;

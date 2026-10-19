@@ -342,6 +342,8 @@ export const enStudio = {
         "livePreview": "Xem trước trực tiếp",
         "previewPlaceholder": "Vùng xem trước",
         "previewNote": "Sau khi tạo có thể xem hình ảnh thật trên bàn phân cảnh. Hiện tại là xem trước template.",
+        "templateCoverTooltipTitle": "Template Style Preview",
+        "templateCoverTooltip": "This image only previews the template style and is not used in video generation. Characters in the video will be created based on your appearance prompt (or uploaded reference image).",
         "configOverview": "Tổng quan cấu hình hiện tại",
         "style": "Phong cách",
         "character": "Nhân vật",

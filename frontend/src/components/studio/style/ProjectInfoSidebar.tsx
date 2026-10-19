@@ -3,6 +3,7 @@ import { useI18n } from '../../../i18n'
 import { getCategoryLabel } from '../../../lib/categories'
 import { getTemplateName } from '../../../lib/templates'
 import ComingSoon from '../../ui/ComingSoon'
+import HoverTooltip from '../../ui/HoverTooltip'
 import { isPortraitRatio } from './RatioPickerSection'
 
 type ProjectInfoSidebarProps = {
@@ -18,16 +19,22 @@ export default function ProjectInfoSidebar({ project, template }: ProjectInfoSid
       <h3>{t('studio.styleConfig.projectInfo')}</h3>
       {template ? (
         <div>
-          <div
-            className={[
-              'pf-style-side-thumb',
-              isPortraitRatio(template.default_ratio) ? 'portrait' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
+          <HoverTooltip
+            title={t('studio.styleConfig.templateCoverTooltipTitle')}
+            content={t('studio.styleConfig.templateCoverTooltip')}
           >
-            <img src={api.assetUrl(template.preview_cover)} alt="" />
-          </div>
+            <div
+              className={[
+                'pf-style-side-thumb',
+                isPortraitRatio(template.default_ratio) ? 'portrait' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              style={{ cursor: 'pointer' }}
+            >
+              <img src={api.assetUrl(template.preview_cover)} alt="" />
+            </div>
+          </HoverTooltip>
           <p style={{ margin: '0.5rem 0 0', fontWeight: 600 }}>{getTemplateName(template, locale)}</p>
           <div className="pf-tags">
             {template.category.map((c) => (

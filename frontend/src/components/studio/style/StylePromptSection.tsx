@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { api, type Template } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { getTemplateName } from '../../../lib/templates'
+import HoverTooltip from '../../ui/HoverTooltip'
 import { isPortraitRatio } from './RatioPickerSection'
 
 type StylePromptSectionProps = {
@@ -47,12 +48,17 @@ export default function StylePromptSection({
             .join(' ')}
           style={{ maxWidth: 280, textAlign: 'left' }}
         >
-          <span className="pf-style-opt-media">
-            <img src={api.assetUrl(template.preview_cover)} alt="" />
-            {template.default_ratio ? (
-              <span className="pf-style-opt-ratio">{template.default_ratio}</span>
-            ) : null}
-          </span>
+          <HoverTooltip
+            title={t('studio.styleConfig.templateCoverTooltipTitle')}
+            content={t('studio.styleConfig.templateCoverTooltip')}
+          >
+            <span className="pf-style-opt-media" style={{ cursor: 'pointer' }}>
+              <img src={api.assetUrl(template.preview_cover)} alt="" />
+              {template.default_ratio ? (
+                <span className="pf-style-opt-ratio">{template.default_ratio}</span>
+              ) : null}
+            </span>
+          </HoverTooltip>
           <div className="cap">{getTemplateName(template, locale)}</div>
           <div className="cap-sub">{t('studio.styleConfig.templateStyle')}</div>
         </div>

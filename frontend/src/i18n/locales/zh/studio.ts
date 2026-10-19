@@ -220,6 +220,8 @@ export const zhStudio = {
       livePreview: '实时预览',
       previewPlaceholder: '预览占位',
       previewNote: '生成后可在分镜台查看真实画面。当前为模板预览。',
+      templateCoverTooltipTitle: '模板风格示意图',
+      templateCoverTooltip: '此图片仅用于展示模板风格，不参与视频生成。视频中的人物将完全根据您填写的角色外貌描述（或上传的参考图）生成。',
       configOverview: '当前配置概览',
       style: '风格',
       character: '角色',

@@ -216,6 +216,8 @@ export const viStudio = {
       livePreview: 'Xem trước trực tiếp',
       previewPlaceholder: 'Vùng xem trước',
       previewNote: 'Sau khi tạo có thể xem hình ảnh thật trên bàn phân cảnh. Hiện tại là xem trước template.',
+      templateCoverTooltipTitle: 'Ảnh minh họa phong cách template',
+      templateCoverTooltip: 'Ảnh này chỉ dùng minh họa phong cách cho template, không tham gia vào quá trình tạo video. Nhân vật trong video sẽ được tạo theo đúng mô tả ngoại hình bạn đã nhập (hoặc ảnh tham chiếu nếu tải lên).',
       configOverview: 'Tổng quan cấu hình hiện tại',
       style: 'Phong cách',
       character: 'Nhân vật',

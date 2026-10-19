@@ -272,3 +272,13 @@ export function IconClipboardPaste(p: IconProps) {
     </Svg>
   )
 }
+
+export function IconInfo(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v.01M12 11v5" />
+    </Svg>
+  )
+}
+

@@ -2,6 +2,7 @@ import type { MouseEvent } from 'react'
 import { api, type PipelineMode, type Project, type Template, type VoicePreset } from '../../../api'
 import { useI18n } from '../../../i18n'
 import BillingErrorNotice from '../../billing/BillingErrorNotice'
+import HoverTooltip from '../../ui/HoverTooltip'
 import { IconPlay } from '../../ui/Icons'
 import { isPortraitRatio } from './RatioPickerSection'
 import { voiceKey } from './VoicePickerSection'
@@ -40,21 +41,36 @@ export default function StyleOverviewSidebar({
   return (
     <aside className="pf-create-col">
       <h3>{t('studio.styleConfig.livePreview')}</h3>
-      <div
-        className={[
-          'pf-editor-preview',
-          isPortraitRatio(ratio) ? 'portrait' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        style={{ marginBottom: '0.85rem' }}
-      >
-        {template ? (
-          <img src={api.assetUrl(template.preview_cover)} alt="" />
-        ) : (
+      {template ? (
+        <HoverTooltip
+          title={t('studio.styleConfig.templateCoverTooltipTitle')}
+          content={t('studio.styleConfig.templateCoverTooltip')}
+        >
+          <div
+            className={[
+              'pf-editor-preview',
+              isPortraitRatio(ratio) ? 'portrait' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            style={{ marginBottom: '0.85rem', cursor: 'pointer' }}
+          >
+            <img src={api.assetUrl(template.preview_cover)} alt="" />
+          </div>
+        </HoverTooltip>
+      ) : (
+        <div
+          className={[
+            'pf-editor-preview',
+            isPortraitRatio(ratio) ? 'portrait' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          style={{ marginBottom: '0.85rem' }}
+        >
           <span className="empty">{t('studio.styleConfig.previewPlaceholder')}</span>
-        )}
-      </div>
+        </div>
+      )}
       <p className="pf-muted" style={{ fontSize: '0.8rem' }}>
         {t('studio.styleConfig.previewNote')}
       </p>
