@@ -51,6 +51,11 @@ class TaskRun(Base):
         nullable=True,
         index=True,
     )
+    asset_id: Mapped[int | None] = mapped_column(
+        ForeignKey("drama_assets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     shot_id: Mapped[int | None] = mapped_column(
         ForeignKey("shots.id", ondelete="SET NULL"), nullable=True, index=True
     )

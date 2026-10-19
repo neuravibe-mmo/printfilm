@@ -748,7 +748,7 @@ async def _script_stage(project_id: int) -> None:
                     img_prompt=img_prompt,
                     video_prompt=segment_script or plan.video_prompt,
                     segment_script=segment_script,
-                    camera=plan.camera,
+                    camera=(plan.camera or "")[:512],
                     bgm_mood=clip_shot_bgm(project.bgm_lock or plan.bgm),
                     status=ShotStatus.PENDING,
                 )

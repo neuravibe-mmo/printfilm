@@ -9,7 +9,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 _STATIC_ROOT = Path(__file__).resolve().parents[2] / "static"
-SHOT_BGM_MAX = 64
+SHOT_BGM_MAX = 512
 
 # Map mood keywords → filename stems under static/bgm/
 _BGM_FILES: list[tuple[re.Pattern[str], str]] = [
