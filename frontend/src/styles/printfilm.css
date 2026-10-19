@@ -5915,24 +5915,119 @@ button.pf-shot-editable:disabled {
 .pf-page-size {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.82rem;
+  gap: 0.45rem;
+  font-size: 0.85rem;
   color: var(--pf-muted);
+  user-select: none;
 }
 
-.pf-page-size select {
-  border: 1px solid var(--pf-line);
+.pf-page-size-picker {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.pf-page-size-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 54px;
+  height: 32px;
+  padding: 0 0.55rem;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 0.35rem 0.5rem;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--pf-ink);
   background: #fff;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.pf-page-size select:hover {
-  border-color: rgba(182, 255, 0, 0.7);
+.pf-page-size-trigger:hover {
+  border-color: #94a3b8;
+}
+
+.pf-page-size-picker.is-open .pf-page-size-trigger {
+  border-color: #111827;
+  box-shadow: 0 0 0 2px rgba(182, 255, 0, 0.4);
+}
+
+.pf-page-size-val {
+  font-variant-numeric: tabular-nums;
+}
+
+.pf-page-size-chevron {
+  color: var(--pf-muted);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pf-page-size-picker.is-open .pf-page-size-chevron {
+  transform: rotate(180deg);
+  color: var(--pf-ink);
+}
+
+.pf-page-size-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 76px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.12),
+    0 8px 10px -6px rgba(0, 0, 0, 0.06);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pf-page-size-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 0.55rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--pf-ink);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.pf-page-size-option:hover {
+  background: #f1f5f9;
+}
+
+.pf-page-size-option.is-selected {
+  background: var(--pf-lime-soft, #f4fed2);
+  color: #1a2e05;
+  font-weight: 700;
+}
+
+.pf-page-size-check {
+  color: #4d7c0f;
+  flex-shrink: 0;
 }
 
 .pf-page-btn {

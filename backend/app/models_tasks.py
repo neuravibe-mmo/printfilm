@@ -51,8 +51,9 @@ class TaskRun(Base):
         nullable=True,
         index=True,
     )
-    asset_id: Mapped[int | None] = mapped_column(ForeignKey("drama_assets.id"), nullable=True, index=True)
-    shot_id: Mapped[int | None] = mapped_column(ForeignKey("shots.id"), nullable=True, index=True)
+    shot_id: Mapped[int | None] = mapped_column(
+        ForeignKey("shots.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

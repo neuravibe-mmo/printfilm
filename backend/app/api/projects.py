@@ -905,6 +905,11 @@ async def generate_project(
         raise HTTPException(status_code=409, detail="生成进行中，请稍后")
 
     if restart:
+        shot_ids = [s.id for s in project.shots]
+        if shot_ids:
+            await db.execute(
+                update(TaskRun).where(TaskRun.shot_id.in_(shot_ids)).values(shot_id=None)
+            )
         for shot in list(project.shots):
             await db.delete(shot)
         await db.flush()
@@ -1001,12 +1006,16 @@ async def delete_project(
         pipeline.cancel_pipeline(project_id)
         await cancel_tasks_for_scope(db, user.id, project_id=project_id)
 
-    # Keep billing/task history; only clear project FK so DELETE projects can succeed.
+    # Keep billing/task history; only clear project FK and child shot FKs so DELETE projects can succeed.
+    shot_ids = select(Shot.id).where(Shot.project_id == project.id)
+    await db.execute(
+        update(TaskRun).where(TaskRun.shot_id.in_(shot_ids)).values(shot_id=None)
+    )
     await db.execute(
         update(UsageEvent).where(UsageEvent.project_id == project.id).values(project_id=None)
     )
     await db.execute(
-        update(TaskRun).where(TaskRun.project_id == project.id).values(project_id=None)
+        update(TaskRun).where(TaskRun.project_id == project.id).values(project_id=None, shot_id=None)
     )
 
     # Remove published work if any
@@ -1105,6 +1114,9 @@ async def delete_shot(
         raise HTTPException(status_code=404, detail="Cảnh không tồn tại")
     if len(project.shots) <= 1:
         raise HTTPException(status_code=400, detail="Không thể xóa cảnh duy nhất còn lại của dự án")
+    await db.execute(
+        update(TaskRun).where(TaskRun.shot_id == shot.id).values(shot_id=None)
+    )
     await db.delete(shot)
     await db.flush()
     await db.refresh(project, attribute_names=["shots"])

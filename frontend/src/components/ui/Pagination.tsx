@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react'
+import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { DEFAULT_PAGE_SIZE_OPTIONS } from '../../lib/pagination'
 import { useI18n } from '../../i18n'
@@ -54,6 +56,27 @@ export default function Pagination({
   const showNav = pageCount > 1
   const summaryVisible = showSummary && total != null && total >= 0
 
+  const [sizeOpen, setSizeOpen] = useState(false)
+  const sizeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!sizeOpen) return
+    const onPointer = (e: MouseEvent) => {
+      if (!sizeRef.current?.contains(e.target as Node)) {
+        setSizeOpen(false)
+      }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSizeOpen(false)
+    }
+    window.addEventListener('mousedown', onPointer)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onPointer)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [sizeOpen])
+
   if (!showNav && !canPickSize && !summaryVisible) return null
 
   const items = buildPageItems(page, pageCount)
@@ -71,21 +94,49 @@ export default function Pagination({
       {(showNav || canPickSize) && (
         <div className="pf-list-pagination-bar">
           {canPickSize ? (
-            <label className="pf-page-size">
+            <div className="pf-page-size">
               {pageSizeBefore ? <span>{pageSizeBefore}</span> : null}
-              <select
-                value={pageSize}
-                aria-label={t('common.pageSize')}
-                onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
-              >
-                {sizeOptions!.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
+              <div className={cn('pf-page-size-picker', sizeOpen && 'is-open')} ref={sizeRef}>
+                <button
+                  type="button"
+                  className="pf-page-size-trigger"
+                  aria-label={t('common.pageSize')}
+                  aria-haspopup="listbox"
+                  aria-expanded={sizeOpen}
+                  onClick={() => setSizeOpen((v) => !v)}
+                >
+                  <span className="pf-page-size-val">{pageSize}</span>
+                  <ChevronDown size={13} strokeWidth={2.2} className="pf-page-size-chevron" aria-hidden />
+                </button>
+                {sizeOpen ? (
+                  <ul className="pf-page-size-menu" role="listbox">
+                    {sizeOptions!.map((n) => {
+                      const selected = n === pageSize
+                      return (
+                        <li key={n} role="none">
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            className={cn('pf-page-size-option', selected && 'is-selected')}
+                            onClick={() => {
+                              onPageSizeChange?.(n)
+                              setSizeOpen(false)
+                            }}
+                          >
+                            <span>{n}</span>
+                            {selected ? (
+                              <Check size={13} strokeWidth={2.5} className="pf-page-size-check" aria-hidden />
+                            ) : null}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : null}
+              </div>
               {pageSizeAfter ? <span>{pageSizeAfter}</span> : null}
-            </label>
+            </div>
           ) : null}
 
           {showNav ? (
