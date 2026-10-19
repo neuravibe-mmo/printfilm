@@ -2,8 +2,8 @@
 
 export const viShell = {
   meta: {
-    title: 'PRINTFILM · Nền tảng Video AI',
-    description: 'PRINTFILM: Tạo phim ngắn AI từ kịch bản đến thành phẩm, video ngắn AI từ ý tưởng đến phân cảnh.',
+    title: 'GenCine · Nền tảng Video AI',
+    description: 'GenCine: Tạo phim ngắn AI từ kịch bản đến thành phẩm, video ngắn AI từ ý tưởng đến phân cảnh.',
   },
   common: {
     comingSoon: 'Sắp ra mắt',
@@ -110,7 +110,7 @@ export const viShell = {
     registerTitle: 'Tạo tài khoản sáng tác viên',
     forgotTitle: 'Lấy lại mật khẩu',
     resetTitle: 'Đặt mật khẩu mới',
-    lede: 'PRINTFILM · Nền tảng sáng tác phim ngắn AI & Video ngắn AI',
+    lede: 'GenCine · Nền tảng sáng tác phim ngắn AI & Video ngắn AI',
     nickname: 'Biệt danh',
     email: 'Email',
     password: 'Mật khẩu',

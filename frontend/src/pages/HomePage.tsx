@@ -7,7 +7,6 @@ import Button from '../components/ui/Button'
 import ComingSoon from '../components/ui/ComingSoon'
 import CreateChoiceModal from '../components/ui/CreateChoiceModal'
 import { useI18n } from '../i18n'
-import { getDramaImageStylePreviewUrl } from '../lib/dramaImageStylePreviews'
 import { PRODUCT_ICONS, localizeToolDefs } from '../lib/toolsCatalog'
 
 export default function HomePage() {
@@ -37,33 +36,13 @@ export default function HomePage() {
     <AppShell active="home" hideFooter>
       <section className="pf-land-hero">
         <div className="pf-land-hero-copy">
-          <p className="pf-land-kicker">PRINTFILM</p>
+          <p className="pf-land-kicker">GenCine</p>
           <h1>
             {t('home.headlineBefore')}
             <br />
             <em>{t('home.headlineEm')}</em>
           </h1>
           <p className="pf-land-lede">{t('home.lede')}</p>
-          <div className="pf-land-cta">
-            <Button variant="lime" size="lg" icon onClick={goCreate}>
-              {t('home.startCreate')}
-              <ArrowRight size={16} strokeWidth={2} aria-hidden />
-            </Button>
-            <Button variant="ghost" size="lg" icon to="/tools">
-              {t('home.browseTools')}
-              <ArrowRight size={16} strokeWidth={2} aria-hidden />
-            </Button>
-          </div>
-        </div>
-        <div className="pf-land-frames" aria-hidden>
-          <figure className="pf-land-frame is-drama">
-            <img src={getDramaImageStylePreviewUrl('ancient-chinese-mythology')} alt="" />
-            <figcaption>{t('home.dramaTitle')}</figcaption>
-          </figure>
-          <figure className="pf-land-frame is-kepu">
-            <img src={getDramaImageStylePreviewUrl('neon-cyberpunk-film')} alt="" />
-            <figcaption>{t('home.kepuTitle')}</figcaption>
-          </figure>
         </div>
       </section>
 
@@ -201,7 +180,7 @@ export default function HomePage() {
 
       <footer className="pf-land-foot">
         <div className="pf-land-foot-brand">
-          <strong>PRINTFILM</strong>
+          <strong>GenCine</strong>
           <p>{t('home.footBrand')}</p>
         </div>
         <nav className="pf-land-foot-nav" aria-label={t('home.footNav')}>
@@ -214,7 +193,7 @@ export default function HomePage() {
           <Link to="/privacy">{t('footer.privacy')}</Link>
           <Link to="/contact">{t('footer.contact')}</Link>
         </nav>
-        <p className="pf-land-copy">© {new Date().getFullYear()} PRINTFILM. All rights reserved.</p>
+        <p className="pf-land-copy">© {new Date().getFullYear()} GenCine. All rights reserved.</p>
       </footer>
 
       <CreateChoiceModal open={createOpen} onClose={() => setCreateOpen(false)} />

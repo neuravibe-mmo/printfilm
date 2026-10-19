@@ -380,29 +380,26 @@
 
 .pf-land-hero {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(240px, 0.95fr);
-  gap: 2.5rem;
-  align-items: center;
-  padding: 2.4rem 0 2.2rem;
+  display: block;
+  padding: 2.6rem 0 1.5rem;
 }
 
 .pf-land-hero::before {
   content: '';
   position: absolute;
-  right: -6%;
-  top: -18%;
+  right: 5%;
+  top: -10%;
   width: 460px;
   height: 340px;
-  background: radial-gradient(circle, rgba(182, 255, 0, 0.38) 0%, rgba(182, 255, 0, 0) 68%);
+  background: radial-gradient(circle, rgba(182, 255, 0, 0.22) 0%, rgba(182, 255, 0, 0) 68%);
   pointer-events: none;
   z-index: 0;
 }
 
-.pf-land-hero-copy,
-.pf-land-frames {
+.pf-land-hero-copy {
   position: relative;
   z-index: 1;
+  max-width: 48rem;
 }
 
 .pf-land-hero h1 {
@@ -419,8 +416,8 @@
 }
 
 .pf-land-lede {
-  margin: 0 0 1.55rem;
-  max-width: 34rem;
+  margin: 0;
+  max-width: 42rem;
   color: var(--pf-muted);
   font-size: 1.08rem;
   line-height: 1.65;
@@ -3104,7 +3101,8 @@
 }
 
 .brand-word {
-  letter-spacing: 0.12em;
+  letter-spacing: 0.04em;
+  font-weight: 700;
 }
 
 /* ——— Common ——— */
@@ -8147,7 +8145,6 @@ button.pf-shot-editable:disabled {
     grid-template-columns: repeat(3, 1fr);
   }
 
-  .pf-land-hero,
   .pf-land-products,
   .pf-land-pipeline-list,
   .pf-land-who-grid,

@@ -4,7 +4,7 @@ export const viPages = {
   home: {
     headlineBefore: 'Biến câu chuyện thành',
     headlineEm: 'phim có thể phát',
-    lede: 'Phim ngắn AI từ kịch bản đến thành phẩm theo tập, video ngắn AI từ điểm bán đến phân cảnh thành phẩm. Một bàn làm việc, hai cách xuất phim.',
+    lede: 'Phim ngắn AI từ kịch bản đến thành phẩm theo tập, video ngắn AI từ ý tưởng sản phẩm đến phân cảnh thành phẩm. Một bàn làm việc, hai cách xuất phim.',
     startCreate: 'Bắt đầu sáng tác',
     browseTools: 'Khám phá công cụ',
     products: 'Sản phẩm chính',
@@ -14,7 +14,7 @@ export const viPages = {
     kepuTitle: 'Video ngắn AI',
     kepuTag: 'Video thu hút khách hàng',
     kepuFor: 'Dành cho thương hiệu muốn thu hút khách',
-    kepuDesc: 'Biến điểm bán hàng thành video ngắn có thể chạy quảng cáo, chọn phong cách rồi xuất hàng loạt theo dây chuyền phân cảnh.',
+    kepuDesc: 'Biến ý tưởng hoặc sản phẩm thành video ngắn chuyên nghiệp, chọn phong cách rồi tạo hàng loạt theo từng phân cảnh.',
     howKicker: 'Cách hoạt động',
     howTitle: 'Ba bước ra phim',
     capsKicker: 'Tính năng',
@@ -45,7 +45,7 @@ export const viPages = {
     ],
     audiences: [
       { title: 'Nhà sản xuất phim ngắn', desc: 'Chia câu chuyện thành các tập có thể quay, tạo tài nguyên rồi xuất phim.' },
-      { title: 'Thu hút khách hàng cho thương hiệu', desc: 'Biến điểm bán hàng thành video dọc, phong cách nhất quán, có thể xuất hàng loạt.' },
+      { title: 'Thu hút khách hàng cho thương hiệu', desc: 'Biến ý tưởng sản phẩm thành video dọc, phong cách nhất quán, có thể xuất hàng loạt.' },
       { title: 'Sản xuất nhóm', desc: 'Dự án, tài nguyên, lịch sử tập trung một nơi — ít phải chuyển giữa các công cụ hơn.' },
     ],
   },
@@ -227,7 +227,7 @@ export const viPages = {
     faq: [
       {
         q: 'Lần đầu sử dụng bắt đầu từ đâu?',
-        a: 'Mở bàn làm việc, chọn "Phim ngắn AI" hoặc "Video ngắn AI". Phim phù hợp với kể chuyện theo tập và tính nhất quán nhân vật; Video AI hướng đến thu hút khách hàng, phù hợp với giải thích điểm bán và dây chuyền phân cảnh. Nếu chỉ cần một ảnh đơn hoặc đoạn video ngắn, có thể vào thẳng "Công cụ".',
+        a: 'Mở bàn làm việc, chọn "Phim ngắn AI" hoặc "Video ngắn AI". Phim phù hợp với kể chuyện theo tập và tính nhất quán nhân vật; Video AI hướng đến thu hút khách hàng, phù hợp với giới thiệu sản phẩm và dây chuyền phân cảnh. Nếu chỉ cần một ảnh đơn hoặc đoạn video ngắn, có thể vào thẳng "Công cụ".',
       },
       {
         q: '"Video AI" và "Video tĩnh hình" khác nhau như thế nào?',

@@ -1,7 +1,61 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="10" fill="#0D1218"/>
-  <rect x="12" y="16" width="40" height="32" rx="3" stroke="#E8EEF2" stroke-width="2.5"/>
-  <circle cx="32" cy="32" r="9" stroke="#2A6F7A" stroke-width="2.5"/>
-  <circle cx="32" cy="32" r="3" fill="#D6FF4B"/>
-  <path d="M32 12v6M32 46v6M12 32h6M46 32h6" stroke="#D6FF4B" stroke-width="2" stroke-linecap="square"/>
+  <defs>
+    <!-- Background Dark Gradient -->
+    <linearGradient id="gc-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#131822" />
+      <stop offset="100%" stop-color="#090C10" />
+    </linearGradient>
+
+    <!-- Metallic Silver Gradient for Outer G-Frame -->
+    <linearGradient id="gc-metal" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="55%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+
+    <!-- Neon Lime Gradient for C & Play -->
+    <linearGradient id="gc-lime" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6FF66" />
+      <stop offset="50%" stop-color="#D6FF4B" />
+      <stop offset="100%" stop-color="#9EE600" />
+    </linearGradient>
+
+    <!-- Soft Glow Filter -->
+    <filter id="gc-glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="0" stdDeviation="2.2" flood-color="#D6FF4B" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Tile -->
+  <rect width="64" height="64" rx="14" fill="url(#gc-bg)" />
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" stroke="#1E293B" stroke-width="1.5" />
+
+  <!-- Viewfinder Cinema HUD Corner Marks -->
+  <path d="M10 15h3M10 15v-3M54 15h-3M54 15v-3M10 49h3M10 49v3M54 49h-3M54 49v3" stroke="#334155" stroke-width="1.2" stroke-linecap="round" />
+
+  <!-- Outer Frame: Stylized Cinema "G" (Geometric Film Frame) -->
+  <path
+    d="M 47 22 L 47 19.5 C 47 17.3 45.2 15.5 43 15.5 L 21 15.5 C 18.8 15.5 17 17.3 17 19.5 L 17 44.5 C 17 46.7 18.8 48.5 21 48.5 L 43 48.5 C 45.2 48.5 47 46.7 47 44.5 L 47 32.5 L 41.5 32.5"
+    stroke="url(#gc-metal)"
+    stroke-width="3.4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Inner Frame: Stylized Neon "C" (Nested Film Frame with Lime Glow) -->
+  <path
+    d="M 33 23.5 L 27.5 23.5 C 24.5 23.5 22 26 22 29 L 22 35 C 22 38 24.5 40.5 27.5 40.5 L 33 40.5"
+    stroke="url(#gc-lime)"
+    stroke-width="2.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#gc-glow)"
+  />
+
+  <!-- Center Core: Vibrant Cinema Play Symbol (AI Action) -->
+  <path
+    d="M 28 26.2 C 28 25.4 28.9 24.8 29.6 25.3 L 37.2 30.6 C 37.9 31.1 37.9 32.2 37.2 32.7 L 29.6 38.0 C 28.9 38.5 28 37.9 28 37.1 Z"
+    fill="url(#gc-lime)"
+    filter="url(#gc-glow)"
+  />
 </svg>

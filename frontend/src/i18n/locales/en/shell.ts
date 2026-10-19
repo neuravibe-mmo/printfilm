@@ -2,9 +2,9 @@
 
 export const enShell = {
   meta: {
-    title: 'PRINTFILM · AI short video',
+    title: 'GenCine · AI Video Platform',
     description:
-      'PRINTFILM: turn scripts into episodic AI dramas, or offers into AI short videos.',
+      'GenCine: turn scripts into episodic AI dramas, or offers into AI short videos.',
   },
   common: {
     comingSoon: 'Coming soon',
@@ -111,7 +111,7 @@ export const enShell = {
     registerTitle: 'Create a creator account',
     forgotTitle: 'Reset your password',
     resetTitle: 'Choose a new password',
-    lede: 'PRINTFILM · AI drama and AI short video',
+    lede: 'GenCine · AI drama and AI short video',
     nickname: 'Display name',
     email: 'Email',
     password: 'Password',
