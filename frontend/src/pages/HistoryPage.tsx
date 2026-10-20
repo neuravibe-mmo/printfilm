@@ -437,7 +437,9 @@ export default function HistoryPage() {
                         <i style={{ width: `${Math.min(100, p.progress)}%` }} />
                       </div>
                     ) : null}
-                    {p.error_msg ? <p className="pf-error pf-project-err">{p.error_msg}</p> : null}
+                    {p.error_msg ? (
+                      <BillingErrorNotice message={p.error_msg} className="pf-error pf-project-err" />
+                    ) : null}
                   </div>
                   <div className="pf-project-ratio">{ratio}</div>
                   <div className="pf-project-actions">

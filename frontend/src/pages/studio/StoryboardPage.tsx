@@ -947,8 +947,10 @@ title={t('studio.storyboard.respliceTip')}
         </p>
       </header>
 
-      {error ? <BillingErrorNotice message={error} /> : null}
-      {project.error_msg ? <p className="pf-error">{project.error_msg}</p> : null}
+      {error ? <BillingErrorNotice message={error} className="pf-error pf-board-error" /> : null}
+      {project.error_msg ? (
+        <BillingErrorNotice message={project.error_msg} className="pf-error pf-board-error" />
+      ) : null}
 
       <div className="pf-board">
         <aside className="pf-create-col">

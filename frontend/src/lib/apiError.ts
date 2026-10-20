@@ -3,6 +3,20 @@ import { getActiveLocale } from '../i18n/detect'
 
 const ERROR_TRANSLATIONS: Array<[RegExp, { vi: string; en: string }]> = [
   [
+    /NO_AT_TOKEN|Lỗi gửi lệnh tạo video.*NO_AT_TOKEN/i,
+    {
+      vi: 'Dịch vụ tạo video Google Veo tạm thời chưa khả dụng (thiếu hoặc hết hạn token xác thực trên máy chủ Flow). Vui lòng chuyển sang mô hình video khác (như Seedance 2.5) trong Cài đặt phong cách hoặc thử lại sau.',
+      en: 'Google Veo video generation service is temporarily unavailable (missing or expired authentication token on Flow server). Please switch to another video model (such as Seedance 2.5) in Style settings or try again later.',
+    },
+  ],
+  [
+    /Flow HTTP (500|502|503|504)/i,
+    {
+      vi: 'Máy chủ tạo video Flow đang quá tải hoặc gặp sự cố kết nối. Vui lòng thử lại sau hoặc chuyển sang mô hình video khác (như Seedance 2.5).',
+      en: 'Flow video server is temporarily overloaded or experiencing connection issues. Please try again later or switch to another video model (such as Seedance 2.5).',
+    },
+  ],
+  [
     /未解析到可用文字模型.*TokenFree API Key/i,
     {
       vi: 'Chưa cấu hình mô hình văn bản khả dụng. Vui lòng điền TokenFree API Key trong trang quản trị, đồng bộ và chọn mô hình văn bản.',
@@ -139,13 +153,20 @@ const ERROR_TRANSLATIONS: Array<[RegExp, { vi: string; en: string }]> = [
 
 export function localizeErrorMessage(raw: string): string {
   const locale = getActiveLocale()
-  if (locale === 'zh') return raw
+  let text = String(raw || '').trim()
   for (const [regex, map] of ERROR_TRANSLATIONS) {
-    if (regex.test(raw)) {
-      return locale === 'vi' ? map.vi : map.en
+    if (regex.test(text)) {
+      return locale === 'vi' ? map.vi : locale === 'en' ? map.en : text
     }
   }
-  return raw
+  if (text.startsWith('RuntimeError:')) {
+    text = text.substring('RuntimeError:'.length).trim()
+  }
+  const detailMatch = text.match(/\{["']detail["']\s*:\s*["']([^"']+)["']\}/)
+  if (detailMatch) {
+    text = detailMatch[1]
+  }
+  return text
 }
 
 /** Phân tích chi tiết FastAPI và đưa ra; 402/ Hướng dẫn nạp tiền hiện lên khi số dư không đủ */

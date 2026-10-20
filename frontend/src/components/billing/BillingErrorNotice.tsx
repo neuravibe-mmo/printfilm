@@ -26,7 +26,21 @@ export default function BillingErrorNotice({
   if (!rawText) return null
 
   let text = rawText
-  if (/未解析到可用文字模型.*TokenFree API Key/i.test(rawText)) {
+  if (/NO_AT_TOKEN|Lỗi gửi lệnh tạo video.*NO_AT_TOKEN/i.test(rawText)) {
+    text =
+      locale === 'vi'
+        ? 'Dịch vụ tạo video Google Veo tạm thời chưa khả dụng (thiếu hoặc hết hạn token xác thực trên máy chủ Flow). Vui lòng chuyển sang mô hình video khác (như Seedance 2.5) trong Cài đặt phong cách hoặc thử lại sau.'
+        : locale === 'en'
+          ? 'Google Veo video generation service is temporarily unavailable (missing or expired authentication token on Flow server). Please switch to another video model (such as Seedance 2.5) in Style settings or try again later.'
+          : 'Google Veo 视频生成服务暂不可用（Flow 凭据缺失或过期）。请在风格配置中切换到其他视频模型（如 Seedance 2.5）或稍后重试。'
+  } else if (/Flow HTTP (500|502|503|504)/i.test(rawText)) {
+    text =
+      locale === 'vi'
+        ? 'Máy chủ tạo video Flow đang quá tải hoặc gặp sự cố kết nối. Vui lòng thử lại sau hoặc chuyển sang mô hình video khác (như Seedance 2.5).'
+        : locale === 'en'
+          ? 'Flow video server is temporarily overloaded or experiencing connection issues. Please try again later or switch to another video model (such as Seedance 2.5).'
+          : 'Flow 视频服务器连接异常或过载。请稍后重试或切换至其他视频模型（如 Seedance 2.5）。'
+  } else if (/未解析到可用文字模型.*TokenFree API Key/i.test(rawText)) {
     text =
       locale === 'vi'
         ? 'Chưa cấu hình mô hình văn bản khả dụng. Vui lòng điền TokenFree API Key trong trang quản trị, đồng bộ và chọn mô hình văn bản.'
@@ -98,6 +112,16 @@ export default function BillingErrorNotice({
         : locale === 'en'
           ? 'All episode scripts are generating, please wait until complete before adding episodes.'
           : rawText
+  }
+
+  if (text === rawText) {
+    if (text.startsWith('RuntimeError:')) {
+      text = text.substring('RuntimeError:'.length).trim()
+    }
+    const detailMatch = text.match(/\{["']detail["']\s*:\s*["']([^"']+)["']\}/)
+    if (detailMatch) {
+      text = detailMatch[1]
+    }
   }
 
   const Tag = inline ? 'span' : 'p'

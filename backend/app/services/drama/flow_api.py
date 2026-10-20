@@ -144,9 +144,21 @@ async def _run_flow_generation(
                 json=payload,
             )
             if resp.status_code >= 400:
+                err_text = resp.text
+                if "NO_AT_TOKEN" in err_text:
+                    err_msg = (
+                        "Dịch vụ tạo video Google Veo tạm thời chưa khả dụng (thiếu hoặc hết hạn token xác thực trên máy chủ Flow). "
+                        "Vui lòng chuyển sang mô hình video khác (như Seedance 2.5) trong Cài đặt phong cách hoặc thử lại sau."
+                    )
+                else:
+                    try:
+                        detail = resp.json().get("detail")
+                        err_msg = f"Lỗi máy chủ Flow: {detail}" if detail else f"Flow HTTP {resp.status_code}: {err_text[:200]}"
+                    except Exception:
+                        err_msg = f"Flow HTTP {resp.status_code}: {err_text[:200]}"
                 _save_task_state(
                     task_id,
-                    {"status": "failed", "error": f"Flow HTTP {resp.status_code}: {resp.text[:200]}"},
+                    {"status": "failed", "error": err_msg},
                 )
                 return
             data = resp.json()

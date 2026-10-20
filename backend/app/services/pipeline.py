@@ -55,6 +55,20 @@ _COMPOSE_SIGTERM_MAX_ATTEMPTS = 3
 _cancelled: set[int] = set()
 
 
+def _format_pipeline_error(exc: Exception) -> str:
+    if is_ffmpeg_interrupted_error(exc):
+        return "FFmpeg bị hệ thống gián đoạn, vui lòng nhấn thử lại để tiếp tục ghép video."
+    msg = str(exc)
+    if "NO_AT_TOKEN" in msg:
+        return (
+            "Dịch vụ tạo video Google Veo tạm thời chưa khả dụng (thiếu hoặc hết hạn token xác thực trên máy chủ Flow). "
+            "Vui lòng chuyển sang mô hình video khác (như Seedance 2.5) trong Cài đặt phong cách hoặc thử lại sau."
+        )
+    if msg.startswith("RuntimeError:"):
+        msg = msg[len("RuntimeError:"):].strip()
+    return msg[:2000]
+
+
 async def _record_usage_est(
     project_id: int,
     billing_key: str,
@@ -604,11 +618,7 @@ async def run_pipeline(project_id: int, *, phase: str | None = None) -> None:
             )
             return
         logger.exception("pipeline failed project=%s", project_id)
-        fail_msg = (
-            "FFmpeg 被系统中断（signal 15），请点击重新拼接"
-            if is_ffmpeg_interrupted_error(exc)
-            else str(exc)[:2000]
-        )
+        fail_msg = _format_pipeline_error(exc)
         async with AsyncSessionLocal() as db:
             project = await db.get(Project, project_id)
             if project:
@@ -1754,11 +1764,7 @@ async def regen_project_audio_and_compose(project_id: int) -> None:
 
 # Khi nối không thành công, hãy đặt dự án thành FAILED để tránh bị kẹt trong COMPOSING lâu và không bấm được "Resplice"
 async def _fail_project_compose(project_id: int, exc: Exception) -> None:
-    raw = str(exc)
-    if is_ffmpeg_interrupted_error(exc):
-        msg = "FFmpeg 被系统中断（signal 15），请点击重新拼接"
-    else:
-        msg = raw[:2000]
+    msg = _format_pipeline_error(exc)
     logger.error("compose failed project=%s: %s", project_id, msg[:500])
     async with AsyncSessionLocal() as db:
         project = await db.get(Project, project_id)
