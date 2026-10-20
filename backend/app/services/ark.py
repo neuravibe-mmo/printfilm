@@ -146,13 +146,27 @@ def _raise_seedream_http_error(
     raise RuntimeError(f"Seedream error {status_code}: {snippet}")
 
 
+def _truncate_words(text: str, max_chars: int) -> str:
+    """Cắt chuỗi an toàn theo ranh giới từ (không chém ngang giữa từ)."""
+    t = (text or "").strip()
+    if len(t) <= max_chars:
+        return t
+    cut = t[:max_chars]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.strip()
+
+
 def _fallback_overlay_title(text: str, shot_no: int) -> str:
     """Last resort when LLM omits title — never blind-slice mid-word (e.g. ERP→ER)."""
-    raw = re.sub(r"\s+", "", (text or "").strip())
+    raw = (text or "").strip()
     if not raw:
         return f"Phân cảnh {shot_no}"
+    if " " in raw:
+        clause = re.split(r"[，。；！？、,:;]", raw, maxsplit=1)[0].strip()
+        return _truncate_words(clause, 30) or f"Phân cảnh {shot_no}"
     clause = re.split(r"[，。；！？、,:;]", raw, maxsplit=1)[0].strip()
-    if 2 <= len(clause) <= 10 and not _looks_truncated_token(clause, raw):
+    if 2 <= len(clause) <= 12:
         return clause
     return f"Phân cảnh {shot_no}"
 
@@ -161,24 +175,17 @@ def _fallback_overlay_subtitle(text: str) -> str:
     raw = (text or "").strip()
     if not raw:
         return ""
+    if " " in raw:
+        clause = re.split(r"[，。；！？、,:;]", raw, maxsplit=1)[0].strip()
+        return _truncate_words(clause, 80)
     cleaned = re.sub(r"\s+", "", raw)
     clause = re.split(r"[，。；！？、,:;]", cleaned, maxsplit=1)[0].strip()
     if 4 <= len(clause) <= 22:
         return clause
     if len(clause) > 22:
-        # Prefer a trailing noun-ish chunk over a head that cuts mid-phrase
-        for n in range(18, 7, -1):
-            tail = clause[-n:].lstrip(" vàvớicùng")
-            if 6 <= len(tail) <= 18 and not re.match(r"[A-Za-z0-9]", tail[:1] or ""):
-                if not _looks_truncated_token(tail, clause):
-                    return tail
         head = clause[:18]
-        if re.search(r"[A-Za-z0-9]$", head) and re.match(r"[A-Za-z0-9]", clause[18:19] or ""):
-            m = re.search(r"[A-Za-z0-9]+$", head)
-            if m and m.start() > 6:
-                head = head[: m.start()]
         return head
-    return cleaned[:22] if len(cleaned) > 22 else cleaned
+    return cleaned[:22]
 
 
 def _looks_truncated_token(title: str, full_text: str) -> bool:
@@ -202,14 +209,14 @@ def _normalize_overlay_title(title: str, text: str, shot_no: int) -> str:
     t = (title or "").strip()
     if not t or _looks_truncated_token(t, text):
         return _fallback_overlay_title(text, shot_no)
-    return t[:32]
+    return _truncate_words(t, 40)
 
 
 def _normalize_overlay_subtitle(subtitle: str, text: str) -> str:
     s = (subtitle or "").strip()
     if not s or _looks_truncated_token(s, text):
-        return _fallback_overlay_subtitle(text)[:64]
-    return s[:64]
+        return _fallback_overlay_subtitle(text)
+    return _truncate_words(s, 100)
 
 
 # Soften brand / IP names that Seedream often rejects as copyright

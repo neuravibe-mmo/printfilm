@@ -390,11 +390,22 @@ def _find_cjk_font() -> str | None:
         os.environ.get("FRAMECUT_FONT"),
         # Kho tích hợp (có thể được đặt trong phần phụ trợ/tài sản/phông chữ trong quá trình triển khai)
         str(bundled) if bundled.exists() else None,
+        # macOS Fonts (hỗ trợ tốt tiếng Việt / Latin tiêu chuẩn)
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+        "/System/Library/Fonts/SFNS.ttf",
+        # Windows Fonts
+        r"C:\Windows\Fonts\arial.ttf",
         r"C:\Windows\Fonts\msyhbd.ttc",
         r"C:\Windows\Fonts\msyh.ttc",
         r"C:\Windows\Fonts\simhei.ttf",
         r"C:\Windows\Fonts\simkai.ttf",
-        # Đường dẫn chung Ubuntu/Debian
+        # Linux Fonts (Ubuntu / Debian hỗ trợ tiếng Việt)
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        # Đường dẫn chung Ubuntu/Debian CJK
         "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
         "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
         "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
@@ -430,6 +441,17 @@ def _find_cjk_font() -> str | None:
     return None
 
 
+def _truncate_words(text: str, max_chars: int) -> str:
+    """Cắt chuỗi an toàn theo ranh giới từ (không chém ngang giữa từ tiếng Việt/Latin)."""
+    t = (text or "").strip()
+    if len(t) <= max_chars:
+        return t
+    cut = t[:max_chars]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.strip()
+
+
 def _escape_drawtext(text: str) -> str:
     """Escape text for ffmpeg drawtext filter."""
     t = (text or "").replace("\n", " ").replace("\r", " ").strip()
@@ -452,18 +474,16 @@ def _escape_fontfile(path: str) -> str:
     return p.replace(":", "\\:")
 
 
-def _one_line_caption(text: str, *, max_chars: int = 22) -> str:
-    """Single-line bottom caption; truncate if too long (no ellipsis punctuation)."""
+def _one_line_caption(text: str, *, max_chars: int = 32) -> str:
+    """Single-line bottom caption; truncate cleanly at word boundary if too long."""
     raw = _strip_caption_punct((text or "").replace("\n", " ").replace("\r", " "))
     if not raw:
         return ""
-    if len(raw) <= max_chars:
-        return raw
-    return raw[:max_chars]
+    return _truncate_words(raw, max_chars)
 
 
-def _split_caption_chunks(text: str, *, max_chars: int = 18) -> list[str]:
-    """Split narration into timed bottom-caption cues (one line each)."""
+def _split_caption_chunks(text: str, *, max_chars: int = 24) -> list[str]:
+    """Split narration into timed bottom-caption cues (one line each, respecting word boundaries)."""
     raw = (text or "").replace("\n", " ").replace("\r", " ").strip()
     if not raw:
         return []
@@ -496,24 +516,47 @@ def _split_caption_chunks(text: str, *, max_chars: int = 18) -> list[str]:
         if len(body) <= max_chars:
             chunks.append(body)
             continue
-        cur = ""
-        for ch in body:
-            cur += ch
-            if len(cur) >= max_chars:
+        # If text contains spaces (Latin / Vietnamese), split by words
+        if " " in body:
+            words = body.split()
+            cur_words: list[str] = []
+            cur_len = 0
+            for w in words:
+                added_len = len(w) if not cur_words else cur_len + 1 + len(w)
+                if added_len <= max_chars:
+                    cur_words.append(w)
+                    cur_len = added_len
+                else:
+                    if cur_words:
+                        chunks.append(" ".join(cur_words))
+                    cur_words = [w]
+                    cur_len = len(w)
+            if cur_words:
+                chunks.append(" ".join(cur_words))
+        else:
+            # Fallback for CJK text without spaces
+            cur = ""
+            for ch in body:
+                cur += ch
+                if len(cur) >= max_chars:
+                    chunks.append(cur.strip())
+                    cur = ""
+            if cur.strip():
                 chunks.append(cur.strip())
-                cur = ""
-        if cur.strip():
-            chunks.append(cur.strip())
 
-    # Merge tiny leftovers into previous cue
+    # Merge tiny leftovers into previous cue if reasonable length
     merged: list[str] = []
     for c in chunks:
-        if merged and len(c) <= 2:
-            merged[-1] = merged[-1] + c
+        if (
+            merged
+            and len(c) <= 3
+            and (len(merged[-1]) + len(c) + 1) <= int(max_chars * 1.35)
+        ):
+            merged[-1] = f"{merged[-1]} {c}".strip()
         else:
             merged.append(c)
     clean = [_strip_caption_punct(c) for c in merged if _strip_caption_punct(c)]
-    return clean or [_strip_caption_punct(raw)[:max_chars]]
+    return clean or [_truncate_words(_strip_caption_punct(raw), max_chars)]
 
 
 def _timed_caption_windows(
@@ -521,7 +564,7 @@ def _timed_caption_windows(
     *,
     start: float,
     duration: float,
-    max_chars: int = 18,
+    max_chars: int = 24,
 ) -> list[tuple[float, float, str]]:
     """Allocate each caption chunk a time window proportional to character length."""
     chunks = _split_caption_chunks(text, max_chars=max_chars)
@@ -621,9 +664,9 @@ def _bottom_caption_drawtext(
 ) -> str:
     """Pixel-sized bottom captions via drawtext (avoids libass PlayRes blow-up)."""
     portrait = (h / max(w, 1)) > 1.2
-    max_chars = 14 if portrait else 22
-    base = 32 if portrait else 28
-    font_size = max(24, min(44, int(base * max(0.8, scale))))
+    max_chars = 24 if portrait else 34
+    base = 30 if portrait else 26
+    font_size = max(22, min(40, int(base * max(0.8, scale))))
     y = max(0, h - font_size - (64 if portrait else 48))
     windows = _timed_caption_windows(
         narration,
@@ -664,17 +707,25 @@ def _overlay_drawtext(
     """Tiêu đề ở trên cùng được xếp chồng lên nhau. tách cũng đặt phụ đề bên dưới tiêu đề, để lại phần dưới cùng cho phụ đề nói."""
     title = _strip_caption_punct(title)
     subtitle = _strip_caption_punct(subtitle)
-    title_cap = 14 if layout == "split" else 12
-    sub_cap = 24 if layout == "split" else 18
-    if len(title) > title_cap:
-        title = title[:title_cap]
-    if len(subtitle) > sub_cap:
-        subtitle = subtitle[:sub_cap]
+    # Tăng giới hạn ký tự phù hợp với tiếng Việt và cắt theo ranh giới từ hoàn chỉnh
+    title_cap = 28 if layout == "split" else 24
+    sub_cap = 44 if layout == "split" else 38
+    title = _truncate_words(title, title_cap)
+    subtitle = _truncate_words(subtitle, sub_cap)
     title_e = _escape_drawtext(title)
     sub_e = _escape_drawtext(subtitle)
-    # Chân đế 720 ~ to hơn trước nên chữ chồng lên nhau bắt mắt hơn
-    title_size = max(34, min(52, int(w * 0.058 * max(0.8, title_scale))))
-    sub_size = max(24, min(36, int(w * 0.042 * max(0.8, sub_scale))))
+
+    # Tự động co giãn kích thước chữ khi tiêu đề dài để luôn hiển thị vừa vặn trong khung
+    title_size = max(30, min(50, int(w * 0.055 * max(0.8, title_scale))))
+    if len(title) > 20:
+        title_size = max(26, int(title_size * 0.85))
+    elif len(title) > 15:
+        title_size = max(28, int(title_size * 0.92))
+
+    sub_size = max(22, min(34, int(w * 0.038 * max(0.8, sub_scale))))
+    if len(subtitle) > 30:
+        sub_size = max(18, int(sub_size * 0.85))
+
     title_y = int(h * 0.055)
     sub_y = title_y + title_size + int(h * 0.014)
 
