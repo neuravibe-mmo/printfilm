@@ -205,6 +205,7 @@ export default function StoryboardPage() {
   const [batchRegenAudio, setBatchRegenAudio] = useState(false)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const segScriptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const imagePromptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [videoDurations, setVideoDurations] = useState<Record<number, number>>({})
   const [trimmingShot, setTrimmingShot] = useState<{
     shot: Shot
@@ -222,6 +223,22 @@ export default function StoryboardPage() {
     window.addEventListener('resize', adjust)
     return () => window.removeEventListener('resize', adjust)
   }, [editing?.segment_script, editing?.video_prompt, editMode])
+
+  useEffect(() => {
+    const el = imagePromptTextareaRef.current
+    if (!el) return
+    const adjust = () => {
+      el.style.height = 'auto'
+      el.style.height = `${el.scrollHeight}px`
+    }
+    adjust()
+    const timer = setTimeout(adjust, 50)
+    window.addEventListener('resize', adjust)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', adjust)
+    }
+  }, [editing?.img_prompt, editMode])
 
   const autoGrowPrompt = useCallback((el: HTMLTextAreaElement | null) => {
     if (!el) return
@@ -1057,6 +1074,7 @@ title={t('studio.storyboard.respliceTip')}
                 type="button"
                 className="pf-prompt-chip"
                 disabled={busy || running}
+                title={(value || '').trim() || t('studio.storyboard.promptEmpty')}
                 onClick={() =>
                   setPromptEdit({
                     style_prompt: displayPrompts.style_prompt,
@@ -1094,7 +1112,9 @@ title={t('studio.storyboard.respliceTip')}
                   structure.map((s) => (
                     <li key={s.label}>
                       <span>{s.label}</span>
-                      <span style={{ maxWidth: '60%', textAlign: 'right' }}>{s.text.slice(0, 36)}</span>
+                      <span style={{ maxWidth: '72%', textAlign: 'right' }} title={s.text}>
+                        {s.text}
+                      </span>
                     </li>
                   ))
                 ) : (
@@ -1702,10 +1722,19 @@ title={t('studio.storyboard.respliceTip')}
                 <label>
                   {t('studio.storyboard.imagePrompt')}
                   <textarea
+                    ref={(el) => {
+                      imagePromptTextareaRef.current = el
+                      autoGrowPrompt(el)
+                    }}
+                    className="pf-prompt-image"
                     autoFocus={editFocus === 'img_prompt'}
                     value={editing.img_prompt}
-                    onChange={(e) => patchEditingVisual(e.target.value)}
-                    rows={3}
+                    onInput={(e) => autoGrowPrompt(e.currentTarget)}
+                    onChange={(e) => {
+                      patchEditingVisual(e.target.value)
+                      autoGrowPrompt(e.currentTarget)
+                    }}
+                    rows={2}
                   />
                   <span className="pf-muted pf-prompt-hint">
                     {t('studio.storyboard.imagePromptTip')}

@@ -85,6 +85,8 @@ class Template(Base):
     category_en: Mapped[list | None] = mapped_column(JSON, nullable=True)
     category_vi: Mapped[list | None] = mapped_column(JSON, nullable=True)
     preview_cover: Mapped[str] = mapped_column(String(512), default="")
+    preview_video: Mapped[str | None] = mapped_column(String(512), nullable=True, default="")
+    sample_scenes: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
     style_prefix: Mapped[str] = mapped_column(Text)
     negative_prompt: Mapped[str] = mapped_column(Text, default="")
     default_ratio: Mapped[str] = mapped_column(String(16), default="16:9")

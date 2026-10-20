@@ -50,6 +50,8 @@ export type Template = {
   category_en?: string[]
   category_vi?: string[]
   preview_cover: string
+  preview_video?: string
+  sample_scenes?: { image: string; caption?: string }[]
   default_ratio: string
   shot_duration_min: number
   shot_duration_max: number

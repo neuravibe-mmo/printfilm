@@ -173,6 +173,12 @@ async def _apply_schema_patches() -> None:
         if "video_model" not in pcols:
             await conn.execute(text("ALTER TABLE projects ADD COLUMN video_model VARCHAR(64) DEFAULT ''"))
 
+        tcols = await _pg_columns(conn, "templates")
+        if "preview_video" not in tcols:
+            await conn.execute(text("ALTER TABLE templates ADD COLUMN preview_video VARCHAR(512) DEFAULT ''"))
+        if "sample_scenes" not in tcols:
+            await conn.execute(text("ALTER TABLE templates ADD COLUMN sample_scenes JSON DEFAULT '[]'"))
+
         # User billing columns
         ucols = await _pg_columns(conn, "users")
         # Các thư viện ban đầu có thể không có cột này sau create_all (mô hình có nó, nhưng bản vá đã bỏ sót)

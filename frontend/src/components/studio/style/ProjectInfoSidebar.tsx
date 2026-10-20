@@ -1,10 +1,12 @@
+import { useState } from 'react'
 import { api, type Project, type Template } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { getCategoryLabel } from '../../../lib/categories'
 import { getTemplateName } from '../../../lib/templates'
-import ComingSoon from '../../ui/ComingSoon'
 import HoverTooltip from '../../ui/HoverTooltip'
+import { IconPlay } from '../../ui/Icons'
 import { isPortraitRatio } from './RatioPickerSection'
+import TemplatePreviewModal from './TemplatePreviewModal'
 
 type ProjectInfoSidebarProps = {
   project: Project
@@ -13,6 +15,7 @@ type ProjectInfoSidebarProps = {
 
 export default function ProjectInfoSidebar({ project, template }: ProjectInfoSidebarProps) {
   const { t, locale } = useI18n()
+  const [showPreview, setShowPreview] = useState(false)
 
   return (
     <aside className="pf-create-col">
@@ -31,6 +34,7 @@ export default function ProjectInfoSidebar({ project, template }: ProjectInfoSid
                 .filter(Boolean)
                 .join(' ')}
               style={{ cursor: 'pointer' }}
+              onClick={() => setShowPreview(true)}
             >
               <img src={api.assetUrl(template.preview_cover)} alt="" />
             </div>
@@ -46,9 +50,19 @@ export default function ProjectInfoSidebar({ project, template }: ProjectInfoSid
       <ul className="pf-meta-list" style={{ marginTop: '0.85rem' }}>
         <li>
           <span>{t('studio.styleConfig.theme')}</span>
-          <span style={{ maxWidth: '55%', textAlign: 'right' }}>
-            {(project.source_text || '').slice(0, 40)}
-          </span>
+          {project.source_text ? (
+            <HoverTooltip
+              title={t('studio.styleConfig.theme')}
+              content={project.source_text}
+              width={280}
+            >
+              <span className="pf-theme-clamped">
+                {project.source_text}
+              </span>
+            </HoverTooltip>
+          ) : (
+            <span>—</span>
+          )}
         </li>
         <li>
           <span>{t('studio.styleConfig.duration')}</span>
@@ -59,9 +73,23 @@ export default function ProjectInfoSidebar({ project, template }: ProjectInfoSid
           <span>{t('studio.styleConfig.shotsAuto')}</span>
         </li>
       </ul>
-      <button type="button" className="pf-btn pf-btn-ghost pf-btn-block pf-btn-sm" disabled>
-        {t('studio.styleConfig.previewTemplate')} <ComingSoon />
+      <button
+        type="button"
+        className="pf-tpl-preview-btn"
+        disabled={!template}
+        onClick={() => setShowPreview(true)}
+      >
+        <span className="pf-tpl-preview-btn-icon">
+          <IconPlay size={13} />
+        </span>
+        <span>{t('studio.styleConfig.previewTemplate')}</span>
       </button>
+
+      <TemplatePreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        template={template}
+      />
     </aside>
   )
 }

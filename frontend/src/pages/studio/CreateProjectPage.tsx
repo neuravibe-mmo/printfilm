@@ -46,6 +46,7 @@ export default function CreateProjectPage() {
   const [sourceText, setSourceText] = useState('')
   const [title, setTitle] = useState('')
   const [titleTouched, setTitleTouched] = useState(false)
+  const [contentTouched, setContentTouched] = useState(false)
   const [inspPage, setInspPage] = useState(0)
   const [selectedInspiration, setSelectedInspiration] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -147,13 +148,13 @@ export default function CreateProjectPage() {
   // Reset trang và tự động cập nhật gợi ý ăn khớp với template khi đổi template/category
   useEffect(() => {
     setInspPage(0)
-    if (!titleTouched && activeInspirations.length > 0) {
+    if (!contentTouched && !titleTouched && activeInspirations.length > 0) {
       const first = activeInspirations[0]
       setSelectedInspiration(first.title)
       setTitle(first.title.slice(0, 80))
       setSourceText(sourceType === 'script' ? first.script.slice(0, 8000) : first.theme.slice(0, 250))
     }
-  }, [templateId, activeInspirations, titleTouched, sourceType])
+  }, [templateId, activeInspirations, contentTouched, titleTouched, sourceType])
 
   // Điền ví dụ cảm hứng vào chủ đề/bản sao và đồng bộ hóa tiêu đề ngắn
   function applyInspiration(item: Inspiration) {
@@ -167,6 +168,7 @@ export default function CreateProjectPage() {
     }
     setTitle(item.title.slice(0, 80))
     setTitleTouched(false)
+    setContentTouched(false)
     setError('')
   }
 
@@ -185,6 +187,8 @@ export default function CreateProjectPage() {
       if (!titleTouched || isDefaultTitle(title, t('studio.createProject.untitled'))) {
         setTitle(result.title.slice(0, 80))
       }
+      setContentTouched(true)
+      setSelectedInspiration(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('studio.createProject.aiGenFailed'))
     } finally {
@@ -374,6 +378,8 @@ export default function CreateProjectPage() {
               onChange={(e) => {
                 setTitle(e.target.value)
                 setTitleTouched(true)
+                setContentTouched(true)
+                setSelectedInspiration(null)
               }}
               onBlur={() => {
                 if (isDefaultTitle(title, t('studio.createProject.untitled')) && sourceText.trim()) {
@@ -392,6 +398,8 @@ export default function CreateProjectPage() {
               onChange={(e) => {
                 const next = e.target.value.slice(0, sourceType === 'theme' ? 250 : 8000)
                 setSourceText(next)
+                setContentTouched(true)
+                setSelectedInspiration(null)
                 if (!titleTouched || isDefaultTitle(title, t('studio.createProject.untitled'))) {
                   setTitle(deriveTitle(next, t('studio.createProject.untitled')))
                 }

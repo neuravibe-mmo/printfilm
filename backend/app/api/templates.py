@@ -38,6 +38,8 @@ def _localize_template(tpl: Template, locale: str) -> dict:
         "category_en": tpl.category_en,
         "category_vi": tpl.category_vi,
         "preview_cover": tpl.preview_cover,
+        "preview_video": getattr(tpl, "preview_video", None) or "",
+        "sample_scenes": getattr(tpl, "sample_scenes", None) or [],
         "default_ratio": tpl.default_ratio,
         "shot_duration_min": tpl.shot_duration_min,
         "shot_duration_max": tpl.shot_duration_max,

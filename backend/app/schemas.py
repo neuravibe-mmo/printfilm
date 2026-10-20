@@ -77,6 +77,8 @@ class TemplateOut(BaseModel):
     category_en: list[str] | None = None
     category_vi: list[str] | None = None
     preview_cover: str
+    preview_video: str | None = None
+    sample_scenes: list[dict] | None = None
     default_ratio: str
     shot_duration_min: int
     shot_duration_max: int

@@ -1,7 +1,6 @@
 import type { MouseEvent } from 'react'
 import type { VoicePreset } from '../../../api'
 import { useI18n } from '../../../i18n'
-import ComingSoon from '../../ui/ComingSoon'
 import { IconPlay } from '../../ui/Icons'
 
 export function voiceKey(v: VoicePreset): string {
@@ -32,12 +31,7 @@ export default function VoicePickerSection({
 
   return (
     <div className="pf-style-block">
-      <h3>
-        {t('studio.styleConfig.voiceLabel')}
-        <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" disabled>
-          {t('studio.styleConfig.moreVoices')} <ComingSoon />
-        </button>
-      </h3>
+      <h3>{t('studio.styleConfig.voiceLabel')}</h3>
       <div className="pf-voice-row">
         {voices.map((v) => {
           const vid = voiceKey(v)
