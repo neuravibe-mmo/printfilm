@@ -49,6 +49,10 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
+if [ -d "/opt/homebrew/opt/ffmpeg-full/bin" ]; then
+    export PATH="/opt/homebrew/opt/ffmpeg-full/bin:$PATH"
+fi
+
 if ! command -v ffmpeg &> /dev/null; then
     echo -e "${YELLOW}Cảnh báo: FFmpeg chưa được cài đặt trên máy.${NC}"
     echo -e "${YELLOW}Tính năng ghép video/âm thanh có thể bị ảnh hưởng.${NC}"

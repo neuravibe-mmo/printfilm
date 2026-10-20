@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 import os
 import re
@@ -258,10 +259,36 @@ def _run(cmd: list[str]) -> None:
 def _which(bin_name: str) -> str:
     settings = get_settings()
     configured = settings.ffmpeg_path if bin_name == "ffmpeg" else settings.ffprobe_path
-    path = shutil.which(configured) or shutil.which(bin_name)
+    if configured:
+        p = shutil.which(configured)
+        if p:
+            return p
+    # Ưu tiên ffmpeg-full nếu có (chứa drawtext, libass, freetype đầy đủ)
+    for prefix in ("/opt/homebrew/opt/ffmpeg-full/bin", "/usr/local/opt/ffmpeg-full/bin"):
+        candidate = Path(prefix) / bin_name
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    path = shutil.which(bin_name)
     if not path:
         raise RuntimeError(f"{bin_name} not found in PATH")
     return path
+
+
+@functools.lru_cache(maxsize=1)
+def _ffmpeg_has_drawtext() -> bool:
+    try:
+        ffmpeg = _which("ffmpeg")
+        res = subprocess.run(
+            [ffmpeg, "-filters"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        return "drawtext" in res.stdout
+    except Exception as e:
+        logger.warning("Không thể kiểm tra bộ lọc drawtext của ffmpeg: %s", e)
+        return False
 
 
 def extract_video_poster_frame(
@@ -690,6 +717,11 @@ def build_video_caption_vf(
     caption_scale: float = 1.25,
 ) -> str:
     """Bộ lọc phụ đề trong giai đoạn tổng hợp: tiêu đề trên cùng + phát giọng nói dưới cùng, luôn bị cháy (bao gồm cả bố cục phân tách)."""
+    if not _ffmpeg_has_drawtext():
+        logger.warning(
+            "FFmpeg hiện tại không hỗ trợ bộ lọc 'drawtext' (thiếu libfreetype). Bỏ qua việc ghi phụ đề lên video."
+        )
+        return ""
     parts: list[str] = []
     overlay = _overlay_drawtext(
         w,
