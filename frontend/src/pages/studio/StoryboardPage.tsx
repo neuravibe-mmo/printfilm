@@ -739,10 +739,10 @@ export default function StoryboardPage() {
                 className="pf-btn-text"
                 disabled={busy || running}
                 onClick={composeOnly}
-title={t('studio.storyboard.respliceTip')}
-            >
-              {t('studio.storyboard.resplice')}
-            </button>
+                title={t('studio.storyboard.respliceTip')}
+              >
+                {t('studio.storyboard.resplice')}
+              </button>
             ) : null}
             {primaryAction !== 'generate' && !readyToCompose ? (
               <button

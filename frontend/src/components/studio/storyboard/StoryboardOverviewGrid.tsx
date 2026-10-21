@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FileText } from 'lucide-react'
+import { Check, Copy, FileText } from 'lucide-react'
 import { useI18n } from '../../../i18n'
 import type { Project } from '../../../api'
 import { statusLabel } from '../../../lib/status'
@@ -22,8 +22,32 @@ export default function StoryboardOverviewGrid({
     top: number
     left: number
   } | null>(null)
+  const [copied, setCopied] = useState(false)
   const outlineRef = useRef<HTMLDivElement | null>(null)
   const outlineLeaveTimeout = useRef<NodeJS.Timeout | null>(null)
+
+  const sourceText = project.source_text || ''
+  const isTruncated = sourceText.length > 700
+  const displaySourceText = isTruncated ? `${sourceText.slice(0, 700)}...` : sourceText
+
+  const handleCopy = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    if (!sourceText) return
+    try {
+      await navigator.clipboard.writeText(sourceText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = sourceText
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }, [sourceText])
 
   const handleOutlineMouseEnter = useCallback(() => {
     if (outlineLeaveTimeout.current) {
@@ -77,10 +101,6 @@ export default function StoryboardOverviewGrid({
     }, 200)
   }, [])
 
-  const sourceText = project.source_text || ''
-  const isTruncated = sourceText.length > 700
-  const displaySourceText = isTruncated ? `${sourceText.slice(0, 700)}...` : sourceText
-
   return (
     <div className="pf-outline-grid">
       <article className="pf-create-col">
@@ -93,15 +113,27 @@ export default function StoryboardOverviewGrid({
           }}
         >
           <h3 style={{ margin: 0 }}>{t('studio.storyboard.aiOutline')}</h3>
-          {isTruncated ? (
-            <span
-              className="pf-outline-badge"
-              onMouseEnter={handleOutlineMouseEnter}
-              onMouseLeave={handleOutlineMouseLeave}
-              onClick={() => setShowFullOutlineTooltip((prev) => !prev)}
+          {sourceText ? (
+            <button
+              type="button"
+              className="pf-btn pf-btn-ghost pf-btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.2rem 0.55rem',
+                fontSize: '0.78rem',
+                borderRadius: '6px',
+                height: 'auto',
+                lineHeight: 1.4,
+                color: copied ? 'var(--pf-success, #10b981)' : undefined,
+              }}
+              onClick={handleCopy}
+              title={copied ? t('common.copied') : t('common.copy')}
             >
-              Xem đầy đủ ({sourceText.length.toLocaleString()} ký tự)
-            </span>
+              {copied ? <Check size={13} strokeWidth={2.4} /> : <Copy size={13} strokeWidth={2} />}
+              <span>{copied ? t('common.copied') : t('common.copy')}</span>
+            </button>
           ) : null}
         </div>
         <div
@@ -160,11 +192,35 @@ export default function StoryboardOverviewGrid({
                 }}
               >
                 <FileText size={15} />
-                <span>{t('studio.storyboard.aiOutline')} (Đầy đủ)</span>
+                <span>
+                  {t('studio.storyboard.aiOutline')} ({t('studio.storyboard.fullOutline')})
+                </span>
               </div>
-              <span className="pf-char-count-badge">
-                {sourceText.length.toLocaleString()} ký tự
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '6px',
+                    color: copied ? '#34d399' : '#f1f5f9',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    padding: '0.15rem 0.5rem',
+                    fontSize: '0.72rem',
+                    cursor: 'pointer',
+                  }}
+                  onClick={handleCopy}
+                  title={copied ? t('common.copied') : t('studio.storyboard.copyOutline')}
+                >
+                  {copied ? <Check size={12} strokeWidth={2.4} /> : <Copy size={12} strokeWidth={2} />}
+                  <span>{copied ? t('common.copied') : t('common.copy')}</span>
+                </button>
+                <span className="pf-char-count-badge">
+                  {sourceText.length.toLocaleString()} {t('studio.storyboard.chars')}
+                </span>
+              </div>
             </div>
             <div className="pf-full-outline-tooltip-body">{sourceText}</div>
           </div>

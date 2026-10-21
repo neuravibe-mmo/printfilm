@@ -24,6 +24,7 @@ export const enShell = {
     downloading: 'Downloading…',
     preview: 'Preview',
     copy: 'Copy',
+    copied: 'Copied',
     search: 'Search',
     home: 'Home',
     creator: 'Creator',

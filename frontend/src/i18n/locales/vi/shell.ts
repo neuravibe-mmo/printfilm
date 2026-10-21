@@ -23,6 +23,7 @@ export const viShell = {
     downloading: 'Đang tải…',
     preview: 'Xem trước',
     copy: 'Sao chép',
+    copied: 'Đã sao chép',
     search: 'Tìm kiếm',
     home: 'Trang chủ',
     creator: 'Sáng tác viên',
