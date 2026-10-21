@@ -120,13 +120,35 @@ async def expand_content(
     user: User = Depends(get_current_user),
 ) -> ContentExpandOut:
     """AI-expand a short topic into a project title + theme brief or full script."""
+    from app.models import Template
+
     topic = (body.topic or "").strip()
+    tpl = None
+    if body.template_id:
+        tpl = await db.get(Template, body.template_id)
+
+    tpl_name = body.template_name or (tpl.name_vi or tpl.name if tpl else "")
+    tpl_desc = body.template_description or (tpl.description_vi or tpl.description if tpl else "")
+    cats = tpl.category_vi or tpl.category if tpl else []
+    tpl_cat = body.template_category or (", ".join(cats) if isinstance(cats, list) else str(cats or ""))
+    llm_addon = getattr(tpl, "llm_system_addon", "") if tpl else ""
+
     if not topic:
-        raise HTTPException(status_code=400, detail="请输入选题")
+        if tpl_name:
+            topic = f"Sản phẩm hoặc chủ đề phù hợp cho mẫu {tpl_name}"
+        else:
+            raise HTTPException(status_code=400, detail="Vui lòng nhập chủ đề")
 
     async def _do_expand() -> dict[str, str]:
         try:
-            result = await get_ark().expand_content(topic, body.mode)
+            result = await get_ark().expand_content(
+                topic,
+                body.mode,
+                template_name=tpl_name,
+                template_category=tpl_cat,
+                template_description=tpl_desc,
+                llm_addon=llm_addon,
+            )
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=502, detail=f"AI 生成失败：{exc}") from exc
         await record_llm_chat_line(
@@ -143,7 +165,12 @@ async def expand_content(
             domain="kepu",
             task_type="content_expand",
             executor=_do_expand,
-            payload={"mode": body.mode, "topic_len": len(topic)},
+            payload={
+                "mode": body.mode,
+                "topic_len": len(topic),
+                "template_id": body.template_id,
+                "template_name": tpl_name,
+            },
             commit=True,
         )
     except ValueError as exc:
@@ -155,21 +182,51 @@ async def expand_content(
     )
 
 
+def _smart_character_prompt_fallback(
+    topic: str,
+    template_name: str,
+    template_style: str,
+    seed: str,
+    visual_analysis: str = "",
+) -> str:
+    if visual_analysis:
+        return f"Nhân vật có diện mạo: {visual_analysis}. Phong cách nhất quán, tự nhiên và sắc nét."
+
+    if seed:
+        return f"{seed.strip().rstrip('.')}, biểu cảm sống động, ánh sáng tự nhiên và phong cách hình ảnh nhất quán qua các phân cảnh."
+
+    context = f"{template_name} {template_style} {topic}".lower()
+    if any(k in context for k in ["review", "bán hàng", "sản phẩm", "đề xuất", "huoke", "mở hộp", "đập hộp", "unboxing", "bình giữ nhiệt"]):
+        return "Người dẫn chuyện trẻ trung, phong thái tự nhiên và thân thiện, khoảng 24-28 tuổi, trang phục thường ngày thanh lịch (áo sơ mi hoặc polo sáng màu), nụ cười tự tin, biểu cảm hào hứng chia sẻ trải nghiệm thực tế trước ống kính."
+    if any(k in context for k in ["công nghệ", "tech", "ai", "phần mềm", "lập trình"]):
+        return "Chuyên gia công nghệ trẻ khoảng 26-30 tuổi, vẻ ngoài thông minh và hiện đại, đeo kính gọng mỏng, mặc áo thun polo hoặc hoodie tối giản, phong thái tự tin và chuyên nghiệp."
+    if any(k in context for k in ["tiktok", "reels", "viral", "người thật"]):
+        return "Nhà sáng tạo nội dung năng động khoảng 22-26 tuổi, gương mặt tươi sáng, nụ cười rạng rỡ, phong cách thời trang trẻ trung năng động, cử chỉ tự tin và cuốn hút người xem."
+    if any(k in context for k in ["kiến thức", "lịch sử", "tài liệu", "khoa học"]):
+        return "Diễn giả hoặc người kể chuyện điềm đạm khoảng 28-35 tuổi, ánh mắt tập trung và truyền cảm hứng, trang phục lịch sự tối giản, phong thái đĩnh đạc và uy tín."
+    if any(k in context for k in ["hoạt hình", "3d", "anime"]):
+        return "Nhân vật hoạt hình 3D phong cách Pixar tươi sáng, đôi mắt to tròn biểu cảm sinh động, nụ cười ấm áp, trang phục nhiều màu sắc hài hòa và đường nét mềm mại."
+
+    return "Nhân vật chính khoảng 24-28 tuổi, diện mạo trẻ trung và sáng sủa, trang phục gọn gàng hiện đại, ánh mắt tự tin và nụ cười thân thiện trước ống kính."
+
+
 @router.post("/content/character-prompt", response_model=CharacterPromptGenerateOut)
 async def generate_character_prompt_endpoint(
     body: CharacterPromptGenerateRequest,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> CharacterPromptGenerateOut:
-    """Generate a rich, cinematic character prompt using vision analysis + LLM API (neuravibemmo.dpdns.org)."""
+    """Generate a rich, cinematic character prompt using vision analysis + LLM API with fallback."""
     import base64
     import httpx
-    from app.services.llm_client import chatgpt2api_completions
+    from app.services.llm_client import chatgpt2api_completions, chat_completions, is_chatgpt2api_configured
     from app.config import get_settings
     from app.services import storage
 
     settings = get_settings()
     topic = (body.topic or "").strip()
+    if len(topic) > 3000:
+        topic = topic[:3000]
     template_name = (body.template_name or "").strip()
     template_style = (body.template_style or "").strip()
     seed = (body.seed_prompt or "").strip()
@@ -193,7 +250,7 @@ async def generate_character_prompt_endpoint(
                 logger.warning("Lỗi giải mã base64 ref_image_url: %s", e)
         elif ref_url.startswith("http://") or ref_url.startswith("https://"):
             try:
-                async with httpx.AsyncClient(timeout=20.0) as client:
+                async with httpx.AsyncClient(timeout=10.0) as client:
                     r = await client.get(ref_url)
                     if r.status_code == 200:
                         img_bytes = r.content
@@ -220,7 +277,7 @@ async def generate_character_prompt_endpoint(
     visual_analysis = ""
     if img_bytes:
         try:
-            async with httpx.AsyncClient(timeout=35.0) as client:
+            async with httpx.AsyncClient(timeout=8.0) as client:
                 vision_url = f"{settings.domain_web_2_api.rstrip('/')}/api/custom/detect-character-gender"
                 vision_resp = await client.post(
                     vision_url,
@@ -268,7 +325,7 @@ async def generate_character_prompt_endpoint(
         except Exception as err:
             logger.warning("Lỗi phân tích ảnh tham chiếu bằng Vision API: %s", err)
 
-    # 3. Xây dựng prompt cho ChatGPT2API
+    # 3. Xây dựng prompt cho LLM
     system_prompt = (
         "Bạn là chuyên gia thiết kế nhân vật và đạo diễn hình ảnh cho video AI (Midjourney, Stable Diffusion, Veo, Kling). "
         "Nhiệm vụ của bạn là tạo ra một đoạn mô tả ngoại hình ngắn gọn, súc tích (1-2 câu tiếng Việt) về nhân vật chính, "
@@ -298,18 +355,41 @@ async def generate_character_prompt_endpoint(
 
     user_prompt = "\n\n".join(user_parts)
 
-    try:
-        result = await chatgpt2api_completions(
-            system=system_prompt,
-            user=user_prompt,
-            base=f"{settings.domain_web_2_api.rstrip('/')}/api/chatgpt2api",
-            timeout=60.0,
+    result_text = ""
+    if is_chatgpt2api_configured():
+        try:
+            result_text = await chatgpt2api_completions(
+                system=system_prompt,
+                user=user_prompt,
+                base=f"{settings.domain_web_2_api.rstrip('/')}/api/chatgpt2api",
+                timeout=10.0,
+            )
+        except Exception as exc:
+            logger.warning("Lỗi gọi chatgpt2api character prompt: %s, chuyển sang thử chat_completions", exc)
+
+    if not result_text:
+        try:
+            result_text = await chat_completions(
+                system=system_prompt,
+                user=user_prompt,
+                temperature=0.6,
+                max_tokens=512,
+                timeout=12.0,
+            )
+        except Exception as exc:
+            logger.warning("Lỗi gọi chat_completions character prompt: %s, dùng fallback thông minh", exc)
+
+    if not result_text or not result_text.strip():
+        result_text = _smart_character_prompt_fallback(
+            topic=topic,
+            template_name=template_name,
+            template_style=template_style,
+            seed=seed,
+            visual_analysis=visual_analysis,
         )
-        cleaned = result.strip().strip('"').strip("'")
-        return CharacterPromptGenerateOut(character_prompt=cleaned)
-    except Exception as exc:
-        logger.warning("Lỗi gọi chatgpt2api character prompt: %s", exc)
-        raise HTTPException(status_code=502, detail=f"AI sinh mô tả nhân vật thất bại: {exc}")
+
+    cleaned = result_text.strip().strip('"').strip("'")
+    return CharacterPromptGenerateOut(character_prompt=cleaned)
 
 
 async def _get_owned_project(db: AsyncSession, project_id: int, user: User) -> Project:

@@ -22,7 +22,7 @@ function isDefaultTitle(value: string, untitled: string) {
   return !trimmed || trimmed === untitled
 }
 
-function deriveTitle(text: string, untitled: string) {
+function deriveTitle(text: string, untitled: string = '') {
   const line = text
     .trim()
     .split(/\n/)[0]
@@ -151,7 +151,7 @@ export default function CreateProjectPage() {
     if (!contentTouched && !titleTouched && activeInspirations.length > 0) {
       const first = activeInspirations[0]
       setSelectedInspiration(first.title)
-      setTitle(first.title.slice(0, 80))
+      setTitle(first.title.slice(0, 180))
       setSourceText(sourceType === 'script' ? first.script.slice(0, 8000) : first.theme.slice(0, 250))
     }
   }, [templateId, activeInspirations, contentTouched, titleTouched, sourceType])
@@ -166,7 +166,7 @@ export default function CreateProjectPage() {
       setInputTab(t('studio.createProject.tabTheme'))
       setSourceText(item.theme.slice(0, 250))
     }
-    setTitle(item.title.slice(0, 80))
+    setTitle(item.title.slice(0, 180))
     setTitleTouched(false)
     setContentTouched(false)
     setError('')
@@ -177,15 +177,23 @@ export default function CreateProjectPage() {
   }
 
   async function aiExpand() {
-    const seed = sourceText.trim() || title.trim() || t('studio.createProject.seedDefault')
+    const seed =
+      sourceText.trim() ||
+      title.trim() ||
+      (selected ? getTemplateName(selected, locale) : t('studio.createProject.seedDefault'))
     setAiBusy(true)
     setError('')
     try {
       const mode = sourceType === 'script' ? 'script' : 'theme'
-      const result = await api.expandContent(seed, mode)
+      const result = await api.expandContent(seed, mode, {
+        template_id: selected?.id,
+        template_name: selected ? getTemplateName(selected, locale) : undefined,
+        template_category: selected ? (getCategoryLabel((selected.category || [])[0]) || (selected.category || [])[0]) : undefined,
+        template_description: selected ? getTemplateDescription(selected, locale) : undefined,
+      })
       setSourceText(result.content.slice(0, mode === 'theme' ? 250 : 8000))
       if (!titleTouched || isDefaultTitle(title, t('studio.createProject.untitled'))) {
-        setTitle(result.title.slice(0, 80))
+        setTitle(result.title.slice(0, 180))
       }
       setContentTouched(true)
       setSelectedInspiration(null)
@@ -381,12 +389,6 @@ export default function CreateProjectPage() {
                 setContentTouched(true)
                 setSelectedInspiration(null)
               }}
-              onBlur={() => {
-                if (isDefaultTitle(title, t('studio.createProject.untitled')) && sourceText.trim()) {
-                  setTitle(deriveTitle(sourceText, t('studio.createProject.untitled')))
-                  setTitleTouched(false)
-                }
-              }}
               placeholder={t('studio.createProject.titlePlaceholder')}
             />
           </label>
@@ -400,8 +402,8 @@ export default function CreateProjectPage() {
                 setSourceText(next)
                 setContentTouched(true)
                 setSelectedInspiration(null)
-                if (!titleTouched || isDefaultTitle(title, t('studio.createProject.untitled'))) {
-                  setTitle(deriveTitle(next, t('studio.createProject.untitled')))
+                if (!titleTouched) {
+                  setTitle(deriveTitle(next, ''))
                 }
               }}
               placeholder={

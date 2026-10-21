@@ -249,6 +249,10 @@ class ProjectDownloadRequest(BaseModel):
 class ContentExpandRequest(BaseModel):
     topic: str = Field(default="", max_length=2000)
     mode: str = Field(default="theme", pattern="^(theme|script)$")
+    template_id: str = Field(default="", max_length=100)
+    template_name: str = Field(default="", max_length=200)
+    template_category: str = Field(default="", max_length=100)
+    template_description: str = Field(default="", max_length=1000)
 
 
 class ContentExpandOut(BaseModel):
@@ -258,11 +262,11 @@ class ContentExpandOut(BaseModel):
 
 
 class CharacterPromptGenerateRequest(BaseModel):
-    topic: str = Field(default="", max_length=2000)
-    template_name: str = Field(default="", max_length=200)
-    template_style: str = Field(default="", max_length=2000)
-    seed_prompt: str = Field(default="", max_length=2000)
-    ref_image_url: str = Field(default="", max_length=2000)
+    topic: str | None = Field(default="", max_length=50000)
+    template_name: str | None = Field(default="", max_length=500)
+    template_style: str | None = Field(default="", max_length=10000)
+    seed_prompt: str | None = Field(default="", max_length=10000)
+    ref_image_url: str | None = Field(default="")
     project_id: int | None = None
 
 

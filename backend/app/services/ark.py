@@ -2496,50 +2496,140 @@ class ArkGateway:
             bgm_lock=bgm_lock or segplan.infer_bgm_mood(style_prefix),
         )
 
-    async def expand_content(self, topic: str, mode: str = "theme") -> dict[str, str]:
+    async def expand_content(
+        self,
+        topic: str,
+        mode: str = "theme",
+        template_name: str = "",
+        template_category: str = "",
+        template_description: str = "",
+        llm_addon: str = "",
+    ) -> dict[str, str]:
         """Expand a short topic into title + theme brief or full narration script."""
-        topic = (topic or "").strip() or "Trí tuệ nhân tạo đang thay đổi cuộc sống hàng ngày như thế nào"
+        topic = (topic or "").strip()
+        if not topic:
+            if template_name:
+                topic = f"Sản phẩm hoặc chủ đề phù hợp cho mẫu {template_name}"
+            else:
+                topic = "Trí tuệ nhân tạo đang thay đổi cuộc sống hàng ngày như thế nào"
         mode = "script" if mode == "script" else "theme"
         if not is_chatgpt2api_configured() and self.mock:
-            return self._mock_expand_content(topic, mode)
+            return self._mock_expand_content(topic, mode, template_name, template_category)
+
+        tpl_info: list[str] = []
+        if template_name:
+            tpl_info.append(f"- Tên mẫu (Template): {template_name}")
+        if template_category:
+            tpl_info.append(f"- Thể loại/Danh mục: {template_category}")
+        if template_description:
+            tpl_info.append(f"- Định hướng mẫu: {template_description}")
+        if llm_addon:
+            addon_clean = llm_addon.strip()
+            if len(addon_clean) > 800:
+                addon_clean = addon_clean[:800] + "..."
+            tpl_info.append(f"- Quy chuẩn mẫu video: {addon_clean}")
+
+        tpl_context = "\n".join(tpl_info)
+
+        is_review_sales = any(
+            k in f"{template_name} {template_category} {llm_addon}".lower()
+            for k in ["review", "bán hàng", "sản phẩm", "đề xuất", "huoke", "sales", "tiếp thị", "khách hàng", "đập hộp", "unboxing", "gợi ý", "đánh giá", "có đáng", "mua", "dùng thử", "测评", "带货"]
+        )
 
         if mode == "script":
-            system = (
-                "Bạn là tác giả biên kịch video ngắn. Căn cứ vào chủ đề của người dùng, hãy viết một kịch bản lời dẫn hoàn chỉnh sẵn sàng để đọc lồng tiếng bằng tiếng Việt. "
-                "Chỉ xuất đối tượng JSON: {\"title\":\"Tên tác phẩm\",\"content\":\"Toàn bộ kịch bản\"}. "
-                "title: 8-18 từ, hấp dẫn, không lạm dụng dấu câu. "
-                "content: 300-700 từ, giọng văn tự nhiên gần gũi, chia 4-8 đoạn, có móc câu mở đầu, nội dung kiến thức/cốt truyện và đoạn kết; "
-                "không dùng markdown, không đánh số phân cảnh, không thêm dòng tiêu đề."
-            )
+            rules = [
+                "Bạn là tác giả biên kịch video ngắn chuyên nghiệp. Căn cứ vào ý tưởng của người dùng và thông tin Template được chọn, hãy viết một kịch bản lời dẫn hoàn chỉnh sẵn sàng để đọc lồng tiếng bằng tiếng Việt.",
+                "Chỉ xuất đối tượng JSON: {\"title\":\"Tên tác phẩm\",\"content\":\"Toàn bộ kịch bản\"}.",
+                "- title: Ngắn gọn từ 6-12 từ (khoảng 30-60 ký tự), cuốn hút, giật tít đúng phong cách template, không viết quá dài, không lạm dụng dấu câu.",
+                "- content: 300-700 từ, giọng văn tự nhiên gần gũi, chia 4-8 đoạn, có mở đầu thu hút, thân bài và đoạn kết; không dùng markdown, không đánh số phân cảnh, không thêm dòng tiêu đề.",
+            ]
+            if is_review_sales:
+                rules.append(
+                    "QUY TẮC BẮT BUỘC (Mẫu Review & Đề xuất/Bán hàng):\n"
+                    "1. Kịch bản BẮT BUỘC viết theo cấu trúc video review/đánh giá sản phẩm hoặc dịch vụ thực tế: "
+                    "① Mở đầu bằng hook/vấn đề thực tế → ② Ấn tượng ban đầu khi trải nghiệm → ③ Đánh giá chi tiết ưu/nhược điểm thực tế → ④ Khuyên dùng cho ai và kêu gọi hành động (Call-to-Action).\n"
+                    "2. Nếu người dùng chưa chỉ định rõ tên sản phẩm cụ thể trong ý tưởng, bạn hãy tự chọn một sản phẩm/dịch vụ đời sống thực tế, hữu ích, thịnh hành (ví dụ: đồ gia dụng thông minh, mỹ phẩm, phụ kiện công nghệ, món ăn quán ngon...) để làm nhân vật chính của bài review.\n"
+                    "3. TUYỆT ĐỐI KHÔNG viết thành bài học triết lý, suy ngẫm cuộc đời hay tản văn trừu tượng. Phải bám sát việc đánh giá và giới thiệu sản phẩm/dịch vụ."
+                )
+            elif tpl_context:
+                rules.append(
+                    "ĐẶC BIỆT: Nội dung kịch bản BẮT BUỘC phải phù hợp chặt chẽ với phong cách, đối tượng và định hướng của Template được chỉ định."
+                )
+            system = "\n".join(rules)
         else:
-            system = (
-                "Bạn là chuyên gia lập kế hoạch đề tài video ngắn. Hãy mở rộng nội dung người dùng nhập thành một chủ đề sáng tạo rõ ràng, cụ thể bằng tiếng Việt. "
-                "Chỉ xuất đối tượng JSON: {\"title\":\"Tên tác phẩm\",\"content\":\"Câu chủ đề\"}. "
-                "title: 8-18 từ. "
-                "content: Một câu chủ đề hoàn chỉnh từ 30-80 từ, nêu rõ đối tượng khán giả và nội dung cốt lõi cần truyền tải; không xuống dòng."
-            )
+            rules = [
+                "Bạn là chuyên gia lập kế hoạch đề tài và nội dung video ngắn. Hãy mở rộng ý tưởng của người dùng thành một câu chủ đề sáng tạo rõ ràng, cụ thể bằng tiếng Việt.",
+                "Chỉ xuất đối tượng JSON: {\"title\":\"Tên tác phẩm\",\"content\":\"Câu chủ đề\"}.",
+                "- title: Ngắn gọn từ 6-12 từ (khoảng 30-60 ký tự), cô đọng, giật tít đúng tinh thần template, không viết quá dài.",
+                "- content: Một câu chủ đề hoàn chỉnh từ 30-80 từ, nêu rõ đối tượng khán giả, nội dung cốt lõi và giá trị mang lại; không xuống dòng.",
+            ]
+            if is_review_sales:
+                rules.append(
+                    "QUY TẮC BẮT BUỘC (Mẫu Review & Đề xuất/Bán hàng):\n"
+                    "1. Câu chủ đề BẮT BUỘC phải là đề tài review, đánh giá trải nghiệm thực tế hoặc đề xuất một sản phẩm/dịch vụ cụ thể (nêu rõ sản phẩm/dịch vụ gì, giải quyết vấn đề gì, dành cho ai và lý do nên chọn).\n"
+                    "2. Nếu ý tưởng người dùng nhập còn chung chung chưa có tên sản phẩm cụ thể, hãy chọn một sản phẩm/dịch vụ hữu ích, thịnh hành để làm đề tài review.\n"
+                    "3. TUYỆT ĐỐI KHÔNG viết thành câu chuyện truyền cảm hứng, triết lý hay bài học trừu tượng xa rời việc review sản phẩm."
+                )
+            elif tpl_context:
+                rules.append(
+                    "ĐẶC BIỆT: Câu chủ đề BẮT BUỘC phải phản ánh đúng tinh thần, đối tượng và thể loại của Template được chỉ định."
+                )
+            system = "\n".join(rules)
+
+        user_content_parts: list[str] = []
+        if tpl_context:
+            user_content_parts.append(f"THÔNG TIN TEMPLATE ĐƯỢC CHỌN:\n{tpl_context}\n")
+        user_content_parts.append(f"Ý TƯỞNG / NỘI DUNG NGƯỜI DÙNG: {topic}")
+        user_content = "\n".join(user_content_parts)
+
         if is_chatgpt2api_configured():
             try:
                 content = await chatgpt2api_completions(
                     system,
-                    f"Chủ đề/Ý tưởng: {topic}",
+                    user_content,
                     timeout=90.0,
                 )
             except Exception as exc:
                 logger.warning("Lỗi gọi chatgpt2api expand_content: %s, dùng fallback mock", exc)
-                return self._mock_expand_content(topic, mode)
+                return self._mock_expand_content(topic, mode, template_name, template_category)
         else:
             content = await chat_completions(
                 system,
-                f"Chủ đề/Ý tưởng: {topic}",
+                user_content,
                 temperature=0.6,
                 max_tokens=4096,
                 timeout=90.0,
             )
-        return self._parse_expand_content(content or "{}", topic, mode)
+        return self._parse_expand_content(content or "{}", topic, mode, template_name, template_category)
 
-    def _mock_expand_content(self, topic: str, mode: str) -> dict[str, str]:
-        short = topic[:24].rstrip("？?。.!！") or "Video kiến thức đời sống"
+    def _mock_expand_content(
+        self,
+        topic: str,
+        mode: str,
+        template_name: str = "",
+        template_category: str = "",
+    ) -> dict[str, str]:
+        is_review_sales = any(
+            k in f"{template_name} {template_category}".lower()
+            for k in ["review", "bán hàng", "sản phẩm", "đề xuất", "huoke", "sales", "tiếp thị", "khách hàng", "đập hộp", "unboxing", "gợi ý", "đánh giá", "có đáng", "mua", "dùng thử", "测评", "带货"]
+        )
+        short = topic[:24].rstrip("？?。.!！") or ("Sản phẩm đời sống tiện ích" if is_review_sales else "Video kiến thức đời sống")
+        if is_review_sales:
+            title = f"Đánh Giá Thực Tế: {short} Có Đáng Để Mua?"
+            if mode == "script":
+                content = (
+                    f"Nếu bạn đang băn khoăn có nên sở hữu {short} hay không, đây là trải nghiệm thực tế sau thời gian sử dụng của mình.\n\n"
+                    f"Ấn tượng đầu tiên: Thiết kế hiện đại, nhỏ gọn và hoàn thiện rất chắc chắn so với tầm giá.\n\n"
+                    f"Về trải nghiệm thực tế: Sản phẩm đáp ứng rất tốt nhu cầu sử dụng hàng ngày, vận hành êm ái và tiết kiệm thời gian đáng kể.\n\n"
+                    f"Một vài lưu ý nhỏ: Bạn nên chọn đúng phân loại phù hợp với nhu cầu để có trải nghiệm tốt nhất.\n\n"
+                    f"Tổng kết: Rất đáng tiền trong phân khúc. Nếu bạn đang tìm kiếm giải pháp tiện ích thì đừng bỏ qua sản phẩm này nhé!"
+                )
+            else:
+                content = (
+                    f"Review chi tiết {short}: Dành cho người tiêu dùng hiện đại, bóc tách ưu nhược điểm thực tế, hiệu quả sử dụng và lời khuyên có nên mua hay không."
+                )[:250]
+            return {"title": title[:180].strip(), "content": content}
+
         title = short if len(short) >= 4 else f"Khám phá về {short}"
         if mode == "script":
             content = (
@@ -2555,9 +2645,16 @@ class ArkGateway:
             content = (
                 f"{topic.rstrip('？?')}: Dành cho khán giả đại chúng, dùng ví dụ đời sống để làm rõ nguyên lý cốt lõi và các hiểu lầm thường gặp."
             )[:100]
-        return {"title": title[:24], "content": content}
+        return {"title": title[:180].strip(), "content": content}
 
-    def _parse_expand_content(self, raw: str, topic: str, mode: str) -> dict[str, str]:
+    def _parse_expand_content(
+        self,
+        raw: str,
+        topic: str,
+        mode: str,
+        template_name: str = "",
+        template_category: str = "",
+    ) -> dict[str, str]:
         text = (raw or "").strip()
         if text.startswith("```"):
             text = re.sub(r"^```(?:json)?\s*", "", text)
@@ -2567,20 +2664,20 @@ class ArkGateway:
         except json.JSONDecodeError:
             m = re.search(r"\{[\s\S]*\}", text)
             if not m:
-                return self._mock_expand_content(topic, mode)
+                return self._mock_expand_content(topic, mode, template_name, template_category)
             try:
                 data = json.loads(m.group(0))
             except json.JSONDecodeError:
-                return self._mock_expand_content(topic, mode)
+                return self._mock_expand_content(topic, mode, template_name, template_category)
         title = str(data.get("title") or "").strip() or topic[:18]
         content = str(data.get("content") or "").strip()
         if not content:
-            return self._mock_expand_content(topic, mode)
+            return self._mock_expand_content(topic, mode, template_name, template_category)
         if mode == "theme":
             content = content.replace("\n", " ").strip()[:250]
         else:
             content = content[:8000]
-        return {"title": title[:80], "content": content}
+        return {"title": title[:180].strip(), "content": content}
 
 
 _gateway: ArkGateway | None = None

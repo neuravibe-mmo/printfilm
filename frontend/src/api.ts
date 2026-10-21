@@ -636,10 +636,26 @@ export const api = {
   compose(projectId: number) {
     return request<Project>(`/api/projects/${projectId}/compose`, { method: 'POST' })
   },
-  expandContent(topic: string, mode: 'theme' | 'script' = 'theme') {
+  expandContent(
+    topic: string,
+    mode: 'theme' | 'script' = 'theme',
+    options?: {
+      template_id?: string
+      template_name?: string
+      template_category?: string
+      template_description?: string
+    },
+  ) {
     return request<{ title: string; content: string }>('/api/content/expand', {
       method: 'POST',
-      body: JSON.stringify({ topic, mode }),
+      body: JSON.stringify({
+        topic,
+        mode,
+        template_id: options?.template_id,
+        template_name: options?.template_name,
+        template_category: options?.template_category,
+        template_description: options?.template_description,
+      }),
     })
   },
   generateCharacterPrompt(body: {

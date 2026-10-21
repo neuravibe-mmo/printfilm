@@ -247,10 +247,10 @@ export default function StyleConfigPage() {
     setError('')
     try {
       const res = await api.generateCharacterPrompt({
-        topic: project.source_text || project.title || '',
+        topic: (project.source_text || project.title || '').slice(0, 3000),
         template_name: currentTpl?.name || '',
         template_style: currentTpl?.style_prefix || '',
-        seed_prompt: characterPrompt.trim(),
+        seed_prompt: (characterPrompt || '').trim().slice(0, 2000),
         ref_image_url: project.ref_image_url || '',
         project_id: project.id,
       })
