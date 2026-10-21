@@ -212,8 +212,12 @@ def _project_output_ratio(project: Project) -> str:
 
 def _project_voice(project: Project) -> str:
     tpl_preset = ""
-    if project.template and project.template.audio_config:
-        tpl_preset = str(project.template.audio_config.get("voice_preset") or "")
+    try:
+        tpl = getattr(project, "template", None)
+        if tpl and getattr(tpl, "audio_config", None):
+            tpl_preset = str(tpl.audio_config.get("voice_preset") or "")
+    except Exception:
+        tpl_preset = ""
     return resolve_speaker(getattr(project, "voice_id", None) or "", template_preset=tpl_preset)
 
 
@@ -1340,6 +1344,37 @@ async def _parallel_videos(project_id: int) -> None:
 
 async def _compose_stage(project_id: int) -> None:
     await _set_status(project_id, ProjectStatus.COMPOSING, 92, "COMPOSING")
+
+    # Đảm bảo audio được tổng hợp nếu storyboard có narration nhưng chưa có audio
+    if not _continuous_audio_ok(project_id):
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(Project)
+                .where(Project.id == project_id)
+                .options(selectinload(Project.shots), selectinload(Project.template))
+            )
+            p_check = result.scalar_one_or_none()
+            if p_check and p_check.shots:
+                shots_have_audio = all(
+                    bool(
+                        s.audio_url
+                        and storage.local_path_from_url(s.audio_url)
+                        and storage.local_path_from_url(s.audio_url).exists()
+                    )
+                    for s in p_check.shots
+                )
+                has_narrations = any((getattr(s, "narration", None) or "").strip() for s in p_check.shots)
+                if not shots_have_audio and has_narrations:
+                    voice = _project_voice(p_check)
+                    shots_sorted = sorted(p_check.shots, key=lambda s: s.shot_no)
+                    logger.info("Auto synthesizing continuous audio for project %s before compose", project_id)
+                    try:
+                        await _synthesize_continuous_audio(
+                            project_id, voice=voice, shot_rows=shots_sorted, force=False
+                        )
+                    except Exception as e:
+                        logger.warning("Auto synthesizing continuous audio failed: %s", e)
+
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(Project)

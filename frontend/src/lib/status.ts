@@ -255,7 +255,7 @@ export function kepuBillingPhase(project: {
   if (!shots.length) return 'script'
   const full = project.pipeline_mode !== 'image_text'
   const needImages = shots.some((s) => !s.image_url)
-  const needAudio = !full && shots.some((s) => !s.audio_url)
+  const needAudio = shots.some((s) => !s.audio_url)
   if (needImages || needAudio) return 'assets'
   if (full && shots.some((s) => !s.video_url)) return 'videos'
   return 'compose'
