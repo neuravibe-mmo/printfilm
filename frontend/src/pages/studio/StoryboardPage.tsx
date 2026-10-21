@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FileText, MoreVertical, Scissors, Volume2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, defaultsFromTemplate } from '../../api'
@@ -10,14 +9,12 @@ import {
   IconChevronLeft,
   IconDownload,
   IconEdit,
-  IconImage,
   IconMonitor,
   IconPlay,
   IconRefresh,
   IconSliders,
   IconTrash,
 } from '../../components/ui/Icons'
-import { scenePromptForDisplay } from '../../promptDisplay'
 import { dialog } from '../../lib/dialog'
 import { handleBillingError } from '../../lib/billingError'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
@@ -26,157 +23,36 @@ import ShotPromptModal from '../../components/studio/ShotPromptModal'
 import {
   effectiveStatus,
   formatMmSs,
-  isRunning,
   kepuBillingPhase,
   kepuPhaseHint,
   kepuStepIndex,
   kepuSteps,
   isProjectWideBusy,
-  isShotGenerating,
   shotsByNo,
-  shotDisplayDone,
-  shotDisplayKind,
-  shotDisplayLabel,
-  statusLabel,
 } from '../../lib/status'
 import {
-  SEGMENT_SCRIPT_PLACEHOLDER,
-  SHOT_DURATION_MAX,
   firstVisualFromScript,
   narrationFromScript,
-  parseSegmentScript,
   replaceFirstVisualInScript,
   replaceNarrationInScript,
   validateSegmentScriptDuration,
 } from '../../lib/segmentDuration'
-
-function csvEscape(value: string | number | null | undefined) {
-  const s = String(value ?? '')
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
-  return s
-}
-
-function downloadStoryboardCsv(project: Project, t: (key: string) => string) {
-  const header = [
-    t('studio.storyboard.csvShotNo'),
-    t('studio.storyboard.csvNarr'),
-    t('studio.storyboard.csvImage'),
-    t('studio.storyboard.csvDurSec'),
-    t('studio.storyboard.csvStatus'),
-    t('studio.storyboard.csvTitle'),
-  ]
-  const rows = (project.shots || [])
-    .slice()
-    .sort((a, b) => a.shot_no - b.shot_no)
-    .map((s) =>
-      [
-        s.shot_no,
-        s.narration,
-        scenePromptForDisplay(s.img_prompt || s.video_prompt || ''),
-        s.duration,
-        shotDisplayLabel(shotDisplayKind(s, { pipelineMode: project.pipeline_mode })),
-        s.overlay_title || '',
-      ]
-        .map(csvEscape)
-        .join(','),
-    )
-  const bom = '\uFEFF'
-  const blob = new Blob([bom + [header.join(','), ...rows].join('\n')], {
-    type: 'text/csv;charset=utf-8',
-  })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${project.title || `project_${project.id}`}_storyboard.csv`
-  a.click()
-  URL.revokeObjectURL(a.href)
-}
-
-function localizeCueText(text: string, locale?: string): string {
-  if (!text) return ''
-  if (locale === 'zh') return text
-  if (locale === 'en') {
-    return text
-      .replace('字幕：后期叠旁白字幕，简体中文逐句同步', 'Subtitles: Post-production voiceover overlay, sentence-by-sentence sync')
-      .replace('字幕：底部居中·简体中文·逐句轮换·与口播同步', 'Subtitles: Bottom center · Synced with voiceover')
-      .replace('字幕：底部居中·简体中文', 'Subtitles: Bottom center')
-      .replace('后期混音', 'Post-mix')
-      .replace(/，?音量低于人声/, ', volume lower than voice')
-  }
-  return text
-    .replace('字幕：后期叠旁白字幕，简体中文逐句同步', 'Phụ đề: Ghép chữ lời dẫn ở hậu kỳ, đồng bộ từng câu')
-    .replace('字幕：底部居中·简体中文·逐句轮换·与口播同步', 'Phụ đề: Căn giữa phía dưới · Đồng bộ lời thoại')
-    .replace('字幕：底部居中·简体中文', 'Phụ đề: Căn giữa phía dưới')
-    .replace('后期混音', 'Hòa âm hậu kỳ')
-    .replace(/，?音量低于人声/, ', âm lượng nhỏ hơn giọng nói')
-}
-
-function localizeBeatText(text: string, locale?: string): string {
-  if (!text) return ''
-  if (locale === 'zh') return text
-  if (locale === 'en') {
-    return text
-      .replace(/^【旁白[·・•\s]*自然语速[·・•\s]*同步字幕】/, '【Voiceover · Natural pace · Synced subtitles】')
-      .replace(/^【旁白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Voiceover · Slow & clear · Synced subtitles】')
-      .replace(/^【旁白[·・•\s]*自然语速】/, '【Voiceover · Natural pace】')
-      .replace(/^【旁白[·・•\s]*慢速清晰】/, '【Voiceover · Slow & clear】')
-      .replace(/^【对白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Dialogue · Slow & clear · Synced subtitles】')
-      .replace(/^【画面[·・•\s]*无配音仅环境音】/, '【Visuals · Ambient sound only】')
-      .replace(/^【空镜[·・•\s]*可仅环境音与\s*BGM】/, '【Cutaway · Ambient sound & BGM】')
-  }
-  return text
-    .replace(/^【旁白[·・•\s]*自然语速[·・•\s]*同步字幕】/, '【Lời dẫn · Tốc độ tự nhiên · Phụ đề đồng bộ】')
-    .replace(/^【旁白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Lời dẫn · Chậm rõ · Phụ đề đồng bộ】')
-    .replace(/^【旁白[·・•\s]*自然语速】/, '【Lời dẫn · Tốc độ tự nhiên】')
-    .replace(/^【旁白[·・•\s]*慢速清晰】/, '【Lời dẫn · Chậm rõ】')
-    .replace(/^【对白[·・•\s]*慢速清晰[·・•\s]*同步字幕】/, '【Đối thoại · Chậm rõ · Phụ đề đồng bộ】')
-    .replace(/^【画面[·・•\s]*无配音仅环境音】/, '【Hình ảnh · Âm thanh môi trường】')
-    .replace(/^【空镜[·・•\s]*可仅环境音与\s*BGM】/, '【Cảnh trống · Âm thanh môi trường & BGM】')
-}
-
-type PreviewState =
-  | {
-      kind: 'shot'
-      shotNo: number
-      imageUrl: string | null
-      videoUrl: string | null
-      audioUrl: string | null
-      caption: string
-      version?: number
-    }
-  | { kind: 'final'; url: string; title: string; bust?: string }
-  | null
-
-function shotCaption(shot: Shot, t?: (k: string) => string) {
-  if (shot.overlay_title) {
-    const label = t ? t('studio.storyboard.narrationLabel') : '旁白'
-    return `${shot.overlay_title}${
-      shot.overlay_subtitle ? ` · ${shot.overlay_subtitle}` : ''
-    }${shot.narration ? `｜${label}：${shot.narration}` : ''}`
-  }
-  return shot.narration
-}
-
-function hasActiveUnifiedTasks(project: Project | null): boolean {
-  const activeStatuses = ['pending', 'leased', 'running', 'awaiting_poll', 'awaiting_review']
-  return Boolean(
-    project?.active_tasks?.some(
-      (task) => !task.cancel_requested && activeStatuses.includes(task.status),
-    ),
-  )
-}
-
-/** Khi có dữ liệu nền tảng tác vụ, active_tasks sẽ chiếm ưu thế; nếu không có nhiệm vụ nào trong COMPOSING, nó sẽ được coi là phần còn lại của lỗi nối và có thể được thử lại. */
-function isProjectBusy(project: Project | null): boolean {
-  if (!project) return false
-  if (hasActiveUnifiedTasks(project)) return true
-  if (Array.isArray(project.active_tasks) && project.active_tasks.length === 0) {
-    return false
-  }
-  return isRunning(project.status)
-}
+import {
+  downloadStoryboardCsv,
+  isProjectBusy,
+} from '../../components/studio/storyboard/storyboardUtils'
+import StoryboardSidebar from '../../components/studio/storyboard/StoryboardSidebar'
+import StoryboardOverviewGrid from '../../components/studio/storyboard/StoryboardOverviewGrid'
+import StoryboardBatchModal from '../../components/studio/storyboard/StoryboardBatchModal'
+import StoryboardShotEditModal from '../../components/studio/storyboard/StoryboardShotEditModal'
+import StoryboardProjectPromptsModal from '../../components/studio/storyboard/StoryboardProjectPromptsModal'
+import StoryboardPreviewModal, {
+  type PreviewState,
+} from '../../components/studio/storyboard/StoryboardPreviewModal'
+import StoryboardShotRow from '../../components/studio/storyboard/StoryboardShotRow'
 
 export default function StoryboardPage() {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const { id } = useParams()
   const projectId = Number(id)
   const nav = useNavigate()
@@ -203,59 +79,11 @@ export default function StoryboardPage() {
   const [batchSelected, setBatchSelected] = useState<number[]>([])
   const [batchDuration, setBatchDuration] = useState('')
   const [batchRegenAudio, setBatchRegenAudio] = useState(false)
-  const coverInputRef = useRef<HTMLInputElement>(null)
-  const segScriptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const imagePromptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [videoDurations, setVideoDurations] = useState<Record<number, number>>({})
   const [trimmingShot, setTrimmingShot] = useState<{
     shot: Shot
     videoDuration: number
   } | null>(null)
-
-  useEffect(() => {
-    const el = segScriptTextareaRef.current
-    if (!el) return
-    const adjust = () => {
-      el.style.height = 'auto'
-      el.style.height = `${el.scrollHeight}px`
-    }
-    adjust()
-    window.addEventListener('resize', adjust)
-    return () => window.removeEventListener('resize', adjust)
-  }, [editing?.segment_script, editing?.video_prompt, editMode])
-
-  useEffect(() => {
-    const el = imagePromptTextareaRef.current
-    if (!el) return
-    const adjust = () => {
-      el.style.height = 'auto'
-      el.style.height = `${el.scrollHeight}px`
-    }
-    adjust()
-    const timer = setTimeout(adjust, 50)
-    window.addEventListener('resize', adjust)
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('resize', adjust)
-    }
-  }, [editing?.img_prompt, editMode])
-
-  const autoGrowPrompt = useCallback((el: HTMLTextAreaElement | null) => {
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
-  }, [])
-
-  useEffect(() => {
-    if (!promptEdit) return
-    const timer = setTimeout(() => {
-      document.querySelectorAll<HTMLTextAreaElement>('.pf-project-prompts-modal textarea').forEach((ta) => {
-        ta.style.height = 'auto'
-        ta.style.height = `${ta.scrollHeight}px`
-      })
-    }, 0)
-    return () => clearTimeout(timer)
-  }, [promptEdit])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -522,7 +350,6 @@ export default function StoryboardPage() {
       setError(err instanceof Error ? err.message : t('studio.storyboard.coverUploadFailed'))
     } finally {
       setBusy(false)
-      if (coverInputRef.current) coverInputRef.current.value = ''
     }
   }
 
@@ -953,206 +780,27 @@ title={t('studio.storyboard.respliceTip')}
       ) : null}
 
       <div className="pf-board">
-        <aside className="pf-create-col">
-          <h3>{t('studio.storyboard.projectSettings')}</h3>
-          {(project.cover_url || template?.preview_cover) ? (
-            <img
-              src={api.assetUrl(project.cover_url || template?.preview_cover)}
-              alt=""
-              style={{ width: '100%', borderRadius: 12, aspectRatio: '16/10', objectFit: 'cover' }}
-            />
-          ) : (
-            <div
-              style={{
-                width: '100%',
-                aspectRatio: '16/10',
-                borderRadius: 12,
-                background: '#e8eaee',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'var(--pf-muted)',
-              }}
-            >
-              <IconImage size={28} />
-            </div>
-          )}
-          <input
-            ref={coverInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            hidden
-            onChange={(e) => onCoverFile(e.target.files?.[0] || null)}
-          />
-          <div className="pf-side-actions">
-            <button
-              type="button"
-              className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
-              disabled={busy || running}
-              onClick={() => coverInputRef.current?.click()}
-            >
-              <IconImage size={14} />
-              {t('studio.storyboard.changeCover')}
-            </button>
-            <button
-              type="button"
-              className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
-              disabled={busy || running || !shots.some((s) => s.image_url)}
-              onClick={useFirstShotCover}
-              title={t('studio.storyboard.firstFrameCoverTip')}
-            >
-              <IconImage size={14} />
-              {t('studio.storyboard.firstFrameCover')}
-            </button>
-            <button
-              type="button"
-              className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
-              disabled={shots.length === 0}
-              onClick={() => downloadStoryboardCsv(project, t)}
-            >
-              <IconDownload size={14} />
-              {t('studio.storyboard.exportDraft')}
-            </button>
-          </div>
-          <ul className="pf-meta-list" style={{ marginTop: '0.85rem' }}>
-            <li>
-              <span>{t('studio.storyboard.projectName')}</span>
-              <span>{project.title}</span>
-            </li>
-            <li>
-              <span>{t('studio.storyboard.status')}</span>
-              <span>{statusLabel(project)}</span>
-            </li>
-            <li>
-              <span>{t('studio.storyboard.progress')}</span>
-              <span>{project.progress}%</span>
-            </li>
-            <li>
-              <span>{t('studio.storyboard.duration')}</span>
-              <span>
-                {Math.floor(totalDuration / 60)
-                  .toString()
-                  .padStart(2, '0')}
-                :
-                {Math.floor(totalDuration % 60)
-                  .toString()
-                  .padStart(2, '0')}
-              </span>
-            </li>
-            <li>
-              <span>{t('studio.storyboard.aspectRatio')}</span>
-              <span>{project.output_ratio || (project.pipeline_mode === 'image_text' ? '9:16' : '16:9')}</span>
-            </li>
-            <li>
-              <span>{t('studio.storyboard.outputMode')}</span>
-              <span>{project.pipeline_mode === 'image_text' ? t('studio.storyboard.imageText') : t('studio.storyboard.aiVideo')}</span>
-            </li>
-            <li>
-              <span>{t('studio.storyboard.style')}</span>
-              <span>{template?.name || project.template_id}</span>
-            </li>
-          </ul>
-          <button
-            type="button"
-            className="pf-btn pf-btn-ghost pf-btn-block pf-btn-sm"
-            onClick={() => nav(`/studio/${project.id}/style`)}
-            disabled={running}
-          >
-            {t('studio.storyboard.editSettings')}
-          </button>
-          <div className="pf-prompt-panel">
-            <h4>{t('studio.storyboard.builtinPrompts')}</h4>
-            <p className="pf-muted" style={{ fontSize: '0.72rem', margin: '0 0 0.45rem' }}>
-              {t('studio.storyboard.promptsTip')}
-            </p>
-            {(
-              [
-                [t('studio.storyboard.promptStyle'), displayPrompts.style_prompt],
-                [t('studio.storyboard.promptCharacter'), displayPrompts.character_prompt],
-                [t('studio.storyboard.promptExtra'), displayPrompts.extra_prompt],
-              ] as const
-            ).map(([label, value]) => (
-              <button
-                key={label}
-                type="button"
-                className="pf-prompt-chip"
-                disabled={busy || running}
-                title={(value || '').trim() || t('studio.storyboard.promptEmpty')}
-                onClick={() =>
-                  setPromptEdit({
-                    style_prompt: displayPrompts.style_prompt,
-                    character_prompt: displayPrompts.character_prompt,
-                    extra_prompt: displayPrompts.extra_prompt,
-                  })
-                }
-              >
-                <strong>{label}</strong>
-                <span>{(value || '').trim() || t('studio.storyboard.promptEmpty')}</span>
-              </button>
-            ))}
-          </div>
-          <p className="pf-muted" style={{ fontSize: '0.75rem', marginTop: '0.75rem' }}>
-            {t('studio.storyboard.aiDisclaimer')}
-          </p>
-        </aside>
+        <StoryboardSidebar
+          project={project}
+          template={template}
+          shots={shots}
+          busy={busy}
+          running={running}
+          totalDuration={totalDuration}
+          displayPrompts={displayPrompts}
+          onCoverFile={onCoverFile}
+          useFirstShotCover={useFirstShotCover}
+          onDownloadCsv={() => downloadStoryboardCsv(project, t)}
+          onEditSettings={() => nav(`/studio/${project.id}/style`)}
+          onOpenPromptEdit={(prompts) => setPromptEdit(prompts)}
+        />
 
         <div className="pf-board-main">
-          <div className="pf-outline-grid">
-            <article className="pf-create-col">
-              <h3>{t('studio.storyboard.aiOutline')}</h3>
-              <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.65 }}>
-                {project.source_text}
-              </p>
-              <div className="pf-tags">
-                <span>{t('studio.storyboard.coreTheme')}</span>
-                <span>{project.source_type === 'script' ? t('studio.storyboard.fullScript') : t('studio.storyboard.oneLineTheme')}</span>
-              </div>
-            </article>
-            <article className="pf-create-col">
-              <h3>{t('studio.storyboard.structureSummary')}</h3>
-              <ul className="pf-meta-list">
-                {structure.length ? (
-                  structure.map((s) => (
-                    <li key={s.label}>
-                      <span>{s.label}</span>
-                      <span style={{ maxWidth: '72%', textAlign: 'right' }} title={s.text}>
-                        {s.text}
-                      </span>
-                    </li>
-                  ))
-                ) : (
-                  <li>
-                    <span>{t('studio.storyboard.waitingShots')}</span>
-                    <span>—</span>
-                  </li>
-                )}
-              </ul>
-            </article>
-            <aside className="pf-create-col pf-board-settings">
-              <h3>{t('studio.storyboard.genProgress')}</h3>
-              <ul className="pf-progress-list">
-                {progressItems.map((item) => (
-                  <li key={item.label}>
-                    <span>{item.label}</span>
-                    <span>
-                      {item.done ? (
-                        <span className="pf-check">✓</span>
-                      ) : item.run ? (
-                        `${item.pct ?? 0}%`
-                      ) : (
-                        '…'
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="pf-meter" style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
-                <i style={{ width: `${Math.min(100, project.progress)}%` }} />
-              </div>
-              <p className="pf-muted" style={{ margin: '0.35rem 0 0', fontSize: '0.78rem' }}>
-                {statusLabel(project)}
-              </p>
-            </aside>
-          </div>
+          <StoryboardOverviewGrid
+            project={project}
+            structure={structure}
+            progressItems={progressItems}
+          />
 
           <section className="pf-shot-card">
             <div className="pf-shot-card-head">
@@ -1205,300 +853,29 @@ title={t('studio.storyboard.respliceTip')}
                     </tr>
                   </thead>
                   <tbody>
-                    {shots.map((shot) => {
-                      /*
-                       * localBusy Yêu cầu nhân bản này đã được gửi nhưng tác vụ vẫn chưa được viết lại
-                       * shotGenating Tác vụ nhân bản này hoặc quá trình gửi cục bộ đang được tiến hành
-                       * pipeLocked Toàn bộ đường dẫn/lồng tiếng phim đã bị chiếm dụng
-                       * displayKind / done / failed Hiển thị theo mức độ đầy đủ của vật liệu
-                       */
-                      const localBusy = busyShotIds.has(shot.id)
-                      const shotGenerating = isShotGenerating(project, shot.id) || localBusy
-                      const pipelineLocked = isProjectWideBusy(project)
-                      const rowBusy = busy || pipelineLocked || shotGenerating
-                      const displayKind = shotDisplayKind(shot, {
-                        pipelineMode: project.pipeline_mode,
-                        generating: shotGenerating,
-                      })
-                      const done = shotDisplayDone(displayKind)
-                      const failed = displayKind === 'failed'
-                      const sceneTitle =
-                        shot.overlay_title?.trim() || `${t('studio.storyboard.sceneLabel')} ${String(shot.shot_no).padStart(2, '0')}`
-                      const narration = (shot.narration || '').trim()
-                      const script = shot.segment_script || shot.video_prompt || ''
-                      const { cues, beats } = parseSegmentScript(script)
-                      const desc = scenePromptForDisplay(shot.img_prompt).trim()
-                      const canTrim = Boolean(
-                        shot.video_url &&
-                        videoDurations[shot.id] &&
-                        Math.abs(videoDurations[shot.id] - Number(shot.duration)) > 0.5
-                      )
-                      return (
-                        <tr key={shot.id}>
-                          <td className="col-no">{String(shot.shot_no).padStart(2, '0')}</td>
-                          <td className="col-thumb">
-                            <button
-                              type="button"
-                              className="pf-shot-thumb-btn"
-                              onClick={() =>
-                                setPreview({
-                                  kind: 'shot',
-                                  shotNo: shot.shot_no,
-                                  imageUrl: shot.image_url,
-                                  videoUrl: shot.video_url,
-                                  audioUrl: shot.audio_url,
-                                  caption: shotCaption(shot, t),
-                                  version: shot.version,
-                                })
-                              }
-                            >
-                              {shot.image_url ? (
-                                <img
-                                  className="pf-shot-thumb"
-                                  src={api.assetUrl(shot.image_url, shot.version)}
-                                  alt=""
-                                />
-                              ) : (
-                                <div className="pf-shot-thumb empty">
-                                  {shotGenerating ? t('studio.storyboard.generating') : t('studio.storyboard.pending')}
-                                </div>
-                              )}
-                              {shot.video_url ? (
-                                <span className="pf-shot-thumb-play-overlay" title={t('studio.storyboard.viewVideo')}>
-                                  <span className="pf-shot-thumb-play-icon">
-                                    <IconPlay size={14} />
-                                  </span>
-                                </span>
-                              ) : null}
-                            </button>
-                          </td>
-                          <td className="col-narr">
-                            <button
-                              type="button"
-                              className="pf-shot-narration pf-shot-editable"
-                              disabled={rowBusy}
-                              title={t('studio.storyboard.editNarrTip')}
-                              onClick={() => openShotEdit(shot, 'narration')}
-                            >
-                              <span className="title">{sceneTitle}</span>
-                              <span className="line">
-                                {narration ? `“${narration}”` : '—'}
-                              </span>
-                            </button>
-                          </td>
-                          <td className="col-seg">
-                            <button
-                              type="button"
-                              className="pf-shot-desc pf-shot-editable"
-                              disabled={rowBusy}
-                              title={t('studio.storyboard.editSegTip')}
-                              onClick={() => openShotEdit(shot, 'segment_script')}
-                              style={{ textAlign: 'left', width: '100%' }}
-                            >
-                              {cues.length > 0 ? (
-                                <span className="pf-muted" style={{ display: 'block', fontSize: '0.75rem' }}>
-                                  {localizeCueText(cues[0], locale)?.replace(/^【|】$/g, '')}
-                                  {cues[1]
-                                    ? ` · ${(() => {
-                                        const clean = localizeCueText(cues[1], locale)
-                                          .replace(/^【(?:BGM[：:]\s*|Nhạc nền[：:]\s*)?/i, '')
-                                          .replace(/】$/, '')
-                                        return clean.length > 80 ? `${clean.slice(0, 80)}…` : clean
-                                      })()}`
-                                    : ''}
-                                </span>
-                              ) : null}
-                              {beats.length > 0 ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
-                                  {beats.slice(0, 6).map((b, i) => {
-                                    const localizedText = localizeBeatText(b.text, locale)
-                                    return (
-                                      <span key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                                        {b.duration > 0 ? (
-                                          <span
-                                            style={{
-                                              flex: '0 0 auto',
-                                              fontSize: '0.72rem',
-                                              background: '#111',
-                                              color: '#fff',
-                                              borderRadius: 4,
-                                              padding: '1px 5px',
-                                            }}
-                                          >
-                                            {b.duration}s
-                                          </span>
-                                        ) : null}
-                                        <span style={{ fontSize: '0.82rem' }}>
-                                          {localizedText.length > 160 ? `${localizedText.slice(0, 160)}…` : localizedText}
-                                        </span>
-                                      </span>
-                                    )
-                                  })}
-                                  {beats.length > 6 ? (
-                                    <span className="pf-muted" style={{ fontSize: '0.75rem' }}>
-                                      {t('studio.storyboard.moreSegs').replace('{n}', String(beats.length - 6))}
-                                    </span>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                desc || t('studio.storyboard.segPlaceholder')
-                              )}
-                            </button>
-                          </td>
-                          <td className="col-dur">{formatMmSs(shot.duration)}</td>
-                          <td className="col-status">
-                            <div className="pf-shot-status-wrap">
-                              <span
-                                className={[
-                                  'pf-shot-status',
-                                  failed ? 'bad' : done ? '' : 'warn',
-                                ]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                              >
-                                {done && !failed ? <span className="mark">✓</span> : null}
-                                {shotDisplayLabel(displayKind)}
-                              </span>
-                              {shot.video_url ? (
-                                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                                  <button
-                                    type="button"
-                                    className="pf-shot-view-btn"
-                                    onClick={() =>
-                                      setPreview({
-                                        kind: 'shot',
-                                        shotNo: shot.shot_no,
-                                        imageUrl: shot.image_url,
-                                        videoUrl: shot.video_url,
-                                        audioUrl: shot.audio_url,
-                                        caption: shotCaption(shot, t),
-                                        version: shot.version,
-                                      })
-                                    }
-                                  >
-                                    <IconPlay size={12} />
-                                    {t('studio.storyboard.viewVideo')}
-                                  </button>
-                                  {canTrim ? (
-                                    <button
-                                      type="button"
-                                      className="pf-shot-trim-btn"
-                                      title={t('studio.storyboard.trimTip')}
-                                      onClick={() => openTrimModal(shot, videoDurations[shot.id])}
-                                    >
-                                      ✂ {t('studio.storyboard.trimAction')}
-                                    </button>
-                                  ) : null}
-                                </div>
-                              ) : null}
-                            </div>
-                          </td>
-                          <td className="col-ops">
-                            <div className="pf-shot-ops">
-                              <button
-                                type="button"
-                                className="op"
-                                disabled={rowBusy}
-                                onClick={() => openShotEdit(shot)}
-                              >
-                                {t('common.edit')}
-                              </button>
-                              <div className="pf-shot-op-row">
-                                <button
-                                  type="button"
-                                  className="op"
-                                  disabled={rowBusy}
-                                  onClick={() => regenImage(shot)}
-                                >
-                                  {shot.image_url ? t('studio.storyboard.redrawImage') : t('studio.storyboard.genImage')}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="more"
-                                  aria-label={t('studio.storyboard.imageOps')}
-                                  disabled={rowBusy}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setMenuShotId(null)
-                                    setImgMenuShotId((id) => (id === shot.id ? null : shot.id))
-                                  }}
-                                >
-                                  <MoreVertical size={16} strokeWidth={2} />
-                                </button>
-                                {imgMenuShotId === shot.id ? (
-                                  <div className="pf-shot-menu" onClick={(e) => e.stopPropagation()}>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setImgMenuShotId(null)
-                                        setPromptModalShot(shot)
-                                      }}
-                                    >
-                                      <FileText size={14} strokeWidth={2} />
-                                      <span>{t('studio.storyboard.viewPrompt')}</span>
-                                    </button>
-                                  </div>
-                                ) : null}
-                              </div>
-                              {isFullPipeline ? (
-                                <div className="pf-shot-op-row">
-                                  <button
-                                    type="button"
-                                    className="op op-video"
-                                    disabled={rowBusy || !shot.image_url}
-                                    title={!shot.image_url ? t('studio.storyboard.needImageFirst') : undefined}
-                                    onClick={() => regenVideo(shot)}
-                                  >
-                                    {shot.video_url ? t('studio.storyboard.regenVideo') : t('studio.storyboard.genVideo')}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="more"
-                                    aria-label={t('studio.storyboard.moreOps')}
-                                    disabled={rowBusy}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setImgMenuShotId(null)
-                                      setMenuShotId((id) => (id === shot.id ? null : shot.id))
-                                    }}
-                                  >
-                                    <MoreVertical size={16} strokeWidth={2} />
-                                  </button>
-                                  {menuShotId === shot.id ? (
-                                    <div className="pf-shot-menu" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        type="button"
-                                        disabled={rowBusy}
-                                        onClick={() => {
-                                          setMenuShotId(null)
-                                          regenAudio(shot)
-                                        }}
-                                      >
-                                        <Volume2 size={14} strokeWidth={2} />
-                                        <span>{t('studio.storyboard.redub')}</span>
-                                      </button>
-                                      {canTrim ? (
-                                        <button
-                                          type="button"
-                                          disabled={rowBusy}
-                                          onClick={() => {
-                                            setMenuShotId(null)
-                                            openTrimModal(shot, videoDurations[shot.id])
-                                          }}
-                                        >
-                                          <Scissors size={14} strokeWidth={2} />
-                                          <span>{t('studio.storyboard.trimVideo')}</span>
-                                        </button>
-                                      ) : null}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              ) : null}
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
+                    {shots.map((shot) => (
+                      <StoryboardShotRow
+                        key={shot.id}
+                        shot={shot}
+                        project={project}
+                        busyShotIds={busyShotIds}
+                        pipelineLocked={isProjectWideBusy(project)}
+                        pageBusy={busy}
+                        isFullPipeline={isFullPipeline}
+                        videoDurations={videoDurations}
+                        imgMenuShotId={imgMenuShotId}
+                        menuShotId={menuShotId}
+                        onSetImgMenuShotId={setImgMenuShotId}
+                        onSetMenuShotId={setMenuShotId}
+                        onOpenPreview={setPreview}
+                        onOpenShotEdit={openShotEdit}
+                        onOpenTrimModal={openTrimModal}
+                        onOpenPromptModal={setPromptModalShot}
+                        onRegenImage={regenImage}
+                        onRegenVideo={regenVideo}
+                        onRegenAudio={regenAudio}
+                      />
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -1533,440 +910,60 @@ title={t('studio.storyboard.respliceTip')}
         </div>
       </div>
 
-      {batchOpen && project ? (
-        <div className="modal-backdrop" onClick={() => !busy && setBatchOpen(false)}>
-          <div className="modal pf-batch-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{t('studio.storyboard.batchPanel')}</h3>
-            <div className="pf-batch-modal-head">
-              <div className="pf-batch-select-all">
-                <label className="pf-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={batchSelected.length === project.shots.length && project.shots.length > 0}
-                    onChange={(e) =>
-                      setBatchSelected(e.target.checked ? project.shots.map((s) => s.id) : [])
-                    }
-                  />
-                  <span>{t('studio.storyboard.selectAll')}</span>
-                </label>
-                <span className="pf-muted">
-                  {t('studio.storyboard.batchSelected')
-                    .replace('{n}', String(batchSelected.length))
-                    .replace('{total}', String(project.shots.length))}
-                </span>
-              </div>
-            </div>
+      <StoryboardBatchModal
+        open={batchOpen && Boolean(project)}
+        busy={busy}
+        project={project}
+        batchSelected={batchSelected}
+        onSelectAll={(checked) => setBatchSelected(checked ? project.shots.map((s) => s.id) : [])}
+        onToggleShot={(shotId) =>
+          setBatchSelected((prev) =>
+            prev.includes(shotId) ? prev.filter((id) => id !== shotId) : [...prev, shotId],
+          )
+        }
+        batchDuration={batchDuration}
+        onChangeBatchDuration={setBatchDuration}
+        batchDurationError={batchDurationError}
+        minAllowedDuration={minAllowedDuration}
+        maxAllowedDuration={maxAllowedDuration}
+        batchRegenAudio={batchRegenAudio}
+        onChangeBatchRegenAudio={setBatchRegenAudio}
+        canApplyBatch={canApplyBatch}
+        onApply={applyBatchAdjust}
+        onClose={() => !busy && setBatchOpen(false)}
+      />
 
-            <div className="pf-batch-grid">
-              {project.shots
-                .slice()
-                .sort((a, b) => a.shot_no - b.shot_no)
-                .map((s) => {
-                  const isChecked = batchSelected.includes(s.id)
-                  return (
-                    <div
-                      key={s.id}
-                      className={`pf-batch-shot-item ${isChecked ? 'is-selected' : ''}`}
-                      onClick={() =>
-                        setBatchSelected((prev) =>
-                          isChecked ? prev.filter((id) => id !== s.id) : [...prev, s.id],
-                        )
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {}}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setBatchSelected((prev) =>
-                            isChecked ? prev.filter((id) => id !== s.id) : [...prev, s.id],
-                          )
-                        }}
-                      />
-                      {s.image_url ? (
-                        <img
-                          src={api.assetUrl(s.image_url, s.version)}
-                          alt=""
-                          className="thumb"
-                        />
-                      ) : (
-                        <div className="thumb empty">
-                          <span>{String(s.shot_no).padStart(2, '0')}</span>
-                        </div>
-                      )}
-                      <div className="meta">
-                        <strong className="title">
-                          {t('studio.storyboard.shotLabel')} {String(s.shot_no).padStart(2, '0')}
-                        </strong>
-                        <span className="dur">{formatMmSs(Number(s.duration) || 0)}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-            <label>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                <span>{t('studio.storyboard.uniformDuration')}</span>
-                <span className="pf-muted" style={{ fontSize: '0.78rem' }}>
-                  ({minAllowedDuration}s - {maxAllowedDuration}s)
-                </span>
-              </div>
-              <input
-                type="number"
-                min={minAllowedDuration}
-                max={maxAllowedDuration}
-                step={0.5}
-                placeholder={t('studio.storyboard.batchDurationPlaceholder')
-                  .replace('{min}', String(minAllowedDuration))
-                  .replace('{max}', String(maxAllowedDuration))}
-                value={batchDuration}
-                onChange={(e) => setBatchDuration(e.target.value)}
-                style={{
-                  borderColor: batchDurationError ? 'var(--pf-danger, #ef4444)' : undefined,
-                }}
-              />
-              {batchDurationError ? (
-                <span style={{ color: 'var(--pf-danger, #ef4444)', fontSize: '0.78rem', marginTop: '0.35rem', display: 'block' }}>
-                  {batchDurationError}
-                </span>
-              ) : null}
-            </label>
-            <label style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={batchRegenAudio}
-                onChange={(e) => setBatchRegenAudio(e.target.checked)}
-              />
-              {t('studio.storyboard.redubSelected')}
-            </label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-              <button
-                type="button"
-                className="pf-btn pf-btn-lime"
-                disabled={!canApplyBatch}
-                onClick={applyBatchAdjust}
-              >
-                {t('common.apply')}
-              </button>
-              <button
-                type="button"
-                className="pf-btn pf-btn-ghost"
-                disabled={busy}
-                onClick={() => setBatchOpen(false)}
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <StoryboardShotEditModal
+        editing={editing}
+        editMode={editMode}
+        editFocus={editFocus}
+        editDurationCheck={editDurationCheck}
+        busy={busy}
+        onChangeEditing={setEditing}
+        onPatchNarration={patchEditingNarration}
+        onPatchVisual={patchEditingVisual}
+        onPatchScript={patchEditingScript}
+        onChangeMode={(mode, focus) => {
+          setEditMode(mode)
+          setEditFocus(focus)
+        }}
+        onSave={saveShot}
+        onClose={closeShotEdit}
+      />
 
-      {editing ? (
-        <div className="modal-backdrop" onClick={closeShotEdit}>
-          <div
-            className={[
-              'modal',
-              'pf-prompt-modal',
-              editMode === 'narration' ? 'pf-prompt-modal--narration' : '',
-              editMode === 'segment' ? 'pf-prompt-modal--segment' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3>
-              {editMode === 'narration'
-                ? t('studio.storyboard.editShotNarr').replace('{no}', String(editing.shot_no))
-                : editMode === 'segment'
-                  ? t('studio.storyboard.editShotSeg').replace('{no}', String(editing.shot_no))
-                  : t('studio.storyboard.editShotAll').replace('{no}', String(editing.shot_no))}
-            </h3>
-            <div className="pf-prompt-modal-scroll">
-              {editMode === 'narration' || editMode === 'full' ? (
-                <>
-                  <label>
-                    {t('studio.storyboard.shotTitle')}
-                    <input
-                      autoFocus={editFocus === 'title' || editMode === 'narration'}
-                      value={editing.overlay_title || ''}
-                      onChange={(e) => setEditing({ ...editing, overlay_title: e.target.value })}
-                    />
-                    <span className="pf-muted pf-prompt-hint">
-                      {t('studio.storyboard.shotTitleTip')}
-                    </span>
-                  </label>
-                  <label>
-                    {t('studio.storyboard.subtitle')}
-                    <input
-                      value={editing.overlay_subtitle || ''}
-                      onChange={(e) => setEditing({ ...editing, overlay_subtitle: e.target.value })}
-                    />
-                    <span className="pf-muted pf-prompt-hint">
-                      {t('studio.storyboard.subtitleTip')}
-                    </span>
-                  </label>
-                  <label>
-                    {t('studio.storyboard.narration')}
-                    <textarea
-                      autoFocus={editFocus === 'narration'}
-                      value={editing.narration}
-                      onChange={(e) => patchEditingNarration(e.target.value)}
-                      rows={editMode === 'narration' ? 6 : 3}
-                    />
-                    <span className="pf-muted pf-prompt-hint">
-                      {t('studio.storyboard.narrationTip')}
-                    </span>
-                  </label>
-                </>
-              ) : null}
-              {editMode === 'full' ? (
-                <label>
-                  {t('studio.storyboard.imagePrompt')}
-                  <textarea
-                    ref={(el) => {
-                      imagePromptTextareaRef.current = el
-                      autoGrowPrompt(el)
-                    }}
-                    className="pf-prompt-image"
-                    autoFocus={editFocus === 'img_prompt'}
-                    value={editing.img_prompt}
-                    onInput={(e) => autoGrowPrompt(e.currentTarget)}
-                    onChange={(e) => {
-                      patchEditingVisual(e.target.value)
-                      autoGrowPrompt(e.currentTarget)
-                    }}
-                    rows={2}
-                  />
-                  <span className="pf-muted pf-prompt-hint">
-                    {t('studio.storyboard.imagePromptTip')}
-                  </span>
-                </label>
-              ) : null}
-              {editMode === 'segment' || editMode === 'full' ? (
-                <>
-                  <label>
-                    {t('studio.storyboard.segScript')}
-                    <textarea
-                      ref={segScriptTextareaRef}
-                      className="pf-prompt-segment"
-                      autoFocus={editFocus === 'segment_script' || editMode === 'segment'}
-                      value={editing.segment_script || editing.video_prompt || ''}
-                      onChange={(e) => {
-                        patchEditingScript(e.target.value)
-                        e.target.style.height = 'auto'
-                        e.target.style.height = `${e.target.scrollHeight}px`
-                      }}
-                      rows={editMode === 'segment' ? 8 : 5}
-                      placeholder={SEGMENT_SCRIPT_PLACEHOLDER}
-                    />
-                  </label>
-                  <div className="pf-chips pf-prompt-duration-chips">
-                    {editDurationCheck.durations.length > 0 ? (
-                      editDurationCheck.durations.map((sec, i) => (
-                        <span key={`${sec}-${i}`} className="pf-chip" style={{ cursor: 'default' }}>
-                          {sec}s
-                        </span>
-                      ))
-                    ) : (
-                      <span className="pf-muted" style={{ fontSize: '0.8rem' }}>
-                        {t('studio.storyboard.noDurationTag')}
-                      </span>
-                    )}
-                    <span
-                      className="pf-muted"
-                      style={{
-                        fontSize: '0.8rem',
-                        marginLeft: 'auto',
-                        color: editDurationCheck.valid ? undefined : 'var(--pf-danger, #c0392b)',
-                      }}
-                    >
-                      {t('studio.storyboard.totalDurationCheck').replace('{total}', String(editDurationCheck.total)).replace('{max}', String(SHOT_DURATION_MAX))}
-                    </span>
-                  </div>
-                  {!editDurationCheck.valid && editDurationCheck.message ? (
-                    <p className="pf-error pf-prompt-duration-error">{editDurationCheck.message}</p>
-                  ) : null}
-                  <label>
-                    {t('studio.storyboard.cameraNote')}
-                    <input
-                      value={editing.camera || ''}
-                      onChange={(e) => setEditing({ ...editing, camera: e.target.value })}
-                    />
-                  </label>
-                  <label>
-                    {t('studio.storyboard.durationNote')}
-                    <input
-                      type="number"
-                      value={editing.duration}
-                      onChange={(e) => setEditing({ ...editing, duration: Number(e.target.value) })}
-                    />
-                  </label>
-                </>
-              ) : null}
-            </div>
-            <div className="pf-prompt-modal-foot">
-              <div className="pf-prompt-modal-foot-tabs">
-                {editMode !== 'segment' ? (
-                  <button
-                    type="button"
-                    className="pf-btn pf-btn-ghost pf-btn-sm"
-                    onClick={() => {
-                      setEditMode('segment')
-                      setEditFocus('segment_script')
-                    }}
-                  >
-                    {t('studio.storyboard.segTab')}
-                  </button>
-                ) : null}
-                {editMode !== 'narration' ? (
-                  <button
-                    type="button"
-                    className="pf-btn pf-btn-ghost pf-btn-sm"
-                    onClick={() => {
-                      setEditMode('narration')
-                      setEditFocus('narration')
-                    }}
-                  >
-                    {t('studio.storyboard.narrTab')}
-                  </button>
-                ) : null}
-                {editMode !== 'full' ? (
-                  <button
-                    type="button"
-                    className="pf-btn pf-btn-ghost pf-btn-sm"
-                    onClick={() => {
-                      setEditMode('full')
-                      setEditFocus('')
-                    }}
-                  >
-                    {t('studio.storyboard.allFields')}
-                  </button>
-                ) : null}
-              </div>
-              <div className="pf-prompt-modal-foot-actions">
-                <button type="button" className="pf-btn pf-btn-ghost" onClick={closeShotEdit}>
-                  {t('common.cancel')}
-                </button>
-                <button
-                  type="button"
-                  className="pf-btn pf-btn-lime"
-                  disabled={busy || !editDurationCheck.valid}
-                  onClick={saveShot}
-                >
-                  {t('common.save')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <StoryboardProjectPromptsModal
+        promptEdit={promptEdit}
+        busy={busy}
+        onChangePromptEdit={setPromptEdit}
+        onSave={saveProjectPrompts}
+        onRestoreTemplate={() => void restoreTemplatePrompts()}
+        onClose={() => setPromptEdit(null)}
+      />
 
-      {promptEdit ? (
-        <div className="modal-backdrop" onClick={() => setPromptEdit(null)}>
-          <div className="modal pf-prompt-modal pf-project-prompts-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{t('studio.storyboard.projectPrompts')}</h3>
-            <p className="pf-muted" style={{ fontSize: '0.8rem', marginTop: 0 }}>
-              {t('studio.storyboard.promptsNote')}
-            </p>
-            <label>
-              {t('studio.storyboard.stylePromptLabel')}
-              <textarea
-                ref={autoGrowPrompt}
-                value={promptEdit.style_prompt}
-                onInput={(e) => autoGrowPrompt(e.currentTarget)}
-                onChange={(e) => {
-                  setPromptEdit({ ...promptEdit, style_prompt: e.target.value })
-                  autoGrowPrompt(e.currentTarget)
-                }}
-                rows={1}
-              />
-            </label>
-            <label>
-              {t('studio.storyboard.charPromptLabel')}
-              <textarea
-                ref={autoGrowPrompt}
-                autoFocus
-                value={promptEdit.character_prompt}
-                onInput={(e) => autoGrowPrompt(e.currentTarget)}
-                onChange={(e) => {
-                  setPromptEdit({ ...promptEdit, character_prompt: e.target.value })
-                  autoGrowPrompt(e.currentTarget)
-                }}
-                rows={1}
-              />
-            </label>
-            <label>
-              {t('studio.storyboard.extraPromptLabel')}
-              <textarea
-                ref={autoGrowPrompt}
-                value={promptEdit.extra_prompt}
-                onInput={(e) => autoGrowPrompt(e.currentTarget)}
-                onChange={(e) => {
-                  setPromptEdit({ ...promptEdit, extra_prompt: e.target.value })
-                  autoGrowPrompt(e.currentTarget)
-                }}
-                rows={1}
-              />
-            </label>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-              <button
-                type="button"
-                className="pf-btn pf-btn-lime"
-                disabled={busy}
-                onClick={saveProjectPrompts}
-              >
-                {t('common.save')}
-              </button>
-              <button
-                type="button"
-                className="pf-btn pf-btn-ghost"
-                disabled={busy}
-                onClick={() => void restoreTemplatePrompts()}
-              >
-                {t('studio.storyboard.restoreTemplate')}
-              </button>
-              <button type="button" className="pf-btn pf-btn-ghost" onClick={() => setPromptEdit(null)}>
-                {t('common.cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {preview ? (
-        <div className="modal-backdrop" onClick={() => setPreview(null)}>
-          <div className="modal preview-modal" onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>
-                {preview.kind === 'final' ? preview.title : t('studio.storyboard.shotNo').replace('{no}', String(preview.shotNo))}
-              </h3>
-              <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm" onClick={() => setPreview(null)}>
-                {t('common.close')}
-              </button>
-            </div>
-            {preview.kind === 'final' ? (
-              <video className="preview-media" src={preview.url} controls autoPlay />
-            ) : preview.videoUrl ? (
-              <video
-                className="preview-media"
-                src={api.assetUrl(preview.videoUrl, preview.version)}
-                poster={preview.imageUrl ? api.assetUrl(preview.imageUrl, preview.version) : undefined}
-                controls
-                autoPlay
-              />
-            ) : preview.imageUrl ? (
-              <img className="preview-media" src={api.assetUrl(preview.imageUrl, preview.version)} alt="" />
-            ) : (
-              <p className="pf-muted">{t('studio.storyboard.noPreview')}</p>
-            )}
-            {preview.kind === 'shot' && preview.audioUrl && !preview.videoUrl ? (
-              <audio src={api.assetUrl(preview.audioUrl)} controls style={{ width: '100%' }} />
-            ) : null}
-            {preview.kind === 'shot' ? <p className="pf-muted">{preview.caption}</p> : null}
-          </div>
-        </div>
-      ) : null}
+      <StoryboardPreviewModal
+        preview={preview}
+        onClose={() => setPreview(null)}
+      />
 
       {trimmingShot && project ? (
         <ShotTrimModal
