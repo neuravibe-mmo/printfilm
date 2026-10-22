@@ -236,13 +236,8 @@ def template_prompt_defaults(tpl) -> dict[str, str]:
     }
 
 
-def seedream_ref_urls(*candidates: str | None, limit: int = 2) -> list[str]:
-    """Normalize refs for Seedream — **public https only**.
-
-    Skip data: URIs (multi‑MB base64 often hangs Seedream) and LAN/localhost URLs
-    (Ark cloud cannot fetch them). Prefer prior shot `image_ark_url` CDN links.
-    limit mặc định 2 (phân cảnh neo kiến thức); chủ thể phim ngắn drama + bảng phong cách dùng split_seedream_subject_style_refs.
-    """
+def seedream_ref_urls(*candidates: str | None, limit: int = 4) -> list[str]:
+    """Normalize refs for image generation — supports public https, local /static/ and data URIs."""
     out: list[str] = []
     seen: set[str] = set()
     for raw in candidates:
@@ -251,9 +246,19 @@ def seedream_ref_urls(*candidates: str | None, limit: int = 2) -> list[str]:
         u = raw.strip()
         if not u or u in seen:
             continue
+        # Chấp nhận đường dẫn cục bộ hoặc data URI cho ChatGPT2API
+        if u.startswith("/static/") or u.startswith("static/") or u.startswith("data:image/"):
+            out.append(u)
+            seen.add(u)
+            continue
+        # Chấp nhận URL localhost/127.0.0.1 trỏ tới file tĩnh nội bộ
+        host = (urlparse(u).hostname or "").lower()
+        if (host in {"localhost", "127.0.0.1", "::1"} or host.startswith("192.168.") or host.startswith("10.")) and "/static/" in u:
+            out.append(u)
+            seen.add(u)
+            continue
         if not (u.startswith("https://") or u.startswith("http://")):
             continue
-        host = (urlparse(u).hostname or "").lower()
         if not host or host in {"localhost", "127.0.0.1", "::1"}:
             continue
         if host.startswith("192.168.") or host.startswith("10."):

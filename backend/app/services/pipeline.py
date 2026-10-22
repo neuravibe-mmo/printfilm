@@ -703,7 +703,8 @@ async def _script_stage(project_id: int) -> None:
         if scene_hint:
             extra_parts.append(f"Bối cảnh không gian chính: {scene_hint}")
         full_extra = "\n".join(extra_parts)
-        consist = template_consistency_mode(tpl)
+        has_user_character = bool((char_hint or "").strip()) or bool(getattr(project, "ref_image_url", None))
+        consist = "character" if has_user_character else template_consistency_mode(tpl)
         plans_result = await ark.chat_storyboard(
             source_text=project.source_text,
             source_type=project.source_type,
@@ -852,12 +853,19 @@ def _project_base_refs(project: Project) -> list[str]:
 
 def _locked_shot_prompt(project: Project, img_prompt: str) -> str:
     consist = template_consistency_mode(project.template)
+    has_user_character = bool((getattr(project, "character_prompt", None) or "").strip()) or bool(getattr(project, "ref_image_url", None))
+    lock_char = (consist == "character") or has_user_character
+    bible = (
+        getattr(project, "character_bible", None)
+        or getattr(project, "character_prompt", None)
+        or ""
+    )
     return build_locked_image_prompt(
         _effective_style(project),
         strip_lock_blocks(img_prompt),
-        getattr(project, "character_bible", None) or "",
+        bible,
         photoreal=template_is_photoreal(project.template),
-        lock_character=consist == "character",
+        lock_character=lock_char,
         lock_style=True,
         product_prompt=getattr(project, "product_prompt", None) or "",
         scene_prompt=getattr(project, "scene_prompt", None) or "",
@@ -915,10 +923,11 @@ async def _parallel_image_and_audio(project_id: int) -> None:
             for s in shot_rows
         ]
         style_prefix = _effective_style(project)
-        character_bible = getattr(project, "character_bible", None) or ""
+        character_bible = getattr(project, "character_bible", None) or getattr(project, "character_prompt", None) or ""
         photoreal = template_is_photoreal(tpl)
         consist = template_consistency_mode(tpl)
-        lock_character = consist == "character"
+        has_user_character = bool((getattr(project, "character_prompt", None) or "").strip()) or bool(getattr(project, "ref_image_url", None))
+        lock_character = (consist == "character") or has_user_character
         base_refs = _project_base_refs(project)
         image_size = _image_size_for(project)
         negative = _project_image_negative(project)
@@ -996,6 +1005,8 @@ async def _parallel_image_and_audio(project_id: int) -> None:
             photoreal=photoreal,
             lock_character=lock_character,
             lock_style=True,
+            product_prompt=getattr(project, "product_prompt", None) or "",
+            scene_prompt=getattr(project, "scene_prompt", None) or "",
         )
         async with img_sem:
             await _ensure_not_cancelled(project_id)

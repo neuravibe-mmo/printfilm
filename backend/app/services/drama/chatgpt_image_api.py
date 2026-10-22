@@ -29,20 +29,29 @@ async def _to_base64_data_uri(image_ref: str) -> str | None:
     data: bytes | None = None
     mime = "image/png" if raw.lower().endswith(".png") else "image/jpeg"
 
-    if raw.startswith("http://") or raw.startswith("https://"):
+    # Ưu tiên đọc trực tiếp từ thư mục tĩnh cục bộ nếu là đường dẫn nội bộ
+    p = storage.local_path_from_url(raw)
+    if p and p.is_file():
         try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                res = await client.get(raw)
-                if res.status_code == 200:
-                    data = res.content
-        except Exception as e:
-            logger.warning("Lỗi tải ảnh tham chiếu %s: %s", raw, e)
-    else:
-        p = Path(raw)
-        if not p.is_file():
-            p = storage.to_local_path(raw)
-        if p and p.is_file():
             data = p.read_bytes()
+        except Exception as e:
+            logger.warning("Lỗi đọc file ảnh tham chiếu local %s: %s", p, e)
+
+    if data is None:
+        if raw.startswith("http://") or raw.startswith("https://"):
+            try:
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    res = await client.get(raw)
+                    if res.status_code == 200:
+                        data = res.content
+            except Exception as e:
+                logger.warning("Lỗi tải ảnh tham chiếu %s: %s", raw, e)
+        else:
+            p = Path(raw)
+            if not p.is_file():
+                p = storage.to_local_path(raw)
+            if p and p.is_file():
+                data = p.read_bytes()
 
     if data:
         b64 = base64.b64encode(data).decode("ascii")

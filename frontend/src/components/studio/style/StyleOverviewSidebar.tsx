@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react'
 import { api, type PipelineMode, type Project, type Template, type VoicePreset } from '../../../api'
 import { useI18n } from '../../../i18n'
+import { Loader2, Square } from 'lucide-react'
 import BillingErrorNotice from '../../billing/BillingErrorNotice'
 import HoverTooltip from '../../ui/HoverTooltip'
 import { IconPlay } from '../../ui/Icons'
@@ -110,15 +111,66 @@ export default function StyleOverviewSidebar({
       {selectedVoice ? (
         <button
           type="button"
-          className="pf-btn pf-btn-ghost pf-btn-block pf-btn-sm pf-btn-icon"
-          style={{ marginTop: '0.75rem' }}
+          className={[
+            'pf-btn',
+            'pf-btn-block',
+            'pf-btn-sm',
+            playingId === voiceKey(selectedVoice) ? 'pf-btn-lime' : 'pf-btn-ghost',
+          ].join(' ')}
+          style={{
+            marginTop: '0.75rem',
+            height: 'auto',
+            padding: '0.45rem 0.65rem',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.15rem',
+            lineHeight: 1.25,
+            whiteSpace: 'normal',
+            textAlign: 'center',
+          }}
           disabled={busy || previewBusy === voiceKey(selectedVoice)}
           onClick={(e) => onPreviewVoice(selectedVoice, e)}
         >
-          <IconPlay size={14} />
-          {playingId === voiceKey(selectedVoice)
-            ? t('studio.styleConfig.stopPreview')
-            : t('studio.styleConfig.previewVoice').replace('{label}', selectedVoice.label)}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem',
+              fontSize: '0.82rem',
+              fontWeight: 650,
+            }}
+          >
+            {previewBusy === voiceKey(selectedVoice) ? (
+              <Loader2 size={13} className="pf-tool-spin" />
+            ) : playingId === voiceKey(selectedVoice) ? (
+              <Square size={10} fill="currentColor" />
+            ) : (
+              <IconPlay size={13} />
+            )}
+            <span>
+              {previewBusy === voiceKey(selectedVoice)
+                ? t('studio.styleConfig.generating')
+                : playingId === voiceKey(selectedVoice)
+                  ? t('studio.styleConfig.stopPreview')
+                  : t('studio.styleConfig.preview')}
+            </span>
+          </div>
+          <div
+            style={{
+              fontSize: '0.75rem',
+              opacity: playingId === voiceKey(selectedVoice) ? 0.9 : 0.75,
+              fontWeight: 500,
+              maxWidth: '100%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            &ldquo;{selectedVoice.label}&rdquo;
+          </div>
         </button>
       ) : null}
 

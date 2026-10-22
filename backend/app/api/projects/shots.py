@@ -321,7 +321,21 @@ async def get_shot_prompt_preview(
         detailed_refs.append({
             "url": project.ref_image_url,
             "type": "project_ref",
-            "label": "Ảnh tham chiếu dự án (Sản phẩm / Nhân vật)",
+            "label": "Ảnh tham chiếu nhân vật",
+            "shot_no": None,
+        })
+    if getattr(project, "product_image_url", None):
+        detailed_refs.append({
+            "url": project.product_image_url,
+            "type": "product_ref",
+            "label": "Ảnh tham chiếu sản phẩm",
+            "shot_no": None,
+        })
+    if getattr(project, "scene_image_url", None):
+        detailed_refs.append({
+            "url": project.scene_image_url,
+            "type": "scene_ref",
+            "label": "Ảnh tham chiếu bối cảnh",
             "shot_no": None,
         })
     tpl_refs = list(((project.template.seedream_config or {}).get("ref_images") or [])) if project.template else []

@@ -103,8 +103,8 @@ def image_refs_for_shot(prev: Any | None, base_refs: list[str] | None = None) ->
     bases = list(base_refs or [])
     prev_url = shot_image_ref(prev)
     if prev_url:
-        return seedream_ref_urls(prev_url, *bases)
-    return seedream_ref_urls(*bases)
+        return seedream_ref_urls(prev_url, *bases, limit=5)
+    return seedream_ref_urls(*bases, limit=4)
 
 
 def video_extra_refs_for_shot(prev: Any | None) -> list[str]:

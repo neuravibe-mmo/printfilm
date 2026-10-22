@@ -61,6 +61,8 @@ def local_path_from_url(url: str) -> Path | None:
         return None
     if url.startswith("/static/"):
         return STATIC_ROOT / url.removeprefix("/static/")
+    if url.startswith("static/"):
+        return STATIC_ROOT / url.removeprefix("static/")
     settings = get_settings()
     prefix = settings.public_base_url.rstrip("/") + "/static/"
     if url.startswith(prefix):
@@ -84,6 +86,9 @@ def local_path_from_url(url: str) -> Path | None:
             rest = url[idx2 + 1 :].split("?", 1)[0]  # generated/pN/...
             return STATIC_ROOT / rest
     return None
+
+
+to_local_path = local_path_from_url
 
 
 def _download_timeout(timeout: float | httpx.Timeout) -> httpx.Timeout:
