@@ -288,6 +288,11 @@ class CharacterPromptGenerateOut(BaseModel):
     prompt: str = ""
 
 
+class GenerateRefImageRequest(BaseModel):
+    prompt: str = Field(min_length=1, max_length=10000)
+    ref_type: str = Field(default="character", pattern="^(character|product|scene)$")
+
+
 class VoicePreviewRequest(BaseModel):
     voice_id: str = Field(min_length=1, max_length=128)
 

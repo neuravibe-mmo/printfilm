@@ -500,6 +500,12 @@ export const api = {
     }
     return res.json() as Promise<Project>
   },
+  generateRefImage(id: number, body: { prompt: string; ref_type: 'character' | 'product' | 'scene' }) {
+    return request<Project>(`/api/projects/${id}/generate-ref-image`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
   voices() {
     return request<VoicePreset[]>('/api/voices')
   },

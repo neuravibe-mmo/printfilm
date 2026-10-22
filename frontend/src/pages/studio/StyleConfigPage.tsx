@@ -57,6 +57,7 @@ export default function StyleConfigPage() {
   const [aiGeneratingChar, setAiGeneratingChar] = useState(false)
   const [aiGeneratingProduct, setAiGeneratingProduct] = useState(false)
   const [aiGeneratingScene, setAiGeneratingScene] = useState(false)
+  const [generatingRefImage, setGeneratingRefImage] = useState<'character' | 'product' | 'scene' | null>(null)
   const [previewBusy, setPreviewBusy] = useState<string | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -334,6 +335,31 @@ export default function StyleConfigPage() {
     }
   }
 
+  async function handleGenerateRefImage(refType: 'character' | 'product' | 'scene') {
+    if (!project) return
+    const promptText =
+      refType === 'product'
+        ? productPrompt
+        : refType === 'scene'
+          ? scenePrompt
+          : characterPrompt
+    if (!promptText.trim()) return
+
+    setGeneratingRefImage(refType)
+    setError('')
+    try {
+      const updated = await api.generateRefImage(project.id, {
+        prompt: promptText.trim(),
+        ref_type: refType,
+      })
+      setProject(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Tạo ảnh tham chiếu AI thất bại')
+    } finally {
+      setGeneratingRefImage(null)
+    }
+  }
+
   async function generate() {
     if (!project) return
     stopPreview()
@@ -437,6 +463,8 @@ export default function StyleConfigPage() {
             onAiGenerateCharacter={handleAiGenerateCharacter}
             onAiGenerateProduct={handleAiGenerateProduct}
             onAiGenerateScene={handleAiGenerateScene}
+            generatingRefImage={generatingRefImage}
+            onGenerateRefImage={handleGenerateRefImage}
           />
 
           <VoicePickerSection

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ChangeEvent } from 'react'
+import { Loader2 } from 'lucide-react'
 import { api } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { IconClipboardPaste, IconSparkles } from '../../ui/Icons'
@@ -17,6 +18,8 @@ type ReferenceItemProps = {
   onUpload: (file: File) => void
   onRemove: () => void
   onPaste: () => void
+  onGenerateImage?: () => Promise<void> | void
+  generatingImage?: boolean
 }
 
 function ReferenceItemCard({
@@ -33,6 +36,8 @@ function ReferenceItemCard({
   onUpload,
   onRemove,
   onPaste,
+  onGenerateImage,
+  generatingImage,
 }: ReferenceItemProps) {
   const { t } = useI18n()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -61,50 +66,62 @@ function ReferenceItemCard({
     <div>
       {/* Mô tả bên trên */}
       <div className="pf-field" style={{ marginTop: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+        <div style={{ marginBottom: '0.35rem' }}>
           <span className="pf-field-label" style={{ margin: 0 }}>
             {promptLabel}
           </span>
+        </div>
+        <div style={{ position: 'relative' }}>
+          <textarea
+            ref={textareaRef}
+            className="pf-field-input"
+            placeholder={promptPlaceholder}
+            value={promptValue}
+            onChange={(e) => {
+              onChangePrompt(e.target.value)
+              e.target.style.height = 'auto'
+              e.target.style.height = `${e.target.scrollHeight}px`
+            }}
+            rows={2}
+            style={{
+              resize: 'none',
+              overflow: 'hidden',
+              minHeight: '56px',
+              lineHeight: '1.5',
+              boxSizing: 'border-box',
+              paddingRight: onAiGenerate ? '40px' : '0.8rem',
+            }}
+          />
           {onAiGenerate && (
             <button
               type="button"
               className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
-              title="AI Generate"
+              title={aiGenerating ? t('studio.styleConfig.generating') : 'AI Generate'}
               disabled={aiGenerating || uploading}
               onClick={onAiGenerate}
               style={{
-                height: '26px',
-                padding: '0 0.5rem',
-                fontSize: '0.78rem',
-                color: 'var(--pf-lime, #d4ff00)',
+                position: 'absolute',
+                top: '7px',
+                right: '8px',
+                width: '28px',
+                height: '28px',
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'rgba(0, 0, 0, 0.65)',
+                background: 'rgba(0, 0, 0, 0.04)',
+                border: '1px solid rgba(0, 0, 0, 0.1)',
+                borderRadius: '6px',
                 cursor: aiGenerating ? 'not-allowed' : 'pointer',
-                opacity: aiGenerating ? 0.7 : 1,
+                opacity: aiGenerating ? 0.5 : 1,
+                zIndex: 2,
               }}
             >
-              <IconSparkles size={13} />
-              <span>{aiGenerating ? t('studio.styleConfig.generating') : 'AI Generate'}</span>
+              {aiGenerating ? <Loader2 size={15} className="pf-tool-spin" /> : <IconSparkles size={15} />}
             </button>
           )}
         </div>
-        <textarea
-          ref={textareaRef}
-          className="pf-field-input"
-          placeholder={promptPlaceholder}
-          value={promptValue}
-          onChange={(e) => {
-            onChangePrompt(e.target.value)
-            e.target.style.height = 'auto'
-            e.target.style.height = `${e.target.scrollHeight}px`
-          }}
-          rows={2}
-          style={{
-            resize: 'none',
-            overflow: 'hidden',
-            minHeight: '52px',
-            lineHeight: '1.5',
-            boxSizing: 'border-box',
-          }}
-        />
       </div>
 
       {/* Ảnh tham chiếu bên dưới */}
@@ -153,12 +170,37 @@ function ReferenceItemCard({
                     type="button"
                     className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
                     title={t('studio.styleConfig.pasteRefImage')}
-                    disabled={uploading}
+                    disabled={uploading || generatingImage}
                     style={{ width: '32px', height: '32px', padding: 0, justifyContent: 'center', flexShrink: 0 }}
                     onClick={onPaste}
                   >
                     <IconClipboardPaste size={16} />
                   </button>
+                  {onGenerateImage && (
+                    <button
+                      type="button"
+                      className="pf-btn pf-btn-ghost pf-btn-sm"
+                      title={!promptValue.trim() ? 'Vui lòng nhập mô tả bên trên để tạo ảnh AI' : 'Tạo lại ảnh AI từ mô tả'}
+                      disabled={!promptValue.trim() || generatingImage || uploading}
+                      onClick={onGenerateImage}
+                      style={{
+                        height: '32px',
+                        padding: '0 0.65rem',
+                        fontSize: '0.78rem',
+                        color: promptValue.trim() ? 'var(--pf-lime, #d4ff00)' : 'var(--pf-muted, #888)',
+                        borderColor: promptValue.trim() ? 'rgba(212,255,0,0.35)' : undefined,
+                        background: promptValue.trim() ? 'rgba(212,255,0,0.08)' : undefined,
+                        cursor: !promptValue.trim() || generatingImage ? 'not-allowed' : 'pointer',
+                        opacity: !promptValue.trim() ? 0.45 : generatingImage ? 0.7 : 1,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                      }}
+                    >
+                      {generatingImage ? <Loader2 size={14} className="pf-tool-spin" /> : <IconSparkles size={14} />}
+                      <span>{generatingImage ? t('studio.styleConfig.generating') : 'AI Generate'}</span>
+                    </button>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -212,12 +254,37 @@ function ReferenceItemCard({
                 type="button"
                 className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
                 title={t('studio.styleConfig.pasteRefImage')}
-                disabled={uploading}
+                disabled={uploading || generatingImage}
                 style={{ width: '32px', height: '32px', padding: 0, justifyContent: 'center', flexShrink: 0 }}
                 onClick={onPaste}
               >
                 <IconClipboardPaste size={16} />
               </button>
+              {onGenerateImage && (
+                <button
+                  type="button"
+                  className="pf-btn pf-btn-ghost pf-btn-sm"
+                  title={!promptValue.trim() ? 'Vui lòng nhập mô tả bên trên để tạo ảnh AI' : 'Tạo ảnh AI từ mô tả'}
+                  disabled={!promptValue.trim() || generatingImage || uploading}
+                  onClick={onGenerateImage}
+                  style={{
+                    height: '32px',
+                    padding: '0 0.65rem',
+                    fontSize: '0.78rem',
+                    color: promptValue.trim() ? 'var(--pf-lime, #d4ff00)' : 'var(--pf-muted, #888)',
+                    borderColor: promptValue.trim() ? 'rgba(212,255,0,0.35)' : undefined,
+                    background: promptValue.trim() ? 'rgba(212,255,0,0.08)' : undefined,
+                    cursor: !promptValue.trim() || generatingImage ? 'not-allowed' : 'pointer',
+                    opacity: !promptValue.trim() ? 0.45 : generatingImage ? 0.7 : 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  {generatingImage ? <Loader2 size={14} className="pf-tool-spin" /> : <IconSparkles size={14} />}
+                  <span>{generatingImage ? t('studio.styleConfig.generating') : 'AI Generate'}</span>
+                </button>
+              )}
             </div>
             <span
               style={{
@@ -254,6 +321,7 @@ type CharacterConfigSectionProps = {
   aiGeneratingChar?: boolean
   aiGeneratingProduct?: boolean
   aiGeneratingScene?: boolean
+  generatingRefImage?: 'character' | 'product' | 'scene' | null
 
   onUploadRefImage: (file: File, refType: 'character' | 'product' | 'scene') => Promise<void>
   onRemoveRefImage: (refType: 'character' | 'product' | 'scene') => Promise<void>
@@ -261,6 +329,7 @@ type CharacterConfigSectionProps = {
   onAiGenerateCharacter?: () => Promise<void>
   onAiGenerateProduct?: () => Promise<void>
   onAiGenerateScene?: () => Promise<void>
+  onGenerateRefImage?: (refType: 'character' | 'product' | 'scene') => Promise<void>
 }
 
 export default function CharacterConfigSection({
@@ -277,19 +346,21 @@ export default function CharacterConfigSection({
   aiGeneratingChar,
   aiGeneratingProduct,
   aiGeneratingScene,
+  generatingRefImage,
   onUploadRefImage,
   onRemoveRefImage,
   onPasteRefImage,
   onAiGenerateCharacter,
   onAiGenerateProduct,
   onAiGenerateScene,
+  onGenerateRefImage,
 }: CharacterConfigSectionProps) {
   const { t } = useI18n()
 
   const activeCount = [characterImageUrl, productImageUrl, sceneImageUrl].filter(Boolean).length
 
   return (
-    <div className="pf-style-block">
+    <div className="pf-style-block" style={{ marginBottom: '2.75rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
         <h3 style={{ margin: 0 }}>{t('studio.styleConfig.characterSection')}</h3>
         <span
@@ -324,6 +395,8 @@ export default function CharacterConfigSection({
         onUpload={(file) => onUploadRefImage(file, 'character')}
         onRemove={() => onRemoveRefImage('character')}
         onPaste={() => onPasteRefImage('character')}
+        onGenerateImage={onGenerateRefImage ? () => onGenerateRefImage('character') : undefined}
+        generatingImage={generatingRefImage === 'character'}
       />
 
       {/* Đường line fullwidth phân cách */}
@@ -352,6 +425,8 @@ export default function CharacterConfigSection({
         onUpload={(file) => onUploadRefImage(file, 'product')}
         onRemove={() => onRemoveRefImage('product')}
         onPaste={() => onPasteRefImage('product')}
+        onGenerateImage={onGenerateRefImage ? () => onGenerateRefImage('product') : undefined}
+        generatingImage={generatingRefImage === 'product'}
       />
 
       {/* Đường line fullwidth phân cách */}
@@ -380,6 +455,8 @@ export default function CharacterConfigSection({
         onUpload={(file) => onUploadRefImage(file, 'scene')}
         onRemove={() => onRemoveRefImage('scene')}
         onPaste={() => onPasteRefImage('scene')}
+        onGenerateImage={onGenerateRefImage ? () => onGenerateRefImage('scene') : undefined}
+        generatingImage={generatingRefImage === 'scene'}
       />
     </div>
   )

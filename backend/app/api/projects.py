@@ -26,6 +26,7 @@ from app.schemas import (
     CharacterPromptGenerateRequest,
     ContentExpandOut,
     ContentExpandRequest,
+    GenerateRefImageRequest,
     PageMeta,
     ProjectCreate,
     ProjectDownloadRequest,
@@ -1099,6 +1100,69 @@ async def upload_project_ref_image(
         project.scene_image_url = url
     else:
         project.ref_image_url = url
+    await db.commit()
+    return await _get_owned_project(db, project_id, user)
+
+
+@router.post("/projects/{project_id}/generate-ref-image", response_model=ProjectOut)
+async def generate_project_ref_image(
+    project_id: int,
+    body: GenerateRefImageRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Project:
+    """Generate a reference image directly from prompt text via neuravibemmo.dpdns.org."""
+    project = await _get_owned_project(db, project_id, user)
+    if project.status in _RUNNING_STATUSES:
+        raise HTTPException(status_code=409, detail="Dự án đang trong quá trình tạo video, không thể đổi ảnh")
+
+    prompt = (body.prompt or "").strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Mô tả không được để trống")
+
+    ref_type = body.ref_type or "character"
+    aspect_ratio = "1:1" if ref_type != "scene" else (project.output_ratio or "16:9")
+
+    # Gọi API tạo ảnh ChatGPT2API (https://neuravibemmo.dpdns.org/api/chatgpt2api/generate)
+    from app.services.drama.chatgpt_image_api import generate_chatgpt_image
+
+    url = ""
+    try:
+        url = await generate_chatgpt_image(
+            prompt,
+            size="1024x1024" if ref_type != "scene" else None,
+            aspect_ratio=aspect_ratio,
+            project_id=project_id,
+        )
+    except Exception as chatgpt_err:
+        logger.warning("ChatGPT2API tạo ảnh tham chiếu thất bại: %s; thử fallback qua Ark", chatgpt_err)
+        try:
+            from app.services.ark import get_ark
+
+            ark = get_ark()
+            res = await ark.gen_image(
+                prompt,
+                project_id=project_id,
+                aspect_ratio=aspect_ratio,
+            )
+            url = res.local_url or res.remote_url or ""
+        except Exception as ark_err:
+            logger.error("Tạo ảnh tham chiếu thất bại: %s", ark_err)
+            raise HTTPException(status_code=502, detail=f"Tạo ảnh tham chiếu thất bại: {str(ark_err)[:200]}") from ark_err
+
+    if not url:
+        raise HTTPException(status_code=502, detail="Không nhận được hình ảnh từ dịch vụ AI")
+
+    if ref_type == "product":
+        project.product_image_url = url
+        project.product_prompt = prompt
+    elif ref_type == "scene":
+        project.scene_image_url = url
+        project.scene_prompt = prompt
+    else:
+        project.ref_image_url = url
+        project.character_prompt = prompt
+
     await db.commit()
     return await _get_owned_project(db, project_id, user)
 
