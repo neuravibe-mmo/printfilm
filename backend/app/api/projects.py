@@ -210,13 +210,70 @@ def _smart_character_prompt_fallback(
     return "Nhân vật chính khoảng 24-28 tuổi, diện mạo trẻ trung và sáng sủa, trang phục gọn gàng hiện đại, ánh mắt tự tin và nụ cười thân thiện trước ống kính."
 
 
+def _smart_product_prompt_fallback(
+    topic: str,
+    template_name: str,
+    template_style: str,
+    seed: str,
+    visual_analysis: str = "",
+) -> str:
+    if visual_analysis:
+        return f"Sản phẩm có đặc điểm: {visual_analysis}. Thiết kế cao cấp, chi tiết sắc nét và ánh sáng studio tôn lên vẻ đẹp sản phẩm."
+
+    if seed:
+        return f"{seed.strip().rstrip('.')}, chi tiết sắc nét, ánh sáng studio làm nổi bật chất liệu và thương hiệu."
+
+    context = f"{template_name} {template_style} {topic}".lower()
+    if any(k in context for k in ["mỹ phẩm", "skincare", "serum", "kem", "son", "nước hoa", "làm đẹp"]):
+        return "Sản phẩm mỹ phẩm cao cấp với bao bì tinh tế, vỏ chai thủy tinh sang trọng, chi tiết nhãn mác tối giản sắc nét và ánh sáng phản chiếu dịu nhẹ."
+    if any(k in context for k in ["bình giữ nhiệt", "bình nước", "ly", "cốc", "thủy tinh"]):
+        return "Bình giữ nhiệt phong cách tối giản hiện đại, bề mặt sơn tĩnh điện nhám mịn cao cấp, nắp đậy kim loại sáng bóng và kiểu dáng công thái học sang trọng."
+    if any(k in context for k in ["công nghệ", "tai nghe", "điện thoại", "laptop", "chuột", "bàn phím", "loa"]):
+        return "Thiết bị công nghệ thiết kế nguyên khối tinh xảo, đường viền kim loại cắt sắc sảo, bề mặt mờ nhám chống bám vân tay và đèn LED trạng thái tinh tế."
+    if any(k in context for k in ["cà phê", "trà", "đồ uống", "nước giải khát", "thực phẩm", "bánh"]):
+        return "Sản phẩm đồ uống/thực phẩm bày trí bắt mắt và tươi ngon, bao bì đóng gói hiện đại, hạt nước đọng tươi mát và màu sắc hấp dẫn kích thích thị giác."
+    if any(k in context for k in ["thời trang", "áo", "quần", "giày", "túi", "ví", "đồng hồ"]):
+        return "Sản phẩm thời trang cao cấp với đường may tỉ mỉ, chất liệu vải/da thượng hạng sắc nét từng thớ vân, phom dáng chuẩn chỉ và khóa kim loại sáng bóng."
+
+    return "Sản phẩm chính có thiết kế sắc sảo, bao bì hiện đại và cao cấp, đường nét chi tiết rõ ràng với ánh sáng studio tôn lên đặc tính nổi bật."
+
+
+def _smart_scene_prompt_fallback(
+    topic: str,
+    template_name: str,
+    template_style: str,
+    seed: str,
+    visual_analysis: str = "",
+) -> str:
+    if visual_analysis:
+        return f"Không gian bối cảnh: {visual_analysis}. Bố cục điện ảnh có chiều sâu, ánh sáng tự nhiên và hài hòa."
+
+    if seed:
+        return f"{seed.strip().rstrip('.')}, bố cục góc rộng có chiều sâu, ánh sáng mềm mại và màu sắc điện ảnh hài hòa."
+
+    context = f"{template_name} {template_style} {topic}".lower()
+    if any(k in context for k in ["studio", "review", "đập hộp", "unboxing", "bán hàng", "huoke"]):
+        return "Không gian studio review hiện đại và tối giản, bàn trưng bày phẳng mịn với ánh sáng 3 điểm chuyên nghiệp, hậu cảnh mờ nhẹ tạo chiều sâu điện ảnh."
+    if any(k in context for k in ["công nghệ", "tech", "ai", "lập trình"]):
+        return "Góc làm việc công nghệ hiện đại với bàn làm việc tối giản, ánh sáng viền LED dịu mắt, hậu cảnh tinh tế tạo cảm giác tri thức và chuyên nghiệp."
+    if any(k in context for k in ["vlog", "đời sống", "nhà", "gia đình", "bếp", "nấu ăn"]):
+        return "Không gian phòng khách và bếp hiện đại, nội thất gỗ ấm cúng phong cách Bắc Âu, ánh sáng tự nhiên dịu mát tràn ngập qua cửa sổ kính lớn."
+    if any(k in context for k in ["cà phê", "thư giãn", "chill", "sách", "học tập"]):
+        return "Không gian quán cà phê phong cách tối giản mộc mạc, bàn gỗ ấm áp cạnh cửa sổ, cây xanh trang trí nhỏ và ánh nắng vàng ươm thư thái."
+    if any(k in context for k in ["ngoài trời", "du lịch", "thiên nhiên", "đường phố"]):
+        return "Khung cảnh ngoài trời thoáng đãng, ánh sáng ban ngày trong trẻo tự nhiên, không gian có chiều sâu và góc nhìn rộng mở sinh động."
+
+    return "Không gian bối cảnh hiện đại và trang nhã, ánh sáng mềm mại tự nhiên, hậu cảnh được sắp xếp gọn gàng với chiều sâu điện ảnh sắc nét."
+
+
 @router.post("/content/character-prompt", response_model=CharacterPromptGenerateOut)
+@router.post("/content/reference-prompt", response_model=CharacterPromptGenerateOut)
 async def generate_character_prompt_endpoint(
     body: CharacterPromptGenerateRequest,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> CharacterPromptGenerateOut:
-    """Generate a rich, cinematic character prompt using vision analysis + LLM API with fallback."""
+    """Generate a rich, cinematic reference prompt (character, product, or scene) using vision analysis + LLM API with fallback."""
     import base64
     import httpx
     from app.services.llm_client import chatgpt2api_completions, chat_completions, is_chatgpt2api_configured
@@ -231,13 +288,21 @@ async def generate_character_prompt_endpoint(
     template_style = (body.template_style or "").strip()
     seed = (body.seed_prompt or "").strip()
     ref_url = (body.ref_image_url or "").strip()
+    target_type = (body.target_type or "character").lower().strip()
+    if target_type not in ["character", "product", "scene"]:
+        target_type = "character"
 
     if not ref_url and body.project_id:
         proj = await db.get(Project, body.project_id)
-        if proj and proj.ref_image_url:
-            ref_url = proj.ref_image_url
+        if proj:
+            if target_type == "product" and proj.product_image_url:
+                ref_url = proj.product_image_url
+            elif target_type == "scene" and proj.scene_image_url:
+                ref_url = proj.scene_image_url
+            elif target_type == "character" and proj.ref_image_url:
+                ref_url = proj.ref_image_url
 
-    # 1. Trích xuất ảnh tham chiếu nếu có để chạy Gemini Vision
+    # 1. Trích xuất ảnh tham chiếu nếu có để chạy Vision API
     img_bytes: bytes | None = None
     mime = "image/png"
     if ref_url:
@@ -267,28 +332,47 @@ async def generate_character_prompt_endpoint(
 
     if not img_bytes and body.project_id:
         p_dir = storage.project_dir(body.project_id)
-        for cand in p_dir.glob("ref_image.*"):
-            if cand.is_file():
-                img_bytes = cand.read_bytes()
-                mime = "image/png" if cand.suffix.lower() == ".png" else "image/jpeg"
+        patterns = (
+            ["product_image.*", "ref_image_product.*"]
+            if target_type == "product"
+            else ["scene_image.*", "ref_image_scene.*"]
+            if target_type == "scene"
+            else ["ref_image.*"]
+        )
+        for pattern in patterns:
+            for cand in p_dir.glob(pattern):
+                if cand.is_file():
+                    img_bytes = cand.read_bytes()
+                    mime = "image/png" if cand.suffix.lower() == ".png" else "image/jpeg"
+                    break
+            if img_bytes:
                 break
 
-    # 2. Phân tích đặc điểm nhân vật qua Vision API (neuravibemmo.dpdns.org)
+    # 2. Phân tích đặc điểm đối tượng qua Vision API (neuravibemmo.dpdns.org)
     visual_analysis = ""
     if img_bytes:
         try:
+            if target_type == "product":
+                vision_prompt = (
+                    "Phân tích chi tiết sản phẩm / vật thể trong ảnh: tên loại sản phẩm, kiểu dáng thiết kế, bao bì hoặc vỏ ngoài, màu sắc chủ đạo, chất liệu bề mặt, chi tiết tem nhãn hoặc logo bằng tiếng Việt để làm prompt tạo hình sản phẩm AI."
+                )
+            elif target_type == "scene":
+                vision_prompt = (
+                    "Phân tích chi tiết không gian bối cảnh trong ảnh: loại phòng hoặc địa điểm ngoài trời, phong cách kiến trúc và nội thất, ánh sáng chủ đạo, màu sắc và đạo cụ bày trí bằng tiếng Việt để làm prompt dựng bối cảnh video AI."
+                )
+            else:
+                vision_prompt = (
+                    "Phân tích chi tiết đặc điểm ngoại hình nhân vật trong ảnh: "
+                    "giới tính, độ tuổi ước tính, kiểu và màu tóc, khuôn mặt, biểu cảm, trang phục, dáng người, phong cách tổng thể "
+                    "bằng tiếng Việt để làm prompt vẽ nhân vật."
+                )
+
             async with httpx.AsyncClient(timeout=8.0) as client:
                 vision_url = f"{settings.domain_web_2_api.rstrip('/')}/api/custom/detect-character-gender"
                 vision_resp = await client.post(
                     vision_url,
                     files={"image": ("ref_image.png", img_bytes, mime)},
-                    data={
-                        "prompt": (
-                            "Phân tích chi tiết đặc điểm ngoại hình nhân vật trong ảnh: "
-                            "giới tính, độ tuổi ước tính, kiểu và màu tóc, khuôn mặt, biểu cảm, trang phục, dáng người, phong cách tổng thể "
-                            "bằng tiếng Việt để làm prompt vẽ nhân vật."
-                        )
-                    },
+                    data={"prompt": vision_prompt},
                 )
                 if vision_resp.status_code == 200:
                     v_json = vision_resp.json()
@@ -311,6 +395,14 @@ async def generate_character_prompt_endpoint(
                                     "clothing": "Trang phục",
                                     "body_shape": "Vóc dáng",
                                     "overall_style": "Phong cách tổng thể",
+                                    "product_name": "Tên sản phẩm",
+                                    "category": "Loại sản phẩm",
+                                    "color": "Màu sắc",
+                                    "material": "Chất liệu",
+                                    "packaging": "Bao bì",
+                                    "scene_type": "Loại bối cảnh",
+                                    "lighting": "Ánh sáng",
+                                    "atmosphere": "Bầu không khí",
                                 }
                                 for k, val in parsed.items():
                                     if val and not str(val).lower().startswith("không"):
@@ -326,23 +418,46 @@ async def generate_character_prompt_endpoint(
             logger.warning("Lỗi phân tích ảnh tham chiếu bằng Vision API: %s", err)
 
     # 3. Xây dựng prompt cho LLM
-    system_prompt = (
-        "Bạn là chuyên gia thiết kế nhân vật và đạo diễn hình ảnh cho video AI (Midjourney, Stable Diffusion, Veo, Kling). "
-        "Nhiệm vụ của bạn là tạo ra một đoạn mô tả ngoại hình ngắn gọn, súc tích (1-2 câu tiếng Việt) về nhân vật chính, "
-        "bao gồm: độ tuổi, vóc dáng, kiểu tóc, trang phục đặc trưng, biểu cảm và thần thái phù hợp nhất. "
-        "ĐẶC BIỆT LƯU Ý: Nếu có thông tin phân tích từ ảnh tham chiếu, bạn BẮT BUỘC PHẢI giữ chính xác 100% các đặc điểm nhận dạng cốt lõi "
-        "(giới tính, kiểu tóc, màu tóc, trang phục, độ tuổi, cử chỉ biểu cảm) của ảnh tham chiếu, tuyệt đối không tự ý thay đổi giới tính hay trang phục khác. "
-        "Yêu cầu định dạng: CHỈ trả về trực tiếp đoạn văn bản mô tả nhân vật, tuyệt đối không thêm lời chào, không thêm ngoặc kép, không thêm lời dẫn."
-    )
+    if target_type == "product":
+        system_prompt = (
+            "Bạn là chuyên gia thiết kế sản phẩm và đạo diễn hình ảnh video thương mại (CGI, VFX, Midjourney, Kling). "
+            "Nhiệm vụ của bạn là tạo ra một đoạn mô tả chi tiết, sắc nét (1-2 câu tiếng Việt) về sản phẩm chính trong video, "
+            "bao gồm: kiểu dáng thiết kế, màu sắc nhận diện, chất liệu hoàn thiện (kim loại xước, thủy tinh trong suốt, sơn nhám mờ...), "
+            "chi tiết bao bì tem nhãn và hiệu ứng ánh sáng tôn lên vẻ cao cấp, chân thực. "
+            "Nếu có thông tin từ ảnh tham chiếu, BẮT BUỘC PHẢI giữ đúng 100% đặc điểm nhận dạng của sản phẩm trong ảnh tham chiếu. "
+            "Yêu cầu: CHỈ trả về trực tiếp đoạn văn bản mô tả sản phẩm, không thêm ngoặc kép hay lời dẫn."
+        )
+    elif target_type == "scene":
+        system_prompt = (
+            "Bạn là chuyên gia thiết kế bối cảnh và đạo diễn hình ảnh (Cinematographer / Set Designer) cho video điện ảnh. "
+            "Nhiệm vụ của bạn là tạo ra một đoạn mô tả không gian bối cảnh (1-2 câu tiếng Việt) phù hợp nhất với chủ đề video, "
+            "bao gồm: loại không gian (studio hiện đại, phòng khách ấm cúng, quán cà phê, góc làm việc...), phong cách kiến trúc / nội thất, "
+            "nguồn ánh sáng (ánh sáng tự nhiên qua cửa sổ, đèn neon, ánh sáng studio 3 điểm dịu nhẹ) và chiều sâu không gian. "
+            "Nếu có thông tin từ ảnh tham chiếu, BẮT BUỘC PHẢI bám sát không gian và tone màu của ảnh tham chiếu. "
+            "Yêu cầu: CHỈ trả về trực tiếp đoạn văn bản mô tả bối cảnh, không thêm ngoặc kép hay lời dẫn."
+        )
+    else:
+        system_prompt = (
+            "Bạn là chuyên gia thiết kế nhân vật và đạo diễn hình ảnh cho video AI (Midjourney, Stable Diffusion, Veo, Kling). "
+            "Nhiệm vụ của bạn là tạo ra một đoạn mô tả ngoại hình ngắn gọn, súc tích (1-2 câu tiếng Việt) về nhân vật chính, "
+            "bao gồm: độ tuổi, vóc dáng, kiểu tóc, trang phục đặc trưng, biểu cảm và thần thái phù hợp nhất. "
+            "ĐẶC BIỆT LƯU Ý: Nếu có thông tin phân tích từ ảnh tham chiếu, bạn BẮT BUỘC PHẢI giữ chính xác 100% các đặc điểm nhận dạng cốt lõi "
+            "(giới tính, kiểu tóc, màu tóc, trang phục, độ tuổi, cử chỉ biểu cảm) của ảnh tham chiếu, tuyệt đối không tự ý thay đổi giới tính hay trang phục khác. "
+            "Yêu cầu định dạng: CHỈ trả về trực tiếp đoạn văn bản mô tả nhân vật, tuyệt đối không thêm lời chào, không thêm ngoặc kép, không thêm lời dẫn."
+        )
 
     user_parts = []
     if visual_analysis:
-        user_parts.append(
-            "ĐẶC ĐIỂM NHẬN DIỆN TỪ ẢNH THAM CHIẾU (PHẢI TUÂN THỦ TUYỆT ĐỐI 100% CÁC CHI TIẾT NÀY):\n"
-            + visual_analysis
+        header_text = (
+            "ĐẶC ĐIỂM SẢN PHẨM TỪ ẢNH THAM CHIẾU (PHẢI TUÂN THỦ TUYỆT ĐỐI):"
+            if target_type == "product"
+            else "ĐẶC ĐIỂM KHÔNG GIAN BỐI CẢNH TỪ ẢNH THAM CHIẾU (PHẢI TUÂN THỦ TUYỆT ĐỐI):"
+            if target_type == "scene"
+            else "ĐẶC ĐIỂM NHẬN DIỆN TỪ ẢNH THAM CHIẾU (PHẢI TUÂN THỦ TUYỆT ĐỐI 100% CÁC CHI TIẾT NÀY):"
         )
+        user_parts.append(f"{header_text}\n{visual_analysis}")
     if topic:
-        user_parts.append(f"Chủ đề / bối cảnh video: {topic}")
+        user_parts.append(f"Chủ đề / nội dung video: {topic}")
     if template_name:
         user_parts.append(f"Phong cách mẫu: {template_name}")
     if template_style:
@@ -351,7 +466,12 @@ async def generate_character_prompt_endpoint(
         user_parts.append(f"Ý tưởng ban đầu của người dùng (hãy mở rộng và tinh chỉnh từ ý này): {seed}")
 
     if not user_parts:
-        user_parts.append("Nhân vật trẻ trung, hiện đại, năng động phù hợp làm video ngắn.")
+        if target_type == "product":
+            user_parts.append("Sản phẩm cao cấp, tinh xảo, bắt mắt phù hợp video quảng cáo ngắn.")
+        elif target_type == "scene":
+            user_parts.append("Không gian bối cảnh hiện đại, ánh sáng tự nhiên và hài hòa cho video ngắn.")
+        else:
+            user_parts.append("Nhân vật trẻ trung, hiện đại, năng động phù hợp làm video ngắn.")
 
     user_prompt = "\n\n".join(user_parts)
 
@@ -365,7 +485,7 @@ async def generate_character_prompt_endpoint(
                 timeout=10.0,
             )
         except Exception as exc:
-            logger.warning("Lỗi gọi chatgpt2api character prompt: %s, chuyển sang thử chat_completions", exc)
+            logger.warning("Lỗi gọi chatgpt2api %s prompt: %s, chuyển sang thử chat_completions", target_type, exc)
 
     if not result_text:
         try:
@@ -377,19 +497,36 @@ async def generate_character_prompt_endpoint(
                 timeout=12.0,
             )
         except Exception as exc:
-            logger.warning("Lỗi gọi chat_completions character prompt: %s, dùng fallback thông minh", exc)
+            logger.warning("Lỗi gọi chat_completions %s prompt: %s, dùng fallback thông minh", target_type, exc)
 
     if not result_text or not result_text.strip():
-        result_text = _smart_character_prompt_fallback(
-            topic=topic,
-            template_name=template_name,
-            template_style=template_style,
-            seed=seed,
-            visual_analysis=visual_analysis,
-        )
+        if target_type == "product":
+            result_text = _smart_product_prompt_fallback(
+                topic=topic,
+                template_name=template_name,
+                template_style=template_style,
+                seed=seed,
+                visual_analysis=visual_analysis,
+            )
+        elif target_type == "scene":
+            result_text = _smart_scene_prompt_fallback(
+                topic=topic,
+                template_name=template_name,
+                template_style=template_style,
+                seed=seed,
+                visual_analysis=visual_analysis,
+            )
+        else:
+            result_text = _smart_character_prompt_fallback(
+                topic=topic,
+                template_name=template_name,
+                template_style=template_style,
+                seed=seed,
+                visual_analysis=visual_analysis,
+            )
 
     cleaned = result_text.strip().strip('"').strip("'")
-    return CharacterPromptGenerateOut(character_prompt=cleaned)
+    return CharacterPromptGenerateOut(character_prompt=cleaned, prompt=cleaned)
 
 
 async def _get_owned_project(db: AsyncSession, project_id: int, user: User) -> Project:
@@ -843,7 +980,7 @@ async def update_project(
         url = str(data["cover_url"]).strip()
         if not (url.startswith("/static/") or url.startswith("http://") or url.startswith("https://")):
             raise HTTPException(status_code=400, detail="无效封面地址")
-    for key in ("style_prompt", "character_prompt", "extra_prompt", "image_model", "video_model"):
+    for key in ("style_prompt", "character_prompt", "extra_prompt", "product_prompt", "scene_prompt", "image_model", "video_model"):
         if key in data:
             data[key] = str(data[key] or "").strip()
     if "image_model" in data and data["image_model"]:
@@ -921,10 +1058,11 @@ async def upload_project_cover(
 async def upload_project_ref_image(
     project_id: int,
     file: UploadFile = File(...),
+    ref_type: str = Query("character", pattern="^(character|product|scene)$"),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Project:
-    """Upload a character or subject reference image for the project."""
+    """Upload a character, product, or scene reference image for the project."""
     project = await _get_owned_project(db, project_id, user)
     if project.status in _RUNNING_STATUSES:
         raise HTTPException(status_code=409, detail="生成进行中，无法更换参考图")
@@ -951,9 +1089,16 @@ async def upload_project_ref_image(
     if len(raw) > 8 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="参考图不能超过 8MB")
 
-    dest = storage.project_dir(project_id) / f"ref_image{ext}"
+    filename = f"{ref_type}_image{ext}" if ref_type != "character" else f"ref_image{ext}"
+    dest = storage.project_dir(project_id) / filename
     dest.write_bytes(raw)
-    project.ref_image_url = storage.publish_local(dest)
+    url = storage.publish_local(dest)
+    if ref_type == "product":
+        project.product_image_url = url
+    elif ref_type == "scene":
+        project.scene_image_url = url
+    else:
+        project.ref_image_url = url
     await db.commit()
     return await _get_owned_project(db, project_id, user)
 

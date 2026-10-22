@@ -130,7 +130,7 @@ async def backfill_media_url(old_url: str, new_url: str) -> int:
 
     targets: list[tuple[type, list[str]]] = [
         (Shot, ["image_url", "video_url", "audio_url"]),
-        (Project, ["cover_url", "final_video_url", "ref_image_url"]),
+        (Project, ["cover_url", "final_video_url", "ref_image_url", "product_image_url", "scene_image_url"]),
         (Template, ["preview_cover"]),
         (Work, ["cover_url", "video_url"]),
         (DramaAsset, ["cover", "url"]),

@@ -43,6 +43,8 @@ export default function StyleConfigPage() {
   const [voices, setVoices] = useState<VoicePreset[]>([])
   const [stylePrompt, setStylePrompt] = useState('')
   const [characterPrompt, setCharacterPrompt] = useState('')
+  const [productPrompt, setProductPrompt] = useState('')
+  const [scenePrompt, setScenePrompt] = useState('')
   const [extraPrompt, setExtraPrompt] = useState('')
   const [voiceId, setVoiceId] = useState('')
   const [pipelineMode, setPipelineMode] = useState<PipelineMode>('full')
@@ -51,8 +53,10 @@ export default function StyleConfigPage() {
   const [videoModel, setVideoModel] = useState('')
   const [mediaCatalog, setMediaCatalog] = useState<MediaModelsCatalog | null>(null)
   const [busy, setBusy] = useState(false)
-  const [uploadingRef, setUploadingRef] = useState(false)
+  const [uploadingRef, setUploadingRef] = useState<string | null>(null)
   const [aiGeneratingChar, setAiGeneratingChar] = useState(false)
+  const [aiGeneratingProduct, setAiGeneratingProduct] = useState(false)
+  const [aiGeneratingScene, setAiGeneratingScene] = useState(false)
   const [previewBusy, setPreviewBusy] = useState<string | null>(null)
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -82,6 +86,8 @@ export default function StyleConfigPage() {
         setProject(p)
         setStylePrompt(p.style_prompt || '')
         setCharacterPrompt(p.character_prompt || '')
+        setProductPrompt(p.product_prompt || '')
+        setScenePrompt(p.scene_prompt || '')
         setExtraPrompt(p.extra_prompt || '')
         setVoiceId(p.voice_id || '')
         setPipelineMode(p.pipeline_mode || 'full')
@@ -175,35 +181,41 @@ export default function StyleConfigPage() {
     }
   }
 
-  async function handleUploadRefImage(file: File) {
+  async function handleUploadRefImage(file: File, refType: 'character' | 'product' | 'scene' = 'character') {
     if (!project) return
-    setUploadingRef(true)
+    setUploadingRef(refType)
     setError('')
     try {
-      const updated = await api.uploadRefImage(project.id, file)
+      const updated = await api.uploadRefImage(project.id, file, refType)
       setProject(updated)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
-      setUploadingRef(false)
+      setUploadingRef(null)
     }
   }
 
-  async function handleRemoveRefImage() {
+  async function handleRemoveRefImage(refType: 'character' | 'product' | 'scene') {
     if (!project) return
-    setUploadingRef(true)
+    setUploadingRef(refType)
     setError('')
     try {
-      const updated = await api.updateProject(project.id, { ref_image_url: null })
+      const patch =
+        refType === 'product'
+          ? { product_image_url: null }
+          : refType === 'scene'
+            ? { scene_image_url: null }
+            : { ref_image_url: null }
+      const updated = await api.updateProject(project.id, patch)
       setProject(updated)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Remove failed')
     } finally {
-      setUploadingRef(false)
+      setUploadingRef(null)
     }
   }
 
-  async function handlePasteRefImage() {
+  async function handlePasteRefImage(refType: 'character' | 'product' | 'scene' = 'character') {
     if (!project) return
     setError('')
     try {
@@ -211,7 +223,7 @@ export default function StyleConfigPage() {
         setError(t('studio.styleConfig.clipboardNotSupported'))
         return
       }
-      setUploadingRef(true)
+      setUploadingRef(refType)
       const items = await navigator.clipboard.read()
       let imageBlob: Blob | null = null
       for (const item of items) {
@@ -224,20 +236,26 @@ export default function StyleConfigPage() {
       if (!imageBlob) {
         const text = await navigator.clipboard.readText().catch(() => '')
         if (text && (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('/static/'))) {
-          const updated = await api.updateProject(project.id, { ref_image_url: text.trim() })
+          const patch =
+            refType === 'product'
+              ? { product_image_url: text.trim() }
+              : refType === 'scene'
+                ? { scene_image_url: text.trim() }
+                : { ref_image_url: text.trim() }
+          const updated = await api.updateProject(project.id, patch)
           setProject(updated)
           return
         }
         setError(t('studio.styleConfig.noClipboardImage'))
         return
       }
-      const file = new File([imageBlob], 'pasted_character.png', { type: imageBlob.type || 'image/png' })
-      const updated = await api.uploadRefImage(project.id, file)
+      const file = new File([imageBlob], `pasted_${refType}.png`, { type: imageBlob.type || 'image/png' })
+      const updated = await api.uploadRefImage(project.id, file, refType)
       setProject(updated)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Paste failed')
     } finally {
-      setUploadingRef(false)
+      setUploadingRef(null)
     }
   }
 
@@ -246,21 +264,73 @@ export default function StyleConfigPage() {
     setAiGeneratingChar(true)
     setError('')
     try {
-      const res = await api.generateCharacterPrompt({
+      const res = await api.generateReferencePrompt({
         topic: (project.source_text || project.title || '').slice(0, 3000),
         template_name: currentTpl?.name || '',
         template_style: currentTpl?.style_prefix || '',
         seed_prompt: (characterPrompt || '').trim().slice(0, 2000),
         ref_image_url: project.ref_image_url || '',
         project_id: project.id,
+        target_type: 'character',
       })
-      if (res.character_prompt) {
-        setCharacterPrompt(res.character_prompt)
+      const promptVal = res.prompt || res.character_prompt
+      if (promptVal) {
+        setCharacterPrompt(promptVal)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'AI tạo mô tả nhân vật thất bại')
     } finally {
       setAiGeneratingChar(false)
+    }
+  }
+
+  async function handleAiGenerateProduct() {
+    if (!project) return
+    setAiGeneratingProduct(true)
+    setError('')
+    try {
+      const res = await api.generateReferencePrompt({
+        topic: (project.source_text || project.title || '').slice(0, 3000),
+        template_name: currentTpl?.name || '',
+        template_style: currentTpl?.style_prefix || '',
+        seed_prompt: (productPrompt || '').trim().slice(0, 2000),
+        ref_image_url: project.product_image_url || '',
+        project_id: project.id,
+        target_type: 'product',
+      })
+      const promptVal = res.prompt || res.character_prompt
+      if (promptVal) {
+        setProductPrompt(promptVal)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI tạo mô tả sản phẩm thất bại')
+    } finally {
+      setAiGeneratingProduct(false)
+    }
+  }
+
+  async function handleAiGenerateScene() {
+    if (!project) return
+    setAiGeneratingScene(true)
+    setError('')
+    try {
+      const res = await api.generateReferencePrompt({
+        topic: (project.source_text || project.title || '').slice(0, 3000),
+        template_name: currentTpl?.name || '',
+        template_style: currentTpl?.style_prefix || '',
+        seed_prompt: (scenePrompt || '').trim().slice(0, 2000),
+        ref_image_url: project.scene_image_url || '',
+        project_id: project.id,
+        target_type: 'scene',
+      })
+      const promptVal = res.prompt || res.character_prompt
+      if (promptVal) {
+        setScenePrompt(promptVal)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI tạo mô tả bối cảnh thất bại')
+    } finally {
+      setAiGeneratingScene(false)
     }
   }
 
@@ -280,6 +350,8 @@ export default function StyleConfigPage() {
       await api.updateProject(project.id, {
         style_prompt: sameStyle ? '' : styleOut,
         character_prompt: sameChar ? '' : charOut,
+        product_prompt: productPrompt.trim(),
+        scene_prompt: scenePrompt.trim(),
         extra_prompt: sameExtra ? '' : extraOut,
         voice_id: voiceId,
         pipeline_mode: pipelineMode,
@@ -347,14 +419,24 @@ export default function StyleConfigPage() {
 
           <CharacterConfigSection
             characterPrompt={characterPrompt}
-            onChangePrompt={setCharacterPrompt}
-            refImageUrl={project.ref_image_url}
+            onChangeCharacterPrompt={setCharacterPrompt}
+            characterImageUrl={project.ref_image_url}
+            productPrompt={productPrompt}
+            onChangeProductPrompt={setProductPrompt}
+            productImageUrl={project.product_image_url}
+            scenePrompt={scenePrompt}
+            onChangeScenePrompt={setScenePrompt}
+            sceneImageUrl={project.scene_image_url}
             uploadingRef={uploadingRef}
-            aiGenerating={aiGeneratingChar}
+            aiGeneratingChar={aiGeneratingChar}
+            aiGeneratingProduct={aiGeneratingProduct}
+            aiGeneratingScene={aiGeneratingScene}
             onUploadRefImage={handleUploadRefImage}
             onRemoveRefImage={handleRemoveRefImage}
             onPasteRefImage={handlePasteRefImage}
-            onAiGenerate={handleAiGenerateCharacter}
+            onAiGenerateCharacter={handleAiGenerateCharacter}
+            onAiGenerateProduct={handleAiGenerateProduct}
+            onAiGenerateScene={handleAiGenerateScene}
           />
 
           <VoicePickerSection

@@ -102,6 +102,8 @@ def build_locked_image_prompt(
     photoreal: bool = False,
     lock_character: bool = True,
     lock_style: bool = True,
+    product_prompt: str = "",
+    scene_prompt: str = "",
 ) -> str:
     """Tạo prompt cho Seedream. lock_* có thể nới lỏng cho các mẫu đa dạng / showcase."""
     body = strip_lock_blocks(strip_style_drift(img_prompt, photoreal=photoreal))
@@ -125,6 +127,14 @@ def build_locked_image_prompt(
     if lock_character and (character_bible or "").strip():
         parts.append(
             f"【Khóa nhân vật】{(character_bible or '').strip()}。Mỗi khi xuất hiện nhân vật phải tuân thủ nghiêm ngặt ngoại hình trên, cấm đổi mặt đổi trang phục"
+        )
+    if (product_prompt or "").strip():
+        parts.append(
+            f"【Khóa sản phẩm】{(product_prompt or '').strip()}。Đặc điểm, chi tiết, diện mạo sản phẩm phải nhất quán và trung thực"
+        )
+    if (scene_prompt or "").strip():
+        parts.append(
+            f"【Khóa không gian bối cảnh】{(scene_prompt or '').strip()}。Bối cảnh không gian tuân theo mô tả này"
         )
     if body:
         parts.append(f"【Bối cảnh】{body}")

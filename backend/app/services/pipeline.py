@@ -695,6 +695,14 @@ async def _script_stage(project_id: int) -> None:
         style = _effective_style(project)
         extra = _effective_extra(project)
         char_hint = _effective_character_prompt(project)
+        product_hint = (getattr(project, "product_prompt", None) or "").strip()
+        scene_hint = (getattr(project, "scene_prompt", None) or "").strip()
+        extra_parts = [extra] if extra else []
+        if product_hint:
+            extra_parts.append(f"Sản phẩm xuất hiện trong video: {product_hint}")
+        if scene_hint:
+            extra_parts.append(f"Bối cảnh không gian chính: {scene_hint}")
+        full_extra = "\n".join(extra_parts)
         consist = template_consistency_mode(tpl)
         plans_result = await ark.chat_storyboard(
             source_text=project.source_text,
@@ -707,7 +715,7 @@ async def _script_stage(project_id: int) -> None:
             pipeline_mode=mode,
             # Chỉ ghi đè người dùng rõ ràng là bắt buộc; vai trò mẫu được trao cho llm_system_addon và chủ đề được xác định bởi AI
             character_hint=char_hint,
-            extra_requirements=extra,
+            extra_requirements=full_extra,
             consistency_mode=consist,
             output_ratio=_project_output_ratio(project),
             shot_range_override=template_shot_range(tpl),
@@ -832,9 +840,14 @@ def _project_image_negative(project: Project) -> str:
 def _project_base_refs(project: Project) -> list[str]:
     tpl = project.template
     refs = list((tpl.seedream_config or {}).get("ref_images") or []) if tpl else []
-    if project.ref_image_url:
-        refs = [project.ref_image_url, *refs]
-    return seedream_ref_urls(*refs)
+    user_refs = [
+        getattr(project, "ref_image_url", None),
+        getattr(project, "product_image_url", None),
+        getattr(project, "scene_image_url", None),
+    ]
+    user_refs = [r for r in user_refs if r]
+    refs = [*user_refs, *refs]
+    return seedream_ref_urls(*refs, limit=4)
 
 
 def _locked_shot_prompt(project: Project, img_prompt: str) -> str:
@@ -846,6 +859,8 @@ def _locked_shot_prompt(project: Project, img_prompt: str) -> str:
         photoreal=template_is_photoreal(project.template),
         lock_character=consist == "character",
         lock_style=True,
+        product_prompt=getattr(project, "product_prompt", None) or "",
+        scene_prompt=getattr(project, "scene_prompt", None) or "",
     )
 
 

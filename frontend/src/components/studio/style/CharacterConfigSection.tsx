@@ -3,35 +3,43 @@ import { api } from '../../../api'
 import { useI18n } from '../../../i18n'
 import { IconClipboardPaste, IconSparkles } from '../../ui/Icons'
 
-type CharacterConfigSectionProps = {
-  characterPrompt: string
+type ReferenceItemProps = {
+  promptLabel: string
+  promptPlaceholder: string
+  promptValue: string
   onChangePrompt: (val: string) => void
-  refImageUrl?: string | null
-  uploadingRef: boolean
-  aiGenerating?: boolean
-  onUploadRefImage: (file: File) => Promise<void>
-  onRemoveRefImage: () => Promise<void>
-  onPasteRefImage: () => Promise<void>
   onAiGenerate?: () => Promise<void>
+  aiGenerating?: boolean
+  imageUrl?: string | null
+  imageHint: string
+  uploadButtonText: string
+  uploading: boolean
+  onUpload: (file: File) => void
+  onRemove: () => void
+  onPaste: () => void
 }
 
-export default function CharacterConfigSection({
-  characterPrompt,
+function ReferenceItemCard({
+  promptLabel,
+  promptPlaceholder,
+  promptValue,
   onChangePrompt,
-  refImageUrl,
-  uploadingRef,
-  aiGenerating,
-  onUploadRefImage,
-  onRemoveRefImage,
-  onPasteRefImage,
   onAiGenerate,
-}: CharacterConfigSectionProps) {
+  aiGenerating,
+  imageUrl,
+  imageHint,
+  uploadButtonText,
+  uploading,
+  onUpload,
+  onRemove,
+  onPaste,
+}: ReferenceItemProps) {
   const { t } = useI18n()
-  const charPromptTextareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const refImageInputRef = useRef<HTMLInputElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
-    const el = charPromptTextareaRef.current
+    const el = textareaRef.current
     if (!el) return
     const adjust = () => {
       el.style.height = 'auto'
@@ -40,51 +48,49 @@ export default function CharacterConfigSection({
     adjust()
     window.addEventListener('resize', adjust)
     return () => window.removeEventListener('resize', adjust)
-  }, [characterPrompt])
+  }, [promptValue])
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    onUploadRefImage(file)
-    if (refImageInputRef.current) refImageInputRef.current.value = ''
+    onUpload(file)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   return (
-    <div className="pf-style-block">
-      <h3>{t('studio.styleConfig.characterSection')}</h3>
-      <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0 0 0.65rem' }}>
-        {t('studio.styleConfig.characterHint')}
-      </p>
-
+    <div>
+      {/* Mô tả bên trên */}
       <div className="pf-field" style={{ marginTop: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
           <span className="pf-field-label" style={{ margin: 0 }}>
-            {t('studio.styleConfig.characterPromptLabel')}
+            {promptLabel}
           </span>
-          <button
-            type="button"
-            className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
-            title="AI Generate"
-            disabled={aiGenerating || uploadingRef}
-            onClick={onAiGenerate}
-            style={{
-              height: '26px',
-              padding: '0 0.5rem',
-              fontSize: '0.78rem',
-              color: 'var(--pf-lime, #d4ff00)',
-              cursor: aiGenerating ? 'not-allowed' : 'pointer',
-              opacity: aiGenerating ? 0.7 : 1,
-            }}
-          >
-            <IconSparkles size={13} />
-            <span>{aiGenerating ? t('studio.styleConfig.generating') : 'AI Generate'}</span>
-          </button>
+          {onAiGenerate && (
+            <button
+              type="button"
+              className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
+              title="AI Generate"
+              disabled={aiGenerating || uploading}
+              onClick={onAiGenerate}
+              style={{
+                height: '26px',
+                padding: '0 0.5rem',
+                fontSize: '0.78rem',
+                color: 'var(--pf-lime, #d4ff00)',
+                cursor: aiGenerating ? 'not-allowed' : 'pointer',
+                opacity: aiGenerating ? 0.7 : 1,
+              }}
+            >
+              <IconSparkles size={13} />
+              <span>{aiGenerating ? t('studio.styleConfig.generating') : 'AI Generate'}</span>
+            </button>
+          )}
         </div>
         <textarea
-          ref={charPromptTextareaRef}
+          ref={textareaRef}
           className="pf-field-input"
-          placeholder={t('studio.styleConfig.characterPromptPlaceholder')}
-          value={characterPrompt}
+          placeholder={promptPlaceholder}
+          value={promptValue}
           onChange={(e) => {
             onChangePrompt(e.target.value)
             e.target.style.height = 'auto'
@@ -101,93 +107,280 @@ export default function CharacterConfigSection({
         />
       </div>
 
-      <div style={{ marginTop: '0.85rem' }}>
-        <span
-          className="pf-field-label"
-          style={{ display: 'block', marginBottom: '0.35rem', fontSize: '0.85rem', fontWeight: 600 }}
-        >
-          {t('studio.styleConfig.refImageLabel')}
-        </span>
+      {/* Ảnh tham chiếu bên dưới */}
+      <div style={{ marginTop: '0.75rem' }}>
         <input
-          ref={refImageInputRef}
+          ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
-        {refImageUrl ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.4rem' }}>
-            <img
-              src={api.assetUrl(refImageUrl)}
-              alt="Character Reference"
-              style={{
-                width: '72px',
-                height: '72px',
-                objectFit: 'cover',
-                borderRadius: '8px',
-                border: '1px solid var(--pf-border, rgba(255,255,255,0.12))',
-              }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {imageUrl ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+              marginTop: '0.4rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <img
+                src={api.assetUrl(imageUrl)}
+                alt="Reference"
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  objectFit: 'cover',
+                  borderRadius: '8px',
+                  border: '1px solid var(--pf-border, rgba(255,255,255,0.12))',
+                }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="pf-btn pf-btn-ghost pf-btn-sm"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? t('studio.styleConfig.uploadingRefImage') : t('studio.styleConfig.changeRefImage')}
+                  </button>
+                  <button
+                    type="button"
+                    className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
+                    title={t('studio.styleConfig.pasteRefImage')}
+                    disabled={uploading}
+                    style={{ width: '32px', height: '32px', padding: 0, justifyContent: 'center', flexShrink: 0 }}
+                    onClick={onPaste}
+                  >
+                    <IconClipboardPaste size={16} />
+                  </button>
+                </div>
                 <button
                   type="button"
                   className="pf-btn pf-btn-ghost pf-btn-sm"
-                  disabled={uploadingRef}
-                  onClick={() => refImageInputRef.current?.click()}
+                  disabled={uploading}
+                  style={{
+                    color: '#ef4444',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    padding: '0 0.65rem',
+                    height: '26px',
+                  }}
+                  onClick={onRemove}
                 >
-                  {uploadingRef ? t('studio.styleConfig.uploadingRefImage') : t('studio.styleConfig.changeRefImage')}
-                </button>
-                <button
-                  type="button"
-                  className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
-                  title={t('studio.styleConfig.pasteRefImage')}
-                  disabled={uploadingRef}
-                  style={{ width: '32px', height: '32px', padding: 0, justifyContent: 'center', flexShrink: 0 }}
-                  onClick={onPasteRefImage}
-                >
-                  <IconClipboardPaste size={16} />
+                  {t('studio.styleConfig.removeRefImage')}
                 </button>
               </div>
-              <button
-                type="button"
-                className="pf-btn pf-btn-ghost pf-btn-sm"
-                disabled={uploadingRef}
-                style={{ color: '#ef4444' }}
-                onClick={onRemoveRefImage}
-              >
-                {t('studio.styleConfig.removeRefImage')}
-              </button>
             </div>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--pf-muted, rgba(255, 255, 255, 0.4))',
+                opacity: 0.75,
+                marginLeft: 'auto',
+                textAlign: 'right',
+              }}
+            >
+              {imageHint}
+            </span>
           </div>
         ) : (
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.75rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
               <button
                 type="button"
                 className="pf-btn pf-btn-ghost pf-btn-sm"
-                disabled={uploadingRef}
-                onClick={() => refImageInputRef.current?.click()}
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
               >
-                {uploadingRef ? t('studio.styleConfig.uploadingRefImage') : `📷 ${t('studio.styleConfig.uploadRefImage')}`}
+                {uploading ? t('studio.styleConfig.uploadingRefImage') : `📷 ${uploadButtonText}`}
               </button>
               <button
                 type="button"
                 className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
                 title={t('studio.styleConfig.pasteRefImage')}
-                disabled={uploadingRef}
+                disabled={uploading}
                 style={{ width: '32px', height: '32px', padding: 0, justifyContent: 'center', flexShrink: 0 }}
-                onClick={onPasteRefImage}
+                onClick={onPaste}
               >
                 <IconClipboardPaste size={16} />
               </button>
             </div>
-            <p className="pf-muted" style={{ fontSize: '0.75rem', margin: '0.35rem 0 0' }}>
-              {t('studio.styleConfig.refImageHint')}
-            </p>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--pf-muted, rgba(255, 255, 255, 0.4))',
+                opacity: 0.75,
+                marginLeft: 'auto',
+                textAlign: 'right',
+              }}
+            >
+              {imageHint}
+            </span>
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+type CharacterConfigSectionProps = {
+  characterPrompt: string
+  onChangeCharacterPrompt: (val: string) => void
+  characterImageUrl?: string | null
+
+  productPrompt: string
+  onChangeProductPrompt: (val: string) => void
+  productImageUrl?: string | null
+
+  scenePrompt: string
+  onChangeScenePrompt: (val: string) => void
+  sceneImageUrl?: string | null
+
+  uploadingRef: string | null
+  aiGeneratingChar?: boolean
+  aiGeneratingProduct?: boolean
+  aiGeneratingScene?: boolean
+
+  onUploadRefImage: (file: File, refType: 'character' | 'product' | 'scene') => Promise<void>
+  onRemoveRefImage: (refType: 'character' | 'product' | 'scene') => Promise<void>
+  onPasteRefImage: (refType: 'character' | 'product' | 'scene') => Promise<void>
+  onAiGenerateCharacter?: () => Promise<void>
+  onAiGenerateProduct?: () => Promise<void>
+  onAiGenerateScene?: () => Promise<void>
+}
+
+export default function CharacterConfigSection({
+  characterPrompt,
+  onChangeCharacterPrompt,
+  characterImageUrl,
+  productPrompt,
+  onChangeProductPrompt,
+  productImageUrl,
+  scenePrompt,
+  onChangeScenePrompt,
+  sceneImageUrl,
+  uploadingRef,
+  aiGeneratingChar,
+  aiGeneratingProduct,
+  aiGeneratingScene,
+  onUploadRefImage,
+  onRemoveRefImage,
+  onPasteRefImage,
+  onAiGenerateCharacter,
+  onAiGenerateProduct,
+  onAiGenerateScene,
+}: CharacterConfigSectionProps) {
+  const { t } = useI18n()
+
+  const activeCount = [characterImageUrl, productImageUrl, sceneImageUrl].filter(Boolean).length
+
+  return (
+    <div className="pf-style-block">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+        <h3 style={{ margin: 0 }}>{t('studio.styleConfig.characterSection')}</h3>
+        <span
+          style={{
+            fontSize: '0.75rem',
+            padding: '0.15rem 0.6rem',
+            borderRadius: '999px',
+            background: activeCount > 0 ? 'rgba(212,255,0,0.15)' : 'rgba(255,255,255,0.06)',
+            color: activeCount > 0 ? 'var(--pf-lime, #d4ff00)' : 'var(--pf-muted, #888)',
+            fontWeight: 600,
+          }}
+        >
+          {t('studio.styleConfig.refCountBadge').replace('{count}', String(activeCount))}
+        </span>
+      </div>
+      <p className="pf-muted" style={{ fontSize: '0.78rem', margin: '0 0 1rem' }}>
+        {t('studio.styleConfig.characterHint')}
+      </p>
+
+      {/* 1. Nhân vật */}
+      <ReferenceItemCard
+        promptLabel={t('studio.styleConfig.characterPromptLabel')}
+        promptPlaceholder={t('studio.styleConfig.characterPromptPlaceholder')}
+        promptValue={characterPrompt}
+        onChangePrompt={onChangeCharacterPrompt}
+        onAiGenerate={onAiGenerateCharacter}
+        aiGenerating={aiGeneratingChar}
+        imageUrl={characterImageUrl}
+        imageHint={t('studio.styleConfig.refImageHint')}
+        uploadButtonText={t('studio.styleConfig.uploadRefImage')}
+        uploading={uploadingRef === 'character'}
+        onUpload={(file) => onUploadRefImage(file, 'character')}
+        onRemove={() => onRemoveRefImage('character')}
+        onPaste={() => onPasteRefImage('character')}
+      />
+
+      {/* Đường line fullwidth phân cách */}
+      <div
+        style={{
+          height: '1px',
+          width: '100%',
+          margin: '2.25rem 0',
+          backgroundImage:
+            'repeating-linear-gradient(to right, #ef4444 0, #ef4444 6px, transparent 6px, transparent 16px)',
+        }}
+      />
+
+      {/* 2. Sản phẩm */}
+      <ReferenceItemCard
+        promptLabel={t('studio.styleConfig.productPromptLabel')}
+        promptPlaceholder={t('studio.styleConfig.productPromptPlaceholder')}
+        promptValue={productPrompt}
+        onChangePrompt={onChangeProductPrompt}
+        onAiGenerate={onAiGenerateProduct}
+        aiGenerating={aiGeneratingProduct}
+        imageUrl={productImageUrl}
+        imageHint={t('studio.styleConfig.productImageHint')}
+        uploadButtonText={t('studio.styleConfig.uploadProductImage')}
+        uploading={uploadingRef === 'product'}
+        onUpload={(file) => onUploadRefImage(file, 'product')}
+        onRemove={() => onRemoveRefImage('product')}
+        onPaste={() => onPasteRefImage('product')}
+      />
+
+      {/* Đường line fullwidth phân cách */}
+      <div
+        style={{
+          height: '1px',
+          width: '100%',
+          margin: '2.25rem 0',
+          backgroundImage:
+            'repeating-linear-gradient(to right, #ef4444 0, #ef4444 6px, transparent 6px, transparent 16px)',
+        }}
+      />
+
+      {/* 3. Bối cảnh không gian */}
+      <ReferenceItemCard
+        promptLabel={t('studio.styleConfig.scenePromptLabel')}
+        promptPlaceholder={t('studio.styleConfig.scenePromptPlaceholder')}
+        promptValue={scenePrompt}
+        onChangePrompt={onChangeScenePrompt}
+        onAiGenerate={onAiGenerateScene}
+        aiGenerating={aiGeneratingScene}
+        imageUrl={sceneImageUrl}
+        imageHint={t('studio.styleConfig.sceneImageHint')}
+        uploadButtonText={t('studio.styleConfig.uploadSceneImage')}
+        uploading={uploadingRef === 'scene'}
+        onUpload={(file) => onUploadRefImage(file, 'scene')}
+        onRemove={() => onRemoveRefImage('scene')}
+        onPaste={() => onPasteRefImage('scene')}
+      />
     </div>
   )
 }

@@ -138,6 +138,10 @@ class Project(Base):
     image_model: Mapped[str] = mapped_column(String(64), default="")
     video_model: Mapped[str] = mapped_column(String(64), default="")
     ref_image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    product_prompt: Mapped[str] = mapped_column(Text, default="")
+    product_image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    scene_prompt: Mapped[str] = mapped_column(Text, default="")
+    scene_image_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

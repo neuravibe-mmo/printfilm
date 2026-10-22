@@ -172,6 +172,14 @@ async def _apply_schema_patches() -> None:
             await conn.execute(text("ALTER TABLE projects ADD COLUMN image_model VARCHAR(64) DEFAULT ''"))
         if "video_model" not in pcols:
             await conn.execute(text("ALTER TABLE projects ADD COLUMN video_model VARCHAR(64) DEFAULT ''"))
+        if "product_prompt" not in pcols:
+            await conn.execute(text("ALTER TABLE projects ADD COLUMN product_prompt TEXT DEFAULT ''"))
+        if "product_image_url" not in pcols:
+            await conn.execute(text("ALTER TABLE projects ADD COLUMN product_image_url VARCHAR(1024)"))
+        if "scene_prompt" not in pcols:
+            await conn.execute(text("ALTER TABLE projects ADD COLUMN scene_prompt TEXT DEFAULT ''"))
+        if "scene_image_url" not in pcols:
+            await conn.execute(text("ALTER TABLE projects ADD COLUMN scene_image_url VARCHAR(1024)"))
 
         tcols = await _pg_columns(conn, "templates")
         if "preview_video" not in tcols:

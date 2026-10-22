@@ -42,7 +42,7 @@ export default function CreateProjectPage() {
   const [templateId, setTemplateId] = useState(params.get('template') || '')
   const [category, setCategory] = useState(t('studio.createProject.all'))
   const [q, setQ] = useState('')
-  const [inputTab, setInputTab] = useState(t('studio.createProject.tabTheme'))
+  const [inputTab, setInputTab] = useState(t('studio.createProject.tabScript'))
   const [sourceText, setSourceText] = useState('')
   const [title, setTitle] = useState('')
   const [titleTouched, setTitleTouched] = useState(false)

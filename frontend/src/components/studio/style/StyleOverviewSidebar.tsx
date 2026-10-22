@@ -84,7 +84,7 @@ export default function StyleOverviewSidebar({
         <li>
           <span>{t('studio.styleConfig.character')}</span>
           <span>
-            {characterPrompt.trim() || project.ref_image_url
+            {characterPrompt.trim() || project.ref_image_url || project.product_image_url || project.scene_image_url || project.product_prompt || project.scene_prompt
               ? t('studio.styleConfig.charCustom')
               : t('studio.styleConfig.charByAI')}
           </span>

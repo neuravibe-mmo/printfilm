@@ -188,6 +188,10 @@ export type Project = {
   image_model?: string
   video_model?: string
   ref_image_url: string | null
+  product_prompt?: string
+  product_image_url?: string | null
+  scene_prompt?: string
+  scene_image_url?: string | null
   created_at: string
   updated_at: string
   shots: Shot[]
@@ -438,6 +442,10 @@ export const api = {
       subtitle_preset?: string
       cover_url?: string | null
       ref_image_url?: string | null
+      product_prompt?: string
+      product_image_url?: string | null
+      scene_prompt?: string
+      scene_image_url?: string | null
     },
   ) {
     return request<Project>(`/api/projects/${id}`, {
@@ -470,11 +478,11 @@ export const api = {
     }
     return res.json() as Promise<Project>
   },
-  async uploadRefImage(id: number, file: File) {
+  async uploadRefImage(id: number, file: File, refType: 'character' | 'product' | 'scene' = 'character') {
     const token = localStorage.getItem('token')
     const form = new FormData()
     form.append('file', file)
-    const res = await fetch(`${API_BASE}/api/projects/${id}/ref-image`, {
+    const res = await fetch(`${API_BASE}/api/projects/${id}/ref-image?ref_type=${refType}`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
@@ -666,7 +674,21 @@ export const api = {
     ref_image_url?: string
     project_id?: number
   }) {
-    return request<{ character_prompt: string }>('/api/content/character-prompt', {
+    return request<{ character_prompt: string; prompt?: string }>('/api/content/character-prompt', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  generateReferencePrompt(body: {
+    topic: string
+    template_name?: string
+    template_style?: string
+    seed_prompt?: string
+    ref_image_url?: string
+    project_id?: number
+    target_type?: 'character' | 'product' | 'scene'
+  }) {
+    return request<{ character_prompt: string; prompt: string }>('/api/content/reference-prompt', {
       method: 'POST',
       body: JSON.stringify(body),
     })

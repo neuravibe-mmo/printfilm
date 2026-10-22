@@ -165,6 +165,10 @@ class ProjectCreate(BaseModel):
     image_model: str | None = Field(default=None, max_length=64)
     video_model: str | None = Field(default=None, max_length=64)
     ref_image_url: str | None = None
+    product_prompt: str | None = Field(default=None, max_length=2000)
+    product_image_url: str | None = None
+    scene_prompt: str | None = Field(default=None, max_length=2000)
+    scene_image_url: str | None = None
 
 
 class ProjectUpdate(BaseModel):
@@ -188,6 +192,10 @@ class ProjectUpdate(BaseModel):
     bgm_lock: str | None = Field(default=None, max_length=200)
     subtitle_preset: str | None = Field(default=None, max_length=32)
     ref_image_url: str | None = None
+    product_prompt: str | None = Field(default=None, max_length=2000)
+    product_image_url: str | None = None
+    scene_prompt: str | None = Field(default=None, max_length=2000)
+    scene_image_url: str | None = None
     cover_url: str | None = Field(default=None, max_length=1024)
 
 
@@ -215,6 +223,10 @@ class ProjectOut(BaseModel):
     image_model: str = ""
     video_model: str = ""
     ref_image_url: str | None
+    product_prompt: str = ""
+    product_image_url: str | None = None
+    scene_prompt: str = ""
+    scene_image_url: str | None = None
     created_at: datetime
     updated_at: datetime
     shots: list[ShotOut] = []
@@ -268,10 +280,12 @@ class CharacterPromptGenerateRequest(BaseModel):
     seed_prompt: str | None = Field(default="", max_length=10000)
     ref_image_url: str | None = Field(default="")
     project_id: int | None = None
+    target_type: str | None = Field(default="character")
 
 
 class CharacterPromptGenerateOut(BaseModel):
-    character_prompt: str
+    character_prompt: str = ""
+    prompt: str = ""
 
 
 class VoicePreviewRequest(BaseModel):
