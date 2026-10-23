@@ -9785,3 +9785,118 @@ button.pf-shot-editable:disabled {
 }
 
 
+
+/* ===== Upload Video Modal ===== */
+.pf-upload-video-body {
+  padding: 0.25rem 0;
+}
+
+.pf-upload-dropzone {
+  border: 2px dashed var(--pf-border, #334155);
+  border-radius: 12px;
+  background: var(--pf-surface-2, #0f172a);
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+.pf-upload-dropzone:focus-visible {
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.35);
+}
+.pf-upload-dropzone:hover:not(.has-file):not(.is-done) {
+  border-color: #6366f1;
+  background: rgba(99,102,241,0.04);
+}
+.pf-upload-dropzone.is-drag {
+  border-color: #6366f1;
+  background: rgba(99,102,241,0.08);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+}
+.pf-upload-dropzone.has-file {
+  border-style: solid;
+  border-color: #475569;
+  cursor: default;
+}
+.pf-upload-dropzone.is-done {
+  border-style: solid;
+  border-color: #22c55e;
+  background: rgba(34,197,94,0.06);
+  cursor: default;
+}
+
+.pf-upload-dropzone-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.pf-upload-icon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+.pf-upload-icon-file {
+  color: #6366f1;
+}
+.pf-upload-icon-success {
+  color: #22c55e;
+}
+
+.pf-upload-main-text {
+  font-size: 0.9rem;
+  color: var(--pf-text-secondary, #94a3b8);
+  margin: 0;
+}
+.pf-upload-link {
+  color: #818cf8;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+}
+.pf-upload-hint {
+  font-size: 0.78rem;
+  color: var(--pf-muted, #64748b);
+  margin: 0;
+}
+.pf-upload-hint-success {
+  color: #4ade80;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.pf-upload-filename {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--pf-text, #e2e8f0);
+  margin: 0;
+  word-break: break-all;
+  max-width: 320px;
+}
+.pf-upload-clear-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0.25rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.pf-upload-clear-btn:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.pf-spinner-sm {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}

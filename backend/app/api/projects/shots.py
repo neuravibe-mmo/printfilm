@@ -566,3 +566,55 @@ async def regen_all_audio(
         task_type="project_regen_audio",
     )
     return await _get_owned_project(db, project_id, user)
+
+
+@router.post("/projects/{project_id}/shots/{shot_id}/upload-video", response_model=ShotOut)
+async def upload_shot_video(
+    project_id: int,
+    shot_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Shot:
+    """Upload a video file manually to replace/set a shot's video_url."""
+    from app.models import ShotStatus
+
+    project = await _get_owned_project(db, project_id, user)
+    shot = next((s for s in project.shots if s.id == shot_id), None)
+    if shot is None:
+        raise HTTPException(status_code=404, detail="Không tìm thấy cảnh")
+
+    content_type = (file.content_type or "").lower()
+    allowed_mime = {
+        "video/mp4": ".mp4",
+        "video/webm": ".webm",
+        "video/quicktime": ".mov",
+        "video/x-matroska": ".mkv",
+        "video/mpeg": ".mpeg",
+    }
+    ext = allowed_mime.get(content_type)
+    if not ext:
+        suffix = Path(file.filename or "").suffix.lower()
+        if suffix in {".mp4", ".webm", ".mov", ".mkv", ".mpeg"}:
+            ext = suffix
+        else:
+            raise HTTPException(status_code=400, detail="Chỉ hỗ trợ MP4, WebM, MOV, MKV")
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Tập tin rỗng")
+    max_size = 500 * 1024 * 1024  # 500 MB
+    if len(raw) > max_size:
+        raise HTTPException(status_code=400, detail="Video không được vượt quá 500MB")
+
+    filename = f"shot_{shot_id}_manual{ext}"
+    dest = storage.project_dir(project_id) / filename
+    dest.write_bytes(raw)
+    video_url = storage.publish_local(dest)
+
+    shot.video_url = video_url
+    shot.status = ShotStatus.VIDEO_READY
+    await db.commit()
+    await db.refresh(shot)
+    return shot
+

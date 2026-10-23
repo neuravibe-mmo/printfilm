@@ -641,6 +641,25 @@ export const api = {
       method: 'POST',
     })
   },
+  async uploadShotVideo(projectId: number, shotId: number, file: File): Promise<Shot> {
+    const form = new FormData()
+    form.append('file', file)
+    const token = localStorage.getItem('token')
+    const locale = localStorage.getItem('printfilm.locale') || 'vi'
+    const res = await fetch(`${API_BASE}/api/projects/${projectId}/shots/${shotId}/upload-video`, {
+      method: 'POST',
+      headers: {
+        'Accept-Language': locale,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throwApiError(res.status, err.detail, res.statusText)
+    }
+    return res.json()
+  },
   trimVideo(projectId: number, shotId: number, startSec: number, endSec: number) {
     return request<Project>(`/api/projects/${projectId}/shots/${shotId}/trim`, {
       method: 'POST',

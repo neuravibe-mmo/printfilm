@@ -50,6 +50,7 @@ import StoryboardPreviewModal, {
   type PreviewState,
 } from '../../components/studio/storyboard/StoryboardPreviewModal'
 import StoryboardShotRow from '../../components/studio/storyboard/StoryboardShotRow'
+import UploadVideoModal from '../../components/studio/storyboard/UploadVideoModal'
 
 export default function StoryboardPage() {
   const { t } = useI18n()
@@ -84,6 +85,7 @@ export default function StoryboardPage() {
     shot: Shot
     videoDuration: number
   } | null>(null)
+  const [uploadVideoShot, setUploadVideoShot] = useState<Shot | null>(null)
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -874,6 +876,7 @@ export default function StoryboardPage() {
                         onRegenImage={regenImage}
                         onRegenVideo={regenVideo}
                         onRegenAudio={regenAudio}
+                        onUploadVideo={setUploadVideoShot}
                       />
                     ))}
                   </tbody>
@@ -987,6 +990,28 @@ export default function StoryboardPage() {
           open={Boolean(promptModalShot)}
           onClose={() => setPromptModalShot(null)}
           onEditShot={(s) => openShotEdit(s)}
+        />
+      ) : null}
+
+      {uploadVideoShot && project ? (
+        <UploadVideoModal
+          projectId={project.id}
+          shot={uploadVideoShot}
+          open={Boolean(uploadVideoShot)}
+          onClose={() => setUploadVideoShot(null)}
+          onUploaded={(updatedShot) => {
+            setProject((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    shots: prev.shots.map((s) =>
+                      s.id === updatedShot.id ? { ...s, ...updatedShot } : s,
+                    ),
+                  }
+                : prev,
+            )
+            setUploadVideoShot(null)
+          }}
         />
       ) : null}
     </AppShell>

@@ -1,5 +1,6 @@
-import { FileText, MoreVertical, Scissors, Volume2 } from 'lucide-react'
+import { FileText, MoreVertical, Scissors, Upload, Volume2 } from 'lucide-react'
 import { useI18n } from '../../../i18n'
+import { dialog } from '../../../lib/dialog'
 import { api } from '../../../api'
 import type { Project, Shot } from '../../../api'
 import { IconPlay } from '../../ui/Icons'
@@ -38,6 +39,7 @@ export interface StoryboardShotRowProps {
   onRegenImage: (shot: Shot) => void
   onRegenVideo: (shot: Shot) => void
   onRegenAudio: (shot: Shot) => void
+  onUploadVideo: (shot: Shot) => void
 }
 
 export default function StoryboardShotRow({
@@ -59,6 +61,7 @@ export default function StoryboardShotRow({
   onRegenImage,
   onRegenVideo,
   onRegenAudio,
+  onUploadVideo,
 }: StoryboardShotRowProps) {
   const { t, locale } = useI18n()
 
@@ -304,7 +307,17 @@ export default function StoryboardShotRow({
                 className="op op-video"
                 disabled={rowBusy || !shot.image_url}
                 title={!shot.image_url ? t('studio.storyboard.needImageFirst') : undefined}
-                onClick={() => onRegenVideo(shot)}
+                onClick={async () => {
+                  if (shot.video_url) {
+                    const ok = await dialog.confirm({
+                      title: t('studio.storyboard.regenVideoConfirmTitle') || 'Tạo lại video?',
+                      message: t('studio.storyboard.regenVideoConfirmMsg') || 'Video hiện tại sẽ bị xoá và tạo lại từ đầu. Bạn có chắc không?',
+                      confirmText: t('studio.storyboard.regenVideoConfirmBtn') || 'Tạo lại',
+                    })
+                    if (!ok) return
+                  }
+                  onRegenVideo(shot)
+                }}
               >
                 {shot.video_url
                   ? t('studio.storyboard.regenVideo')
@@ -334,6 +347,16 @@ export default function StoryboardShotRow({
                   >
                     <FileText size={14} strokeWidth={2} />
                     <span>{t('studio.storyboard.viewPrompt')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSetMenuShotId(() => null)
+                      onUploadVideo(shot)
+                    }}
+                  >
+                    <Upload size={14} strokeWidth={2} />
+                    <span>{t('studio.storyboard.uploadVideo') || 'Upload video'}</span>
                   </button>
                   <button
                     type="button"
