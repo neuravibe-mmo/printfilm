@@ -38,9 +38,9 @@ async def get_voices() -> list[dict]:
 
 @router.get("/media-models")
 async def get_media_models() -> dict:
-    from app.services.media_catalog import get_media_catalog
+    from app.services.media_catalog import catalog_payload
 
-    return get_media_catalog()
+    return catalog_payload()
 
 
 @router.post("/voices/preview", response_model=VoicePreviewOut)

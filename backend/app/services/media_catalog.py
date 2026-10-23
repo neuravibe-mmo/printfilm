@@ -158,6 +158,9 @@ def catalog_payload() -> dict[str, Any]:
     )
 
 
+get_media_catalog = catalog_payload
+
+
 def is_valid_project_media_model(model_id: str | None, capability: LogicalModelCapability) -> bool:
     """Dự án khoa học phổ biến image_model / video_model: phù hợp với /api/media-models và định tuyến TokenFree."""
     mid = (model_id or "").strip()

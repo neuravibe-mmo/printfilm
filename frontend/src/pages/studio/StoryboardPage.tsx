@@ -74,7 +74,7 @@ export default function StoryboardPage() {
   const [preview, setPreview] = useState<PreviewState>(null)
   const [menuShotId, setMenuShotId] = useState<number | null>(null)
   const [imgMenuShotId, setImgMenuShotId] = useState<number | null>(null)
-  const [promptModalShot, setPromptModalShot] = useState<Shot | null>(null)
+  const [promptModalShot, setPromptModalShot] = useState<{ shot: Shot; tab?: 'image' | 'video' } | null>(null)
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchSelected, setBatchSelected] = useState<number[]>([])
   const [batchDuration, setBatchDuration] = useState('')
@@ -870,7 +870,7 @@ export default function StoryboardPage() {
                         onOpenPreview={setPreview}
                         onOpenShotEdit={openShotEdit}
                         onOpenTrimModal={openTrimModal}
-                        onOpenPromptModal={setPromptModalShot}
+                        onOpenPromptModal={(shot, tab) => setPromptModalShot({ shot, tab })}
                         onRegenImage={regenImage}
                         onRegenVideo={regenVideo}
                         onRegenAudio={regenAudio}
@@ -982,7 +982,8 @@ export default function StoryboardPage() {
       {promptModalShot && project ? (
         <ShotPromptModal
           projectId={project.id}
-          shot={promptModalShot}
+          shot={promptModalShot.shot}
+          tab={promptModalShot.tab}
           open={Boolean(promptModalShot)}
           onClose={() => setPromptModalShot(null)}
           onEditShot={(s) => openShotEdit(s)}

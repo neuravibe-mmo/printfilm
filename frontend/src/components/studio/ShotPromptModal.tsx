@@ -20,6 +20,7 @@ import Modal from '../ui/Modal'
 export interface ShotPromptModalProps {
   projectId: number
   shot: Shot
+  tab?: 'image' | 'video'
   open: boolean
   onClose: () => void
   onEditShot?: (shot: Shot) => void
@@ -28,6 +29,7 @@ export interface ShotPromptModalProps {
 export default function ShotPromptModal({
   projectId,
   shot,
+  tab = 'image',
   open,
   onClose,
   onEditShot,
@@ -103,16 +105,28 @@ export default function ShotPromptModal({
   }
 
   // Dự phòng khi đang tải hoặc lỗi: lấy trực tiếp từ shot prop
-  const activePrompt = data?.full_prompt || shot.img_prompt || ''
-  const activeRaw = data?.raw_prompt || shot.img_prompt || ''
-  const refs = data?.detailed_refs || []
+  const isVideo = tab === 'video'
+  const activePrompt = isVideo
+    ? (data?.video_prompt || shot.video_prompt || '')
+    : (data?.full_prompt || shot.img_prompt || '')
+  const activeRaw = isVideo
+    ? (data?.raw_video_prompt || shot.video_prompt || '')
+    : (data?.raw_prompt || shot.img_prompt || '')
+  const refs = isVideo
+    ? (data?.video_detailed_refs || [])
+    : (data?.detailed_refs || [])
+  const activeModel = isVideo ? data?.video_model : data?.image_model
 
   return (
     <>
       <Modal
         open={open}
         onClose={onClose}
-        title={t('studio.storyboard.promptModalTitle', { no: shot.shot_no }) || `Chi tiết Prompt & Tham chiếu · Cảnh ${String(shot.shot_no).padStart(2, '0')}`}
+        title={
+          isVideo
+            ? (t('studio.storyboard.videoPromptModalTitle', { no: shot.shot_no }) || `Chi tiết Video Prompt · Cảnh ${String(shot.shot_no).padStart(2, '0')}`)
+            : (t('studio.storyboard.promptModalTitle', { no: shot.shot_no }) || `Chi tiết Prompt & Tham chiếu · Cảnh ${String(shot.shot_no).padStart(2, '0')}`)
+        }
         size="xl"
         footer={
           <div className="pf-prompt-modal-footer">
@@ -145,17 +159,17 @@ export default function ShotPromptModal({
             <span className="pf-badge pf-badge-scene">
               {t('studio.storyboard.promptMetaScene', { no: String(shot.shot_no).padStart(2, '0') }) || `Cảnh ${String(shot.shot_no).padStart(2, '0')}`}
             </span>
-            {data?.image_model ? (
+            {activeModel ? (
               <span className="pf-badge pf-badge-info">
-                <strong>{t('studio.storyboard.promptMetaModel', { model: data.image_model }) || `Model: ${data.image_model}`}</strong>
+                <strong>{t('studio.storyboard.promptMetaModel', { model: activeModel }) || `Model: ${activeModel}`}</strong>
               </span>
             ) : null}
-            {data?.aspect_ratio ? (
+            {!isVideo && data?.aspect_ratio ? (
               <span className="pf-badge pf-badge-info">
                 <strong>{t('studio.storyboard.promptMetaRatio', { ratio: data.aspect_ratio }) || `Tỷ lệ: ${data.aspect_ratio}`}</strong>
               </span>
             ) : null}
-            {data?.image_size ? (
+            {!isVideo && data?.image_size ? (
               <span className="pf-badge pf-badge-info">
                 <strong>{t('studio.storyboard.promptMetaSize', { size: data.image_size }) || `Kích thước: ${data.image_size}`}</strong>
               </span>
@@ -181,17 +195,19 @@ export default function ShotPromptModal({
             <div className="pf-prompt-card-header">
               <div className="pf-prompt-card-title">
                 <FileText size={18} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-blue" />
-                <strong>{t('studio.storyboard.fullPromptLabel') || 'Nội dung Prompt đầy đủ (gửi tới AI)'}</strong>
-                <button
-                  type="button"
-                  className={`pf-prompt-help-btn ${showBreakdown ? 'is-active' : ''}`}
-                  onClick={() => setShowBreakdown((prev) => !prev)}
-                  title={t('studio.storyboard.viewBreakdown') || 'Xem phân rã thành phần Prompt'}
-                  aria-label={t('studio.storyboard.viewBreakdown') || 'Xem phân rã thành phần Prompt'}
-                  aria-expanded={showBreakdown}
-                >
-                  <CircleHelp size={16} strokeWidth={2} />
-                </button>
+                <strong>{isVideo ? (t('studio.storyboard.videoPromptLabel') || 'Nội dung Video Prompt (gửi tới AI)') : (t('studio.storyboard.fullPromptLabel') || 'Nội dung Prompt đầy đủ (gửi tới AI)')}</strong>
+                {!isVideo ? (
+                  <button
+                    type="button"
+                    className={`pf-prompt-help-btn ${showBreakdown ? 'is-active' : ''}`}
+                    onClick={() => setShowBreakdown((prev) => !prev)}
+                    title={t('studio.storyboard.viewBreakdown') || 'Xem phân rã thành phần Prompt'}
+                    aria-label={t('studio.storyboard.viewBreakdown') || 'Xem phân rã thành phần Prompt'}
+                    aria-expanded={showBreakdown}
+                  >
+                    <CircleHelp size={16} strokeWidth={2} />
+                  </button>
+                ) : null}
               </div>
               <button
                 type="button"
@@ -209,7 +225,7 @@ export default function ShotPromptModal({
               </button>
             </div>
 
-            {showBreakdown ? (
+            {!isVideo && showBreakdown ? (
               <div className="pf-prompt-breakdown-card" role="region" aria-label="Phân rã prompt">
                 <div className="pf-prompt-breakdown-header">
                   <div className="pf-prompt-breakdown-title">
@@ -266,7 +282,7 @@ export default function ShotPromptModal({
             <div className="pf-prompt-card-header">
               <div className="pf-prompt-card-title">
                 <Images size={18} strokeWidth={2} className="pf-prompt-icon-svg pf-prompt-icon-amber" />
-                <strong>{t('studio.storyboard.refImagesTitle') || 'Ảnh tham chiếu (Reference Images)'}</strong>
+                <strong>{isVideo ? (t('studio.storyboard.videoRefImagesTitle') || 'Ảnh tham chiếu Video') : (t('studio.storyboard.refImagesTitle') || 'Ảnh tham chiếu (Reference Images)')}</strong>
                 <button
                   type="button"
                   className={`pf-prompt-help-btn ${showRefHelp ? 'is-active' : ''}`}

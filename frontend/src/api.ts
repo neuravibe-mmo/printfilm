@@ -146,6 +146,10 @@ export type ShotPromptPreview = {
   image_model: string
   aspect_ratio: string
   image_size: string
+  video_prompt?: string
+  raw_video_prompt?: string
+  video_model?: string
+  video_detailed_refs?: ShotPromptRef[]
 }
 
 export type VoicePreset = {

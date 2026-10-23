@@ -34,7 +34,7 @@ export interface StoryboardShotRowProps {
   onOpenPreview: (preview: PreviewState) => void
   onOpenShotEdit: (shot: Shot, focus?: string) => void
   onOpenTrimModal: (shot: Shot, dur: number) => void
-  onOpenPromptModal: (shot: Shot) => void
+  onOpenPromptModal: (shot: Shot, tab?: 'image' | 'video') => void
   onRegenImage: (shot: Shot) => void
   onRegenVideo: (shot: Shot) => void
   onRegenAudio: (shot: Shot) => void
@@ -288,7 +288,7 @@ export default function StoryboardShotRow({
                   type="button"
                   onClick={() => {
                     onSetImgMenuShotId(() => null)
-                    onOpenPromptModal(shot)
+                    onOpenPromptModal(shot, 'image')
                   }}
                 >
                   <FileText size={14} strokeWidth={2} />
@@ -325,6 +325,16 @@ export default function StoryboardShotRow({
               </button>
               {menuShotId === shot.id ? (
                 <div className="pf-shot-menu" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSetMenuShotId(() => null)
+                      onOpenPromptModal(shot, 'video')
+                    }}
+                  >
+                    <FileText size={14} strokeWidth={2} />
+                    <span>{t('studio.storyboard.viewPrompt')}</span>
+                  </button>
                   <button
                     type="button"
                     disabled={rowBusy}

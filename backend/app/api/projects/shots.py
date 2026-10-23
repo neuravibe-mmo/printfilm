@@ -294,7 +294,10 @@ async def get_shot_prompt_preview(
         raise HTTPException(status_code=404, detail="Phân cảnh không tồn tại")
 
     from app.services.pipeline import (
+        _effective_style,
         _image_size_for,
+        _kepu_seedance_sfx_audio,
+        _kepu_video_prompt,
         _locked_shot_prompt,
         _project_base_refs,
         _project_image_negative,
@@ -354,6 +357,35 @@ async def get_shot_prompt_preview(
     image_model = (getattr(project, "image_model", None) or "").strip()
     style_prefix = project.template.style_prefix if project.template else ""
 
+    # Tính toán Video Prompt & Tham chiếu video
+    script = (getattr(shot, "segment_script", "") or shot.video_prompt or "").strip()
+    video_motion = str(((project.template.seedance_config or {}) if project.template else {}).get("motion_bias", ""))
+    video_generate_audio = _kepu_seedance_sfx_audio(project)
+    video_prompt = _kepu_video_prompt(
+        script,
+        style_prefix=_effective_style(project),
+        motion_bias=video_motion,
+        camera=shot.camera or "",
+        ambient_only=video_generate_audio,
+    )
+    video_model = (getattr(project, "video_model", None) or "").strip()
+
+    video_detailed_refs = []
+    if shot.image_url or shot.image_ark_url:
+        video_detailed_refs.append({
+            "url": shot.image_url or shot.image_ark_url,
+            "type": "input_image",
+            "label": f"Ảnh gốc phân cảnh (Cảnh {shot.shot_no:02d})",
+            "shot_no": shot.shot_no,
+        })
+    if prev and (prev.image_url or prev.image_ark_url):
+        video_detailed_refs.append({
+            "url": prev.image_url or prev.image_ark_url,
+            "type": "previous_tail_frame",
+            "label": f"Frame nối cảnh trước (Cảnh {prev.shot_no:02d})",
+            "shot_no": prev.shot_no,
+        })
+
     return {
         "shot_id": shot.id,
         "shot_no": shot.shot_no,
@@ -366,6 +398,10 @@ async def get_shot_prompt_preview(
         "image_model": image_model,
         "aspect_ratio": aspect_ratio,
         "image_size": image_size,
+        "video_prompt": video_prompt,
+        "raw_video_prompt": script,
+        "video_model": video_model,
+        "video_detailed_refs": video_detailed_refs,
     }
 
 
