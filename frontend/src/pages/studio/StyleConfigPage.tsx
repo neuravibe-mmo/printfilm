@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, defaultsFromTemplate, resolveVoiceId } from '../../api'
+import { api, defaultsFromTemplate, getApiBase, resolveVoiceId } from '../../api'
 import type { MediaModelsCatalog, PipelineMode, Project, Template, VoicePreset } from '../../api'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
@@ -13,10 +13,12 @@ import StyleOverviewSidebar from '../../components/studio/style/StyleOverviewSid
 import StylePromptSection from '../../components/studio/style/StylePromptSection'
 import VoicePickerSection, { voiceKey } from '../../components/studio/style/VoicePickerSection'
 import { IconChevronLeft } from '../../components/ui/Icons'
+import Modal from '../../components/ui/Modal'
 import Stepper from '../../components/ui/Stepper'
 import { useI18n } from '../../i18n'
 import { handleBillingError } from '../../lib/billingError'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
+import { Check, Copy } from 'lucide-react'
 
 export default function StyleConfigPage() {
   const { t } = useI18n()
@@ -62,6 +64,9 @@ export default function StyleConfigPage() {
   const [playingId, setPlayingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [curlOpen, setCurlOpen] = useState(false)
+  const [curlType, setCurlType] = useState<'character' | 'product' | 'scene'>('character')
+  const [curlCopied, setCurlCopied] = useState(false)
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -360,6 +365,47 @@ export default function StyleConfigPage() {
     }
   }
 
+  function getCurlCommand(targetType: 'character' | 'product' | 'scene') {
+    if (!project) return ''
+    const promptMap = {
+      character: characterPrompt,
+      product: productPrompt,
+      scene: scenePrompt,
+    }
+    const imageUrlMap = {
+      character: project.ref_image_url,
+      product: project.product_image_url,
+      scene: project.scene_image_url,
+    }
+    const payload = {
+      topic: (project.source_text || project.title || '').slice(0, 3000),
+      template_name: currentTpl?.name || '',
+      template_style: currentTpl?.style_prefix || '',
+      seed_prompt: (promptMap[targetType] || '').trim().slice(0, 2000),
+      ref_image_url: imageUrlMap[targetType] || '',
+      project_id: project.id,
+      target_type: targetType,
+    }
+    const baseUrl = getApiBase()
+    const token = localStorage.getItem('token') || '<YOUR_TOKEN>'
+    const loc = localStorage.getItem('printfilm.locale') || 'vi'
+    return `curl -X POST "${baseUrl}/api/reference/generate-prompt" \\
+  -H "Content-Type: application/json" \\
+  -H "Accept-Language: ${loc}" \\
+  -H "Authorization: Bearer ${token}" \\
+  -d '${JSON.stringify(payload, null, 2)}'`
+  }
+
+  async function copyCurl() {
+    try {
+      await navigator.clipboard.writeText(getCurlCommand(curlType))
+      setCurlCopied(true)
+      setTimeout(() => setCurlCopied(false), 2000)
+    } catch {
+      // fallback
+    }
+  }
+
   async function generate() {
     if (!project) return
     stopPreview()
@@ -465,7 +511,43 @@ export default function StyleConfigPage() {
             onAiGenerateScene={handleAiGenerateScene}
             generatingRefImage={generatingRefImage}
             onGenerateRefImage={handleGenerateRefImage}
+            onOpenCurlCharacter={() => { setCurlType('character'); setCurlOpen(true) }}
+            onOpenCurlProduct={() => { setCurlType('product'); setCurlOpen(true) }}
+            onOpenCurlScene={() => { setCurlType('scene'); setCurlOpen(true) }}
           />
+
+          <Modal
+            open={curlOpen}
+            onClose={() => setCurlOpen(false)}
+            title={t('studio.createProject.curlModalTitle')}
+            size="lg"
+            footer={
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', width: '100%' }}>
+                <button
+                  type="button"
+                  className="pf-btn pf-btn-lime pf-btn-sm pf-btn-icon"
+                  onClick={copyCurl}
+                >
+                  {curlCopied ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{curlCopied ? t('studio.createProject.copiedCurl') : 'Copy cURL'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="pf-btn pf-btn-ghost pf-btn-sm"
+                  onClick={() => setCurlOpen(false)}
+                >
+                  {t('common.close')}
+                </button>
+              </div>
+            }
+          >
+            <div style={{ padding: '0.25rem 0' }}>
+              <p className="pf-muted" style={{ margin: '0 0 0.75rem', fontSize: '0.85rem' }}>
+                AI Generate - <code>POST /api/reference/generate-prompt</code> ({curlType})
+              </p>
+              <pre className="pf-curl-box">{getCurlCommand(curlType)}</pre>
+            </div>
+          </Modal>
 
           <VoicePickerSection
             voices={voices}

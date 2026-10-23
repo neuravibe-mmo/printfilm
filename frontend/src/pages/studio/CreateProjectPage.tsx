@@ -496,6 +496,8 @@ export default function CreateProjectPage() {
                 <IconSparkles size={14} />
                 {aiBusy ? t('studio.createProject.aiGenerating2') : sourceType === 'script' ? t('studio.createProject.aiExpandScript') : t('studio.createProject.aiGenTheme')}
               </button>
+            </div>
+            <div className="pf-ai-rewrite-row">
               <button
                 type="button"
                 className="pf-btn-curl"

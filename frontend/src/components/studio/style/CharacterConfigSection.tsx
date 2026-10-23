@@ -28,6 +28,9 @@ export type CharacterConfigSectionProps = {
   onAiGenerateProduct?: () => Promise<void>
   onAiGenerateScene?: () => Promise<void>
   onGenerateRefImage?: (refType: 'character' | 'product' | 'scene') => Promise<void>
+  onOpenCurlCharacter?: () => void
+  onOpenCurlProduct?: () => void
+  onOpenCurlScene?: () => void
 }
 
 export default function CharacterConfigSection({
@@ -52,6 +55,9 @@ export default function CharacterConfigSection({
   onAiGenerateProduct,
   onAiGenerateScene,
   onGenerateRefImage,
+  onOpenCurlCharacter,
+  onOpenCurlProduct,
+  onOpenCurlScene,
 }: CharacterConfigSectionProps) {
   const { t } = useI18n()
 
@@ -87,6 +93,7 @@ export default function CharacterConfigSection({
         onChangePrompt={onChangeCharacterPrompt}
         onAiGenerate={onAiGenerateCharacter}
         aiGenerating={aiGeneratingChar}
+        onOpenCurl={onOpenCurlCharacter}
         imageUrl={characterImageUrl}
         imageHint={t('studio.styleConfig.refImageHint')}
         uploadButtonText={t('studio.styleConfig.uploadRefImage')}
@@ -118,6 +125,7 @@ export default function CharacterConfigSection({
         onChangePrompt={onChangeProductPrompt}
         onAiGenerate={onAiGenerateProduct}
         aiGenerating={aiGeneratingProduct}
+        onOpenCurl={onOpenCurlProduct}
         imageUrl={productImageUrl}
         imageHint={t('studio.styleConfig.productImageHint')}
         uploadButtonText={t('studio.styleConfig.uploadProductImage')}
@@ -149,6 +157,7 @@ export default function CharacterConfigSection({
         onChangePrompt={onChangeScenePrompt}
         onAiGenerate={onAiGenerateScene}
         aiGenerating={aiGeneratingScene}
+        onOpenCurl={onOpenCurlScene}
         imageUrl={sceneImageUrl}
         imageHint={t('studio.styleConfig.sceneImageHint')}
         uploadButtonText={t('studio.styleConfig.uploadSceneImage')}

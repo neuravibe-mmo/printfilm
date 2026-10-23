@@ -2,7 +2,7 @@ import { useEffect, useRef, type ChangeEvent, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { api } from '../../../api'
 import { useI18n } from '../../../i18n'
-import { IconClipboardPaste, IconSparkles } from '../../ui/Icons'
+import { IconClipboardPaste, IconCurl, IconSparkles } from '../../ui/Icons'
 
 export type ReferenceItemProps = {
   icon?: ReactNode
@@ -21,6 +21,7 @@ export type ReferenceItemProps = {
   onPaste: () => void
   onGenerateImage?: () => Promise<void> | void
   generatingImage?: boolean
+  onOpenCurl?: () => void
 }
 
 export function ReferenceItemCard({
@@ -40,6 +41,7 @@ export function ReferenceItemCard({
   onPaste,
   onGenerateImage,
   generatingImage,
+  onOpenCurl,
 }: ReferenceItemProps) {
   const { t } = useI18n()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -91,7 +93,7 @@ export function ReferenceItemCard({
               minHeight: '56px',
               lineHeight: '1.5',
               boxSizing: 'border-box',
-              paddingRight: onAiGenerate ? '40px' : '0.8rem',
+              paddingRight: onAiGenerate || onOpenCurl ? '40px' : '0.8rem',
             }}
           />
           {onAiGenerate && (
@@ -121,6 +123,33 @@ export function ReferenceItemCard({
               }}
             >
               {aiGenerating ? <Loader2 size={15} className="pf-tool-spin" /> : <IconSparkles size={15} />}
+            </button>
+          )}
+          {onOpenCurl && (
+            <button
+              type="button"
+              className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
+              title={t('studio.createProject.viewCurl') || 'View cURL'}
+              onClick={onOpenCurl}
+              style={{
+                position: 'absolute',
+                top: onAiGenerate ? '40px' : '7px',
+                right: '8px',
+                width: '28px',
+                height: '24px',
+                padding: 0,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#0f766e',
+                background: '#f0fdfa',
+                border: '1px solid rgba(13, 148, 136, 0.25)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                zIndex: 2,
+              }}
+            >
+              <IconCurl size={20} />
             </button>
           )}
         </div>
