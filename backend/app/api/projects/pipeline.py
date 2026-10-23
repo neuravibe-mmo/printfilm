@@ -51,7 +51,7 @@ async def generate_project(
         ProjectStatus.COMPOSING,
         ProjectStatus.AUDITING,
     }:
-        raise HTTPException(status_code=409, detail="生成进行中，请稍后")
+        raise HTTPException(status_code=409, detail="Tiến trình đang chạy, vui lòng thử lại sau")
 
     if restart:
         shot_ids = [s.id for s in project.shots]
@@ -72,7 +72,7 @@ async def generate_project(
     phase = "script" if (restart or not shots) else resolve_kepu_billing_phase(project)
     if phase == "compose":
         # Sử dụng các tác vụ soạn thảo chuyên dụng để tránh project_pipeline liên tục giữ lại toàn bộ video
-        raise HTTPException(status_code=409, detail="素材已齐，请点击合成成片")
+        raise HTTPException(status_code=409, detail="Tất cả phân cảnh đã hoàn tất, vui lòng bấm Ghép video hoàn chỉnh")
     if restart or not shots:
         # First run / restart — actually splitting storyboard
         project.status = ProjectStatus.SCRIPTING

@@ -315,7 +315,7 @@ async def update_project(
         ProjectStatus.COMPOSING,
         ProjectStatus.AUDITING,
     }:
-        raise HTTPException(status_code=409, detail="生成进行中，无法修改")
+        raise HTTPException(status_code=409, detail="Dự án đang trong quá trình tạo, không thể chỉnh sửa")
 
     data = body.model_dump(exclude_unset=True)
     if "template_id" in data:
@@ -377,7 +377,7 @@ async def upload_project_cover(
         ProjectStatus.COMPOSING,
         ProjectStatus.AUDITING,
     }:
-        raise HTTPException(status_code=409, detail="生成进行中，无法更换封面")
+        raise HTTPException(status_code=409, detail="Dự án đang trong quá trình tạo, không thể thay đổi ảnh bìa")
 
     content_type = (file.content_type or "").lower()
     allowed = {
