@@ -2,13 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useI18n } from '../../i18n'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { api, defaultsFromTemplate } from '../../api'
+import { api, defaultsFromTemplate, getApiBase } from '../../api'
 import type { Template } from '../../api'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
 import Stepper from '../../components/ui/Stepper'
 import PillTabs from '../../components/ui/PillTabs'
-import { IconChevronLeft, IconHelp, IconRefresh, IconSparkles } from '../../components/ui/Icons'
+import Modal from '../../components/ui/Modal'
+import { IconChevronLeft, IconCurl, IconHelp, IconRefresh, IconSparkles, IconTrash } from '../../components/ui/Icons'
+import { Check, Copy } from 'lucide-react'
 import { CATEGORY_ORDER, getCategoryLabel } from '../../lib/categories'
 import { getTemplateDescription, getTemplateName } from '../../lib/templates'
 import { kepuStepIndex, kepuSteps } from '../../lib/status'
@@ -51,6 +53,8 @@ export default function CreateProjectPage() {
   const [selectedInspiration, setSelectedInspiration] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [aiBusy, setAiBusy] = useState(false)
+  const [curlOpen, setCurlOpen] = useState(false)
+  const [curlCopied, setCurlCopied] = useState(false)
 
   const [error, setError] = useState('')
   const [showInspirationTooltip, setShowInspirationTooltip] = useState(false)
@@ -172,6 +176,19 @@ export default function CreateProjectPage() {
     setError('')
   }
 
+  function clearInputs() {
+    setTitle('')
+    setSourceText('')
+    setTitleTouched(true)
+    setContentTouched(true)
+    setSelectedInspiration(null)
+    setError('')
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = '120px'
+    }
+  }
+
   function shuffleInspirations() {
     setInspPage((p) => (p + 1) % inspTotal)
   }
@@ -201,6 +218,42 @@ export default function CreateProjectPage() {
       setError(err instanceof Error ? err.message : t('studio.createProject.aiGenFailed'))
     } finally {
       setAiBusy(false)
+    }
+  }
+
+  function getCurlCommand() {
+    const seed =
+      sourceText.trim() ||
+      title.trim() ||
+      (selected ? getTemplateName(selected, locale) : t('studio.createProject.seedDefault'))
+    const mode = sourceType === 'script' ? 'script' : 'theme'
+    const baseUrl = getApiBase()
+    const token = localStorage.getItem('token') || '<YOUR_TOKEN>'
+    const loc = localStorage.getItem('printfilm.locale') || 'vi'
+
+    const payload = {
+      topic: seed,
+      mode,
+      template_id: selected?.id,
+      template_name: selected ? getTemplateName(selected, locale) : undefined,
+      template_category: selected ? (getCategoryLabel((selected.category || [])[0]) || (selected.category || [])[0]) : undefined,
+      template_description: selected ? getTemplateDescription(selected, locale) : undefined,
+    }
+
+    return `curl -X POST "${baseUrl}/api/content/expand" \\
+  -H "Content-Type: application/json" \\
+  -H "Accept-Language: ${loc}" \\
+  -H "Authorization: Bearer ${token}" \\
+  -d '${JSON.stringify(payload, null, 2)}'`
+  }
+
+  async function copyCurl() {
+    try {
+      await navigator.clipboard.writeText(getCurlCommand())
+      setCurlCopied(true)
+      setTimeout(() => setCurlCopied(false), 2000)
+    } catch {
+      // fallback
     }
   }
 
@@ -378,8 +431,21 @@ export default function CreateProjectPage() {
             </p>
           </div>
 
-          <label className="pf-field">
-            <span className="pf-field-label">{t('studio.createProject.projectName')}</span>
+          <div className="pf-field">
+            <div className="pf-field-header">
+              <span className="pf-field-label">{t('studio.createProject.projectName')}</span>
+              {(title || sourceText) && (
+                <button
+                  type="button"
+                  className="pf-field-clear-btn"
+                  onClick={clearInputs}
+                  title={t('studio.createProject.clearContent')}
+                >
+                  <IconTrash size={13} />
+                  <span>Clear</span>
+                </button>
+              )}
+            </div>
             <input
               className="pf-field-input"
               value={title}
@@ -391,7 +457,7 @@ export default function CreateProjectPage() {
               }}
               placeholder={t('studio.createProject.titlePlaceholder')}
             />
-          </label>
+          </div>
 
           <div className="pf-textarea-wrap">
             <textarea
@@ -420,19 +486,63 @@ export default function CreateProjectPage() {
           </div>
 
           <div className="pf-ai-rewrite-footer">
-            <button
-              type="button"
-              className="pf-btn pf-btn-ai pf-btn-sm pf-btn-icon"
-              disabled={aiBusy || busy}
-              onClick={aiExpand}
-            >
-              <IconSparkles size={14} />
-              {aiBusy ? t('studio.createProject.aiGenerating2') : sourceType === 'script' ? t('studio.createProject.aiExpandScript') : t('studio.createProject.aiGenTheme')}
-            </button>
+            <div className="pf-ai-rewrite-row">
+              <button
+                type="button"
+                className="pf-btn pf-btn-ai pf-btn-sm pf-btn-icon"
+                disabled={aiBusy || busy}
+                onClick={aiExpand}
+              >
+                <IconSparkles size={14} />
+                {aiBusy ? t('studio.createProject.aiGenerating2') : sourceType === 'script' ? t('studio.createProject.aiExpandScript') : t('studio.createProject.aiGenTheme')}
+              </button>
+              <button
+                type="button"
+                className="pf-btn-curl"
+                onClick={() => setCurlOpen(true)}
+                title={t('studio.createProject.viewCurl')}
+                aria-label={t('studio.createProject.viewCurl')}
+              >
+                <IconCurl size={30} />
+              </button>
+            </div>
             <span className="pf-muted pf-ai-rewrite-hint">
               {sourceType === 'script' ? t('studio.createProject.aiExpandHint') : t('studio.createProject.aiGenHint')}
             </span>
           </div>
+
+          <Modal
+            open={curlOpen}
+            onClose={() => setCurlOpen(false)}
+            title={t('studio.createProject.curlModalTitle')}
+            size="lg"
+            footer={
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', width: '100%' }}>
+                <button
+                  type="button"
+                  className="pf-btn pf-btn-lime pf-btn-sm pf-btn-icon"
+                  onClick={copyCurl}
+                >
+                  {curlCopied ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{curlCopied ? t('studio.createProject.copiedCurl') : 'Copy cURL'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="pf-btn pf-btn-ghost pf-btn-sm"
+                  onClick={() => setCurlOpen(false)}
+                >
+                  {t('common.close')}
+                </button>
+              </div>
+            }
+          >
+            <div style={{ padding: '0.25rem 0' }}>
+              <p className="pf-muted" style={{ margin: '0 0 0.75rem', fontSize: '0.85rem' }}>
+                {sourceType === 'script' ? t('studio.createProject.aiExpandScript') : t('studio.createProject.aiGenTheme')} - <code>POST /api/content/expand</code>
+              </p>
+              <pre className="pf-curl-box">{getCurlCommand()}</pre>
+            </div>
+          </Modal>
           {error ? <BillingErrorNotice message={error} /> : null}
         </section>
 

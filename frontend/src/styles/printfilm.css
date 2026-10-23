@@ -3705,11 +3705,42 @@
   margin-bottom: 0.85rem;
 }
 
+.pf-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
 .pf-field-label {
   display: block;
   font-size: 0.85rem;
   color: var(--pf-muted);
   margin-bottom: 0.35rem;
+}
+
+.pf-field-header .pf-field-label {
+  margin-bottom: 0;
+}
+
+.pf-field-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--pf-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.pf-field-clear-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
 }
 
 .pf-field-input {
@@ -3780,6 +3811,49 @@
   gap: 0.45rem;
   margin-top: 0.85rem;
   text-align: center;
+}
+
+.pf-ai-rewrite-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pf-btn-curl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid var(--pf-line);
+  color: var(--pf-ink);
+  cursor: pointer;
+  padding: 0.42rem 0.65rem;
+  border-radius: 999px;
+  line-height: 1;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pf-btn-curl:hover {
+  border-color: #0d9488;
+  color: #0f766e;
+  background: #f0fdfa;
+  transform: translateY(-1px);
+}
+
+.pf-curl-box {
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 10px;
+  padding: 1rem;
+  position: relative;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  border: 1px solid #1e293b;
 }
 
 .pf-ai-rewrite-hint {

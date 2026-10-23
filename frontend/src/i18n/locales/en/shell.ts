@@ -245,4 +245,7 @@ export const enShell = {
     WAIT_IMAGE: 'Need image',
     WAIT_VIDEO: 'Need clip',
   },
+  shell: {
+    close: 'Close',
+  },
 } as const

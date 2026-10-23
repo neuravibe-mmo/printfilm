@@ -14,7 +14,11 @@ const _viteApiBase = import.meta.env.VITE_API_BASE
 const API_BASE =
   _viteApiBase === undefined || _viteApiBase === null ? defaultApiBase() : String(_viteApiBase)
 
-function authHeaders(): HeadersInit {
+export function getApiBase() {
+  return API_BASE
+}
+
+export function authHeaders(): HeadersInit {
   const token = localStorage.getItem('token')
   const locale = localStorage.getItem('printfilm.locale') || 'vi'
   return {

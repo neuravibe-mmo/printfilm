@@ -282,3 +282,58 @@ export function IconInfo(p: IconProps) {
   )
 }
 
+export function IconCurl({ size = 20, className = '', ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={Math.round(size * 0.44)}
+      viewBox="0 0 100 44"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      {...props}
+    >
+      {/* c */}
+      <path
+        d="M 18 17 L 11 17 C 7.5 17 5 19.5 5 23 L 5 33 C 5 36.5 7.5 39 11 39 L 18 39"
+        stroke="currentColor"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* u */}
+      <path
+        d="M 27 17 L 27 33 C 27 36.5 29.5 39 33 39 L 36 39 C 39.5 39 42 36.5 42 33 L 42 17"
+        stroke="currentColor"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* r */}
+      <path
+        d="M 50 39 L 50 17 M 50 25 C 53 19 59 17 62 18"
+        stroke="currentColor"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* l */}
+      <path
+        d="M 70 8 L 70 39"
+        stroke="currentColor"
+        strokeWidth="4.5"
+        strokeLinecap="round"
+      />
+      {/* // slashes with dots */}
+      <circle cx="79" cy="11" r="2.5" stroke="currentColor" strokeWidth="2.2" />
+      <circle cx="73" cy="37" r="2.5" stroke="currentColor" strokeWidth="2.2" />
+      <line x1="78" y1="13.5" x2="74" y2="34.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+
+      <circle cx="93" cy="11" r="2.5" stroke="#10b981" strokeWidth="2.2" />
+      <circle cx="87" cy="37" r="2.5" stroke="#10b981" strokeWidth="2.2" />
+      <line x1="92" y1="13.5" x2="88" y2="34.5" stroke="#10b981" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+

@@ -244,4 +244,7 @@ export const viShell = {
     WAIT_IMAGE: 'Chờ tạo ảnh',
     WAIT_VIDEO: 'Chờ tạo video',
   },
+  shell: {
+    close: 'Đóng',
+  },
 } as const

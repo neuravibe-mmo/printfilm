@@ -244,4 +244,7 @@ export const zhShell = {
     WAIT_IMAGE: '待出图',
     WAIT_VIDEO: '待出视频',
   },
+  shell: {
+    close: '关闭',
+  },
 } as const
