@@ -299,7 +299,8 @@ async def generate_character_prompt_endpoint(
                 )
             elif target_type == "scene":
                 vision_prompt = (
-                    "Phân tích chi tiết không gian bối cảnh trong ảnh: loại phòng hoặc địa điểm ngoài trời, phong cách kiến trúc và nội thất, ánh sáng chủ đạo, màu sắc và đạo cụ bày trí bằng tiếng Việt để làm prompt dựng bối cảnh video AI."
+                    "Phân tích chi tiết không gian bối cảnh trong ảnh: loại phòng hoặc địa điểm ngoài trời, phong cách kiến trúc và nội thất, ánh sáng chủ đạo, màu sắc và đạo cụ bày trí bằng tiếng Việt để làm prompt dựng bối cảnh video AI. "
+                    "CHỈ mô tả môi trường không gian xung quanh, BỎ QUA mọi sản phẩm / bỏ qua hàng hóa / bỏ qua vật thể thương mại và nhân vật / con người không được phép có trong ảnh."
                 )
             else:
                 vision_prompt = (
@@ -371,11 +372,14 @@ async def generate_character_prompt_endpoint(
     elif target_type == "scene":
         system_prompt = (
             "Bạn là chuyên gia thiết kế bối cảnh và đạo diễn hình ảnh (Cinematographer / Set Designer) cho video điện ảnh. "
-            "Nhiệm vụ của bạn là tạo ra một đoạn mô tả không gian bối cảnh (1-2 câu tiếng Việt) phù hợp nhất với chủ đề video, "
+            "Nhiệm vụ của bạn là tạo ra một đoạn mô tả THUẦN TÚY VỀ KHÔNG GIAN BỐI CẢNH (1-2 câu tiếng Việt) phù hợp nhất với chủ đề video, "
             "bao gồm: loại không gian (studio hiện đại, phòng khách ấm cúng, quán cà phê, góc làm việc...), phong cách kiến trúc / nội thất, "
             "nguồn ánh sáng (ánh sáng tự nhiên qua cửa sổ, đèn neon, ánh sáng studio 3 điểm dịu nhẹ) và chiều sâu không gian. "
-            "Nếu có thông tin từ ảnh tham chiếu, BẮT BUỘC PHẢI bám sát không gian và tone màu của ảnh tham chiếu. "
-            "Yêu cầu: CHỈ trả về trực tiếp đoạn văn bản mô tả bối cảnh, không thêm ngoặc kép hay lời dẫn."
+            "TUYỆT ĐỐI KHÔNG được đề cập đến sản phẩm, tên sản phẩm, đặc điểm sản phẩm, chất liệu sản phẩm, bao bì sản phẩm hay bất kỳ vật thể hàng hóa nào trong mô tả. "
+            "TUYỆT ĐỐI KHÔNG được đề cập đến nhân vật, con người, người mẫu, diễn viên hay bất kỳ hình dáng người nào trong mô tả. "
+            "Chỉ mô tả môi trường xung quanh: phòng, bàn, tường, cửa sổ, cây cối, ánh sáng, màu sắc tổng thể của không gian. "
+            "Nếu có thông tin từ ảnh tham chiếu, BẮT BUỘC PHẢI bám sát không gian và tone màu của ảnh tham chiếu, NHƯNG bỏ qua mọi sản phẩm/vật thể hàng hóa và nhân vật/con người có trong ảnh. "
+            "Yêu cầu: CHỈ trả về trực tiếp đoạn văn bản mô tả bối cảnh không gian, không thêm ngoặc kép hay lời dẫn."
         )
     else:
         system_prompt = (
@@ -398,7 +402,12 @@ async def generate_character_prompt_endpoint(
         )
         user_parts.append(f"{header_text}\n{visual_analysis}")
     if topic:
-        user_parts.append(f"Chủ đề / nội dung video: {topic}")
+        if target_type == "scene":
+            user_parts.append(
+                f"Chủ đề video (CHỈ dùng để suy luận không gian phù hợp, KHÔNG mô tả sản phẩm trong chủ đề): {topic}"
+            )
+        else:
+            user_parts.append(f"Chủ đề / nội dung video: {topic}")
     if template_name:
         user_parts.append(f"Phong cách mẫu: {template_name}")
     if template_style:
