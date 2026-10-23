@@ -266,7 +266,17 @@ export default function StoryboardShotRow({
               type="button"
               className="op"
               disabled={rowBusy}
-              onClick={() => onRegenImage(shot)}
+              onClick={async () => {
+                if (shot.image_url) {
+                  const ok = await dialog.confirm({
+                    title: t('studio.storyboard.redrawImageConfirmTitle') || 'Vẽ lại hình?',
+                    message: t('studio.storyboard.redrawImageConfirmMsg') || 'Hình ảnh hiện tại sẽ được vẽ lại từ đầu. Bạn có chắc không?',
+                    confirmText: t('studio.storyboard.redrawImageConfirmBtn') || 'Vẽ lại',
+                  })
+                  if (!ok) return
+                }
+                onRegenImage(shot)
+              }}
             >
               {shot.image_url
                 ? t('studio.storyboard.redrawImage')

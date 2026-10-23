@@ -17,7 +17,8 @@ import Modal from '../../components/ui/Modal'
 import Stepper from '../../components/ui/Stepper'
 import { useI18n } from '../../i18n'
 import { handleBillingError } from '../../lib/billingError'
-import { kepuStepIndex, kepuSteps } from '../../lib/status'
+import { dialog } from '../../lib/dialog'
+import { kepuBillingPhase, kepuStepIndex, kepuSteps } from '../../lib/status'
 import { Check, Copy } from 'lucide-react'
 
 export default function StyleConfigPage() {
@@ -419,7 +420,7 @@ export default function StyleConfigPage() {
       const sameStyle = Boolean(d) && styleOut === d!.style_prompt
       const sameChar = Boolean(d) && charOut === (d!.character_prompt || '')
       const sameExtra = Boolean(d) && extraOut === d!.extra_prompt
-      await api.updateProject(project.id, {
+      const updated = await api.updateProject(project.id, {
         style_prompt: sameStyle ? '' : styleOut,
         character_prompt: sameChar ? '' : charOut,
         product_prompt: productPrompt.trim(),
@@ -431,6 +432,25 @@ export default function StyleConfigPage() {
         image_model: imageModel,
         video_model: videoModel,
       })
+      setProject(updated)
+
+      const target = (updated.shots && updated.shots.length > 0) ? updated : project
+      const currentPhase = kepuBillingPhase(target)
+      if (currentPhase === 'videos') {
+        setBusy(false)
+        const confirmed = await dialog.confirm({
+          title: t('studio.styleConfig.confirmGenVideoTitle'),
+          message: t('studio.styleConfig.confirmGenVideoMessage'),
+          confirmText: t('studio.styleConfig.confirmGenVideoBtn'),
+          cancelText: t('studio.styleConfig.skipGenVideoBtn'),
+        })
+        if (!confirmed) {
+          nav(`/studio/${updated.id || project.id}`)
+          return
+        }
+        setBusy(true)
+      }
+
       const started = await api.generate(project.id)
       nav(`/studio/${started.id}`)
     } catch (err) {
