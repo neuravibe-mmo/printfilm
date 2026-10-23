@@ -40,6 +40,7 @@ export interface StoryboardShotRowProps {
   onRegenVideo: (shot: Shot) => void
   onRegenAudio: (shot: Shot) => void
   onUploadVideo: (shot: Shot) => void
+  onUploadImage: (shot: Shot) => void
 }
 
 export default function StoryboardShotRow({
@@ -62,6 +63,7 @@ export default function StoryboardShotRow({
   onRegenVideo,
   onRegenAudio,
   onUploadVideo,
+  onUploadImage,
 }: StoryboardShotRowProps) {
   const { t, locale } = useI18n()
 
@@ -306,6 +308,16 @@ export default function StoryboardShotRow({
                 >
                   <FileText size={14} strokeWidth={2} />
                   <span>{t('studio.storyboard.viewPrompt')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSetImgMenuShotId(() => null)
+                    onUploadImage(shot)
+                  }}
+                >
+                  <Upload size={14} strokeWidth={2} />
+                  <span>{t('studio.storyboard.uploadImage')}</span>
                 </button>
               </div>
             ) : null}

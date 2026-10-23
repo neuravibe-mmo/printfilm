@@ -20,6 +20,7 @@ export const enShell = {
     apply: 'Apply',
     processing: 'Processing…',
     delete: 'Delete',
+    remove: 'Remove',
     download: 'Download',
     downloading: 'Downloading…',
     preview: 'Preview',

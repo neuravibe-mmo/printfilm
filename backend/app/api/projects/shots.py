@@ -137,7 +137,7 @@ async def upload_shot_image(
     _ensure_side_task_allowed(project)
     shot = next((s for s in project.shots if s.id == shot_id), None)
     if not shot:
-        raise HTTPException(status_code=404, detail="分镜不存在")
+        raise HTTPException(status_code=404, detail="Không tìm thấy phân cảnh")
     content_type = (file.content_type or "").lower()
     allowed = {
         "image/jpeg": ".jpg",
@@ -151,15 +151,16 @@ async def upload_shot_image(
         suffix = Path(file.filename or "").suffix.lower()
         ext = ".jpg" if suffix == ".jpeg" else suffix if suffix in {".jpg", ".png", ".webp", ".gif"} else ""
     if not ext:
-        raise HTTPException(status_code=400, detail="仅支持 JPG / PNG / WebP / GIF")
-    raw = await file.read(8 * 1024 * 1024 + 1)
+        raise HTTPException(status_code=400, detail="Chỉ hỗ trợ JPG, PNG, WebP, GIF")
+    max_mb = 25
+    raw = await file.read(max_mb * 1024 * 1024 + 1)
     if not raw:
-        raise HTTPException(status_code=400, detail="空文件")
-    if len(raw) > 8 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="画面不能超过 8MB")
+        raise HTTPException(status_code=400, detail="Tập tin rỗng")
+    if len(raw) > max_mb * 1024 * 1024:
+        raise HTTPException(status_code=400, detail=f"Hình ảnh không được vượt quá {max_mb}MB")
     sniffed = _image_ext_from_magic(raw)
     if not sniffed:
-        raise HTTPException(status_code=400, detail="文件不是有效图片")
+        raise HTTPException(status_code=400, detail="Tập tin không phải là hình ảnh hợp lệ")
     ext = sniffed
     dest = storage.project_dir(project_id) / f"shot_{shot.id}_upload{ext}"
     dest.write_bytes(raw)

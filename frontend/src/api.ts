@@ -614,17 +614,21 @@ export const api = {
   },
   async uploadShotImage(projectId: number, shotId: number, file: File) {
     const token = localStorage.getItem('token')
+    const locale = localStorage.getItem('printfilm.locale') || 'vi'
     const form = new FormData()
     form.append('file', file)
     const res = await fetch(`${API_BASE}/api/projects/${projectId}/shots/${shotId}/image`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: {
+        'Accept-Language': locale,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: form,
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }))
       const detail = err.detail
-      throw new Error(typeof detail === 'string' ? detail : '画面上传失败')
+      throw new Error(typeof detail === 'string' ? detail : 'Upload hình ảnh thất bại')
     }
     return res.json() as Promise<Project>
   },

@@ -19,6 +19,7 @@ export const zhShell = {
     apply: '应用',
     processing: '处理中…',
     delete: '删除',
+    remove: '移除',
     download: '下载',
     downloading: '下载中…',
     preview: '预览',

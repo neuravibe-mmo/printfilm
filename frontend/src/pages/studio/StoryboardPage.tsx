@@ -50,6 +50,7 @@ import StoryboardPreviewModal, {
   type PreviewState,
 } from '../../components/studio/storyboard/StoryboardPreviewModal'
 import StoryboardShotRow from '../../components/studio/storyboard/StoryboardShotRow'
+import UploadImageModal from '../../components/studio/storyboard/UploadImageModal'
 import UploadVideoModal from '../../components/studio/storyboard/UploadVideoModal'
 
 export default function StoryboardPage() {
@@ -86,6 +87,7 @@ export default function StoryboardPage() {
     videoDuration: number
   } | null>(null)
   const [uploadVideoShot, setUploadVideoShot] = useState<Shot | null>(null)
+  const [uploadImageShot, setUploadImageShot] = useState<Shot | null>(null)
 
   useEffect(() => {
     if (!localStorage.getItem('token')) {
@@ -877,6 +879,7 @@ export default function StoryboardPage() {
                         onRegenVideo={regenVideo}
                         onRegenAudio={regenAudio}
                         onUploadVideo={setUploadVideoShot}
+                        onUploadImage={setUploadImageShot}
                       />
                     ))}
                   </tbody>
@@ -1011,6 +1014,19 @@ export default function StoryboardPage() {
                 : prev,
             )
             setUploadVideoShot(null)
+          }}
+        />
+      ) : null}
+
+      {uploadImageShot && project ? (
+        <UploadImageModal
+          projectId={project.id}
+          shot={uploadImageShot}
+          open={Boolean(uploadImageShot)}
+          onClose={() => setUploadImageShot(null)}
+          onUploaded={(updatedProject) => {
+            setProject(updatedProject)
+            setUploadImageShot(null)
           }}
         />
       ) : null}

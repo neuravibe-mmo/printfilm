@@ -19,6 +19,7 @@ export const viShell = {
     apply: 'Áp dụng',
     processing: 'Đang xử lý…',
     delete: 'Xóa',
+    remove: 'Xóa',
     download: 'Tải xuống',
     downloading: 'Đang tải…',
     preview: 'Xem trước',
