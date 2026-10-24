@@ -3178,7 +3178,7 @@
     color 0.15s ease;
 }
 
-.pf-pill:hover {
+.pf-pill:hover:not(:disabled) {
   color: var(--pf-ink);
   border-color: #94a3b8;
   background: var(--pf-lime-soft);
@@ -3195,6 +3195,11 @@
   background: var(--pf-lime);
   border-color: var(--pf-lime);
   color: var(--pf-ink);
+}
+
+.pf-pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .pf-stepper {
@@ -3738,9 +3743,14 @@
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
-.pf-field-clear-btn:hover {
+.pf-field-clear-btn:hover:not(:disabled) {
   color: #ef4444;
   background: rgba(239, 68, 68, 0.08);
+}
+
+.pf-field-clear-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 .pf-field-input {
@@ -3834,11 +3844,17 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.pf-btn-curl:hover {
+.pf-btn-curl:hover:not(:disabled) {
   border-color: #0d9488;
   color: #0f766e;
   background: #f0fdfa;
   transform: translateY(-1px);
+}
+
+.pf-btn-curl:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
 }
 
 .pf-curl-box {
@@ -3863,6 +3879,11 @@
 
 .pf-inspire {
   margin: 0.85rem 0 1rem;
+  transition: opacity 0.2s ease;
+}
+
+.pf-inspire.is-disabled {
+  opacity: 0.6;
 }
 
 .pf-inspire-head {
@@ -3897,10 +3918,15 @@
   transition: color 0.15s ease, transform 0.15s ease;
 }
 
-.pf-help-icon-btn:hover,
-.pf-help-icon-btn.active {
+.pf-help-icon-btn:hover:not(:disabled),
+.pf-help-icon-btn.active:not(:disabled) {
   color: var(--pf-ink);
   transform: scale(1.1);
+}
+
+.pf-help-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .pf-tooltip-popover {
@@ -4043,7 +4069,8 @@
 
 .pf-chip:disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.55;
+  box-shadow: none;
 }
 
 .pf-btn-lg {

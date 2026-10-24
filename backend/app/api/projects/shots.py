@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import subprocess
 import time
@@ -404,6 +405,136 @@ async def get_shot_prompt_preview(
         "video_model": video_model,
         "video_detailed_refs": video_detailed_refs,
     }
+
+
+@router.get("/projects/{project_id}/shots/{shot_id}/upstream-curl")
+async def get_shot_upstream_curl(
+    project_id: int,
+    shot_id: int,
+    tab: str = "video",
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Lấy nội dung chi tiết lệnh API và cURL gửi tới máy chủ xử lý AI (neuravibemmo.dpdns.org)."""
+    cond = [Project.id == project_id]
+    if not getattr(user, "is_admin", False):
+        cond.append(Project.user_id == user.id)
+
+    result = await db.execute(
+        select(Project)
+        .where(*cond)
+        .options(selectinload(Project.shots), selectinload(Project.template))
+    )
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Dự án không tồn tại")
+    shot = next((s for s in project.shots if s.id == shot_id), None)
+    if not shot:
+        raise HTTPException(status_code=404, detail="Phân cảnh không tồn tại")
+
+    from app.config import get_settings
+    from app.services.pipeline import (
+        _effective_style,
+        _image_size_for,
+        _kepu_seedance_sfx_audio,
+        _kepu_video_prompt,
+        _locked_shot_prompt,
+        _project_output_ratio,
+    )
+    from app.services.drama.flow_api import FLOW_PROJECT_ID
+
+    cfg = get_settings()
+    domain = cfg.domain_web_2_api.rstrip("/")
+
+    aspect_ratio = _project_output_ratio(project) or "9:16"
+    script = (getattr(shot, "segment_script", "") or shot.video_prompt or "").strip()
+    video_motion = str(((project.template.seedance_config or {}) if project.template else {}).get("motion_bias", ""))
+    video_generate_audio = _kepu_seedance_sfx_audio(project)
+    video_prompt = _kepu_video_prompt(
+        script,
+        style_prefix=_effective_style(project),
+        motion_bias=video_motion,
+        camera=shot.camera or "",
+        ambient_only=video_generate_audio,
+    )
+
+    if tab == "video":
+        target_url = f"{domain}/api/flow/generate-video-veo_3_1_r2v_lite_low_priority"
+        ref_id = f"ref_{shot.id:03d}" if (shot.image_url or shot.image_ark_url) else "ref_sample_id"
+        payload = {
+            "reference_media_ids": [ref_id],
+            "prompt": video_prompt,
+            "project_id": FLOW_PROJECT_ID,
+            "scene_id": "",
+            "aspect_ratio": aspect_ratio,
+            "model_key": "abra_r2v_10s",
+        }
+        curl_cmd = (
+            f'curl -X POST "{target_url}" \\\n'
+            f'  -H "Content-Type: application/json" \\\n'
+            f"  -d '{json.dumps(payload, ensure_ascii=False, indent=2)}'"
+        )
+
+        upload_url = f"{domain}/api/flow/upload-image-b64"
+        upload_payload = {
+            "image_base64": "data:image/jpeg;base64,...<base64_data>...",
+            "project_id": FLOW_PROJECT_ID,
+            "mime_type": "image/jpeg",
+            "file_name": f"shot_{shot.shot_no:02d}_ref.jpg",
+        }
+        upload_curl = (
+            f'curl -X POST "{upload_url}" \\\n'
+            f'  -H "Content-Type: application/json" \\\n'
+            f"  -d '{json.dumps(upload_payload, ensure_ascii=False, indent=2)}'"
+        )
+
+        return {
+            "tab": "video",
+            "title": f"Tạo video Google Veo qua Flow API · Cảnh {shot.shot_no:02d}",
+            "domain": domain,
+            "method": "POST",
+            "url": target_url,
+            "payload": payload,
+            "curl": curl_cmd,
+            "upload_step": {
+                "url": upload_url,
+                "payload": upload_payload,
+                "curl": upload_curl,
+            },
+            "prompt": video_prompt,
+        }
+    else:
+        from app.services.drama.chatgpt_image_api import resolve_image_size
+
+        target_url = f"{domain}/api/chatgpt2api/generate"
+        full_prompt = _locked_shot_prompt(project, shot.img_prompt)
+        target_size = resolve_image_size(_image_size_for(project), aspect_ratio)
+
+        payload = {
+            "prompt": full_prompt,
+            "model": "gpt-image-2",
+            "size": target_size,
+            "n": 1,
+            "response_format": "b64_json",
+        }
+        if shot.image_url or shot.image_ark_url:
+            payload["images"] = ["data:image/jpeg;base64,...<base64_ref>..."]
+
+        curl_cmd = (
+            f'curl -X POST "{target_url}" \\\n'
+            f'  -H "Content-Type: application/json" \\\n'
+            f"  -d '{json.dumps(payload, ensure_ascii=False, indent=2)}'"
+        )
+        return {
+            "tab": "image",
+            "title": f"Tạo ảnh ChatGPT2API qua neuravibemmo.dpdns.org · Cảnh {shot.shot_no:02d}",
+            "domain": domain,
+            "method": "POST",
+            "url": target_url,
+            "payload": payload,
+            "curl": curl_cmd,
+            "prompt": full_prompt,
+        }
 
 
 @router.post("/projects/{project_id}/shots/{shot_id}/regen-image", response_model=ProjectOut)

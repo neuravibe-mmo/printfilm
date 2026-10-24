@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, defaultsFromTemplate } from '../../api'
+import { api, defaultsFromTemplate, getApiBase, type UpstreamCurlInfo } from '../../api'
 import type { Project, Shot, Template } from '../../api'
+import { Check, Copy } from 'lucide-react'
+import Modal from '../../components/ui/Modal'
 import AppShell from '../../components/layout/AppShell'
 import Stepper from '../../components/ui/Stepper'
 import {
@@ -77,6 +79,11 @@ export default function StoryboardPage() {
   const [menuShotId, setMenuShotId] = useState<number | null>(null)
   const [imgMenuShotId, setImgMenuShotId] = useState<number | null>(null)
   const [promptModalShot, setPromptModalShot] = useState<{ shot: Shot; tab?: 'image' | 'video' } | null>(null)
+  const [curlModalShot, setCurlModalShot] = useState<{ shot: Shot; tab: 'image' | 'video' } | null>(null)
+  const [curlCopied, setCurlCopied] = useState(false)
+  const [upstreamCurl, setUpstreamCurl] = useState<UpstreamCurlInfo | null>(null)
+  const [upstreamLoading, setUpstreamLoading] = useState(false)
+  const [curlViewMode, setCurlViewMode] = useState<'upstream' | 'internal'>('upstream')
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchSelected, setBatchSelected] = useState<number[]>([])
   const [batchDuration, setBatchDuration] = useState('')
@@ -516,6 +523,53 @@ export default function StoryboardPage() {
     }
   }
 
+  function getShotCurlCommand(shot: Shot, tab: 'image' | 'video') {
+    if (!project) return ''
+    const baseUrl = getApiBase()
+    const token = localStorage.getItem('token') || '<YOUR_TOKEN>'
+    const loc = localStorage.getItem('printfilm.locale') || 'vi'
+    const endpoint = tab === 'video' ? 'regen-video' : 'regen-image'
+
+    return `curl -X POST "${baseUrl}/api/projects/${project.id}/shots/${shot.id}/${endpoint}" \\
+  -H "Accept-Language: ${loc}" \\
+  -H "Authorization: Bearer ${token}"`
+  }
+
+  useEffect(() => {
+    if (!curlModalShot || !project) {
+      setUpstreamCurl(null)
+      return
+    }
+    setCurlViewMode('upstream')
+    setUpstreamLoading(true)
+    api.getShotUpstreamCurl(project.id, curlModalShot.shot.id, curlModalShot.tab)
+      .then((res) => {
+        setUpstreamCurl(res)
+      })
+      .catch(() => {
+        setUpstreamCurl(null)
+      })
+      .finally(() => {
+        setUpstreamLoading(false)
+      })
+  }, [curlModalShot, project])
+
+  async function copyCurl() {
+    if (!curlModalShot) return
+    const textToCopy =
+      curlViewMode === 'upstream'
+        ? (upstreamCurl?.curl || '')
+        : getShotCurlCommand(curlModalShot.shot, curlModalShot.tab)
+    if (!textToCopy) return
+    try {
+      await navigator.clipboard.writeText(textToCopy)
+      setCurlCopied(true)
+      setTimeout(() => setCurlCopied(false), 2000)
+    } catch {
+      // fallback
+    }
+  }
+
   function openTrimModal(shot: Shot, initialDuration?: number) {
     const vDur = initialDuration || videoDurations[shot.id] || 10
     setTrimmingShot({ shot, videoDuration: vDur })
@@ -875,6 +929,7 @@ export default function StoryboardPage() {
                         onOpenShotEdit={openShotEdit}
                         onOpenTrimModal={openTrimModal}
                         onOpenPromptModal={(shot, tab) => setPromptModalShot({ shot, tab })}
+                        onOpenCurlModal={(shot, tab) => setCurlModalShot({ shot, tab })}
                         onRegenImage={regenImage}
                         onRegenVideo={regenVideo}
                         onRegenAudio={regenAudio}
@@ -1029,6 +1084,100 @@ export default function StoryboardPage() {
             setUploadImageShot(null)
           }}
         />
+      ) : null}
+
+      {curlModalShot && project ? (
+        <Modal
+          open={Boolean(curlModalShot)}
+          onClose={() => setCurlModalShot(null)}
+          title={
+            curlViewMode === 'upstream'
+              ? 'Lệnh cURL API (neuravibemmo.dpdns.org)'
+              : (t('studio.createProject.curlModalTitle') || 'Lệnh cURL API')
+          }
+          size="lg"
+          footer={
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', width: '100%' }}>
+              <button
+                type="button"
+                className="pf-btn pf-btn-lime pf-btn-sm pf-btn-icon"
+                onClick={copyCurl}
+              >
+                {curlCopied ? <Check size={14} /> : <Copy size={14} />}
+                <span>{curlCopied ? (t('studio.createProject.copiedCurl') || 'Đã sao chép cURL!') : 'Copy cURL'}</span>
+              </button>
+              <button
+                type="button"
+                className="pf-btn pf-btn-ghost pf-btn-sm"
+                onClick={() => setCurlModalShot(null)}
+              >
+                {t('common.close') || 'Đóng'}
+              </button>
+            </div>
+          }
+        >
+          <div style={{ padding: '0.25rem 0' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className={['pf-pill', curlViewMode === 'upstream' ? 'lime active' : ''].join(' ')}
+                style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
+                onClick={() => setCurlViewMode('upstream')}
+              >
+                🌐 Upstream API (neuravibemmo.dpdns.org)
+              </button>
+              <button
+                type="button"
+                className={['pf-pill', curlViewMode === 'internal' ? 'lime active' : ''].join(' ')}
+                style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
+                onClick={() => setCurlViewMode('internal')}
+              >
+                🖥️ Internal API (PrintFilm Backend)
+              </button>
+            </div>
+
+            {curlViewMode === 'upstream' ? (
+              <>
+                {upstreamLoading ? (
+                  <div className="pf-prompt-loading" style={{ padding: '1.5rem 0' }}>
+                    <span className="pf-spinner" />
+                    <span>Đang tải nội dung API gửi tới neuravibemmo.dpdns.org...</span>
+                  </div>
+                ) : upstreamCurl ? (
+                  <>
+                    <p className="pf-muted" style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
+                      <strong>{upstreamCurl.title}</strong> — <code>{upstreamCurl.method} {upstreamCurl.url}</code>
+                    </p>
+                    <pre className="pf-curl-box">{upstreamCurl.curl}</pre>
+
+                    {upstreamCurl.upload_step ? (
+                      <div style={{ marginTop: '1rem' }}>
+                        <p className="pf-muted" style={{ margin: '0 0 0.4rem', fontSize: '0.82rem' }}>
+                          <em>Bước 1 (chuẩn bị ảnh tham chiếu nếu cần):</em> <code>POST {upstreamCurl.upload_step.url}</code>
+                        </p>
+                        <pre className="pf-curl-box" style={{ maxHeight: '130px', fontSize: '0.75rem' }}>
+                          {upstreamCurl.upload_step.curl}
+                        </pre>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="pf-muted">Không thể tải thông tin upstream cURL</p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="pf-muted" style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
+                  {curlModalShot.tab === 'video' ? (t('studio.storyboard.regenVideo') || 'Tạo lại video') : (t('studio.storyboard.redrawImage') || 'Vẽ lại hình ảnh')} - <code>POST /api/projects/{project.id}/shots/{curlModalShot.shot.id}/{curlModalShot.tab === 'video' ? 'regen-video' : 'regen-image'}</code> · Cảnh {String(curlModalShot.shot.shot_no).padStart(2, '0')}
+                </p>
+                <p className="pf-muted" style={{ margin: '0 0 0.75rem', fontSize: '0.78rem' }}>
+                  API nội bộ này kích hoạt background task trên backend PrintFilm, sau đó hệ thống sẽ chuẩn bị prompt và gửi tiếp sang neuravibemmo.dpdns.org.
+                </p>
+                <pre className="pf-curl-box">{getShotCurlCommand(curlModalShot.shot, curlModalShot.tab)}</pre>
+              </>
+            )}
+          </div>
+        </Modal>
       ) : null}
     </AppShell>
   )

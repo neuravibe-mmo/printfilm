@@ -221,6 +221,22 @@ export type Project = {
   }>
 }
 
+export interface UpstreamCurlInfo {
+  tab: 'image' | 'video'
+  title: string
+  domain: string
+  method: string
+  url: string
+  payload: Record<string, any>
+  curl: string
+  upload_step?: {
+    url: string
+    payload: Record<string, any>
+    curl: string
+  }
+  prompt: string
+}
+
 export type MediaModelOption = {
   id: string
   label: string
@@ -639,6 +655,9 @@ export const api = {
   },
   getShotPromptPreview(projectId: number, shotId: number) {
     return request<ShotPromptPreview>(`/api/projects/${projectId}/shots/${shotId}/prompt-preview`)
+  },
+  getShotUpstreamCurl(projectId: number, shotId: number, tab: 'image' | 'video' = 'video') {
+    return request<UpstreamCurlInfo>(`/api/projects/${projectId}/shots/${shotId}/upstream-curl?tab=${tab}`)
   },
   regenVideo(projectId: number, shotId: number) {
     return request<Project>(`/api/projects/${projectId}/shots/${shotId}/regen-video`, {

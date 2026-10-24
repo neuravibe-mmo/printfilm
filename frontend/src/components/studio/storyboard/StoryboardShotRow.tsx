@@ -1,4 +1,4 @@
-import { FileText, MoreVertical, Scissors, Upload, Volume2 } from 'lucide-react'
+import { FileText, MoreVertical, Scissors, Terminal, Upload, Volume2 } from 'lucide-react'
 import { useI18n } from '../../../i18n'
 import { dialog } from '../../../lib/dialog'
 import { api } from '../../../api'
@@ -36,6 +36,7 @@ export interface StoryboardShotRowProps {
   onOpenShotEdit: (shot: Shot, focus?: string) => void
   onOpenTrimModal: (shot: Shot, dur: number) => void
   onOpenPromptModal: (shot: Shot, tab?: 'image' | 'video') => void
+  onOpenCurlModal?: (shot: Shot, tab: 'image' | 'video') => void
   onRegenImage: (shot: Shot) => void
   onRegenVideo: (shot: Shot) => void
   onRegenAudio: (shot: Shot) => void
@@ -59,6 +60,7 @@ export default function StoryboardShotRow({
   onOpenShotEdit,
   onOpenTrimModal,
   onOpenPromptModal,
+  onOpenCurlModal,
   onRegenImage,
   onRegenVideo,
   onRegenAudio,
@@ -299,6 +301,18 @@ export default function StoryboardShotRow({
             </button>
             {imgMenuShotId === shot.id ? (
               <div className="pf-shot-menu" onClick={(e) => e.stopPropagation()}>
+                {onOpenCurlModal ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSetImgMenuShotId(() => null)
+                      onOpenCurlModal(shot, 'image')
+                    }}
+                  >
+                    <Terminal size={14} strokeWidth={2} />
+                    <span>cURL</span>
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {
@@ -360,6 +374,18 @@ export default function StoryboardShotRow({
               </button>
               {menuShotId === shot.id ? (
                 <div className="pf-shot-menu" onClick={(e) => e.stopPropagation()}>
+                  {onOpenCurlModal ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSetMenuShotId(() => null)
+                        onOpenCurlModal(shot, 'video')
+                      }}
+                    >
+                      <Terminal size={14} strokeWidth={2} />
+                      <span>cURL</span>
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => {

@@ -139,6 +139,7 @@ export default function CreateProjectPage() {
 
   const selected = templates.find((t) => t.id === templateId)
   const sourceType = inputTab === t('studio.createProject.tabScript') ? 'script' : 'theme'
+  const isGenerating = busy || aiBusy
 
   const activeInspirations = useMemo(() => {
     return getInspirationsForTemplate(selected, category)
@@ -351,6 +352,7 @@ export default function CreateProjectPage() {
                 <button
                   type="button"
                   className={['pf-pill', inputTab === tab.label ? 'lime active' : ''].join(' ')}
+                  disabled={isGenerating}
                   onClick={() => setInputTab(tab.label)}
                 >
                   {tab.label}
@@ -362,7 +364,7 @@ export default function CreateProjectPage() {
             ))}
           </div>
 
-          <div className="pf-inspire">
+          <div className={['pf-inspire', isGenerating ? 'is-disabled' : ''].filter(Boolean).join(' ')}>
             <div className="pf-inspire-head">
               <div className="pf-inspire-title-wrap">
                 <strong>{t('studio.createProject.inspirations')}</strong>
@@ -372,6 +374,7 @@ export default function CreateProjectPage() {
                     type="button"
                     className={`pf-help-icon-btn ${showInspirationTooltip ? 'active' : ''}`}
                     aria-label="Thông tin gợi ý"
+                    disabled={isGenerating}
                     onClick={() => {
                       if (showInspirationTooltip) {
                         setShowInspirationTooltip(false)
@@ -408,7 +411,12 @@ export default function CreateProjectPage() {
                   }
                 </div>
               </div>
-              <button type="button" className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon" onClick={shuffleInspirations}>
+              <button
+                type="button"
+                className="pf-btn pf-btn-ghost pf-btn-sm pf-btn-icon"
+                disabled={isGenerating}
+                onClick={shuffleInspirations}
+              >
                 <IconRefresh size={14} />
                 {t('studio.createProject.changeBatch')}
               </button>
@@ -418,6 +426,7 @@ export default function CreateProjectPage() {
                 <button
                   key={item.title}
                   type="button"
+                  disabled={isGenerating}
                   className={['pf-chip', selectedInspiration === item.title ? 'active' : ''].filter(Boolean).join(' ')}
                   title={sourceType === 'script' ? item.script.slice(0, 80) : item.theme}
                   onClick={() => applyInspiration(item)}
@@ -438,6 +447,7 @@ export default function CreateProjectPage() {
                 <button
                   type="button"
                   className="pf-field-clear-btn"
+                  disabled={isGenerating}
                   onClick={clearInputs}
                   title={t('studio.createProject.clearContent')}
                 >
@@ -490,7 +500,7 @@ export default function CreateProjectPage() {
               <button
                 type="button"
                 className="pf-btn pf-btn-ai pf-btn-sm pf-btn-icon"
-                disabled={aiBusy || busy}
+                disabled={isGenerating}
                 onClick={aiExpand}
               >
                 <IconSparkles size={14} />
@@ -501,6 +511,7 @@ export default function CreateProjectPage() {
               <button
                 type="button"
                 className="pf-btn-curl"
+                disabled={isGenerating}
                 onClick={() => setCurlOpen(true)}
                 title={t('studio.createProject.viewCurl')}
                 aria-label={t('studio.createProject.viewCurl')}
