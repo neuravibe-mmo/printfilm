@@ -23,6 +23,7 @@ export type ReferenceItemProps = {
   onGenerateImage?: () => Promise<void> | void
   generatingImage?: boolean
   onOpenCurl?: () => void
+  cacheBust?: string | number
 }
 
 export function ReferenceItemCard({
@@ -43,6 +44,7 @@ export function ReferenceItemCard({
   onGenerateImage,
   generatingImage,
   onOpenCurl,
+  cacheBust,
 }: ReferenceItemProps) {
   const { t } = useI18n()
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -180,7 +182,7 @@ export function ReferenceItemCard({
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <img
-                  src={api.assetUrl(imageUrl)}
+                  src={api.assetUrl(imageUrl, cacheBust)}
                   alt="Reference"
                   onClick={() => setLightboxOpen(true)}
                   style={{
@@ -423,7 +425,7 @@ export function ReferenceItemCard({
             ✕
           </button>
           <img
-            src={api.assetUrl(imageUrl)}
+            src={api.assetUrl(imageUrl, cacheBust)}
             alt="Reference full size"
             onClick={(e) => e.stopPropagation()}
             style={{

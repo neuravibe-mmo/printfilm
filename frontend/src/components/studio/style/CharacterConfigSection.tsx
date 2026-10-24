@@ -31,6 +31,7 @@ export type CharacterConfigSectionProps = {
   onOpenCurlCharacter?: () => void
   onOpenCurlProduct?: () => void
   onOpenCurlScene?: () => void
+  cacheBust?: string | number
 }
 
 export default function CharacterConfigSection({
@@ -58,6 +59,7 @@ export default function CharacterConfigSection({
   onOpenCurlCharacter,
   onOpenCurlProduct,
   onOpenCurlScene,
+  cacheBust,
 }: CharacterConfigSectionProps) {
   const { t } = useI18n()
 
@@ -103,6 +105,7 @@ export default function CharacterConfigSection({
         onPaste={() => onPasteRefImage('character')}
         onGenerateImage={onGenerateRefImage ? () => onGenerateRefImage('character') : undefined}
         generatingImage={generatingRefImage === 'character'}
+        cacheBust={cacheBust}
       />
 
       {/* Đường line fullwidth phân cách */}
@@ -135,6 +138,7 @@ export default function CharacterConfigSection({
         onPaste={() => onPasteRefImage('product')}
         onGenerateImage={onGenerateRefImage ? () => onGenerateRefImage('product') : undefined}
         generatingImage={generatingRefImage === 'product'}
+        cacheBust={cacheBust}
       />
 
       {/* Đường line fullwidth phân cách */}
@@ -167,6 +171,7 @@ export default function CharacterConfigSection({
         onPaste={() => onPasteRefImage('scene')}
         onGenerateImage={onGenerateRefImage ? () => onGenerateRefImage('scene') : undefined}
         generatingImage={generatingRefImage === 'scene'}
+        cacheBust={cacheBust}
       />
     </div>
   )

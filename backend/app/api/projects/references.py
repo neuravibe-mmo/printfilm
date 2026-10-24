@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+import time
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -514,8 +515,22 @@ async def upload_project_ref_image(
     if len(raw) > 8 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Ảnh tham chiếu không được vượt quá 8MB")
 
-    filename = f"{ref_type}_image{ext}" if ref_type != "character" else f"ref_image{ext}"
-    dest = storage.project_dir(project_id) / filename
+    stamp = int(time.time() * 1000)
+    prefix = "ref_image" if ref_type == "character" else f"{ref_type}_image"
+    filename = f"{prefix}_{stamp}{ext}"
+    p_dir = storage.project_dir(project_id)
+
+    # Dọn dẹp các ảnh tham chiếu cũ cùng loại trước đó để không bị trùng lặp và rác ổ đĩa
+    old_patterns = [f"{prefix}_*", f"{prefix}.*"]
+    for pat in old_patterns:
+        for old_f in p_dir.glob(pat):
+            try:
+                if old_f.is_file():
+                    old_f.unlink()
+            except Exception:
+                pass
+
+    dest = p_dir / filename
     dest.write_bytes(raw)
     url = storage.publish_local(dest)
     if ref_type == "product":

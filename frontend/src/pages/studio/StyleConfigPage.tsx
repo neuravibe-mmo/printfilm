@@ -534,6 +534,7 @@ export default function StyleConfigPage() {
             onOpenCurlCharacter={() => { setCurlType('character'); setCurlOpen(true) }}
             onOpenCurlProduct={() => { setCurlType('product'); setCurlOpen(true) }}
             onOpenCurlScene={() => { setCurlType('scene'); setCurlOpen(true) }}
+            cacheBust={project.updated_at}
           />
 
           <Modal

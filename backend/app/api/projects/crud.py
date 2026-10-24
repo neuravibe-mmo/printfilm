@@ -5,6 +5,7 @@ import re
 import zipfile
 from datetime import datetime
 from pathlib import Path
+import time
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -402,7 +403,16 @@ async def upload_project_cover(
     if len(raw) > 8 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="封面不能超过 8MB")
 
-    dest = storage.project_dir(project_id) / f"cover{ext}"
+    stamp = int(time.time() * 1000)
+    p_dir = storage.project_dir(project_id)
+    for old_c in p_dir.glob("cover*"):
+        try:
+            if old_c.is_file():
+                old_c.unlink()
+        except Exception:
+            pass
+
+    dest = p_dir / f"cover_{stamp}{ext}"
     dest.write_bytes(raw)
     project.cover_url = storage.publish_local(dest)
     await db.commit()
