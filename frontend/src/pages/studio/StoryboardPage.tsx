@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, defaultsFromTemplate, getApiBase, type UpstreamCurlInfo } from '../../api'
+import { api, defaultsFromTemplate, getApiBase, type ReferenceImageItem, type UpstreamCurlInfo } from '../../api'
 import type { Project, Shot, Template } from '../../api'
-import { Check, Copy } from 'lucide-react'
+import { AlertCircle, Check, Copy, ExternalLink, Images, X, ZoomIn } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import AppShell from '../../components/layout/AppShell'
 import Stepper from '../../components/ui/Stepper'
@@ -83,7 +83,8 @@ export default function StoryboardPage() {
   const [curlCopied, setCurlCopied] = useState(false)
   const [upstreamCurl, setUpstreamCurl] = useState<UpstreamCurlInfo | null>(null)
   const [upstreamLoading, setUpstreamLoading] = useState(false)
-  const [curlViewMode, setCurlViewMode] = useState<'upstream' | 'internal'>('upstream')
+  const [curlViewMode, setCurlViewMode] = useState<'upstream' | 'internal'>('internal')
+  const [previewImg, setPreviewImg] = useState<string | null>(null)
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchSelected, setBatchSelected] = useState<number[]>([])
   const [batchDuration, setBatchDuration] = useState('')
@@ -540,7 +541,7 @@ export default function StoryboardPage() {
       setUpstreamCurl(null)
       return
     }
-    setCurlViewMode('upstream')
+    setCurlViewMode('internal')
     setUpstreamLoading(true)
     api.getShotUpstreamCurl(project.id, curlModalShot.shot.id, curlModalShot.tab)
       .then((res) => {
@@ -553,6 +554,75 @@ export default function StoryboardPage() {
         setUpstreamLoading(false)
       })
   }, [curlModalShot, project])
+
+  const activeCurlRefs = useMemo<ReferenceImageItem[]>(() => {
+    if (upstreamCurl?.reference_images && upstreamCurl.reference_images.length > 0) {
+      return upstreamCurl.reference_images
+    }
+    if (!curlModalShot || !project) return []
+    const list: ReferenceImageItem[] = []
+    const shot = curlModalShot.shot
+    if (curlModalShot.tab === 'video') {
+      if (shot.image_url || shot.image_ark_url) {
+        list.push({
+          url: shot.image_url || shot.image_ark_url || '',
+          type: 'keyframe',
+          label: `Ảnh phân cảnh #${String(shot.shot_no).padStart(2, '0')} (Khung hình gốc / First frame)`,
+          description: `Ảnh tham chiếu chính (ID: ref_${String(shot.id).padStart(3, '0')}) bắt buộc để Google Veo (r2v) tạo video`,
+          shot_no: shot.shot_no,
+        })
+      }
+      const prevShot = project.shots
+        .slice()
+        .sort((a, b) => a.shot_no - b.shot_no)
+        .filter((s) => s.shot_no < shot.shot_no && (s.image_url || s.image_ark_url))
+        .pop()
+      if (prevShot && (prevShot.last_frame_url || prevShot.image_url || prevShot.image_ark_url)) {
+        list.push({
+          url: prevShot.last_frame_url || prevShot.image_url || prevShot.image_ark_url || '',
+          type: 'previous_tail_frame',
+          label: `Khung hình nối từ cảnh trước (Cảnh ${String(prevShot.shot_no).padStart(2, '0')})`,
+          description: 'Tham chiếu khung hình liền kề',
+          shot_no: prevShot.shot_no,
+        })
+      }
+    } else {
+      if (shot.image_url || shot.image_ark_url) {
+        list.push({
+          url: shot.image_url || shot.image_ark_url || '',
+          type: 'current_image',
+          label: `Ảnh hiện tại (Cảnh ${String(shot.shot_no).padStart(2, '0')})`,
+          description: 'Ảnh tham chiếu hiện có của cảnh khi vẽ lại',
+          shot_no: shot.shot_no,
+        })
+      }
+    }
+    if (project.ref_image_url) {
+      list.push({
+        url: project.ref_image_url,
+        type: 'character_ref',
+        label: 'Nhân vật tham chiếu (Character Bible)',
+        description: 'Đồng bộ ngoại hình nhân vật theo thiết lập dự án',
+      })
+    }
+    if (project.product_image_url) {
+      list.push({
+        url: project.product_image_url,
+        type: 'product_ref',
+        label: 'Sản phẩm tham chiếu',
+        description: 'Đồng bộ nhận diện sản phẩm',
+      })
+    }
+    if (project.scene_image_url) {
+      list.push({
+        url: project.scene_image_url,
+        type: 'scene_ref',
+        label: 'Bối cảnh tham chiếu',
+        description: 'Đồng bộ không gian bối cảnh',
+      })
+    }
+    return list
+  }, [upstreamCurl, curlModalShot, project])
 
   async function copyCurl() {
     if (!curlModalShot) return
@@ -1120,20 +1190,165 @@ export default function StoryboardPage() {
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                className={['pf-pill', curlViewMode === 'upstream' ? 'lime active' : ''].join(' ')}
-                style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
-                onClick={() => setCurlViewMode('upstream')}
-              >
-                🌐 Upstream API (neuravibemmo.dpdns.org)
-              </button>
-              <button
-                type="button"
                 className={['pf-pill', curlViewMode === 'internal' ? 'lime active' : ''].join(' ')}
                 style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
                 onClick={() => setCurlViewMode('internal')}
               >
                 🖥️ Internal API (PrintFilm Backend)
               </button>
+              <button
+                type="button"
+                className={['pf-pill', curlViewMode === 'upstream' ? 'lime active' : ''].join(' ')}
+                style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
+                onClick={() => setCurlViewMode('upstream')}
+              >
+                🌐 Upstream API (neuravibemmo.dpdns.org)
+              </button>
+            </div>
+
+            {/* Khối hiển thị ảnh tham chiếu cần có */}
+            <div
+              style={{
+                marginBottom: '1rem',
+                padding: '0.85rem 1rem',
+                background: '#f8fafc',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '0.65rem',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 600, fontSize: '0.86rem', color: '#1e293b' }}>
+                  <Images size={16} color="#0d9488" />
+                  <span>
+                    {curlModalShot.tab === 'video'
+                      ? 'Ảnh tham chiếu tạo Video (Reference Media)'
+                      : 'Ảnh tham chiếu tạo Hình ảnh'}
+                  </span>
+                  <span className="pf-prompt-count-pill" style={{ marginLeft: '0.2rem' }}>
+                    {activeCurlRefs.length} ảnh
+                  </span>
+                </div>
+                {curlModalShot.tab === 'video' ? (
+                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    Google Veo (r2v) lấy ảnh làm khung hình gốc (First frame)
+                  </span>
+                ) : null}
+              </div>
+
+              {activeCurlRefs.length > 0 ? (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
+                    gap: '0.75rem',
+                  }}
+                >
+                  {activeCurlRefs.map((r, idx) => {
+                    const fullUrl = api.assetUrl(r.url)
+                    return (
+                      <div
+                        key={`${r.url}-${idx}`}
+                        className="pf-prompt-ref-card"
+                        style={{ border: '1px solid #cbd5e1', background: '#fff' }}
+                      >
+                        <div
+                          className="pf-prompt-ref-thumb"
+                          style={{
+                            maxHeight: '170px',
+                            aspectRatio: project.output_ratio === '16:9' ? '16 / 9' : '9 / 16',
+                          }}
+                          onClick={() => setPreviewImg(fullUrl)}
+                          title="Nhấn để xem phóng to"
+                        >
+                          <img src={fullUrl} alt={r.label} loading="lazy" />
+                          <div className="pf-prompt-ref-overlay">
+                            <ZoomIn size={15} strokeWidth={2} />
+                            <span>Phóng to</span>
+                          </div>
+                        </div>
+                        <div className="pf-prompt-ref-info" style={{ padding: '0.5rem 0.6rem' }}>
+                          <span
+                            className="pf-prompt-ref-tag"
+                            style={{
+                              background: r.type === 'keyframe' ? '#dcfce7' : '#f1f5f9',
+                              color: r.type === 'keyframe' ? '#166534' : '#475569',
+                              fontWeight: r.type === 'keyframe' ? 700 : 500,
+                              fontSize: '0.7rem',
+                            }}
+                          >
+                            {r.type === 'keyframe'
+                              ? '⭐ Khung hình gốc (First Frame)'
+                              : r.type === 'character_ref'
+                              ? 'Nhân vật tham chiếu'
+                              : r.type === 'product_ref'
+                              ? 'Sản phẩm tham chiếu'
+                              : r.type === 'scene_ref'
+                              ? 'Bối cảnh tham chiếu'
+                              : r.type === 'previous_tail_frame'
+                              ? 'Nối cảnh trước'
+                              : r.type === 'current_image'
+                              ? 'Ảnh hiện tại'
+                              : r.type}
+                          </span>
+                          <div
+                            className="pf-prompt-ref-label"
+                            title={r.label}
+                            style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0f172a' }}
+                          >
+                            {r.label}
+                          </div>
+                          {r.description ? (
+                            <div style={{ fontSize: '0.72rem', color: '#64748b', lineHeight: 1.3 }}>
+                              {r.description}
+                            </div>
+                          ) : null}
+                          <a
+                            href={fullUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="pf-prompt-ref-link"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ marginTop: '0.2rem', fontSize: '0.72rem' }}
+                          >
+                            <span>Mở ảnh gốc</span>
+                            <ExternalLink size={11} strokeWidth={2} />
+                          </a>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.6rem 0.75rem',
+                    background: curlModalShot.tab === 'video' ? '#fef2f2' : '#f1f5f9',
+                    border: curlModalShot.tab === 'video' ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    color: curlModalShot.tab === 'video' ? '#991b1b' : '#475569',
+                    fontSize: '0.82rem',
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  <span>
+                    {curlModalShot.tab === 'video'
+                      ? '⚠️ Cảnh này chưa có ảnh phân cảnh (First frame). Google Veo r2v yêu cầu phải có ảnh tham chiếu để tạo video. Vui lòng bấm "Vẽ ảnh" trước.'
+                      : 'Không có ảnh tham chiếu nào. Ảnh được vẽ hoàn toàn từ mô tả văn bản (Text-to-Image).'}
+                  </span>
+                </div>
+              )}
             </div>
 
             {curlViewMode === 'upstream' ? (
@@ -1155,7 +1370,7 @@ export default function StoryboardPage() {
                         <p className="pf-muted" style={{ margin: '0 0 0.4rem', fontSize: '0.82rem' }}>
                           <em>Bước 1 (chuẩn bị ảnh tham chiếu nếu cần):</em> <code>POST {upstreamCurl.upload_step.url}</code>
                         </p>
-                        <pre className="pf-curl-box" style={{ maxHeight: '130px', fontSize: '0.75rem' }}>
+                        <pre className="pf-curl-box" style={{ fontSize: '0.75rem' }}>
                           {upstreamCurl.upload_step.curl}
                         </pre>
                       </div>
@@ -1178,6 +1393,27 @@ export default function StoryboardPage() {
             )}
           </div>
         </Modal>
+      ) : null}
+
+      {/* Lightbox / Preview ảnh lớn */}
+      {previewImg ? (
+        <div
+          className="pf-lightbox-backdrop"
+          onClick={() => setPreviewImg(null)}
+          style={{ zIndex: 100000 }}
+        >
+          <div className="pf-lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="pf-lightbox-close"
+              onClick={() => setPreviewImg(null)}
+              aria-label="Đóng"
+            >
+              <X size={20} strokeWidth={2} />
+            </button>
+            <img src={previewImg} alt="Preview" className="pf-lightbox-img" />
+          </div>
+        </div>
       ) : null}
     </AppShell>
   )

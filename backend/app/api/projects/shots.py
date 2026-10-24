@@ -440,6 +440,7 @@ async def get_shot_upstream_curl(
         _kepu_video_prompt,
         _locked_shot_prompt,
         _project_output_ratio,
+        previous_usable_shot,
     )
     from app.services.drama.flow_api import FLOW_PROJECT_ID
 
@@ -457,6 +458,8 @@ async def get_shot_upstream_curl(
         camera=shot.camera or "",
         ambient_only=video_generate_audio,
     )
+
+    prev = previous_usable_shot(list(project.shots), shot.shot_no)
 
     if tab == "video":
         target_url = f"{domain}/api/flow/generate-video-veo_3_1_r2v_lite_low_priority"
@@ -488,6 +491,45 @@ async def get_shot_upstream_curl(
             f"  -d '{json.dumps(upload_payload, ensure_ascii=False, indent=2)}'"
         )
 
+        ref_images = []
+        if shot.image_url or shot.image_ark_url:
+            ref_images.append({
+                "url": shot.image_url or shot.image_ark_url,
+                "type": "keyframe",
+                "label": f"Ảnh phân cảnh #{shot.shot_no:02d} (Khung hình gốc / First frame)",
+                "description": f"Ảnh tham chiếu chính (ID: {ref_id}) bắt buộc để Google Veo (r2v) tạo video",
+                "shot_no": shot.shot_no,
+            })
+        if prev and (prev.last_frame_url or prev.image_url or prev.image_ark_url):
+            ref_images.append({
+                "url": prev.last_frame_url or prev.image_url or prev.image_ark_url,
+                "type": "previous_tail_frame",
+                "label": f"Khung hình nối từ cảnh trước (Cảnh {prev.shot_no:02d})",
+                "description": "Tham chiếu khung hình liền kề đảm bảo tính liền mạch giữa các cảnh",
+                "shot_no": prev.shot_no,
+            })
+        if project.ref_image_url:
+            ref_images.append({
+                "url": project.ref_image_url,
+                "type": "character_ref",
+                "label": "Nhân vật tham chiếu (Character Bible)",
+                "description": "Đồng bộ ngoại hình nhân vật theo thiết lập dự án",
+            })
+        if getattr(project, "product_image_url", None):
+            ref_images.append({
+                "url": project.product_image_url,
+                "type": "product_ref",
+                "label": "Sản phẩm tham chiếu",
+                "description": "Đồng bộ nhận diện sản phẩm",
+            })
+        if getattr(project, "scene_image_url", None):
+            ref_images.append({
+                "url": project.scene_image_url,
+                "type": "scene_ref",
+                "label": "Bối cảnh tham chiếu",
+                "description": "Đồng bộ không gian bối cảnh",
+            })
+
         return {
             "tab": "video",
             "title": f"Tạo video Google Veo qua Flow API · Cảnh {shot.shot_no:02d}",
@@ -502,6 +544,7 @@ async def get_shot_upstream_curl(
                 "curl": upload_curl,
             },
             "prompt": video_prompt,
+            "reference_images": ref_images,
         }
     else:
         from app.services.drama.chatgpt_image_api import resolve_image_size
@@ -525,6 +568,54 @@ async def get_shot_upstream_curl(
             f'  -H "Content-Type: application/json" \\\n'
             f"  -d '{json.dumps(payload, ensure_ascii=False, indent=2)}'"
         )
+
+        ref_images = []
+        if shot.image_url or shot.image_ark_url:
+            ref_images.append({
+                "url": shot.image_url or shot.image_ark_url,
+                "type": "current_image",
+                "label": f"Ảnh hiện tại (Cảnh {shot.shot_no:02d})",
+                "description": "Ảnh tham chiếu hiện có của cảnh khi vẽ lại",
+                "shot_no": shot.shot_no,
+            })
+        if prev and (prev.image_url or prev.image_ark_url):
+            ref_images.append({
+                "url": prev.image_url or prev.image_ark_url,
+                "type": "previous_shot",
+                "label": f"Cảnh liền trước (Cảnh {prev.shot_no:02d})",
+                "description": "Tham chiếu phong cách & góc quay cảnh liền kề",
+                "shot_no": prev.shot_no,
+            })
+        if project.ref_image_url:
+            ref_images.append({
+                "url": project.ref_image_url,
+                "type": "character_ref",
+                "label": "Nhân vật tham chiếu",
+                "description": "Đồng bộ ngoại hình nhân vật xuyên suốt các cảnh",
+            })
+        if getattr(project, "product_image_url", None):
+            ref_images.append({
+                "url": project.product_image_url,
+                "type": "product_ref",
+                "label": "Sản phẩm tham chiếu",
+                "description": "Đồng bộ chi tiết sản phẩm",
+            })
+        if getattr(project, "scene_image_url", None):
+            ref_images.append({
+                "url": project.scene_image_url,
+                "type": "scene_ref",
+                "label": "Bối cảnh tham chiếu",
+                "description": "Đồng bộ không gian bối cảnh",
+            })
+        tpl_refs = list(((project.template.seedream_config or {}).get("ref_images") or [])) if project.template else []
+        for idx, t_url in enumerate(tpl_refs, start=1):
+            ref_images.append({
+                "url": t_url,
+                "type": "template_ref",
+                "label": f"Ảnh mẫu phong cách #{idx}",
+                "description": "Mẫu phong cách gốc của template",
+            })
+
         return {
             "tab": "image",
             "title": f"Tạo ảnh ChatGPT2API qua neuravibemmo.dpdns.org · Cảnh {shot.shot_no:02d}",
@@ -534,6 +625,7 @@ async def get_shot_upstream_curl(
             "payload": payload,
             "curl": curl_cmd,
             "prompt": full_prompt,
+            "reference_images": ref_images,
         }
 
 

@@ -121,7 +121,9 @@ export type Shot = {
   camera: string
   bgm_mood: string
   image_url: string | null
+  image_ark_url?: string | null
   video_url: string | null
+  last_frame_url?: string | null
   audio_url: string | null
   status: string
   version: number
@@ -221,6 +223,14 @@ export type Project = {
   }>
 }
 
+export interface ReferenceImageItem {
+  url: string
+  type: string
+  label: string
+  description?: string
+  shot_no?: number | null
+}
+
 export interface UpstreamCurlInfo {
   tab: 'image' | 'video'
   title: string
@@ -235,6 +245,7 @@ export interface UpstreamCurlInfo {
     curl: string
   }
   prompt: string
+  reference_images?: ReferenceImageItem[]
 }
 
 export type MediaModelOption = {
