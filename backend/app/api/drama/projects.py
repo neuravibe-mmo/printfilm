@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -237,3 +241,51 @@ async def delete_project(
     await db.delete(project)
     await db.commit()
     return {"ok": True}
+
+
+@router.post("/projects/{project_id}/generate-cover")
+async def generate_project_cover(
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Tạo ảnh bìa riêng cho dự án phim ngắn bằng AI dựa trên tên phim và cốt truyện."""
+    project = await get_owned_drama_project(db, project_id, user, with_script=True)
+    summary = (project.script.params or {}).get("summary") if project.script else {}
+    if not isinstance(summary, dict):
+        summary = {}
+    creative = (project.script.source if project.script else "") or project.title or ""
+    hook = summary.get("coreHook") or summary.get("oneLineStory") or creative[:200]
+    style_id = (project.params or {}).get("image_style_id")
+
+    prompt = (
+        f"Cinematic movie poster for drama series '{project.title}'. "
+        f"Key premise: {hook}. "
+        f"Epic composition, dramatic lighting, high quality cinematic visual art, masterpiece, 8k resolution."
+    )
+    if style_id:
+        prompt += f", in {style_id} aesthetic style"
+
+    from app.services.drama.chatgpt_image_api import generate_chatgpt_image
+
+    try:
+        cover_url = await generate_chatgpt_image(
+            prompt=prompt,
+            aspect_ratio="16:9",
+            project_id=project.id,
+            model="gpt-image-2",
+        )
+    except Exception as e:
+        logger.error("Lỗi tạo ảnh bìa riêng cho dự án %s: %s", project_id, e)
+        raise HTTPException(status_code=500, detail=f"Lỗi tạo ảnh bìa: {str(e)}")
+
+    from sqlalchemy.orm.attributes import flag_modified
+
+    params = dict(project.params or {})
+    params["cover_url"] = cover_url
+    project.params = params
+    flag_modified(project, "params")
+    await db.commit()
+
+    return {"cover_url": cover_url, "project_id": project.id}
+

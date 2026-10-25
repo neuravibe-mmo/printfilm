@@ -7,6 +7,12 @@ from app.models_drama import DramaProject
 
 # Phân tích URL bìa dự án và liệu nó có cần được tạo hay không
 def resolve_drama_project_cover(project: DramaProject) -> tuple[str | None, bool]:
+    params = project.params or {}
+    if isinstance(params, dict):
+        custom_cover = str(params.get("cover_url") or params.get("custom_cover_url") or "").strip()
+        if custom_cover:
+            return custom_cover, False
+
     cover_url: str | None = None
     cover_pending = False
 

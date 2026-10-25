@@ -5977,29 +5977,47 @@
 
 .drama-ep-storyboard {
   flex-shrink: 0;
-  border-top: 1px solid var(--ep-line);
-  background: #fff;
-  padding: 12px 16px 16px;
+  border-top: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  padding: 8px 20px 14px;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.05);
 }
 
 .drama-ep-storyboard-row {
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: 8px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-top: 8px;
+  padding-bottom: 6px;
+  padding-left: 4px;
 }
 
 .drama-ep-insert {
-  width: 28px;
-  height: 28px;
-  margin-top: 36px;
+  width: 32px;
+  height: 32px;
+  margin-top: 22px;
+  margin-right: 4px;
   flex-shrink: 0;
-  border: none;
+  border: 1.5px solid #cbd5e1;
   border-radius: 999px;
-  background: var(--ep-soft);
-  color: #64748b;
+  background: #ffffff;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: grid;
+  place-items: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drama-ep-insert:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #2563eb;
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
 }
 
 .drama-ep-clip-wrap {
@@ -6010,22 +6028,37 @@
 
 .drama-ep-clip-shell {
   position: relative;
-  width: 112px;
-  border: 2px solid transparent;
-  border-radius: 14px;
+  width: 118px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 4px;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.drama-ep-clip-shell:hover {
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .drama-ep-clip-shell.active {
-  border-color: #fff;
-  box-shadow: 0 0 0 2px #0f172a;
+  border: 2px solid #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18), 0 4px 14px rgba(37, 99, 235, 0.15);
+  transform: translateY(-2px);
 }
 
 .drama-ep-clip-shell.is-generating {
-  box-shadow: 0 0 0 2px #2563eb;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
 .drama-ep-clip-shell.is-queued {
-  box-shadow: 0 0 0 2px #0ea5e9;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.35);
 }
 
 .drama-ep-clip-shell.is-generating .drama-ep-clip-empty {
@@ -6033,7 +6066,8 @@
 }
 
 .drama-ep-clip-shell.is-failed {
-  box-shadow: 0 0 0 2px #dc2626;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.35);
 }
 
 .drama-ep-clip {
@@ -6363,15 +6397,31 @@
 .drama-ep-clip img,
 .drama-ep-clip video,
 .drama-ep-clip-empty {
-  width: 112px;
-  height: 72px;
-  border-radius: 12px;
+  width: 100%;
+  height: 68px;
+  border-radius: 8px;
   object-fit: cover;
-  background: var(--ep-soft);
+  background: #f1f5f9;
   display: grid;
   place-items: center;
-  color: #94a3b8;
+  color: #475569;
   font-size: 18px;
+  border: none;
+  box-sizing: border-box;
+}
+
+.drama-ep-clip-empty {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.drama-ep-clip:hover .drama-ep-clip-empty {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
 }
 
 .drama-ep-clip em {
@@ -6379,25 +6429,38 @@
   flex-direction: column;
   gap: 2px;
   margin-top: 6px;
+  padding: 0 2px 2px;
   font-style: normal;
-  font-size: 11px;
-  color: #64748b;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #0f172a;
   white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.drama-ep-clip-shell.active .drama-ep-clip em {
+  color: #1d4ed8;
 }
 
 .drama-ep-clip-spec {
   font-size: 10px;
-  color: #94a3b8;
+  font-weight: 500;
+  color: #64748b;
   letter-spacing: 0.01em;
+}
+
+.drama-ep-clip-shell.active .drama-ep-clip-spec {
+  color: #3b82f6;
 }
 
 .drama-ep-clip-ops {
   position: absolute;
-  top: 16px;
+  top: 14px;
   right: 0;
   display: none;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  z-index: 5;
 }
 
 .drama-ep-clip-wrap:hover .drama-ep-clip-ops {
@@ -6405,19 +6468,33 @@
 }
 
 .drama-ep-clip-ops button {
-  width: 24px;
-  height: 24px;
-  border: none;
+  width: 26px;
+  height: 26px;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  background: var(--ep-soft);
-  color: #64748b;
+  background: #ffffff;
+  color: #334155;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: all 0.15s ease;
+}
+
+.drama-ep-clip-ops button:not(:disabled):hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #93c5fd;
+  transform: scale(1.08);
 }
 
 .drama-ep-clip-ops button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
 }
 
 @media (max-width: 1100px) {

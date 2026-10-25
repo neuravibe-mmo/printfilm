@@ -6,8 +6,8 @@ from app.services.drama.agents import normalize_series_title, pick_auto_project_
 def test_normalize_series_title_strips_quotes_and_length():
     assert normalize_series_title("《月亮跟着我》") == "月亮跟着我"
     assert normalize_series_title("「天空为何蓝」") == "天空为何蓝"
-    long = "这是一个非常非常非常非常非常非常长的剧名不应该整段塞进项目标题栏"
-    assert len(normalize_series_title(long)) <= 24
+    long = "这是一个非常非常非常非常非常非常长的剧名不应该整段塞进项目标题栏" * 4
+    assert len(normalize_series_title(long)) <= 100
 
 
 def test_pick_auto_project_title_prefers_series_title_over_one_line():

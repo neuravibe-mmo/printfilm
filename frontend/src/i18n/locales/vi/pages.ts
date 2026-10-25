@@ -589,6 +589,10 @@ export const viPages = {
     pendingImage: 'Chờ tạo ảnh',
     canvasTitle: 'Dự án Canvas tự do',
     canvasPlaceholder: 'Dự án canvas tự do, hoàn thiện câu chuyện và tài nguyên trong canvas sau.',
+    generateCustomCover: 'Tạo ảnh bìa riêng bằng AI',
+    generatingCover: 'Đang tạo ảnh bìa riêng…',
+    generateCoverSuccess: 'Đã tạo ảnh bìa riêng thành công',
+    generateCoverFailed: 'Tạo ảnh bìa thất bại',
   },
   legal: {
     updatedAt: 'Ngày cập nhật: {date}',

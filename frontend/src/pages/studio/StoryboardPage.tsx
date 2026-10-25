@@ -299,7 +299,7 @@ export default function StoryboardPage() {
         <BillingErrorNotice
           message={error}
           className="pf-error pf-board-error"
-          onClose={() => setError(null)}
+          onClose={() => setError('')}
         />
       ) : null}
       {project.error_msg && project.error_msg !== dismissedError ? (

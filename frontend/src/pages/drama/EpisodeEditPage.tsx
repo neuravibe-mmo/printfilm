@@ -1542,11 +1542,19 @@ function EpisodeEditInner() {
                   type="button"
                   className="drama-ep-btn drama-ep-btn-subtle"
                   style={{ fontSize: '0.8rem', padding: '4px 10px', height: 'auto', whiteSpace: 'nowrap' }}
-                  onClick={() => {
+                  onClick={async () => {
                     if (!selected) return
                     const localized = localizeScriptCues(selected.content || '', 'vi')
-                    updateSelected({ content: localized })
-                    setStatus(t('drama.episodeEdit.convertCuesSuccess'))
+                    const nextFragments = fragments.map((f, i) =>
+                      i === selectedIndex ? { ...f, content: localized } : f,
+                    )
+                    setFragments(nextFragments)
+                    try {
+                      await dramaApi.saveFragments(eid, nextFragments)
+                      setStatus(t('drama.episodeEdit.convertCuesSuccess'))
+                    } catch {
+                      setStatus(t('drama.episodeEdit.convertCuesSuccess'))
+                    }
                   }}
                   title={t('drama.episodeEdit.convertCuesToVi')}
                 >
@@ -1796,6 +1804,7 @@ function EpisodeEditInner() {
           <button
             type="button"
             className="drama-ep-insert"
+            title={t('drama.episodeEdit.insertAtTop')}
             aria-label={t('drama.episodeEdit.insertAtTop')}
             onClick={() => insertFrag(0)}
           >

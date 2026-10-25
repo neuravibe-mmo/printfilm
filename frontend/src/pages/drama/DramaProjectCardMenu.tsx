@@ -7,13 +7,14 @@ import { useI18n } from '../../i18n'
 type Props = {
   onRename: () => void
   onDelete: () => void
+  onGenerateCover?: () => void
 }
 
 // Trì hoãn việc đóng chuột sau khi rời chuột để tránh bị đóng ngay lập tức khi trượt vào mục menu
 const HIDE_DELAY_MS = 120
 
 // Hiển thị menu đổi tên/xóa thẻ dự án
-export function DramaProjectCardMenu({ onRename, onDelete }: Props) {
+export function DramaProjectCardMenu({ onRename, onDelete, onGenerateCover }: Props) {
   const { t } = useI18n()
   /*
    * mở Menu có được mở rộng không
@@ -103,6 +104,24 @@ export function DramaProjectCardMenu({ onRename, onDelete }: Props) {
       </button>
       {open ? (
         <div className="drama-project-row-menu" role="menu">
+          {onGenerateCover ? (
+            <button
+              type="button"
+              role="menuitem"
+              onPointerDown={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                closeThenRun(onGenerateCover)
+              }}
+              onClick={(event) => {
+                event.stopPropagation()
+                if (ignoreToggleRef.current) return
+                closeThenRun(onGenerateCover)
+              }}
+            >
+              {t('dramaList.generateCustomCover')}
+            </button>
+          ) : null}
           <button
             type="button"
             role="menuitem"

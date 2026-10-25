@@ -6,6 +6,7 @@ import {
   FolderOpen,
   LayoutGrid,
   Library,
+  Loader2,
   Search,
   Sparkles,
   Terminal,
@@ -102,6 +103,7 @@ function DramaListInner() {
   const [query, setQuery] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [showCurlModal, setShowCurlModal] = useState(false)
+  const [generatingCoverId, setGeneratingCoverId] = useState<number | null>(null)
 
   const curlCommand = useMemo(() => {
     const base = getApiBase() || window.location.origin
@@ -346,6 +348,26 @@ function DramaListInner() {
     }
   }
 
+  // Tạo ảnh bìa riêng cho dự án bằng AI
+  async function handleGenerateCover(e: React.MouseEvent | null, item: DramaProjectListItem) {
+    if (e) e.stopPropagation()
+    if (generatingCoverId) return
+    setGeneratingCoverId(item.id)
+    setError('')
+    try {
+      const res = await dramaApi.generateProjectCover(item.id)
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === item.id ? { ...it, cover_url: res.cover_url, cover_pending: false } : it,
+        ),
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('dramaList.generateCoverFailed'))
+    } finally {
+      setGeneratingCoverId(null)
+    }
+  }
+
   return (
     <AppShell active="drama">
       <div className="drama-page drama-agent-page pf-drama-list">
@@ -578,10 +600,17 @@ function DramaListInner() {
                   key={item.id}
                   className={`pf-drama-card${isSelected ? ' is-selected' : ''}${canvas ? ' is-canvas' : ''}`}
                 >
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     className="pf-drama-card-cover"
                     onClick={() => openProject(item)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        openProject(item)
+                      }
+                    }}
                     aria-label={`${t('common.viewDetail')} ${item.title}`}
                   >
                     {coverSrc ? (
@@ -604,6 +633,26 @@ function DramaListInner() {
                         </div>
                       </div>
                     )}
+                    {!canvas ? (
+                      <button
+                        type="button"
+                        className="pf-drama-card-cover-gen-btn"
+                        title={
+                          generatingCoverId === item.id
+                            ? t('dramaList.generatingCover')
+                            : t('dramaList.generateCustomCover')
+                        }
+                        disabled={generatingCoverId === item.id}
+                        onClick={(e) => void handleGenerateCover(e, item)}
+                        aria-label={t('dramaList.generateCustomCover')}
+                      >
+                        {generatingCoverId === item.id ? (
+                          <Loader2 size={15} className="pf-drama-card-spin" />
+                        ) : (
+                          <Sparkles size={15} />
+                        )}
+                      </button>
+                    ) : null}
                     {canvas ? (
                       <span className="pf-drama-card-cover-badge is-canvas">
                         <LayoutGrid size={11} strokeWidth={2.2} />
@@ -622,7 +671,7 @@ function DramaListInner() {
                     >
                       <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(item.id)} />
                     </label>
-                  </button>
+                  </div>
                   <div className="pf-drama-card-body">
                     <div className="pf-drama-card-top">
                       <button type="button" className="pf-drama-card-title" onClick={() => openProject(item)}>
@@ -631,6 +680,7 @@ function DramaListInner() {
                       <DramaProjectCardMenu
                         onRename={() => void handleRename(item)}
                         onDelete={() => void handleDeleteOne(item)}
+                        onGenerateCover={!canvas ? () => void handleGenerateCover(null, item) : undefined}
                       />
                     </div>
                     <p className="pf-drama-card-meta">{formatDramaCardMeta(item, t)}</p>

@@ -261,6 +261,10 @@ export const dramaApi = {
     request<DramaProject>(`/api/drama/projects/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteProject: (id: number) =>
     request<{ ok: boolean }>(`/api/drama/projects/${id}`, { method: 'DELETE' }),
+  generateProjectCover: (projectId: number) =>
+    request<{ cover_url: string; project_id: number }>(`/api/drama/projects/${projectId}/generate-cover`, {
+      method: 'POST',
+    }),
 
   getScript: (projectId: number) => request<DramaScript>(`/api/drama/scripts/${projectId}`),
   updateScript: (

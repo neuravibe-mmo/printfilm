@@ -42,12 +42,14 @@ export const CUE_PAIRS = {
 export function hasChineseCues(content: string): boolean {
   if (!content) return false
   return (
-    content.includes('【画面·') ||
-    content.includes('【对白·') ||
-    content.includes('【旁白·') ||
+    content.includes('【画面') ||
+    content.includes('【对白') ||
+    content.includes('【旁白') ||
     content.includes('【内心独白') ||
-    content.includes('【字幕：') ||
-    content.includes('【BGM：') ||
+    content.includes('【字幕') ||
+    content.includes('【片头') ||
+    content.includes('【背景交代') ||
+    content.includes('【人物介绍') ||
     content.includes('音量低于人声')
   )
 }
@@ -65,31 +67,60 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
       /【BGM[：:]\s*(?:贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声|Subtle background music matching the narrative atmosphere[^】]*)】/g,
       CUE_PAIRS.bgm.vi,
     )
+    text = text.replace(/[；;]\s*音量低于人声/g, '; âm lượng nhỏ hơn giọng nói')
+    text = text.replace(/音量低于人声/g, 'âm lượng nhỏ hơn giọng nói')
+
     // Visual
     text = text.replace(
       /【(?:画面·无配音仅环境音|Visual · Ambient sound only, no voiceover)】/g,
       CUE_PAIRS.visual.vi,
     )
+    text = text.replace(/【画面(?:·|:|\s*)([^】]*)】/g, '【Hình ảnh · $1】')
+    text = text.replace(/【画面】/g, '【Hình ảnh】')
+
     // Subtitle
     text = text.replace(
       /【(?:字幕[：:]\s*底部居中·简体中文·逐句轮换·与口播同步|Subtitle[：:]\s*Bottom center[^】]*)】/g,
       CUE_PAIRS.subtitle.vi,
     )
+    text = text.replace(/【字幕[：:][^】]*】/g, CUE_PAIRS.subtitle.vi)
+
     // Dialogue
     text = text.replace(
       /【(?:对白·慢速清晰·同步字幕|Dialogue · Clear & measured pace · Synced subtitles)】/g,
-      CUE_PAIRS.dialogue.vi,
+      '【Thoại · Chậm rõ · Đồng bộ phụ đề】',
     )
+    text = text.replace(
+      /【(?:对白·慢速清晰|Dialogue · Clear & measured pace)】/g,
+      '【Thoại · Chậm rõ】',
+    )
+    text = text.replace(/【(?:对白|Dialogue)】/g, '【Thoại】')
+
     // Narration
     text = text.replace(
       /【(?:旁白·慢速清晰·同步字幕|Narration · Clear & measured pace · Synced subtitles)】/g,
-      CUE_PAIRS.narration.vi,
+      '【Lời dẫn · Chậm rõ · Đồng bộ phụ đề】',
     )
+    text = text.replace(
+      /【(?:旁白·慢速清晰|Narration · Clear & measured pace)】/g,
+      '【Lời dẫn · Chậm rõ】',
+    )
+    text = text.replace(/【(?:旁白|Narration)】/g, '【Lời dẫn】')
+
     // Inner monologue
     text = text.replace(
       /【(?:内心独白·同步字幕|Inner monologue · Synced subtitles)】/g,
-      CUE_PAIRS.innerMonologue.vi,
+      '【Độc thoại nội tâm · Đồng bộ phụ đề】',
     )
+    text = text.replace(/【(?:内心独白|Inner monologue)】/g, '【Độc thoại nội tâm】')
+
+    // Production cues
+    text = text.replace(/【片头·集数】/g, '【Đầu phim · Chữ số tập】')
+    text = text.replace(/【片头·片名】/g, '【Đầu phim · Chữ tên phim】')
+    text = text.replace(/【片头·类型】/g, '【Đầu phim · Thể loại】')
+    text = text.replace(/【片头(?:·|:|\s*)([^】]*)】/g, '【Đầu phim · $1】')
+    text = text.replace(/【背景交代·画面叠字】/g, '【Giới thiệu bối cảnh · Chữ trên hình】')
+    text = text.replace(/【人物介绍·画面叠字】/g, '【Giới thiệu nhân vật · Chữ trên hình】')
   } else if (targetLocale === 'zh') {
     text = text.replace(
       /【BGM[：:]\s*(?:Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện[^】]*|Subtle background music matching[^】]*)】/g,

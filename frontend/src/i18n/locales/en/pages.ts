@@ -596,6 +596,10 @@ export const enPages = {
     pendingImage: 'Pending image',
     canvasTitle: 'Free Canvas Project',
     canvasPlaceholder: 'Free canvas project, refine your story and assets on the canvas.',
+    generateCustomCover: 'Generate AI Cover Poster',
+    generatingCover: 'Generating cover poster…',
+    generateCoverSuccess: 'Cover poster generated successfully',
+    generateCoverFailed: 'Failed to generate cover poster',
   },
   legal: {
     updatedAt: 'Updated {date}',

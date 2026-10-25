@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from app.services.drama.llm import drama_chat_json
@@ -27,12 +28,15 @@ Yêu cầu xuất ra:
 1. Bắt buộc lập đúng số tập theo yêu cầu của người dùng, độ dài mảng episodes phải hoàn toàn khớp với tổng số tập.
 2. episodeNumber tăng dần liên tục từ 1, không được nhảy số, không được trùng lặp.
 3. Mỗi tập có title là tên tập phim ngắn gọn (khoảng 2–8 từ tiếng Việt), khái quát biến cố chính hoặc xung đột kịch tính của tập, có sức gợi mở và lôi cuốn người xem.
-4. Toàn bộ các tập phải bám sát diễn biến mở đầu, phát triển, cao trào và kết thúc trong bản tóm tắt kịch bản; nhịp phim dồn dập, cuốn hút phù hợp với định dạng phim ngắn.
-5. Giữa các tập liền kề phải có mối liên kết nhân quả và điểm móc nối (hook) giữ chân người xem.
-6. Ngôn ngữ: Sử dụng tiếng Việt chuẩn xác tự nhiên.
+4. QUY TẮC ĐẶT TIÊU ĐỀ (BẮT BUỘC):
+   - Tuyệt đối CẤM đặt tên Tập 1 (hoặc bất kỳ tập nào) trùng lặp với tên phim (seriesTitle). Tên phim là tên chung của cả dự án; còn Tập 1 phải có tiêu đề riêng thể hiện sự kiện mở đầu câu chuyện (ví dụ: nếu tên phim là "Tín Hiệu Từ Vực Tối", thì Tập 1 KHÔNG ĐƯỢC đặt là "Tín Hiệu Từ Vực Tối", mà phải đặt là: "Tín hiệu lạ", "Báo động trạm Kepler", "Bí ẩn ngoài vũ trụ", "Khởi nguồn biến cố", v.v.).
+   - Mỗi tập trong phim phải có tiêu đề độc lập, không được lặp lại tên của nhau và không được sao chép tên phim.
+5. Toàn bộ các tập phải bám sát diễn biến mở đầu, phát triển, cao trào và kết thúc trong bản tóm tắt kịch bản; nhịp phim dồn dập, cuốn hút phù hợp với định dạng phim ngắn.
+6. Giữa các tập liền kề phải có mối liên kết nhân quả và điểm móc nối (hook) giữ chân người xem.
+7. Ngôn ngữ: Sử dụng tiếng Việt chuẩn xác tự nhiên.
 
 Bắt buộc xuất JSON chuẩn:
-{"episodes":[{"episodeNumber":1,"title":"Tên tập"}, ...]}"""
+{"episodes":[{"episodeNumber":1,"title":"Tên tập riêng biệt"}, ...]}"""
 
 # Viết kịch bản chi tiết từng tập theo lô
 EPISODE_BATCH_CONTENT_SYSTEM = """Bạn là biên kịch phim ngắn / web drama chuyên nghiệp, chịu trách nhiệm căn cứ vào ý tưởng gốc, tóm tắt kịch bản, kế hoạch phân tập và nội dung các tập đã có để viết kịch bản chi tiết cho các tập phim được chỉ định.
@@ -40,10 +44,11 @@ EPISODE_BATCH_CONTENT_SYSTEM = """Bạn là biên kịch phim ngắn / web drama
 Yêu cầu xuất ra:
 1. Mỗi lượt chỉ xuất các tập nằm trong phạm vi chỉ định, độ dài mảng episodes phải hoàn toàn khớp với số tập yêu cầu.
 2. episodeNumber phải tương ứng chính xác với các số tập được yêu cầu, không được bỏ sót hoặc tự tạo thêm tập khác.
-3. Phải tham khảo và liên kết chặt chẽ với kịch bản các tập đã có để giữ mạch truyện, tính cách nhân vật và bối cảnh nhất quán; đợt đầu tiên viết mở đầu từ Tập 1.
-4. Giữa các tập phải có mối liên kết nhân quả, cuối mỗi tập phải để lại nút thắt (hook) gợi tò mò cho tập sau.
-5. Bắt buộc xuất định dạng đối tượng: {"episodes":[{"episodeNumber":1,"title":"Tên tập","creative":"Ý tưởng tập","summary":"Tóm tắt tập","content":"..."}]} (không xuất mảng trần).
-6. creative là ý tưởng 50–120 từ của tập; summary là tóm tắt diễn biến 80–200 từ; content là nội dung kịch bản chi tiết của tập (không viết quá ngắn).
+3. Tiêu đề tập (title): Bắt buộc là tên riêng biệt của tập đó, TUYỆT ĐỐI CẤM đặt trùng với tên phim (seriesTitle).
+4. Phải tham khảo và liên kết chặt chẽ với kịch bản các tập đã có để giữ mạch truyện, tính cách nhân vật và bối cảnh nhất quán; đợt đầu tiên viết mở đầu từ Tập 1.
+5. Giữa các tập phải có mối liên kết nhân quả, cuối mỗi tập phải để lại nút thắt (hook) gợi tò mò cho tập sau.
+6. Bắt buộc xuất định dạng đối tượng: {"episodes":[{"episodeNumber":1,"title":"Tên tập","creative":"Ý tưởng tập","summary":"Tóm tắt tập","content":"..."}]} (không xuất mảng trần).
+7. creative là ý tưởng 50–120 từ của tập; summary là tóm tắt diễn biến 80–200 từ; content là nội dung kịch bản chi tiết của tập (không viết quá ngắn).
 
 Yêu cầu định dạng kịch bản (trường content của mỗi tập phải tuân thủ nghiêm ngặt):
 1. Tổ chức theo từng cảnh, tiêu đề cảnh định dạng: CẢNH {tập}-{cảnh} (ví dụ Cảnh 2 của Tập 1: CẢNH 1-2)
@@ -617,17 +622,51 @@ def _content_char_len(text: str) -> int:
     return len("".join((text or "").split()))
 
 
-def normalize_series_title(raw: str | None) -> str:
+def normalize_series_title(raw: str | None, max_len: int = 100) -> str:
     """Làm sạch đầu ra tiêu đề phim truyền hình bằng AI và xóa số/trích dẫn tiêu đề sách cũng như phần đuôi quá dài."""
     title = str(raw or "").strip()
     if not title:
         return ""
     title = title.strip("「」『』《》\"'“”‘’").strip()
     title = title.splitlines()[0].strip()
-    # Cắt theo độ dài tên dự án hợp lý (tên phim ngắn Trung Quốc)
-    if len(title) > 24:
-        title = title[:24].rstrip("，。；、…·-— ")
+    # Giới hạn độ dài tên phim phù hợp tiếng Việt (tối đa 100 ký tự), cắt theo ranh giới từ để không đứt chữ
+    if len(title) > max_len:
+        cut = title[:max_len]
+        if " " in cut:
+            cut = cut.rsplit(" ", 1)[0]
+        title = cut.rstrip("，。；、…·-—,: ")
     return title
+
+
+def disambiguate_episode_title(
+    ep_title: str,
+    series_title: str,
+    episode_number: int,
+    *,
+    fallback_hint: str = "",
+) -> str:
+    """Đảm bảo tiêu đề tập không bị trùng hoặc sao chép nguyên xi tên bộ phim (series_title)."""
+    norm_ep = (ep_title or "").strip()
+    norm_series = (series_title or "").strip()
+    if not norm_ep:
+        return f"Tập {episode_number}"
+    if norm_series and norm_ep.lower() == norm_series.lower():
+        if fallback_hint:
+            clean = re.sub(
+                r"[^\w\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]",
+                " ",
+                fallback_hint,
+                flags=re.IGNORECASE,
+            )
+            words = [w for w in clean.split() if len(w) > 1]
+            if len(words) >= 2:
+                phrase = " ".join(words[:4]).strip().capitalize()
+                if phrase.lower() != norm_series.lower():
+                    return phrase
+        if episode_number == 1:
+            return "Khởi nguồn bí ẩn"
+        return f"Biến cố tập {episode_number}"
+    return norm_ep
 
 
 def pick_auto_project_title(
@@ -647,7 +686,7 @@ def pick_auto_project_title(
     looks_default = (
         not current
         or current in {"未命名漫剧", "自由画布项目"}
-        or len(current) > 36
+        or len(current) > 100
         or (creative_prefix and current.startswith(creative_prefix))
         or current.endswith("…")
     )
@@ -743,15 +782,20 @@ async def run_episode_outline(
     episode_count: int,
 ) -> list[dict[str, Any]]:
     # Tạo bản phác thảo của bộ sưu tập hoàn chỉnh
+    series_title = normalize_series_title(
+        summary.get("seriesTitle") or summary.get("title") or summary.get("projectTitle")
+    )
     summary_text = format_summary_text(summary)
     user = "\n".join(
         [
+            f"Tên phim (seriesTitle): {series_title}" if series_title else "",
             f"Tổng số tập: {episode_count} tập (mảng episodes bắt buộc có đúng {episode_count} phần tử)",
             "",
             f"Ý tưởng ban đầu:\n{(creative or '').strip()}",
             "",
             f"Tóm tắt kịch bản:\n{summary_text}",
             "",
+            f"LƯU Ý BẮT BUỘC: Tiêu đề Tập 1 TUYỆT ĐỐI CẤM đặt trùng với tên phim '{series_title}'. Mỗi tập phải có tên riêng độc lập!" if series_title else "",
             "Hãy xuất episodeNumber và title cho toàn bộ các tập.",
         ]
     )
@@ -767,7 +811,13 @@ async def run_episode_outline(
             number = int(item.get("episodeNumber") or (i + 1))
         except (TypeError, ValueError):
             number = i + 1
-        title = str(item.get("title") or "").strip() or f"Tập {number}"
+        raw_title = str(item.get("title") or "").strip()
+        title = disambiguate_episode_title(
+            raw_title,
+            series_title,
+            number,
+            fallback_hint=str(summary.get("coreHook") or summary.get("oneLineStory") or creative),
+        ) or f"Tập {number}"
         result.append({"episodeNumber": number, "title": title, "body": ""})
     if len(result) < episode_count:
         # Hoàn thành số tập còn thiếu
@@ -995,7 +1045,7 @@ def _normalize_batch_episodes(
         title = (
             str(item.get("title") or "").strip()
             or title_by_num.get(number_i)
-            or f"第 {number_i} 集"
+            or f"Tập {number_i}"
         )
         row: dict[str, Any] = {
             "episodeNumber": number_i,

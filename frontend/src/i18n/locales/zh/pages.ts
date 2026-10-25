@@ -589,6 +589,10 @@ export const zhPages = {
     pendingImage: '待出图',
     canvasTitle: '自由画布项目',
     canvasPlaceholder: '自由画布创作项目，稍后在画布中完善故事与资产。',
+    generateCustomCover: 'AI 单独生成封面海报',
+    generatingCover: '正在生成封面海报…',
+    generateCoverSuccess: '封面海报生成成功',
+    generateCoverFailed: '生成封面海报失败',
   },
   legal: {
     updatedAt: '更新日期：{date}',

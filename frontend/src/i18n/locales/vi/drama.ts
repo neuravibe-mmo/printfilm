@@ -425,7 +425,7 @@ export const viDrama = {
       current: 'Hiện tại',
       previewOrSwitch: 'Nhấn để xem trước; bên phải để đặt làm hiện tại',
       thisEpisode: 'Tập này',
-      insertAtTop: 'Chèn phân cảnh ở đầu',
+      insertAtTop: 'Chèn thêm một cảnh vào bên trái, có cập nhật lại tên phân cảnh',
       viewError: 'Xem nguyên nhân thất bại',
       viewFragError: 'Xem nguyên nhân thất bại đoạn {i}',
       insert: 'Chèn',
