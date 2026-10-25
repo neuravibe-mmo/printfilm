@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, defaultsFromTemplate, getApiBase, type ExtractedPromptResult, type ReferenceImageItem, type UpstreamCurlInfo } from '../../api'
-import type { Project, Shot, Template } from '../../api'
-import { AlertCircle, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Images, RefreshCw, Sparkles, X, ZoomIn } from 'lucide-react'
-import Modal from '../../components/ui/Modal'
+import { api } from '../../api'
+import type { Shot } from '../../api'
+import { X } from 'lucide-react'
 import AppShell from '../../components/layout/AppShell'
 import Stepper from '../../components/ui/Stepper'
 import {
@@ -17,32 +16,16 @@ import {
   IconSliders,
   IconTrash,
 } from '../../components/ui/Icons'
-import { dialog } from '../../lib/dialog'
-import { handleBillingError } from '../../lib/billingError'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import ShotTrimModal from '../../components/studio/ShotTrimModal'
 import ShotPromptModal from '../../components/studio/ShotPromptModal'
 import {
-  effectiveStatus,
   formatMmSs,
-  kepuBillingPhase,
   kepuPhaseHint,
-  kepuStepIndex,
   kepuSteps,
   isProjectWideBusy,
-  shotsByNo,
 } from '../../lib/status'
-import {
-  firstVisualFromScript,
-  narrationFromScript,
-  replaceFirstVisualInScript,
-  replaceNarrationInScript,
-  validateSegmentScriptDuration,
-} from '../../lib/segmentDuration'
-import {
-  downloadStoryboardCsv,
-  isProjectBusy,
-} from '../../components/studio/storyboard/storyboardUtils'
+import { downloadStoryboardCsv } from '../../components/studio/storyboard/storyboardUtils'
 import StoryboardSidebar from '../../components/studio/storyboard/StoryboardSidebar'
 import StoryboardOverviewGrid from '../../components/studio/storyboard/StoryboardOverviewGrid'
 import StoryboardBatchModal from '../../components/studio/storyboard/StoryboardBatchModal'
@@ -54,102 +37,107 @@ import StoryboardPreviewModal, {
 import StoryboardShotRow from '../../components/studio/storyboard/StoryboardShotRow'
 import UploadImageModal from '../../components/studio/storyboard/UploadImageModal'
 import UploadVideoModal from '../../components/studio/storyboard/UploadVideoModal'
+import StoryboardCurlModal from '../../components/studio/storyboard/StoryboardCurlModal'
+import { useStoryboardProject } from '../../components/studio/storyboard/useStoryboardProject'
+import { useStoryboardShotActions } from '../../components/studio/storyboard/useStoryboardShotActions'
 
 export default function StoryboardPage() {
   const { t } = useI18n()
   const { id } = useParams()
   const projectId = Number(id)
   const nav = useNavigate()
-  const [project, setProject] = useState<Project | null>(null)
-  const [template, setTemplate] = useState<Template | null>(null)
-  const [busy, setBusy] = useState(false)
-  // busyShotIds đang gửi số lần quay của hình ảnh/video quay một lần, có thể song song, cuối cùng chỉ xóa chính nó
-  const [busyShotIds, setBusyShotIds] = useState<Set<number>>(() => new Set())
-  const [error, setError] = useState('')
-  const [editing, setEditing] = useState<Shot | null>(null)
-  const [editFocus, setEditFocus] = useState<string>('')
-  /** Lối vào biểu mẫu: Cột tường thuật/phân đoạn theo cột phân đoạn/thanh thao tác "Chỉnh sửa" */
-  const [editMode, setEditMode] = useState<'full' | 'narration' | 'segment'>('full')
-  const [promptEdit, setPromptEdit] = useState<{
-    style_prompt: string
-    character_prompt: string
-    extra_prompt: string
-  } | null>(null)
+
+  const {
+    project,
+    setProject,
+    template,
+    busy,
+    setBusy,
+    error,
+    setError,
+    dismissedError,
+    setDismissedError,
+    videoDurations,
+    setVideoDurations,
+    promptEdit,
+    setPromptEdit,
+    running,
+    step,
+    totalDuration,
+    shots,
+    displayPrompts,
+    isFullPipeline,
+    readyToCompose,
+    needsScriptConfirm,
+    hasFinal,
+    primaryAction,
+    generateLabel,
+    progressItems,
+    continueGenerate,
+    restartGenerate,
+    deleteProject,
+    composeOnly,
+    publish,
+    onCoverFile,
+    useFirstShotCover,
+    saveProjectPrompts,
+    restoreTemplatePrompts,
+  } = useStoryboardProject(projectId)
+
+  const {
+    busyShotIds,
+    regenImage,
+    regenVideo,
+    regenAudio,
+    editing,
+    setEditing,
+    editFocus,
+    setEditFocus,
+    editMode,
+    setEditMode,
+    editDurationCheck,
+    openShotEdit,
+    closeShotEdit,
+    patchEditingNarration,
+    patchEditingVisual,
+    patchEditingScript,
+    saveShot,
+    batchOpen,
+    setBatchOpen,
+    batchSelected,
+    setBatchSelected,
+    batchDuration,
+    setBatchDuration,
+    batchRegenAudio,
+    setBatchRegenAudio,
+    minAllowedDuration,
+    maxAllowedDuration,
+    batchDurationError,
+    canApplyBatch,
+    openBatchAdjust,
+    applyBatchAdjust,
+  } = useStoryboardShotActions({
+    project,
+    setProject,
+    busy,
+    setBusy,
+    setError,
+    template,
+    onOpenEdit: () => setMenuShotId(null),
+  })
+
   const [preview, setPreview] = useState<PreviewState>(null)
   const [menuShotId, setMenuShotId] = useState<number | null>(null)
   const [imgMenuShotId, setImgMenuShotId] = useState<number | null>(null)
   const [promptModalShot, setPromptModalShot] = useState<{ shot: Shot; tab?: 'image' | 'video' } | null>(null)
   const [curlModalShot, setCurlModalShot] = useState<{ shot: Shot; tab: 'image' | 'video' } | null>(null)
-  const [curlCopied, setCurlCopied] = useState(false)
-  const [upstreamCurl, setUpstreamCurl] = useState<UpstreamCurlInfo | null>(null)
-  const [upstreamLoading, setUpstreamLoading] = useState(false)
-  const [extractedPromptInfo, setExtractedPromptInfo] = useState<ExtractedPromptResult | null>(null)
-  const [extractingPrompt, setExtractingPrompt] = useState(false)
-  const [extractPromptError, setExtractPromptError] = useState<string | null>(null)
-  const [showRawGoogleFlow, setShowRawGoogleFlow] = useState(false)
-  const [copiedExtractedPrompt, setCopiedExtractedPrompt] = useState(false)
-  const [curlViewMode, setCurlViewMode] = useState<'upstream' | 'internal'>('internal')
   const [previewImg, setPreviewImg] = useState<string | null>(null)
-  const [batchOpen, setBatchOpen] = useState(false)
-  const [batchSelected, setBatchSelected] = useState<number[]>([])
-  const [batchDuration, setBatchDuration] = useState('')
-  const [batchRegenAudio, setBatchRegenAudio] = useState(false)
-  const [videoDurations, setVideoDurations] = useState<Record<number, number>>({})
   const [trimmingShot, setTrimmingShot] = useState<{
     shot: Shot
     videoDuration: number
   } | null>(null)
   const [uploadVideoShot, setUploadVideoShot] = useState<Shot | null>(null)
   const [uploadImageShot, setUploadImageShot] = useState<Shot | null>(null)
-
-  useEffect(() => {
-    if (!localStorage.getItem('token')) {
-      nav(`/auth?next=${encodeURIComponent(location.pathname)}`, { replace: true })
-      return
-    }
-    if (!projectId) {
-      nav('/studio/new')
-      return
-    }
-    api
-      .getProject(projectId)
-      .then((p) => {
-        setProject(p)
-        return api.templates().then((list) => {
-          setTemplate(list.find((t) => t.id === p.template_id) || null)
-        })
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : t('common.loadFailed')))
-  }, [nav, projectId])
-
-  useEffect(() => {
-    project?.shots.forEach((s) => {
-      if (s.video_url && !videoDurations[s.id]) {
-        const v = document.createElement('video')
-        v.preload = 'metadata'
-        v.src = api.assetUrl(s.video_url, s.version)
-        v.onloadedmetadata = () => {
-          if (v.duration && !isNaN(v.duration) && v.duration > 0) {
-            setVideoDurations((prev) => ({ ...prev, [s.id]: v.duration }))
-          }
-        }
-      }
-    })
-  }, [project?.shots])
-
-  useEffect(() => {
-    if (!project) return
-    // Only poll while pipeline is actively running — idle checkpoints
-    // (IMAGE_READY / VIDEO_READY / SCRIPT_READY) must not spin forever.
-    if (!isProjectBusy(project)) return
-    const timer = setInterval(() => {
-      api
-        .getProject(project.id)
-        .then(setProject)
-        .catch(() => undefined)
-    }, 1500)
-    return () => clearInterval(timer)
-  }, [project?.id, project?.status, project?.active_tasks])
 
   useEffect(() => {
     if (menuShotId == null && imgMenuShotId == null) return
@@ -161,112 +149,6 @@ export default function StoryboardPage() {
     return () => document.removeEventListener('click', onDoc)
   }, [menuShotId, imgMenuShotId])
 
-  const running = isProjectBusy(project)
-  const step = project ? kepuStepIndex('board', project) : 2
-  const totalDuration = useMemo(
-    () => (project?.shots || []).reduce((s, x) => s + (Number(x.duration) || 0), 0),
-    [project?.shots],
-  )
-
-  // editScriptText Tập lệnh theo từng phần hiện được chỉnh sửa trong cửa sổ bật lên
-  const editScriptText = editing?.segment_script || editing?.video_prompt || ''
-  // editDurationCheck Xác minh thời lượng của tập lệnh bật lên
-  const editDurationCheck = useMemo(
-    () => validateSegmentScriptDuration(editScriptText),
-    [editScriptText],
-  )
-
-  const shots = useMemo(() => shotsByNo(project?.shots), [project?.shots])
-  /** Khi trường dự án trống, mẫu sẽ được lặp lại theo mặc định (phù hợp với phần phụ trợ _hiệu quả_*) */
-  const promptDefaults = useMemo(
-    () => (template ? defaultsFromTemplate(template) : null),
-    [template],
-  )
-  const displayPrompts = useMemo(() => {
-    if (!project) {
-      return { style_prompt: '', character_prompt: '', extra_prompt: '' }
-    }
-    return {
-      style_prompt: (project.style_prompt || '').trim() || promptDefaults?.style_prompt || '',
-      character_prompt:
-        (project.character_prompt || '').trim() || promptDefaults?.character_prompt || '',
-      extra_prompt: (project.extra_prompt || '').trim() || promptDefaults?.extra_prompt || '',
-    }
-  }, [project, promptDefaults])
-  const isFullPipeline = project?.pipeline_mode !== 'image_text'
-  /**
-   * Full pipeline: need AI videos before compose.
-   * VIDEO_READY+ means video stage finished (incl. privacy skips without video_url).
-   * image_text skips the video stage entirely.
-   */
-  const phase = project ? kepuBillingPhase(project) : 'script'
-  const readyToCompose = phase === 'compose'
-  const needsVideos = phase === 'videos'
-  const needsScriptConfirm = phase === 'assets'
-  const hasFinal = Boolean(project?.final_video_url)
-  /** Primary CTA: confirm script → generate → (videos) → compose → preview */
-  const primaryAction: 'generate' | 'compose' | 'preview' | 'busy' = running
-    ? 'busy'
-    : hasFinal
-      ? 'preview'
-      : readyToCompose
-        ? 'compose'
-        : 'generate'
-
-  const generateLabel = running
-    ? t('studio.storyboard.generating')
-    : shots.length === 0
-      ? t('studio.storyboard.goStylePage')
-      : needsScriptConfirm
-        ? t('studio.storyboard.confirmShots')
-        : needsVideos
-          ? t('studio.storyboard.shotVideo')
-          : t('studio.storyboard.continueGen')
-
-  // Tiến trình của Workbench: chế độ đầy đủ yêu cầu video ống kính + TTS bên ngoài, chế độ hình ảnh tĩnh chỉ yêu cầu tổng hợp lồng tiếng
-  const progressItems = useMemo(() => {
-    if (!project) return []
-    const list = project.shots || []
-    const imgs = list.filter((s) => s.image_url).length
-    const auds = list.filter((s) => s.audio_url).length
-    const vids = list.filter((s) => s.video_url).length
-    const full = project.pipeline_mode !== 'image_text'
-    const stage = effectiveStatus(project)
-    type ProgressItem = { label: string; done: boolean; run?: boolean; pct?: number }
-    const items: ProgressItem[] = [
-      { label: t('studio.storyboard.stepTheme'), done: true },
-      { label: t('studio.storyboard.stepScript'), done: list.length > 0 || !['DRAFT', 'SCRIPTING'].includes(project.status) },
-      {
-        label: `${t('studio.storyboard.stepImages')} (${imgs}/${list.length || 0})`,
-        done: list.length > 0 && imgs === list.length,
-      },
-    ]
-    if (full) {
-      items.push({
-        label: `${t('studio.storyboard.stepVideos')} (${vids}/${list.length || 0})`,
-        done:
-          list.length > 0 &&
-          (vids === list.length ||
-            ['VIDEO_READY', 'COMPOSING', 'AUDITING', 'DONE'].includes(stage)),
-        run: stage === 'VIDEOING',
-        pct: stage === 'VIDEOING' ? project.progress : undefined,
-      })
-    }
-    items.push({
-      label: `${t('studio.storyboard.stepAudio')} (${auds}/${list.length || 0})`,
-      done: list.length > 0 && auds === list.length,
-      run: stage === 'AUDIOING',
-      pct: stage === 'AUDIOING' ? project.progress : undefined,
-    })
-    items.push({
-      label: full ? t('studio.storyboard.stepSplice') : t('studio.storyboard.stepRender'),
-      done: Boolean(project.final_video_url) || project.status === 'DONE',
-      run: stage === 'COMPOSING',
-      pct: stage === 'COMPOSING' ? project.progress : undefined,
-    })
-    return items
-  }, [project])
-
   function openFinalPreview() {
     if (!project?.final_video_url) return
     setPreview({
@@ -277,551 +159,9 @@ export default function StoryboardPage() {
     })
   }
 
-  async function continueGenerate() {
-    if (!project) return
-    setBusy(true)
-    setError('')
-    try {
-      setProject(await api.generate(project.id))
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('studio.storyboard.continueGenFailed')
-      if (msg.includes(t('studio.storyboard.composeKeyword'))) {
-        try {
-          setError('')
-          setProject(await api.compose(project.id))
-        } catch (e2) {
-          setError(e2 instanceof Error ? e2.message : t('studio.storyboard.composeFailed'))
-        }
-        return
-      }
-      setError(msg)
-      await handleBillingError(err, nav)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function restartGenerate() {
-    if (!project) return
-    const ok = await dialog.confirm({
-      title: t('studio.storyboard.redoTitle'),
-      message: t('studio.storyboard.redoMessage'),
-      confirmText: t('studio.storyboard.redoConfirm'),
-      cancelText: t('studio.storyboard.redoCancel'),
-      tone: 'danger',
-    })
-    if (!ok) return
-    setBusy(true)
-    setError('')
-    try {
-      setProject(await api.generate(project.id, { restart: true }))
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('studio.storyboard.redoFailed')
-      setError(msg)
-      await handleBillingError(err, nav)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function deleteProject() {
-    if (!project) return
-    const ok = await dialog.confirm({
-      title: t('studio.storyboard.deleteTitle'),
-      message: t('studio.storyboard.deleteMessage'),
-      confirmText: t('studio.storyboard.deleteConfirm'),
-      cancelText: t('common.cancel'),
-      tone: 'danger',
-    })
-    if (!ok) return
-    setBusy(true)
-    try {
-      await api.deleteProject(project.id)
-      nav('/history')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.deleteFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function composeOnly() {
-    if (!project) return
-    setBusy(true)
-    try {
-      setProject(await api.compose(project.id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.composeFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function onCoverFile(file: File | null) {
-    if (!project || !file) return
-    setBusy(true)
-    setError('')
-    try {
-      setProject(await api.uploadCover(project.id, file))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.coverUploadFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function useFirstShotCover() {
-    if (!project) return
-    const first = [...(project.shots || [])]
-      .sort((a, b) => a.shot_no - b.shot_no)
-      .find((s) => s.image_url)
-    if (!first?.image_url) {
-      setError(t('studio.storyboard.noCoverFrame'))
-      return
-    }
-    setBusy(true)
-    setError('')
-    try {
-      setProject(await api.updateProject(project.id, { cover_url: first.image_url }))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.setCoverFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const minAllowedDuration = template?.shot_duration_min ?? 2
-  const maxAllowedDuration =
-    project?.pipeline_mode === 'image_text'
-      ? 30
-      : (template?.shot_duration_max ?? 8)
-
-  const batchDurationNum = batchDuration.trim() === '' ? null : Number(batchDuration)
-  const batchDurationError = useMemo(() => {
-    if (batchDurationNum === null) return null
-    if (!Number.isFinite(batchDurationNum) || batchDurationNum <= 0) {
-      return t('studio.storyboard.invalidDuration')
-    }
-    if (batchDurationNum < minAllowedDuration) {
-      return t('studio.storyboard.batchDurationMin')
-        .replace('{min}', String(minAllowedDuration))
-        .replace('{template}', template?.name || '')
-    }
-    if (batchDurationNum > maxAllowedDuration) {
-      return t('studio.storyboard.batchDurationMax')
-        .replace('{max}', String(maxAllowedDuration))
-        .replace('{template}', template?.name || '')
-    }
-    return null
-  }, [batchDurationNum, minAllowedDuration, maxAllowedDuration, template?.name, t])
-
-  const canApplyBatch =
-    !busy &&
-    batchSelected.length > 0 &&
-    !batchDurationError &&
-    (batchDurationNum !== null || batchRegenAudio)
-
-  function openBatchAdjust() {
-    if (!project) return
-    setBatchSelected((project.shots || []).map((s) => s.id))
-    setBatchDuration('')
-    setBatchRegenAudio(false)
-    setBatchOpen(true)
-  }
-
-  async function applyBatchAdjust() {
-    if (!project || batchSelected.length === 0) return
-    if (batchDurationError) {
-      setError(batchDurationError)
-      return
-    }
-    const durationVal = batchDurationNum
-    if (durationVal == null && !batchRegenAudio) {
-      setError(t('studio.storyboard.setDurationOrRedub'))
-      return
-    }
-    setBusy(true)
-    setError('')
-    try {
-      for (const shotId of batchSelected) {
-        if (durationVal != null) {
-          await api.updateShot(project.id, shotId, { duration: durationVal })
-        }
-        if (batchRegenAudio) {
-          await api.regenAudio(project.id, shotId)
-        }
-      }
-      setProject(await api.getProject(project.id))
-      setBatchOpen(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.batchFailed'))
-      try {
-        setProject(await api.getProject(project.id))
-      } catch {
-        /* ignore */
-      }
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function publish() {
-    if (!project) return
-    setBusy(true)
-    try {
-      await api.publish(project.id)
-      nav('/history')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.publishFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // Đánh dấu yêu cầu nhân bản này là đang được tiến hành và không bao gồm các nhân bản khác
-  function markShotBusy(shotId: number) {
-    setBusyShotIds((ids) => new Set(ids).add(shotId))
-  }
-
-  // Chỉ xóa chính mình để tránh các yêu cầu song song xả ổ khóa của nhau
-  function markShotIdle(shotId: number) {
-    setBusyShotIds((ids) => {
-      const next = new Set(ids)
-      next.delete(shotId)
-      return next
-    })
-  }
-
-  async function regenImage(shot: Shot) {
-    if (!project) return
-    markShotBusy(shot.id)
-    try {
-      setProject(await api.regenImage(project.id, shot.id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.genImageFailed'))
-    } finally {
-      markShotIdle(shot.id)
-    }
-  }
-
-  async function regenVideo(shot: Shot) {
-    if (!project) return
-    markShotBusy(shot.id)
-    try {
-      setProject(await api.regenVideo(project.id, shot.id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.genVideoFailed'))
-    } finally {
-      markShotIdle(shot.id)
-    }
-  }
-
-  async function regenAudio(shot: Shot) {
-    if (!project) return
-    // Việc lồng tiếng lại sẽ viết lại toàn bộ phim để phát sóng, khóa toàn bộ bàn để tránh viết vội hai chiều
-    setBusy(true)
-    try {
-      setProject(await api.regenAudio(project.id, shot.id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.redubFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  function getShotCurlCommand(shot: Shot, tab: 'image' | 'video') {
-    if (!project) return ''
-    const baseUrl = getApiBase()
-    const token = localStorage.getItem('token') || '<YOUR_TOKEN>'
-    const loc = localStorage.getItem('printfilm.locale') || 'vi'
-    const endpoint = tab === 'video' ? 'regen-video' : 'regen-image'
-
-    return `curl -X POST "${baseUrl}/api/projects/${project.id}/shots/${shot.id}/${endpoint}" \\
-  -H "Accept-Language: ${loc}" \\
-  -H "Authorization: Bearer ${token}"`
-  }
-
-  useEffect(() => {
-    if (!curlModalShot || !project) {
-      setUpstreamCurl(null)
-      return
-    }
-    setCurlViewMode('internal')
-    setUpstreamLoading(true)
-    api.getShotUpstreamCurl(project.id, curlModalShot.shot.id, curlModalShot.tab)
-      .then((res) => {
-        setUpstreamCurl(res)
-      })
-      .catch(() => {
-        setUpstreamCurl(null)
-      })
-      .finally(() => {
-        setUpstreamLoading(false)
-      })
-  }, [curlModalShot, project])
-
-  const activeCurlRefs = useMemo<ReferenceImageItem[]>(() => {
-    if (upstreamCurl?.reference_images && upstreamCurl.reference_images.length > 0) {
-      return upstreamCurl.reference_images
-    }
-    if (!curlModalShot || !project) return []
-    const list: ReferenceImageItem[] = []
-    const shot = curlModalShot.shot
-    if (curlModalShot.tab === 'video') {
-      if (shot.image_url || shot.image_ark_url) {
-        list.push({
-          url: shot.image_url || shot.image_ark_url || '',
-          type: 'keyframe',
-          label: `Ảnh phân cảnh #${String(shot.shot_no).padStart(2, '0')} (Khung hình gốc / First frame)`,
-          description: `Ảnh tham chiếu chính (ID: ref_${String(shot.id).padStart(3, '0')}) bắt buộc để Google Veo (r2v) tạo video`,
-          shot_no: shot.shot_no,
-        })
-      }
-      const prevShot = project.shots
-        .slice()
-        .sort((a, b) => a.shot_no - b.shot_no)
-        .filter((s) => s.shot_no < shot.shot_no && (s.image_url || s.image_ark_url))
-        .pop()
-      if (prevShot && (prevShot.last_frame_url || prevShot.image_url || prevShot.image_ark_url)) {
-        list.push({
-          url: prevShot.last_frame_url || prevShot.image_url || prevShot.image_ark_url || '',
-          type: 'previous_tail_frame',
-          label: `Khung hình nối từ cảnh trước (Cảnh ${String(prevShot.shot_no).padStart(2, '0')})`,
-          description: 'Tham chiếu khung hình liền kề',
-          shot_no: prevShot.shot_no,
-        })
-      }
-    } else {
-      if (shot.image_url || shot.image_ark_url) {
-        list.push({
-          url: shot.image_url || shot.image_ark_url || '',
-          type: 'current_image',
-          label: `Ảnh hiện tại (Cảnh ${String(shot.shot_no).padStart(2, '0')})`,
-          description: 'Ảnh tham chiếu hiện có của cảnh khi vẽ lại',
-          shot_no: shot.shot_no,
-        })
-      }
-    }
-    if (project.ref_image_url) {
-      list.push({
-        url: project.ref_image_url,
-        type: 'character_ref',
-        label: 'Nhân vật tham chiếu (Character Bible)',
-        description: 'Đồng bộ ngoại hình nhân vật theo thiết lập dự án',
-      })
-    }
-    if (project.product_image_url) {
-      list.push({
-        url: project.product_image_url,
-        type: 'product_ref',
-        label: 'Sản phẩm tham chiếu',
-        description: 'Đồng bộ nhận diện sản phẩm',
-      })
-    }
-    if (project.scene_image_url) {
-      list.push({
-        url: project.scene_image_url,
-        type: 'scene_ref',
-        label: 'Bối cảnh tham chiếu',
-        description: 'Đồng bộ không gian bối cảnh',
-      })
-    }
-    return list
-  }, [upstreamCurl, curlModalShot, project])
-
-  async function copyCurl() {
-    if (!curlModalShot) return
-    const textToCopy =
-      curlViewMode === 'upstream'
-        ? (upstreamCurl?.curl || '')
-        : getShotCurlCommand(curlModalShot.shot, curlModalShot.tab)
-    if (!textToCopy) return
-    try {
-      await navigator.clipboard.writeText(textToCopy)
-      setCurlCopied(true)
-      setTimeout(() => setCurlCopied(false), 2000)
-    } catch {
-      // fallback
-    }
-  }
-
-  useEffect(() => {
-    if (upstreamCurl?.extracted_flow) {
-      setExtractedPromptInfo(upstreamCurl.extracted_flow)
-      setExtractPromptError(null)
-      setExtractingPrompt(false)
-    } else if (upstreamCurl?.curl) {
-      setExtractingPrompt(true)
-      setExtractPromptError(null)
-      api.extractPromptFromCurl(upstreamCurl.curl, upstreamCurl.domain)
-        .then((res) => {
-          setExtractedPromptInfo(res)
-        })
-        .catch((err: any) => {
-          setExtractPromptError(err.message || 'Không thể trích xuất prompt từ cURL')
-        })
-        .finally(() => {
-          setExtractingPrompt(false)
-        })
-    } else {
-      setExtractedPromptInfo(null)
-      setExtractPromptError(null)
-      setExtractingPrompt(false)
-    }
-  }, [upstreamCurl])
-
-  async function handleReExtractPrompt() {
-    if (!upstreamCurl?.curl) return
-    setExtractingPrompt(true)
-    setExtractPromptError(null)
-    try {
-      const res = await api.extractPromptFromCurl(upstreamCurl.curl, upstreamCurl.domain)
-      setExtractedPromptInfo(res)
-    } catch (err: any) {
-      setExtractPromptError(err.message || 'Lỗi gọi API extract-prompt-from-curl')
-    } finally {
-      setExtractingPrompt(false)
-    }
-  }
-
-  async function handleCopyExtractedPrompt() {
-    if (!extractedPromptInfo?.prompt) return
-    try {
-      await navigator.clipboard.writeText(extractedPromptInfo.prompt)
-      setCopiedExtractedPrompt(true)
-      setTimeout(() => setCopiedExtractedPrompt(false), 2000)
-    } catch {}
-  }
-
   function openTrimModal(shot: Shot, initialDuration?: number) {
     const vDur = initialDuration || videoDurations[shot.id] || 10
     setTrimmingShot({ shot, videoDuration: vDur })
-  }
-
-  function openShotEdit(shot: Shot, focus = '') {
-    setEditFocus(focus)
-    if (focus === 'narration') setEditMode('narration')
-    else if (focus === 'segment_script') setEditMode('segment')
-    else setEditMode('full')
-    setEditing({ ...shot })
-    setMenuShotId(null)
-  }
-
-  function closeShotEdit() {
-    setEditing(null)
-    setEditFocus('')
-    setEditMode('full')
-  }
-
-  // Viết đồng bộ phần tường thuật kịch bản khi thay đổi lời tường thuật
-  function patchEditingNarration(value: string) {
-    if (!editing) return
-    const script = editing.segment_script || editing.video_prompt || ''
-    const next = replaceNarrationInScript(script, value)
-    setEditing({
-      ...editing,
-      narration: value,
-      segment_script: next,
-      video_prompt: next,
-    })
-  }
-
-  // Viết đồng bộ đoạn đầu tiên của kịch bản khi thay đổi hình ảnh khung hình đầu tiên
-  function patchEditingVisual(value: string) {
-    if (!editing) return
-    const script = editing.segment_script || editing.video_prompt || ''
-    const next = replaceFirstVisualInScript(script, value)
-    setEditing({
-      ...editing,
-      img_prompt: value,
-      segment_script: next,
-      video_prompt: next,
-    })
-  }
-
-  // Lấp đầy lời tường thuật và khung hình đầu tiên khi sửa kịch bản
-  function patchEditingScript(value: string) {
-    if (!editing) return
-    setEditing({
-      ...editing,
-      segment_script: value,
-      video_prompt: value,
-      narration: narrationFromScript(value),
-      img_prompt: firstVisualFromScript(value) || editing.img_prompt,
-    })
-  }
-
-  async function saveShot() {
-    if (!project || !editing) return
-    // scriptText tập lệnh theo từng phần hiện đang được chỉnh sửa
-    const scriptText = editing.segment_script || editing.video_prompt || ''
-    // thời lượngKiểm tra kết quả kiểm tra thời lượng
-    const durationCheck = validateSegmentScriptDuration(scriptText)
-    if (!durationCheck.valid) {
-      setError(durationCheck.message || t('studio.storyboard.durationInvalid'))
-      return
-    }
-    setBusy(true)
-    try {
-      await api.updateShot(project.id, editing.id, {
-        narration: editing.narration,
-        overlay_title: editing.overlay_title,
-        overlay_subtitle: editing.overlay_subtitle,
-        img_prompt: editing.img_prompt,
-        video_prompt: editing.video_prompt,
-        segment_script: editing.segment_script,
-        duration: Number(editing.duration) || 4,
-        camera: editing.camera,
-      })
-      closeShotEdit()
-      setProject(await api.getProject(project.id))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.saveFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // Lưu từ nhắc dự án; nếu giống với mẫu nền thì sẽ bị xóa và ghi đè.
-  async function saveProjectPrompts() {
-    if (!project || !promptEdit) return
-    setBusy(true)
-    try {
-      const d = promptDefaults
-      const styleOut = promptEdit.style_prompt.trim()
-      const charOut = promptEdit.character_prompt.trim()
-      const extraOut = promptEdit.extra_prompt.trim()
-      const updated = await api.updateProject(project.id, {
-        style_prompt: d && styleOut === d.style_prompt ? '' : styleOut,
-        character_prompt: d && charOut === d.character_prompt ? '' : charOut,
-        extra_prompt: d && extraOut === d.extra_prompt ? '' : extraOut,
-      })
-      setProject(updated)
-      setPromptEdit(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.savePromptFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // Xóa phạm vi dự án và thế hệ tiếp theo sẽ đi theo mẫu nền
-  async function restoreTemplatePrompts() {
-    if (!project) return
-    setBusy(true)
-    try {
-      const updated = await api.updateProject(project.id, {
-        style_prompt: '',
-        character_prompt: '',
-        extra_prompt: '',
-      })
-      setProject(updated)
-      setPromptEdit(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('studio.storyboard.restoreTemplateFailed'))
-    } finally {
-      setBusy(false)
-    }
   }
 
   if (!project && !error) {
@@ -955,9 +295,22 @@ export default function StoryboardPage() {
         </p>
       </header>
 
-      {error ? <BillingErrorNotice message={error} className="pf-error pf-board-error" /> : null}
-      {project.error_msg ? (
-        <BillingErrorNotice message={project.error_msg} className="pf-error pf-board-error" />
+      {error ? (
+        <BillingErrorNotice
+          message={error}
+          className="pf-error pf-board-error"
+          onClose={() => setError(null)}
+        />
+      ) : null}
+      {project.error_msg && project.error_msg !== dismissedError ? (
+        <BillingErrorNotice
+          message={project.error_msg}
+          className="pf-error pf-board-error"
+          onClose={() => {
+            setDismissedError(project.error_msg || null)
+            setProject((p) => (p ? { ...p, error_msg: null } : p))
+          }}
+        />
       ) : null}
 
       <div className="pf-board">
@@ -1210,462 +563,14 @@ export default function StoryboardPage() {
       ) : null}
 
       {curlModalShot && project ? (
-        <Modal
+        <StoryboardCurlModal
           open={Boolean(curlModalShot)}
+          shot={curlModalShot.shot}
+          tab={curlModalShot.tab}
+          project={project}
           onClose={() => setCurlModalShot(null)}
-          title={
-            curlViewMode === 'upstream'
-              ? 'Lệnh cURL API (neuravibemmo.dpdns.org)'
-              : (t('studio.createProject.curlModalTitle') || 'Lệnh cURL API')
-          }
-          size="lg"
-          footer={
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', width: '100%' }}>
-              <button
-                type="button"
-                className="pf-btn pf-btn-lime pf-btn-sm pf-btn-icon"
-                onClick={copyCurl}
-              >
-                {curlCopied ? <Check size={14} /> : <Copy size={14} />}
-                <span>{curlCopied ? (t('studio.createProject.copiedCurl') || 'Đã sao chép cURL!') : 'Copy cURL'}</span>
-              </button>
-              <button
-                type="button"
-                className="pf-btn pf-btn-ghost pf-btn-sm"
-                onClick={() => setCurlModalShot(null)}
-              >
-                {t('common.close') || 'Đóng'}
-              </button>
-            </div>
-          }
-        >
-          <div style={{ padding: '0.25rem 0' }}>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className={['pf-pill', curlViewMode === 'internal' ? 'lime active' : ''].join(' ')}
-                style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
-                onClick={() => setCurlViewMode('internal')}
-              >
-                🖥️ Internal API (PrintFilm Backend)
-              </button>
-              <button
-                type="button"
-                className={['pf-pill', curlViewMode === 'upstream' ? 'lime active' : ''].join(' ')}
-                style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
-                onClick={() => setCurlViewMode('upstream')}
-              >
-                🌐 Upstream API (neuravibemmo.dpdns.org)
-              </button>
-            </div>
-
-            {/* Khối hiển thị ảnh tham chiếu cần có */}
-            <div
-              style={{
-                marginBottom: '1rem',
-                padding: '0.85rem 1rem',
-                background: '#f8fafc',
-                borderRadius: '10px',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '0.65rem',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 600, fontSize: '0.86rem', color: '#1e293b' }}>
-                  <Images size={16} color="#0d9488" />
-                  <span>
-                    {curlModalShot.tab === 'video'
-                      ? 'Ảnh tham chiếu tạo Video (Reference Media)'
-                      : 'Ảnh tham chiếu tạo Hình ảnh'}
-                  </span>
-                  <span className="pf-prompt-count-pill" style={{ marginLeft: '0.2rem' }}>
-                    {activeCurlRefs.length} ảnh
-                  </span>
-                </div>
-                {curlModalShot.tab === 'video' ? (
-                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                    Google Veo (r2v) lấy ảnh làm khung hình gốc (First frame)
-                  </span>
-                ) : null}
-              </div>
-
-              {activeCurlRefs.length > 0 ? (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
-                    gap: '0.75rem',
-                  }}
-                >
-                  {activeCurlRefs.map((r, idx) => {
-                    const fullUrl = api.assetUrl(r.url)
-                    return (
-                      <div
-                        key={`${r.url}-${idx}`}
-                        className="pf-prompt-ref-card"
-                        style={{ border: '1px solid #cbd5e1', background: '#fff' }}
-                      >
-                        <div
-                          className="pf-prompt-ref-thumb"
-                          style={{
-                            maxHeight: '170px',
-                            aspectRatio: project.output_ratio === '16:9' ? '16 / 9' : '9 / 16',
-                          }}
-                          onClick={() => setPreviewImg(fullUrl)}
-                          title="Nhấn để xem phóng to"
-                        >
-                          <img src={fullUrl} alt={r.label} loading="lazy" />
-                          <div className="pf-prompt-ref-overlay">
-                            <ZoomIn size={15} strokeWidth={2} />
-                            <span>Phóng to</span>
-                          </div>
-                        </div>
-                        <div className="pf-prompt-ref-info" style={{ padding: '0.5rem 0.6rem' }}>
-                          <span
-                            className="pf-prompt-ref-tag"
-                            style={{
-                              background: r.type === 'keyframe' ? '#dcfce7' : '#f1f5f9',
-                              color: r.type === 'keyframe' ? '#166534' : '#475569',
-                              fontWeight: r.type === 'keyframe' ? 700 : 500,
-                              fontSize: '0.7rem',
-                            }}
-                          >
-                            {r.type === 'keyframe'
-                              ? '⭐ Khung hình gốc (First Frame)'
-                              : r.type === 'character_ref'
-                              ? 'Nhân vật tham chiếu'
-                              : r.type === 'product_ref'
-                              ? 'Sản phẩm tham chiếu'
-                              : r.type === 'scene_ref'
-                              ? 'Bối cảnh tham chiếu'
-                              : r.type === 'previous_tail_frame'
-                              ? 'Nối cảnh trước'
-                              : r.type === 'current_image'
-                              ? 'Ảnh hiện tại'
-                              : r.type}
-                          </span>
-                          <div
-                            className="pf-prompt-ref-label"
-                            title={r.label}
-                            style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0f172a' }}
-                          >
-                            {r.label}
-                          </div>
-                          {r.description ? (
-                            <div style={{ fontSize: '0.72rem', color: '#64748b', lineHeight: 1.3 }}>
-                              {r.description}
-                            </div>
-                          ) : null}
-                          <a
-                            href={fullUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="pf-prompt-ref-link"
-                            onClick={(e) => e.stopPropagation()}
-                            style={{ marginTop: '0.2rem', fontSize: '0.72rem' }}
-                          >
-                            <span>Mở ảnh gốc</span>
-                            <ExternalLink size={11} strokeWidth={2} />
-                          </a>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.6rem 0.75rem',
-                    background: curlModalShot.tab === 'video' ? '#fef2f2' : '#f1f5f9',
-                    border: curlModalShot.tab === 'video' ? '1px solid #fecaca' : '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    color: curlModalShot.tab === 'video' ? '#991b1b' : '#475569',
-                    fontSize: '0.82rem',
-                  }}
-                >
-                  <AlertCircle size={16} />
-                  <span>
-                    {curlModalShot.tab === 'video'
-                      ? '⚠️ Cảnh này chưa có ảnh phân cảnh (First frame). Google Veo r2v yêu cầu phải có ảnh tham chiếu để tạo video. Vui lòng bấm "Vẽ ảnh" trước.'
-                      : 'Không có ảnh tham chiếu nào. Ảnh được vẽ hoàn toàn từ mô tả văn bản (Text-to-Image).'}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {curlViewMode === 'upstream' ? (
-              <>
-                {upstreamLoading ? (
-                  <div className="pf-prompt-loading" style={{ padding: '1.5rem 0' }}>
-                    <span className="pf-spinner" />
-                    <span>Đang tải nội dung API gửi tới neuravibemmo.dpdns.org...</span>
-                  </div>
-                ) : upstreamCurl ? (
-                  <>
-                    <p className="pf-muted" style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
-                      <strong>{upstreamCurl.title}</strong> — <code>{upstreamCurl.method} {upstreamCurl.url}</code>
-                    </p>
-                    <pre className="pf-curl-box">{upstreamCurl.curl}</pre>
-
-                    {upstreamCurl.upload_step ? (
-                      <div style={{ marginTop: '1rem' }}>
-                        <p className="pf-muted" style={{ margin: '0 0 0.4rem', fontSize: '0.82rem' }}>
-                          <em>Bước 1 (chuẩn bị ảnh tham chiếu nếu cần):</em> <code>POST {upstreamCurl.upload_step.url}</code>
-                        </p>
-                        <pre className="pf-curl-box" style={{ fontSize: '0.75rem' }}>
-                          {upstreamCurl.upload_step.curl}
-                        </pre>
-                      </div>
-                    ) : null}
-
-                    {/* Khối trích xuất Prompt text gửi lên Google Flow */}
-                    <div
-                      style={{
-                        marginTop: '1.25rem',
-                        padding: '1rem',
-                        background: '#f8fafc',
-                        borderRadius: '12px',
-                        border: '1px solid #cbd5e1',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          marginBottom: '0.65rem',
-                          flexWrap: 'wrap',
-                          gap: '0.5rem',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                          <Sparkles size={16} color="#6366f1" />
-                          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#1e293b' }}>
-                            Nội dung Prompt text gửi lên Google Flow
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '0.72rem',
-                              padding: '0.15rem 0.5rem',
-                              borderRadius: '999px',
-                              background: '#e0e7ff',
-                              color: '#3730a3',
-                              fontFamily: 'monospace',
-                            }}
-                          >
-                            POST /api/flow/extract-prompt-from-curl
-                          </span>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <button
-                            type="button"
-                            className="pf-btn pf-btn-ghost pf-btn-sm"
-                            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                            onClick={handleReExtractPrompt}
-                            disabled={extractingPrompt}
-                            title="Gọi lại API extract-prompt-from-curl"
-                          >
-                            <RefreshCw size={13} style={{ animation: extractingPrompt ? 'pf-spin 0.8s linear infinite' : 'none' }} />
-                            <span>{extractingPrompt ? 'Đang trích xuất...' : 'Trích xuất lại'}</span>
-                          </button>
-                          {extractedPromptInfo?.prompt ? (
-                            <button
-                              type="button"
-                              className="pf-btn pf-btn-lime pf-btn-sm"
-                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                              onClick={handleCopyExtractedPrompt}
-                            >
-                              {copiedExtractedPrompt ? <Check size={13} /> : <Copy size={13} />}
-                              <span>{copiedExtractedPrompt ? 'Đã copy!' : 'Copy Prompt'}</span>
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {/* Các tag metadata đã trích xuất từ cURL */}
-                      {extractedPromptInfo ? (
-                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
-                          {extractedPromptInfo.google_flow?.rpc_id ? (
-                            <span
-                              style={{
-                                fontSize: '0.72rem',
-                                padding: '0.15rem 0.45rem',
-                                borderRadius: '4px',
-                                background: '#fef3c7',
-                                color: '#92400e',
-                                fontWeight: 500,
-                              }}
-                            >
-                              RPC: <code>{extractedPromptInfo.google_flow.rpc_id}</code> ({extractedPromptInfo.google_flow.rpc_id === 'MZZa6b' ? 'r2v - có ảnh tham chiếu' : 't2v - thuần text'})
-                            </span>
-                          ) : null}
-                          {extractedPromptInfo.model_key || extractedPromptInfo.google_flow?.model ? (
-                            <span
-                              style={{
-                                fontSize: '0.72rem',
-                                padding: '0.15rem 0.45rem',
-                                borderRadius: '4px',
-                                background: '#f1f5f9',
-                                color: '#334155',
-                              }}
-                            >
-                              Model: <strong>{extractedPromptInfo.model_key || extractedPromptInfo.google_flow?.model}</strong>
-                            </span>
-                          ) : null}
-                          {extractedPromptInfo.aspect_ratio ? (
-                            <span
-                              style={{
-                                fontSize: '0.72rem',
-                                padding: '0.15rem 0.45rem',
-                                borderRadius: '4px',
-                                background: '#f1f5f9',
-                                color: '#334155',
-                              }}
-                            >
-                              Tỉ lệ: <strong>{extractedPromptInfo.aspect_ratio}</strong>
-                            </span>
-                          ) : null}
-                          {extractedPromptInfo.reference_media_ids && extractedPromptInfo.reference_media_ids.length > 0 ? (
-                            <span
-                              style={{
-                                fontSize: '0.72rem',
-                                padding: '0.15rem 0.45rem',
-                                borderRadius: '4px',
-                                background: '#ecfdf5',
-                                color: '#065f46',
-                              }}
-                            >
-                              Media tham chiếu: {extractedPromptInfo.reference_media_ids.join(', ')}
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      {extractingPrompt ? (
-                        <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.82rem' }}>
-                          <span className="pf-spinner" style={{ marginRight: '0.5rem' }} />
-                          Đang gọi API extract-prompt-from-curl để lấy prompt text...
-                        </div>
-                      ) : extractPromptError ? (
-                        <div
-                          style={{
-                            padding: '0.6rem 0.75rem',
-                            background: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            borderRadius: '6px',
-                            color: '#991b1b',
-                            fontSize: '0.82rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <AlertCircle size={15} />
-                            <span>{extractPromptError}</span>
-                          </div>
-                          <button
-                            type="button"
-                            className="pf-btn pf-btn-ghost pf-btn-sm"
-                            style={{ fontSize: '0.75rem', padding: '0.15rem 0.45rem' }}
-                            onClick={handleReExtractPrompt}
-                          >
-                            Thử lại
-                          </button>
-                        </div>
-                      ) : extractedPromptInfo?.prompt ? (
-                        <>
-                          <div
-                            style={{
-                              background: '#ffffff',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '8px',
-                              padding: '0.85rem 1rem',
-                              fontSize: '0.84rem',
-                              lineHeight: 1.6,
-                              color: '#0f172a',
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-word',
-                              fontFamily: 'inherit',
-                            }}
-                          >
-                            {extractedPromptInfo.prompt}
-                          </div>
-
-                          {extractedPromptInfo.google_flow ? (
-                            <div style={{ marginTop: '0.5rem' }}>
-                              <button
-                                type="button"
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  padding: 0,
-                                  color: '#6366f1',
-                                  fontSize: '0.75rem',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.25rem',
-                                }}
-                                onClick={() => setShowRawGoogleFlow(!showRawGoogleFlow)}
-                              >
-                                {showRawGoogleFlow ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                                <span>{showRawGoogleFlow ? 'Ẩn cấu trúc Google Flow RPC gốc' : 'Xem cấu trúc Google Flow RPC gốc (inner_task_prompt_structure)'}</span>
-                              </button>
-                              {showRawGoogleFlow ? (
-                                <pre
-                                  className="pf-curl-box"
-                                  style={{
-                                    marginTop: '0.4rem',
-                                    fontSize: '0.73rem',
-                                    height: 'auto',
-                                    maxHeight: 'none',
-                                    overflowY: 'visible',
-                                  }}
-                                >
-                                  {JSON.stringify(extractedPromptInfo.google_flow, null, 2)}
-                                </pre>
-                              ) : null}
-                            </div>
-                          ) : null}
-                        </>
-                      ) : (
-                        <div style={{ color: '#64748b', fontSize: '0.82rem', fontStyle: 'italic' }}>
-                          Chưa có thông tin prompt trích xuất.
-                        </div>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <p className="pf-muted">Không thể tải thông tin upstream cURL</p>
-                )}
-              </>
-            ) : (
-              <>
-                <p className="pf-muted" style={{ margin: '0 0 0.5rem', fontSize: '0.85rem' }}>
-                  {curlModalShot.tab === 'video' ? (t('studio.storyboard.regenVideo') || 'Tạo lại video') : (t('studio.storyboard.redrawImage') || 'Vẽ lại hình ảnh')} - <code>POST /api/projects/{project.id}/shots/{curlModalShot.shot.id}/{curlModalShot.tab === 'video' ? 'regen-video' : 'regen-image'}</code> · Cảnh {String(curlModalShot.shot.shot_no).padStart(2, '0')}
-                </p>
-                <p className="pf-muted" style={{ margin: '0 0 0.75rem', fontSize: '0.78rem' }}>
-                  API nội bộ này kích hoạt background task trên backend PrintFilm, sau đó hệ thống sẽ chuẩn bị prompt và gửi tiếp sang neuravibemmo.dpdns.org.
-                </p>
-                <pre className="pf-curl-box">{getShotCurlCommand(curlModalShot.shot, curlModalShot.tab)}</pre>
-              </>
-            )}
-          </div>
-        </Modal>
+          onPreviewImage={(url) => setPreviewImg(url)}
+        />
       ) : null}
 
       {/* Lightbox / Preview ảnh lớn */}
