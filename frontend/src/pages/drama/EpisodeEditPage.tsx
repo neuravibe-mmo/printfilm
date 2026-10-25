@@ -50,7 +50,8 @@ import {
 import { DramaFragmentClipSpec } from '../../components/drama/DramaFragmentClipSpec'
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
 import { DramaGenTaskDetail } from '../../components/drama/DramaGenTaskDetail'
-import { CircleAlert } from 'lucide-react'
+import { CircleAlert, Terminal } from 'lucide-react'
+import { EpisodeEditCurlModal } from './EpisodeEditCurlModal'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
 import { useMediaModelsCatalog } from '../../hooks/useMediaModelsCatalog'
 import { enqueueDramaImageGen } from '../../lib/dramaImageGenQueue'
@@ -152,6 +153,7 @@ function EpisodeEditInner() {
   const [assetScope, setAssetScope] = useState<AssetScope>('episode')
   const [assetTab, setAssetTab] = useState<AssetTab | null>('character')
   const [editing, setEditing] = useState(false)
+  const [showCurlModal, setShowCurlModal] = useState(false)
   const [videoStyleId, setVideoStyleId] = useState<ImageStyleId | ''>('')
   const [modelId, setModelId] = useState('')
   const mediaCatalog = useMediaModelsCatalog()
@@ -1689,6 +1691,27 @@ function EpisodeEditInner() {
                           ? t('drama.episodeEdit.regenConfirm')
                           : t('drama.episodeEdit.genConfirm')}
                 </button>
+                <button
+                  type="button"
+                  className="drama-ep-btn-ghost"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    border: '1px solid rgba(0, 0, 0, 0.12)',
+                    minWidth: 'auto',
+                    padding: '0 12px',
+                    fontSize: '0.82rem',
+                    color: '#334155',
+                    background: '#fff',
+                  }}
+                  disabled={!selected}
+                  onClick={() => setShowCurlModal(true)}
+                  title="Xem lệnh cURL gọi API tạo video"
+                >
+                  <Terminal size={13} />
+                  cURL
+                </button>
               </>
             )}
           </div>
@@ -1941,6 +1964,18 @@ function EpisodeEditInner() {
           <DramaGenTaskDetail job={failReasonJob} onClose={() => setFailReasonJob(null)} />
         </div>
       ) : null}
+
+      <EpisodeEditCurlModal
+        open={showCurlModal}
+        onClose={() => setShowCurlModal(false)}
+        episodeId={eid}
+        fragment={selected}
+        fragmentIndex={selectedIndex}
+        assets={assets}
+        aspectRatio={readEpisodeAspectRatio(episodeParams, projectParams)}
+        duration={selectedDuration}
+        modelId={modelId}
+      />
     </div>
   )
 }
