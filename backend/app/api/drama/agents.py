@@ -150,8 +150,8 @@ async def episode_script(
     generate_mode = (body.generate_mode or "").strip().lower() or None
     if generate_mode in {"", "optimize", "draft"}:
         generate_mode = "optimize" if episode_number else None
-    if generate_mode and generate_mode not in {"optimize", "summary", "body", "full", "brief"}:
-        raise HTTPException(status_code=400, detail="generate_mode 须为 optimize/summary/body/full/brief")
+    if generate_mode and generate_mode not in {"optimize", "summary", "body", "full", "brief", "creative"}:
+        raise HTTPException(status_code=400, detail="generate_mode 须为 optimize/summary/body/full/brief/creative")
 
     if episode_number:
         if str(params.get("episode_content_status") or "") == "generating":

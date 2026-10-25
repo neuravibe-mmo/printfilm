@@ -298,7 +298,7 @@ export const dramaApi = {
     force?: boolean
     episode_number?: number
     draft?: string
-    generate_mode?: 'optimize' | 'summary' | 'body' | 'full' | 'brief'
+    generate_mode?: 'optimize' | 'summary' | 'body' | 'full' | 'brief' | 'creative'
     creative?: string
     title?: string
   }) =>

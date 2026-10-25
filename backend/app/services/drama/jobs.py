@@ -35,6 +35,7 @@ from app.services.drama.agents import (
     resolve_episode_target,
     run_episode_body_from_brief,
     run_episode_brief_from_body,
+    run_episode_creative,
     run_episode_full_from_creative,
     run_episode_script_batch,
     run_episode_script_from_draft,
@@ -629,7 +630,16 @@ async def _run_single_episode_script_job(
         character_asset_names = [str(n).strip() for n in char_name_rows if str(n or "").strip()]
 
         try:
-            if mode == "summary":
+            if mode == "creative":
+                batch = await run_episode_creative(
+                    summary,
+                    existing,
+                    int(episode_number),
+                    project_source=project_source,
+                    title=ep_title,
+                    character_asset_names=character_asset_names,
+                )
+            elif mode == "summary":
                 if len(ep_creative) < 20:
                     raise ValueError("Vui lòng điền ý tưởng ban đầu của tập này (ít nhất 20 chữ)")
                 batch = await run_episode_summary_from_creative(
@@ -691,9 +701,11 @@ async def _run_single_episode_script_job(
             if origin == "manual":
                 for item in batch:
                     item["origin"] = "manual"
-            # Không sử dụng nội dung trống để ghi đè văn bản hiện có ở chế độ tóm tắt
-            if mode == "summary" and current:
+            # Không sử dụng nội dung trống để ghi đè văn bản hiện có ở chế độ tóm tắt hoặc ý tưởng
+            if mode in {"creative", "summary"} and current:
                 for item in batch:
+                    if mode == "creative":
+                        item["summary"] = str(current.get("summary") or "")
                     item["body"] = str(current.get("body") or "")
             # Làm mới trước khi viết lại để tránh ghi đè các chỉnh sửa của người dùng ở bộ khác
             await db.refresh(script)

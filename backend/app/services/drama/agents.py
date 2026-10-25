@@ -84,6 +84,19 @@ Yêu cầu định dạng kịch bản (trường content):
 Bắt buộc xuất JSON chuẩn:
 {"episodes":[{"episodeNumber":1,"title":"Tên tập","content":"..."}]}"""
 
+# AI tự động sáng tạo Ý tưởng gốc (Creative) cho tập mới
+EPISODE_CREATIVE_SYSTEM = """Bạn là chuyên gia biên kịch phim ngắn / web drama chuyên nghiệp. Căn cứ vào thiết lập toàn phim, tóm tắt câu chuyện và diễn biến các tập đã có, hãy sáng tác «Ý tưởng cốt lõi» (creative) và tiêu đề hấp dẫn cho tập phim này.
+
+Yêu cầu xuất ra:
+1. Chỉ xuất đúng tập được yêu cầu, mảng episodes chỉ chứa đúng 1 phần tử.
+2. creative là ý tưởng cốt lõi của tập (50–150 từ): điểm bắt đầu câu chuyện, xung đột mới hoặc bước ngoặt tiếp nối từ các tập trước, điểm hấp dẫn lôi cuốn; viết súc tích, mạch lạc.
+3. title là tên tập phim hấp dẫn, cô đọng (2–8 từ tiếng Việt).
+4. Đảm bảo tính liên tục, logic và hấp dẫn nối tiếp các tập trước, giữ tính cách nhân vật nhất quán.
+5. Ngôn ngữ: Sử dụng tiếng Việt chuẩn xác tự nhiên.
+
+Bắt buộc xuất JSON chuẩn:
+{"episodes":[{"episodeNumber":1,"title":"Tên tập","creative":"..."}]}"""
+
 # Ý tưởng tập → Tóm tắt tập
 EPISODE_SUMMARY_FROM_CREATIVE_SYSTEM = """Bạn là chuyên gia biên kịch phim ngắn, căn cứ vào thiết lập toàn phim và ý tưởng ban đầu của tập này để viết «Tóm tắt cốt truyện» cho tập.
 
@@ -219,6 +232,51 @@ def build_single_episode_context(
         f"Nội dung các tập lân cận (trích đoạn {3} tập gần nhất):\n{_format_neighbor_episode_bodies(existing, number)}",
         f"Ý tưởng / Tóm tắt bổ sung của các tập lân cận:\n{_format_neighbor_episode_briefs(existing, number)}",
         f"Tên các nhân vật đã có tạo hình:\n{format_character_asset_names_line(character_asset_names)}",
+    ]
+
+
+async def run_episode_creative(
+    project_summary: dict[str, Any],
+    existing: list[dict[str, Any]],
+    number: int,
+    *,
+    project_source: str = "",
+    title: str | None = None,
+    character_asset_names: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """AI tự động đề xuất ý tưởng ban đầu (creative) cho tập phim này dựa trên ngữ cảnh toàn phim và các tập trước."""
+    title_text = (title or "").strip() or f"Tập {number}"
+    user_parts = [
+        *build_single_episode_context(
+            project_summary,
+            existing,
+            number,
+            project_source=project_source,
+            character_asset_names=character_asset_names,
+        ),
+        f"Số tập cần sáng tác ý tưởng: Tập {number}",
+        f"Tên tập hiện tại: {title_text}",
+        "Hãy sáng tác ý tưởng cốt lõi (creative, 50-150 từ) và title phù hợp nối tiếp mạch phim.",
+    ]
+    data = await drama_chat_json(
+        EPISODE_CREATIVE_SYSTEM,
+        "\n\n".join(user_parts),
+        max_tokens=4096,
+    )
+    episodes = data.get("episodes") if isinstance(data, dict) else None
+    if not isinstance(episodes, list) or not episodes:
+        raise ValueError("Mô hình AI không trả về ý tưởng cho tập này")
+    item = episodes[0] if isinstance(episodes[0], dict) else {}
+    out_creative = str(item.get("creative") or "").strip()
+    if len(out_creative) < 20:
+        raise ValueError("Ý tưởng tập này quá ngắn, vui lòng thử lại")
+    out_title = str(item.get("title") or "").strip() or title_text
+    return [
+        {
+            "episodeNumber": number,
+            "title": out_title,
+            "creative": out_creative,
+        }
     ]
 
 

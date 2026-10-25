@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  AlertTriangle,
   BookOpen,
   Check,
   CheckCircle2,
@@ -13,12 +14,13 @@ import {
   MoreHorizontal,
   Plus,
   RefreshCw,
+  Sparkles,
   Pencil,
 } from 'lucide-react'
 import { dramaApi, resolveDramaMediaUrl, type DramaEpisode, type DramaEpisodeBody, type DramaProject, type DramaScript } from '../../api/drama'
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
+import Modal from '../../components/ui/Modal'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
-import { dialog } from '../../lib/dialog'
 import {
   buildEpisodeContentUpdate,
   buildOutlineDirectory,
@@ -76,6 +78,7 @@ type SectionCardProps = {
   generateBusy?: boolean
   placeholder: string
   regenerateLabel?: string
+  regenerateIcon?: ReactNode
   highlighted?: boolean
   containerRef?: React.Ref<HTMLElement>
   onToggle: () => void
@@ -103,6 +106,7 @@ function SectionCard({
   generateBusy,
   placeholder,
   regenerateLabel,
+  regenerateIcon,
   highlighted,
   containerRef,
   onToggle,
@@ -137,8 +141,13 @@ function SectionCard({
             {t('common.edit')}
           </button>
           {onRegenerate && regenerateLabel ? (
-            <button type="button" className="drama-outline-text-btn" disabled={genBusy} onClick={onRegenerate}>
-              <RefreshCw size={14} strokeWidth={2} />
+            <button
+              type="button"
+              className={`drama-outline-text-btn${regenerateLabel === 'AI Generate' ? ' is-ai-btn' : ''}`}
+              disabled={genBusy}
+              onClick={onRegenerate}
+            >
+              {regenerateIcon || <RefreshCw size={14} strokeWidth={2} />}
               {regenerateLabel}
             </button>
           ) : null}
@@ -184,6 +193,19 @@ function SectionCard({
             </>
           ) : scriptPreview ? (
             scriptPreview
+          ) : !text.trim() && onRegenerate ? (
+            <div className="drama-outline-empty-creative">
+              <p className="drama-pre drama-outline-section-text">{placeholder}</p>
+              <button
+                type="button"
+                className="drama-outline-ai-gen-btn"
+                disabled={genBusy}
+                onClick={onRegenerate}
+              >
+                {regenerateIcon || <Sparkles size={14} />}
+                <span>{regenerateLabel || 'AI Generate'}</span>
+              </button>
+            </div>
           ) : (
             <p className="drama-pre drama-outline-section-text">{text.trim() || placeholder}</p>
           )}
@@ -222,6 +244,8 @@ export function OutlineEpisodePanel({
   const [generatingEpisodeNumber, setGeneratingEpisodeNumber] = useState<number | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [enterSkillOpen, setEnterSkillOpen] = useState(false)
+  const [regenFullConfirmOpen, setRegenFullConfirmOpen] = useState(false)
+  const [regenCreativeConfirmOpen, setRegenCreativeConfirmOpen] = useState(false)
   const [localError, setLocalError] = useState('')
   const [localNotice, setLocalNotice] = useState('')
   const [episodeCovers, setEpisodeCovers] = useState<Record<number, string>>({})
@@ -236,6 +260,7 @@ export function OutlineEpisodePanel({
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const highlightTimerRef = useRef<number | null>(null)
   const toastTimerRef = useRef<number | null>(null)
+  const creativeCardRef = useRef<HTMLElement | null>(null)
   const summaryCardRef = useRef<HTMLElement | null>(null)
   const bodyCardRef = useRef<HTMLElement | null>(null)
 
@@ -439,7 +464,7 @@ export function OutlineEpisodePanel({
     }
   }
 
-  async function handleGenerate(mode: 'summary' | 'body' | 'full' | 'brief') {
+  async function executeGenerate(mode: 'summary' | 'body' | 'full' | 'brief' | 'creative') {
     if (!selected?.episodeNumber) return
     const hadExistingBody = Boolean(selected.body?.trim())
     const creative = editingSection === 'creative' ? sectionDraft : selected.creative || ''
@@ -450,15 +475,6 @@ export function OutlineEpisodePanel({
     if (mode === 'brief' && !isSubstantialEpisodeBody(selected.body)) {
       setLocalError(t('drama.outlinePanel.bodyMinCharsBrief').replace('{n}', String(MIN_EPISODE_BODY_CHARS)))
       return
-    }
-    if (mode === 'full') {
-      const ok = await dialog.confirm({
-        title: t('drama.outlinePanel.regenFullTitle'),
-        message: t('drama.outlinePanel.regenFullMessage'),
-        confirmText: t('drama.outlinePanel.regenFullConfirm'),
-        tone: 'danger',
-      })
-      if (!ok) return
     }
     const targetEpisode = selected.episodeNumber
     setGeneratingMode(mode)
@@ -490,6 +506,30 @@ export function OutlineEpisodePanel({
       const created = Number((cur.params || {}).episode_optimize_assets_created || 0)
       if ((mode === 'body' || mode === 'full') && created > 0) {
         setLocalNotice(t('drama.outlinePanel.assetsCreated').replace('{n}', String(created)))
+      }
+      if (mode === 'creative') {
+        setOpenSections((prev) => {
+          const next = new Set(prev)
+          next.add('creative')
+          return next
+        })
+        if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current)
+        setHighlightedSection('creative')
+        highlightTimerRef.current = window.setTimeout(() => {
+          setHighlightedSection(null)
+          highlightTimerRef.current = null
+        }, 5000)
+
+        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+        setToastMessage(t('drama.outlinePanel.creativeGeneratedSuccess') || 'Ý tưởng tập đã được tạo thành công')
+        toastTimerRef.current = window.setTimeout(() => {
+          setToastMessage(null)
+          toastTimerRef.current = null
+        }, 5000)
+
+        window.setTimeout(() => {
+          creativeCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }, 50)
       }
       if (mode === 'summary') {
         setOpenSections((prev) => {
@@ -550,6 +590,24 @@ export function OutlineEpisodePanel({
       setGeneratingMode(null)
       setGeneratingEpisodeNumber(null)
     }
+  }
+
+  function handleGenerate(mode: 'summary' | 'body' | 'full' | 'brief' | 'creative') {
+    if (mode === 'creative') {
+      // Khi đã có ý tưởng gốc (trạng thái tạo lại ý tưởng), cần modal confirm từ người dùng
+      if (selected?.creative?.trim()) {
+        setRegenCreativeConfirmOpen(true)
+        return
+      }
+    }
+    if (mode === 'full') {
+      // Khi đã có kịch bản (trạng thái tạo lại toàn bộ tập), cần modal confirm từ người dùng
+      if (selected?.body?.trim()) {
+        setRegenFullConfirmOpen(true)
+        return
+      }
+    }
+    void executeGenerate(mode)
   }
 
   async function handleConfirmEnter() {
@@ -873,10 +931,14 @@ export function OutlineEpisodePanel({
             type="button"
             className="drama-outline-regen-btn"
             disabled={generateBusy || !isSubstantialEpisodeCreative(selected.creative)}
-            onClick={() => void handleGenerate('full')}
+            onClick={() => handleGenerate('full')}
           >
             <RefreshCw size={15} strokeWidth={2.25} />
-            {selectedGenerating && generatingMode === 'full' ? t('drama.outlinePanel.generating') : t('drama.outlinePanel.regenFull')}
+            {selectedGenerating && generatingMode === 'full'
+              ? t('drama.outlinePanel.generating')
+              : selected?.body?.trim()
+                ? t('drama.outlinePanel.regenFull')
+                : t('drama.outlinePanel.genFull')}
           </button>
           <button
             type="button"
@@ -903,6 +965,8 @@ export function OutlineEpisodePanel({
       <div className="drama-outline-sections">
         <SectionCard
           sectionKey="creative"
+          containerRef={creativeCardRef}
+          highlighted={highlightedSection === 'creative'}
           icon={<Lightbulb size={18} strokeWidth={1.9} />}
           title={t('drama.outlinePanel.creativeTitle')}
           subtitle={t('drama.outlinePanel.creativeSubtitle')}
@@ -913,11 +977,28 @@ export function OutlineEpisodePanel({
           busy={busy}
           generateBusy={generateBusy}
           placeholder={t('drama.outlinePanel.creativePlaceholder').replace('{n}', String(MIN_EPISODE_CREATIVE_CHARS))}
+          regenerateLabel={
+            selectedGenerating && generatingMode === 'creative'
+              ? t('drama.outlinePanel.generating')
+              : !selected.creative?.trim()
+                ? 'AI Generate'
+                : t('drama.outlinePanel.regenCreative') || 'Tạo lại ý tưởng'
+          }
+          regenerateIcon={
+            selectedGenerating && generatingMode === 'creative' ? (
+              <RefreshCw size={14} className="drama-spin" />
+            ) : !selected.creative?.trim() ? (
+              <Sparkles size={14} />
+            ) : (
+              <RefreshCw size={14} strokeWidth={2} />
+            )
+          }
           onToggle={() => toggleSection('creative')}
           onEdit={() => startEdit('creative')}
           onCancel={() => setEditingSection(null)}
           onSave={() => void handleSaveSection('creative')}
           onDraftChange={setSectionDraft}
+          onRegenerate={() => void handleGenerate('creative')}
           onCopy={() => void copyText(selected.creative || '')}
         />
         <SectionCard
@@ -1013,6 +1094,156 @@ export function OutlineEpisodePanel({
     </div>
   ) : null
 
+  const regenFullConfirmModal = (
+    <Modal
+      open={regenFullConfirmOpen}
+      onClose={() => setRegenFullConfirmOpen(false)}
+      title={t('drama.outlinePanel.regenFullTitle')}
+      size="md"
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
+          <button
+            type="button"
+            className="drama-btn-ghost"
+            onClick={() => setRegenFullConfirmOpen(false)}
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="button"
+            className="drama-btn-primary"
+            style={{ background: '#dc2626', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={() => {
+              setRegenFullConfirmOpen(false)
+              void executeGenerate('full')
+            }}
+          >
+            <RefreshCw size={14} />
+            {t('drama.outlinePanel.regenFullConfirm')}
+          </button>
+        </div>
+      }
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '8px 0 4px' }}>
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: '50%',
+            background: '#fef2f2',
+            color: '#dc2626',
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <AlertTriangle size={22} strokeWidth={2.2} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h4 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 650, color: '#0f172a' }}>
+            {selected?.title
+              ? `Tập ${selected.episodeNumber}: ${selected.title}`
+              : `Tập ${selected?.episodeNumber || ''}`}
+          </h4>
+          <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#475569', lineHeight: 1.55 }}>
+            {t('drama.outlinePanel.regenFullMessage')}
+          </p>
+          {selected?.body?.trim() ? (
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#b91c1c',
+                background: '#fff1f2',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #fecdd3',
+                lineHeight: 1.5,
+              }}
+            >
+              ⚠️ Kịch bản hiện tại ({selected.body.trim().length} ký tự) sẽ bị xóa và ghi đè hoàn toàn. Nếu tập này đã vào phân cảnh, toàn bộ phân cảnh video cũ sẽ bị làm mới.
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </Modal>
+  )
+
+  const regenCreativeConfirmModal = (
+    <Modal
+      open={regenCreativeConfirmOpen}
+      onClose={() => setRegenCreativeConfirmOpen(false)}
+      title={t('drama.outlinePanel.regenCreativeTitle')}
+      size="md"
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, width: '100%' }}>
+          <button
+            type="button"
+            className="drama-btn-ghost"
+            onClick={() => setRegenCreativeConfirmOpen(false)}
+          >
+            {t('common.cancel')}
+          </button>
+          <button
+            type="button"
+            className="drama-btn-primary"
+            style={{ background: '#dc2626', color: '#fff', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={() => {
+              setRegenCreativeConfirmOpen(false)
+              void executeGenerate('creative')
+            }}
+          >
+            <RefreshCw size={14} />
+            {t('drama.outlinePanel.regenCreativeConfirm')}
+          </button>
+        </div>
+      }
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '8px 0 4px' }}>
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: '50%',
+            background: '#fef2f2',
+            color: '#dc2626',
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <AlertTriangle size={22} strokeWidth={2.2} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h4 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 650, color: '#0f172a' }}>
+            {selected?.title
+              ? `Tập ${selected.episodeNumber}: ${selected.title}`
+              : `Tập ${selected?.episodeNumber || ''}`}
+          </h4>
+          <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#475569', lineHeight: 1.55 }}>
+            {t('drama.outlinePanel.regenCreativeMessage')}
+          </p>
+          {selected?.creative?.trim() ? (
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#475569',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                lineHeight: 1.55,
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              <strong style={{ display: 'block', marginBottom: 4, color: '#0f172a' }}>Ý tưởng hiện tại:</strong>
+              {selected.creative.trim()}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </Modal>
+  )
+
   if (children) {
     return (
       <>
@@ -1028,6 +1259,8 @@ export function OutlineEpisodePanel({
           }}
           onConfirm={(skillIds) => void startEnterWithSkills(skillIds)}
         />
+        {regenFullConfirmModal}
+        {regenCreativeConfirmModal}
       </>
     )
   }
@@ -1046,6 +1279,8 @@ export function OutlineEpisodePanel({
         }}
         onConfirm={(skillIds) => void startEnterWithSkills(skillIds)}
       />
+      {regenFullConfirmModal}
+      {regenCreativeConfirmModal}
     </div>
   )
 }
