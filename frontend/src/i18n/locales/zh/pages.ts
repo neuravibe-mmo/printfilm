@@ -559,6 +559,9 @@ export const zhPages = {
     tipStrong3: '剧情脉络',
     tipRest: '建议写明 {a}、{b}、{c} 与结局走向。',
     storyLabel: '故事创意',
+    aiGenerateIdea: 'AI 生成故事创意',
+    generatingIdea: '生成创意中…',
+    minCharactersRequired: '至少 {n} 字',
     filters: {
       all: '全部',
       running: '进行中',

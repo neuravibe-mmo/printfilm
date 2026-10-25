@@ -16,7 +16,7 @@ export function readProjectAspectRatio(
   return '9:16'
 }
 
-// Đọc định nghĩa từ project.params, các giá trị không hợp lệ sẽ quay trở lại 480p
+// Đọc định nghĩa từ project.params, các giá trị không hợp lệ sẽ quay trở lại 720p
 export function readProjectResolution(
   params: Record<string, unknown> | null | undefined,
 ): DramaResolution {
@@ -24,7 +24,7 @@ export function readProjectResolution(
   if ((DRAMA_RES_OPTIONS as readonly string[]).includes(res)) {
     return res as DramaResolution
   }
-  return '480p'
+  return '720p'
 }
 
 // Nhận khung pháp lý đầu tiên từ các thông số nhiều lớp
@@ -50,7 +50,7 @@ export function pickDramaResolution(
       return res as DramaResolution
     }
   }
-  return '480p'
+  return '720p'
 }
 
 // Khung đa dạng:ep.params → project.params → Mặc định

@@ -6,14 +6,17 @@ import {
   FolderOpen,
   LayoutGrid,
   Library,
-  PenLine,
   Search,
   Sparkles,
+  Terminal,
   Trash2,
 } from 'lucide-react'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
 import Button from '../../components/ui/Button'
+import Modal from '../../components/ui/Modal'
+import { CurlCodeBox } from '../../components/studio/storyboard/StoryboardCurlModal'
+import { getApiBase } from '../../api'
 import PillFilter, { type PillOption } from '../../components/ui/PillFilter'
 import { dramaApi, resolveDramaMediaUrl, type DramaProjectListItem } from '../../api/drama'
 import { dialog } from '../../lib/dialog'
@@ -98,6 +101,24 @@ function DramaListInner() {
   const [filter, setFilter] = useState<ProjectFilter>('all')
   const [query, setQuery] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [showCurlModal, setShowCurlModal] = useState(false)
+
+  const curlCommand = useMemo(() => {
+    const base = getApiBase() || window.location.origin
+    const token = localStorage.getItem('token') || 'YOUR_AUTH_TOKEN'
+    const body = JSON.stringify(
+      {
+        message:
+          'Hãy viết 1 ý tưởng câu chuyện phim ngắn hấp dẫn khoảng 80-120 từ, đầy đủ bối cảnh, nhân vật chính, xung đột và kết thúc bất ngờ. Chỉ trả lời nội dung ý tưởng.',
+      },
+      null,
+      2,
+    )
+    return `curl -X POST "${base}/api/drama/ai/chat" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${token}" \\
+  -d '${body}'`
+  }, [])
 
   // Tải danh sách dự án
   async function loadProjects() {
@@ -121,6 +142,8 @@ function DramaListInner() {
     const source = storyText.trim()
     if (source.length < CREATIVE_MIN_LENGTH) {
       setError(t('drama.list.minLength').replace('{n}', String(CREATIVE_MIN_LENGTH)))
+      const el = document.getElementById('drama-agent-story')
+      el?.focus()
       return
     }
     if (source.length > CREATIVE_MAX_LENGTH) {
@@ -141,6 +164,49 @@ function DramaListInner() {
       setError(err instanceof Error ? err.message : t('common.generateFailed'))
     } finally {
       setBusy(false)
+    }
+  }
+
+  const [generatingIdea, setGeneratingIdea] = useState(false)
+
+  const SAMPLE_STORIES = useMemo(
+    () => [
+      'Năm 2150, tại trạm không gian Kepler, kỹ sư trẻ Minh phát hiện một tín hiệu lạ từ vùng tối Mặt Trăng. Anh cùng cộng sự AI Maya giải mã và tìm ra bản đồ dẫn tới một nền văn minh cổ đại đã biến mất ngoài rìa hệ Mặt Trời.',
+      'Thám tử Minh Quân nhận điều tra vụ mất tích kỳ bí của một họa sĩ thiên tài. Lần theo những bức tranh vẽ trước ngày biến mất, anh bàng hoàng nhận ra mỗi bức tranh đều tiên tri chính xác một vụ án mạng sắp sửa xảy ra trong thành phố.',
+      'Thiếu niên Lạc Phong vô tình đánh thức thanh kiếm cổ bị phong ấn ngàn năm trong cấm địa gia tộc. Linh hồn kiếm sư thức tỉnh và trao cho anh sứ mệnh ngăn chặn cuộc xâm lăng của Ma giới trước đêm trăng máu.',
+      'Một nhân viên văn phòng bình thường nhặt được chiếc đồng hồ cổ có khả năng quay ngược thời gian 10 phút. Ban đầu anh dùng nó để sửa chữa những sai lầm nhỏ, cho đến khi phát hiện mỗi lần quay ngược thời gian đều đánh đổi ký ức của người anh yêu nhất.',
+      'Trong thành phố Cyberpunk ngập ánh đèn neon, một thợ săn tiền thưởng cyborg bất ngờ nhận nhiệm vụ bảo vệ đứa trẻ duy nhất mang trong mình mã nguồn có thể giải phóng toàn bộ nhân loại khỏi mạng lưới kiểm soát độc tài.',
+    ],
+    [],
+  )
+
+  async function handleGenerateIdea() {
+    if (generatingIdea) return
+    setGeneratingIdea(true)
+    setError('')
+    try {
+      const timeoutPromise = new Promise<{ reply: string }>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 3500),
+      )
+      const chatPromise = dramaApi.chat(
+        'Hãy viết 1 ý tưởng câu chuyện phim ngắn hấp dẫn khoảng 80-120 từ, đầy đủ bối cảnh, nhân vật chính, xung đột và kết thúc bất ngờ. Chỉ trả lời nội dung ý tưởng.',
+      )
+      const res = await Promise.race([chatPromise, timeoutPromise])
+      if (res?.reply && res.reply.trim().length >= 25) {
+        setStoryText(res.reply.trim())
+      } else {
+        throw new Error('empty reply')
+      }
+    } catch {
+      const available = SAMPLE_STORIES.filter((s) => s !== storyText)
+      const picked = available[Math.floor(Math.random() * available.length)] || SAMPLE_STORIES[0]
+      setStoryText(picked)
+    } finally {
+      setGeneratingIdea(false)
+      setTimeout(() => {
+        const el = document.getElementById('drama-agent-story')
+        el?.focus()
+      }, 50)
     }
   }
 
@@ -173,7 +239,6 @@ function DramaListInner() {
 
   const selectionMode = selected.size > 0
   const storyLen = storyText.trim().length
-  const canGenerate = storyLen >= CREATIVE_MIN_LENGTH && storyLen <= CREATIVE_MAX_LENGTH && !busy
   const charCountClass =
     storyLen > CREATIVE_MAX_LENGTH
       ? ' is-over'
@@ -336,10 +401,54 @@ function DramaListInner() {
         {showCreate ? (
           <section className="drama-agent-panel pf-drama-create-panel" aria-label={t('dramaList.createAria')}>
             <div className="drama-agent-panel-head">
-              <div className="drama-agent-tabs" role="tablist">
-                <button type="button" role="tab" aria-selected className="active">
-                  <PenLine size={15} strokeWidth={1.75} aria-hidden />
-                  {t('dramaList.aiScript')}
+              <div className="drama-agent-tabs" role="tablist" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  className="active"
+                  disabled={generatingIdea}
+                  onClick={() => void handleGenerateIdea()}
+                  style={{
+                    cursor: generatingIdea ? 'wait' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    opacity: generatingIdea ? 0.75 : 1,
+                  }}
+                  title={t('dramaList.aiGenerateIdea')}
+                >
+                  <Sparkles size={15} strokeWidth={1.75} aria-hidden />
+                  {generatingIdea ? t('dramaList.generatingIdea') : t('dramaList.aiGenerateIdea')}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCurlModal(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(17, 19, 24, 0.15)',
+                    background: '#ffffff',
+                    color: '#334155',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f8fafc'
+                    e.currentTarget.style.borderColor = '#94a3b8'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#ffffff'
+                    e.currentTarget.style.borderColor = 'rgba(17, 19, 24, 0.15)'
+                  }}
+                  title="Xem lệnh cURL gọi API AI tạo ý tưởng câu chuyện"
+                >
+                  <Terminal size={14} strokeWidth={2} aria-hidden />
+                  <span>cURL</span>
                 </button>
               </div>
               <button type="button" className="pf-link pf-drama-collapse" onClick={() => setShowCreate(false)}>
@@ -364,7 +473,10 @@ function DramaListInner() {
                 <textarea
                   id="drama-agent-story"
                   value={storyText}
-                  onChange={(e) => setStoryText(e.target.value.slice(0, CREATIVE_MAX_LENGTH + 50))}
+                  onChange={(e) => {
+                    setStoryText(e.target.value.slice(0, CREATIVE_MAX_LENGTH + 50))
+                    if (error) setError('')
+                  }}
                   disabled={busy}
                   placeholder={t('drama.list.storyPlaceholder')}
                   rows={7}
@@ -374,11 +486,21 @@ function DramaListInner() {
                   className={`drama-agent-char-count${charCountClass}`}
                   aria-live="polite"
                 >
+                  {storyLen < CREATIVE_MIN_LENGTH && (
+                    <span style={{ color: '#ef4444', marginRight: 8, fontSize: '12px', fontWeight: 500 }}>
+                      ({t('dramaList.minCharactersRequired').replace('{n}', String(CREATIVE_MIN_LENGTH))})
+                    </span>
+                  )}
                   {storyLen}
                   <span className="drama-agent-char-sep">/</span>
                   {CREATIVE_MAX_LENGTH}
                 </span>
               </div>
+              {error ? (
+                <div style={{ marginTop: 8 }}>
+                  <BillingErrorNotice message={error} onClose={() => setError('')} className="drama-error drama-agent-error" />
+                </div>
+              ) : null}
               <div className="drama-agent-ai-footer">
                 <div className="drama-agent-ai-options">
                   <DramaImageStyleModal value={imageStyleId} onChange={setImageStyleId} disabled={busy} />
@@ -389,7 +511,7 @@ function DramaListInner() {
                   variant="lime"
                   size="md"
                   className="drama-agent-generate-btn"
-                  disabled={!canGenerate}
+                  disabled={busy}
                   onClick={() => void handleGenerate()}
                 >
                   <Sparkles size={16} strokeWidth={1.75} aria-hidden />
@@ -400,7 +522,7 @@ function DramaListInner() {
           </section>
         ) : null}
 
-        {error ? <BillingErrorNotice message={error} className="drama-error drama-agent-error" /> : null}
+        {error && !showCreate ? <BillingErrorNotice message={error} onClose={() => setError('')} className="drama-error drama-agent-error" /> : null}
 
         {loading ? (
           <div className="pf-drama-card-grid" aria-busy="true">
@@ -546,6 +668,59 @@ function DramaListInner() {
               </button>
             </div>
           </div>
+        ) : null}
+        {showCurlModal ? (
+          <Modal
+            open={showCurlModal}
+            onClose={() => setShowCurlModal(false)}
+            title="Lệnh cURL API Tạo ý tưởng câu chuyện"
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <p className="pf-muted" style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.5 }}>
+                Đây là lệnh cURL gửi yêu cầu đến backend để gọi mô hình AI (LLM) xây dựng ý tưởng câu chuyện phim ngắn.
+              </p>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>
+                    Endpoint: POST /api/drama/ai/chat
+                  </span>
+                </div>
+                <CurlCodeBox code={curlCommand} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>
+                  Phản hồi mẫu (JSON Response):
+                </div>
+                <pre
+                  className="pf-curl-box"
+                  style={{
+                    fontSize: '0.8rem',
+                    margin: 0,
+                    color: '#94a3b8',
+                    background: '#0f172a',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid #1e293b',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+{`{
+  "reply": "Năm 2150, tại trạm không gian Kepler, kỹ sư trẻ Minh phát hiện một tín hiệu lạ từ vùng tối Mặt Trăng. Anh cùng cộng sự AI Maya giải mã và tìm ra bản đồ dẫn tới một nền văn minh cổ đại đã biến mất ngoài rìa hệ Mặt Trời.",
+  "task_id": 128
+}`}
+                </pre>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                <Button variant="ghost" size="sm" onClick={() => setShowCurlModal(false)}>
+                  {t('common.close')}
+                </Button>
+              </div>
+            </div>
+          </Modal>
         ) : null}
       </div>
     </AppShell>

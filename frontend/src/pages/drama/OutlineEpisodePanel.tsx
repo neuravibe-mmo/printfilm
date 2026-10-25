@@ -359,8 +359,8 @@ export function OutlineEpisodePanel({
     !confirming &&
     directoryEpisodes.length < 120
 
-  // Chỉ tập đang được tạo mới bị khóa; các tập khác có thể được duyệt/chỉnh sửa (các tác vụ một tập được xuất bản trên toàn cầu, vì vậy việc tạo nhấp chuột song song bị cấm)
-  const busy = episodeGenerating || selectedGenerating || confirming || saving || adding
+  // Chỉ tập đang được tạo mới bị khóa; các tập đã xong có thể được duyệt/chỉnh sửa/vào phân cảnh (việc tạo kịch bản AI song song vẫn bị chặn bởi generateBusy)
+  const busy = selectedGenerating || confirming || saving || adding
   const generateBusy = episodeGenerating || anyEpisodeGenerating || confirming || saving || adding
 
   async function pollOptimize(tokenEpisode: number) {

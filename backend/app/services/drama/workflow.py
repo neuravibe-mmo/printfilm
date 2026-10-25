@@ -42,6 +42,8 @@ def build_project_params(
     """Tập hợp các thông số được viết khi tạo dự án."""
     wf = workflow if workflow in ("canvas", "script") else "script"
     return {
+        "aspect_ratio": "9:16",
+        "resolution": "720p",
         **(extra or {}),
         "workflow": wf,
         "episode_count": 0 if wf == "canvas" else episode_count,

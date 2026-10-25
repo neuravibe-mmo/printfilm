@@ -559,6 +559,9 @@ export const viPages = {
     tipStrong3: 'Mạch truyện',
     tipRest: 'Nên ghi rõ {a}, {b}, {c} và hướng kết thúc.',
     storyLabel: 'Ý tưởng câu chuyện',
+    aiGenerateIdea: 'AI tạo ý tưởng câu chuyện',
+    generatingIdea: 'Đang tạo ý tưởng…',
+    minCharactersRequired: 'Tối thiểu {n} ký tự',
     filters: {
       all: 'Tất cả',
       running: 'Đang thực hiện',

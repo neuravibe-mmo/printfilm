@@ -29,7 +29,7 @@ def resolve_episode_video_output(
     resolution = (
         _pick_resolution(ep.get("resolution"))
         or _pick_resolution(proj.get("resolution"))
-        or "480p"
+        or "720p"
     )
     return ratio, resolution
 
@@ -51,8 +51,8 @@ _RATIO_RES_PIXELS: dict[tuple[str, str], tuple[int, int]] = {
 # Chiều rộng và chiều cao của màng mục tiêu đa dạng (được sử dụng để chia tỷ lệ thống nhất trong quá trình nối)
 def target_pixel_size(aspect_ratio: str, resolution: str) -> tuple[int, int]:
     key = (aspect_ratio if aspect_ratio in VALID_RATIOS else "9:16",
-           resolution if resolution in VALID_RESOLUTIONS else "480p")
-    return _RATIO_RES_PIXELS.get(key, (480, 854))
+           resolution if resolution in VALID_RESOLUTIONS else "720p")
+    return _RATIO_RES_PIXELS.get(key, (720, 1280))
 
 
 # Suy ra nhãn định dạng chuẩn gần nhất dựa trên kích thước pixel

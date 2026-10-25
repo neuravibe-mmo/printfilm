@@ -16,6 +16,7 @@ export const enShell = {
     saved: 'Saved',
     cancel: 'Cancel',
     close: 'Close',
+    done: 'Done',
     confirm: 'OK',
     apply: 'Apply',
     processing: 'Processing…',

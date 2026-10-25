@@ -566,6 +566,9 @@ export const enPages = {
     tipStrong3: 'plot',
     tipRest: 'Spell out the {a}, {b}, {c}, and how it ends.',
     storyLabel: 'Story idea',
+    aiGenerateIdea: 'AI generate story idea',
+    generatingIdea: 'Generating idea…',
+    minCharactersRequired: 'Minimum {n} characters',
     filters: {
       all: 'All',
       running: 'In progress',
