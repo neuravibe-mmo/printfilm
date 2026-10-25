@@ -9922,8 +9922,28 @@ button.pf-shot-editable:disabled {
   color: #ef4444;
 }
 
+.pf-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: pf-spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
 .pf-spinner-sm {
   width: 14px;
   height: 14px;
   border-width: 2px;
+}
+
+@keyframes pf-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

@@ -231,6 +231,26 @@ export interface ReferenceImageItem {
   shot_no?: number | null
 }
 
+export interface GoogleFlowDetails {
+  rpc_id?: string
+  model?: string
+  ratio_flag?: number
+  inner_task_prompt_structure?: any
+  ref_media_struct?: any
+  full_inner_task?: any
+}
+
+export interface ExtractedPromptResult {
+  success?: boolean
+  prompt: string
+  project_id?: string
+  reference_media_ids?: string[]
+  aspect_ratio?: string
+  model_key?: string
+  google_flow?: GoogleFlowDetails
+  detail?: string
+}
+
 export interface UpstreamCurlInfo {
   tab: 'image' | 'video'
   title: string
@@ -246,6 +266,7 @@ export interface UpstreamCurlInfo {
   }
   prompt: string
   reference_images?: ReferenceImageItem[]
+  extracted_flow?: ExtractedPromptResult | null
 }
 
 export type MediaModelOption = {
@@ -669,6 +690,27 @@ export const api = {
   },
   getShotUpstreamCurl(projectId: number, shotId: number, tab: 'image' | 'video' = 'video') {
     return request<UpstreamCurlInfo>(`/api/projects/${projectId}/shots/${shotId}/upstream-curl?tab=${tab}`)
+  },
+  async extractPromptFromCurl(curl: string, domain?: string): Promise<ExtractedPromptResult> {
+    try {
+      return await request<ExtractedPromptResult>('/api/projects/extract-prompt-from-curl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ curl, domain }),
+      })
+    } catch {
+      const targetDomain = (domain || 'https://neuravibemmo.dpdns.org').replace(/\/$/, '')
+      const res = await fetch(`${targetDomain}/api/flow/extract-prompt-from-curl`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ curl }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }))
+        throw new Error(err.detail || 'Không thể trích xuất prompt từ cURL')
+      }
+      return res.json()
+    }
   },
   regenVideo(projectId: number, shotId: number) {
     return request<Project>(`/api/projects/${projectId}/shots/${shotId}/regen-video`, {

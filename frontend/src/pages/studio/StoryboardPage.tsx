@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, defaultsFromTemplate, getApiBase, type ReferenceImageItem, type UpstreamCurlInfo } from '../../api'
+import { api, defaultsFromTemplate, getApiBase, type ExtractedPromptResult, type ReferenceImageItem, type UpstreamCurlInfo } from '../../api'
 import type { Project, Shot, Template } from '../../api'
-import { AlertCircle, Check, Copy, ExternalLink, Images, X, ZoomIn } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Images, RefreshCw, Sparkles, X, ZoomIn } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import AppShell from '../../components/layout/AppShell'
 import Stepper from '../../components/ui/Stepper'
@@ -83,6 +83,11 @@ export default function StoryboardPage() {
   const [curlCopied, setCurlCopied] = useState(false)
   const [upstreamCurl, setUpstreamCurl] = useState<UpstreamCurlInfo | null>(null)
   const [upstreamLoading, setUpstreamLoading] = useState(false)
+  const [extractedPromptInfo, setExtractedPromptInfo] = useState<ExtractedPromptResult | null>(null)
+  const [extractingPrompt, setExtractingPrompt] = useState(false)
+  const [extractPromptError, setExtractPromptError] = useState<string | null>(null)
+  const [showRawGoogleFlow, setShowRawGoogleFlow] = useState(false)
+  const [copiedExtractedPrompt, setCopiedExtractedPrompt] = useState(false)
   const [curlViewMode, setCurlViewMode] = useState<'upstream' | 'internal'>('internal')
   const [previewImg, setPreviewImg] = useState<string | null>(null)
   const [batchOpen, setBatchOpen] = useState(false)
@@ -638,6 +643,54 @@ export default function StoryboardPage() {
     } catch {
       // fallback
     }
+  }
+
+  useEffect(() => {
+    if (upstreamCurl?.extracted_flow) {
+      setExtractedPromptInfo(upstreamCurl.extracted_flow)
+      setExtractPromptError(null)
+      setExtractingPrompt(false)
+    } else if (upstreamCurl?.curl) {
+      setExtractingPrompt(true)
+      setExtractPromptError(null)
+      api.extractPromptFromCurl(upstreamCurl.curl, upstreamCurl.domain)
+        .then((res) => {
+          setExtractedPromptInfo(res)
+        })
+        .catch((err: any) => {
+          setExtractPromptError(err.message || 'Không thể trích xuất prompt từ cURL')
+        })
+        .finally(() => {
+          setExtractingPrompt(false)
+        })
+    } else {
+      setExtractedPromptInfo(null)
+      setExtractPromptError(null)
+      setExtractingPrompt(false)
+    }
+  }, [upstreamCurl])
+
+  async function handleReExtractPrompt() {
+    if (!upstreamCurl?.curl) return
+    setExtractingPrompt(true)
+    setExtractPromptError(null)
+    try {
+      const res = await api.extractPromptFromCurl(upstreamCurl.curl, upstreamCurl.domain)
+      setExtractedPromptInfo(res)
+    } catch (err: any) {
+      setExtractPromptError(err.message || 'Lỗi gọi API extract-prompt-from-curl')
+    } finally {
+      setExtractingPrompt(false)
+    }
+  }
+
+  async function handleCopyExtractedPrompt() {
+    if (!extractedPromptInfo?.prompt) return
+    try {
+      await navigator.clipboard.writeText(extractedPromptInfo.prompt)
+      setCopiedExtractedPrompt(true)
+      setTimeout(() => setCopiedExtractedPrompt(false), 2000)
+    } catch {}
   }
 
   function openTrimModal(shot: Shot, initialDuration?: number) {
@@ -1375,6 +1428,226 @@ export default function StoryboardPage() {
                         </pre>
                       </div>
                     ) : null}
+
+                    {/* Khối trích xuất Prompt text gửi lên Google Flow */}
+                    <div
+                      style={{
+                        marginTop: '1.25rem',
+                        padding: '1rem',
+                        background: '#f8fafc',
+                        borderRadius: '12px',
+                        border: '1px solid #cbd5e1',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: '0.65rem',
+                          flexWrap: 'wrap',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <Sparkles size={16} color="#6366f1" />
+                          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#1e293b' }}>
+                            Nội dung Prompt text gửi lên Google Flow
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '999px',
+                              background: '#e0e7ff',
+                              color: '#3730a3',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            POST /api/flow/extract-prompt-from-curl
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            className="pf-btn pf-btn-ghost pf-btn-sm"
+                            style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                            onClick={handleReExtractPrompt}
+                            disabled={extractingPrompt}
+                            title="Gọi lại API extract-prompt-from-curl"
+                          >
+                            <RefreshCw size={13} style={{ animation: extractingPrompt ? 'pf-spin 0.8s linear infinite' : 'none' }} />
+                            <span>{extractingPrompt ? 'Đang trích xuất...' : 'Trích xuất lại'}</span>
+                          </button>
+                          {extractedPromptInfo?.prompt ? (
+                            <button
+                              type="button"
+                              className="pf-btn pf-btn-lime pf-btn-sm"
+                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', height: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                              onClick={handleCopyExtractedPrompt}
+                            >
+                              {copiedExtractedPrompt ? <Check size={13} /> : <Copy size={13} />}
+                              <span>{copiedExtractedPrompt ? 'Đã copy!' : 'Copy Prompt'}</span>
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {/* Các tag metadata đã trích xuất từ cURL */}
+                      {extractedPromptInfo ? (
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
+                          {extractedPromptInfo.google_flow?.rpc_id ? (
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '4px',
+                                background: '#fef3c7',
+                                color: '#92400e',
+                                fontWeight: 500,
+                              }}
+                            >
+                              RPC: <code>{extractedPromptInfo.google_flow.rpc_id}</code> ({extractedPromptInfo.google_flow.rpc_id === 'MZZa6b' ? 'r2v - có ảnh tham chiếu' : 't2v - thuần text'})
+                            </span>
+                          ) : null}
+                          {extractedPromptInfo.model_key || extractedPromptInfo.google_flow?.model ? (
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '4px',
+                                background: '#f1f5f9',
+                                color: '#334155',
+                              }}
+                            >
+                              Model: <strong>{extractedPromptInfo.model_key || extractedPromptInfo.google_flow?.model}</strong>
+                            </span>
+                          ) : null}
+                          {extractedPromptInfo.aspect_ratio ? (
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '4px',
+                                background: '#f1f5f9',
+                                color: '#334155',
+                              }}
+                            >
+                              Tỉ lệ: <strong>{extractedPromptInfo.aspect_ratio}</strong>
+                            </span>
+                          ) : null}
+                          {extractedPromptInfo.reference_media_ids && extractedPromptInfo.reference_media_ids.length > 0 ? (
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                padding: '0.15rem 0.45rem',
+                                borderRadius: '4px',
+                                background: '#ecfdf5',
+                                color: '#065f46',
+                              }}
+                            >
+                              Media tham chiếu: {extractedPromptInfo.reference_media_ids.join(', ')}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {extractingPrompt ? (
+                        <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.82rem' }}>
+                          <span className="pf-spinner" style={{ marginRight: '0.5rem' }} />
+                          Đang gọi API extract-prompt-from-curl để lấy prompt text...
+                        </div>
+                      ) : extractPromptError ? (
+                        <div
+                          style={{
+                            padding: '0.6rem 0.75rem',
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            borderRadius: '6px',
+                            color: '#991b1b',
+                            fontSize: '0.82rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <AlertCircle size={15} />
+                            <span>{extractPromptError}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="pf-btn pf-btn-ghost pf-btn-sm"
+                            style={{ fontSize: '0.75rem', padding: '0.15rem 0.45rem' }}
+                            onClick={handleReExtractPrompt}
+                          >
+                            Thử lại
+                          </button>
+                        </div>
+                      ) : extractedPromptInfo?.prompt ? (
+                        <>
+                          <div
+                            style={{
+                              background: '#ffffff',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              padding: '0.85rem 1rem',
+                              fontSize: '0.84rem',
+                              lineHeight: 1.6,
+                              color: '#0f172a',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            {extractedPromptInfo.prompt}
+                          </div>
+
+                          {extractedPromptInfo.google_flow ? (
+                            <div style={{ marginTop: '0.5rem' }}>
+                              <button
+                                type="button"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: 0,
+                                  color: '#6366f1',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                }}
+                                onClick={() => setShowRawGoogleFlow(!showRawGoogleFlow)}
+                              >
+                                {showRawGoogleFlow ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                                <span>{showRawGoogleFlow ? 'Ẩn cấu trúc Google Flow RPC gốc' : 'Xem cấu trúc Google Flow RPC gốc (inner_task_prompt_structure)'}</span>
+                              </button>
+                              {showRawGoogleFlow ? (
+                                <pre
+                                  className="pf-curl-box"
+                                  style={{
+                                    marginTop: '0.4rem',
+                                    fontSize: '0.73rem',
+                                    height: 'auto',
+                                    maxHeight: 'none',
+                                    overflowY: 'visible',
+                                  }}
+                                >
+                                  {JSON.stringify(extractedPromptInfo.google_flow, null, 2)}
+                                </pre>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <div style={{ color: '#64748b', fontSize: '0.82rem', fontStyle: 'italic' }}>
+                          Chưa có thông tin prompt trích xuất.
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <p className="pf-muted">Không thể tải thông tin upstream cURL</p>

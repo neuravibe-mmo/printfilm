@@ -12,6 +12,9 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from pydantic import BaseModel
+import httpx
+
 from app.database import get_db
 from app.models import Project, ProjectStatus, Shot, ShotStatus, User
 from app.models_tasks import TaskRun
@@ -530,6 +533,18 @@ async def get_shot_upstream_curl(
                 "description": "Đồng bộ không gian bối cảnh",
             })
 
+        extracted_flow = None
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(
+                    f"{domain}/api/flow/extract-prompt-from-curl",
+                    json={"curl": curl_cmd},
+                )
+                if res.status_code == 200:
+                    extracted_flow = res.json()
+        except Exception as e:
+            logger.warning("Không thể gọi extract-prompt-from-curl cho video: %s", e)
+
         return {
             "tab": "video",
             "title": f"Tạo video Google Veo qua Flow API · Cảnh {shot.shot_no:02d}",
@@ -545,6 +560,7 @@ async def get_shot_upstream_curl(
             },
             "prompt": video_prompt,
             "reference_images": ref_images,
+            "extracted_flow": extracted_flow,
         }
     else:
         from app.services.drama.chatgpt_image_api import resolve_image_size
@@ -616,6 +632,18 @@ async def get_shot_upstream_curl(
                 "description": "Mẫu phong cách gốc của template",
             })
 
+        extracted_flow = None
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(
+                    f"{domain}/api/flow/extract-prompt-from-curl",
+                    json={"curl": curl_cmd},
+                )
+                if res.status_code == 200:
+                    extracted_flow = res.json()
+        except Exception as e:
+            logger.warning("Không thể gọi extract-prompt-from-curl cho ảnh: %s", e)
+
         return {
             "tab": "image",
             "title": f"Tạo ảnh ChatGPT2API qua neuravibemmo.dpdns.org · Cảnh {shot.shot_no:02d}",
@@ -626,7 +654,38 @@ async def get_shot_upstream_curl(
             "curl": curl_cmd,
             "prompt": full_prompt,
             "reference_images": ref_images,
+            "extracted_flow": extracted_flow,
         }
+
+
+class ExtractPromptIn(BaseModel):
+    curl: str
+    domain: str | None = None
+
+
+@router.post("/projects/extract-prompt-from-curl")
+async def extract_prompt_from_curl_proxy(
+    body: ExtractPromptIn,
+    user: User = Depends(get_current_user),
+):
+    """Proxy gọi tới API extract-prompt-from-curl trên neuravibemmo.dpdns.org."""
+    from app.config import get_settings
+    cfg = get_settings()
+    domain = (body.domain or cfg.domain_web_2_api).rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.post(
+                f"{domain}/api/flow/extract-prompt-from-curl",
+                json={"curl": body.curl},
+            )
+            if res.status_code == 200:
+                return res.json()
+            raise HTTPException(status_code=res.status_code, detail=res.text)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Lỗi kết nối tới máy chủ AI trích xuất prompt: %s", e)
+        raise HTTPException(status_code=500, detail=f"Lỗi kết nối tới máy chủ AI: {e}")
 
 
 @router.post("/projects/{project_id}/shots/{shot_id}/regen-image", response_model=ProjectOut)
