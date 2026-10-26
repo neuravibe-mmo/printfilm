@@ -4716,29 +4716,21 @@
   width: 100%;
   min-width: 0;
   border: none;
-  border-radius: 12px;
-  background: #fff;
+  background: transparent;
   padding: 0;
-  overflow: hidden;
   cursor: pointer;
   text-align: left;
-  transition: box-shadow 0.15s ease, outline-color 0.15s ease;
-}
-
-.drama-ep-asset-card:hover {
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .drama-ep-asset-card.is-linked {
-  outline: 2px solid var(--drama-lime, #b7f34a);
-  outline-offset: -2px;
+  outline: none;
 }
 
 .drama-ep-asset-linked {
   position: absolute;
   top: 6px;
   right: 6px;
-  z-index: 1;
+  z-index: 2;
   font-size: 10px;
   line-height: 1;
   padding: 3px 5px;
@@ -4751,21 +4743,20 @@
   grid-column: 1 / -1;
 }
 
-/* 用 padding 占位保证缩略图高度：button + overflow 下 aspect-ratio 易塌成细条 */
 .drama-ep-asset-thumb {
   position: relative;
   width: 100%;
-  height: 0;
-  padding-bottom: 133.333%; /* 3:4 */
-  background: var(--ep-soft);
+  aspect-ratio: 3 / 4;
+  background: var(--ep-soft, #f8fafc);
   overflow: hidden;
   color: #cbd5e1;
   font-weight: 700;
   flex: none;
 }
 
+.drama-ep-asset-card-wrap.scene .drama-ep-asset-thumb,
 .drama-ep-asset-card.scene .drama-ep-asset-thumb {
-  padding-bottom: 75%; /* 4:3 */
+  aspect-ratio: 4 / 3;
 }
 
 .drama-ep-asset-thumb img,
@@ -5178,17 +5169,41 @@
 }
 
 .drama-ep-asset-card-wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   min-width: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.drama-ep-asset-card-wrap:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.drama-ep-asset-card-wrap.scene {
+  grid-column: 1 / -1;
+}
+
+.drama-ep-asset-card-wrap.is-linked {
+  border: 2px solid var(--drama-lime, #b6ff00);
+  box-shadow: 0 0 0 1px var(--drama-lime, #b6ff00);
+}
+
+.drama-ep-asset-card-wrap.is-gen {
+  border: 2px solid #94a3b8;
+  box-shadow: 0 0 0 1px #94a3b8;
 }
 
 .drama-ep-asset-settings {
   position: absolute;
   bottom: 8px;
   right: 6px;
-  z-index: 1;
+  z-index: 2;
   font-size: 10px;
   line-height: 1;
   padding: 3px 7px;
@@ -5209,41 +5224,45 @@
   font-weight: 600;
   color: #fff;
   background: rgba(17, 17, 17, 0.55);
-}
-
-.drama-ep-asset-card.is-gen {
-  outline: 2px solid #94a3b8;
-  outline-offset: -2px;
+  z-index: 2;
 }
 
 .drama-ep-asset-ops {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  padding: 0 6px 6px;
+  background: #fff;
 }
 
 .drama-ep-asset-op-btn {
   flex: 1;
   min-width: 0;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
   color: #374151;
   font-size: 10px;
-  padding: 5px 8px;
+  padding: 0 6px;
   cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .drama-ep-asset-op-btn:hover {
   background: #f9fafb;
   border-color: #d1d5db;
+  color: #111;
 }
 
 .drama-ep-asset-voice {
   position: absolute;
   bottom: 28px;
   left: 6px;
-  z-index: 1;
+  z-index: 2;
   font-size: 9px;
   line-height: 1;
   padding: 2px 5px;
@@ -5255,16 +5274,21 @@
 .drama-ep-asset-voice-btn {
   flex: 1;
   min-width: 0;
-  border: none;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
   border-radius: 8px;
   background: #111;
   color: #fff;
   font-size: 10px;
-  padding: 5px 8px;
+  padding: 0 6px;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .drama-ep-asset-voice-btn.is-bound {
@@ -5280,11 +5304,13 @@
 .drama-ep-asset-voice-btn.is-bound:hover {
   background: #dcfce7;
   color: #14532d;
+  border-color: #4ade80;
 }
 
 .drama-voice-preview-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
 }
 

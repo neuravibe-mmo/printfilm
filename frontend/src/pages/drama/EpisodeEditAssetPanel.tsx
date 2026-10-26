@@ -1,6 +1,6 @@
 /** Biên tập tập: Cột nội dung bên trái (tập này/tập đầy đủ + thẻ danh mục) */
 import { useI18n } from '../../i18n'
-import { Workflow, Loader2 } from 'lucide-react'
+import { Workflow, Loader2, Link2Off, Plus, Mic } from 'lucide-react'
 import { resolveDramaAssetPreviewUrl, type DramaAsset } from '../../api/drama'
 import { CharacterVoicePreviewButton } from '../../components/drama/CharacterVoicePreviewButton'
 import { readAssetVoiceBinding } from './CharacterVoiceBindModal'
@@ -190,13 +190,25 @@ export function EpisodeEditAssetPanel({
             const voiceGenerating = voiceBusyIds?.has(asset.id) ?? false
             const imageBusy = imageBusyIds?.has(asset.id) ?? false
             return (
-              <div key={asset.id} className="drama-ep-asset-card-wrap">
-                <button
-                  type="button"
+              <div
+                key={asset.id}
+                className={`drama-ep-asset-card-wrap${isScene ? ' scene' : ''}${isActive ? ' is-linked' : ''}${
+                  imageBusy ? ' is-gen' : ''
+                }`}
+              >
+                <div
+                  role="button"
+                  tabIndex={0}
                   className={`drama-ep-asset-card ${isScene ? 'scene' : ''}${isActive ? ' is-linked' : ''}${
                     imageBusy ? ' is-gen' : ''
                   }`}
                   onClick={() => onOpenAsset(asset)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      onOpenAsset(asset)
+                    }
+                  }}
                   title={t('drama.mention.assetSettings')}
                 >
                   <div className="drama-ep-asset-thumb">
@@ -213,16 +225,17 @@ export function EpisodeEditAssetPanel({
                     <span className="drama-ep-asset-voice">{t('drama.assets.voice')}</span>
                   ) : null}
                   <span className="drama-ep-asset-settings">{t('common.settings')}</span>
-                </button>
+                </div>
                 <div className="drama-ep-asset-ops">
                   {isActive && onUnlinkAsset ? (
                     <button
                       type="button"
                       className="drama-ep-asset-op-btn"
                       onClick={() => onUnlinkAsset(asset.id)}
-                      title={t('drama.mention.unlinkTitle')}
+                      title={`${t('drama.mention.unlink')} (${t('drama.mention.unlinkTitle')})`}
+                      aria-label={t('drama.mention.unlink')}
                     >
-                      {t('drama.mention.unlink')}
+                      <Link2Off size={13} strokeWidth={2} />
                     </button>
                   ) : (
                     <button
@@ -230,8 +243,9 @@ export function EpisodeEditAssetPanel({
                       className="drama-ep-asset-op-btn"
                       onClick={() => onMention(asset)}
                       title={t('drama.mention.insertToScript')}
+                      aria-label={t('drama.mention.insertToScript')}
                     >
-                      {t('common.insert')}
+                      <Plus size={14} strokeWidth={2} />
                     </button>
                   )}
                   {isCharacter && onGenerateVoice ? (
@@ -240,6 +254,7 @@ export function EpisodeEditAssetPanel({
                         url={voice.url}
                         label={voice.label}
                         variant="inline"
+                        iconOnly
                         className="drama-ep-asset-voice-btn is-bound"
                         onError={onVoiceError}
                       />
@@ -249,8 +264,10 @@ export function EpisodeEditAssetPanel({
                         className="drama-ep-asset-voice-btn"
                         disabled={voiceGenerating}
                         onClick={() => onGenerateVoice(asset)}
+                        title={voiceGenerating ? t('common.generating') : t('drama.mention.genVoice')}
+                        aria-label={voiceGenerating ? t('common.generating') : t('drama.mention.genVoice')}
                       >
-                        {voiceGenerating ? t('common.generating') : t('drama.mention.genVoice')}
+                        {voiceGenerating ? <Loader2 size={13} className="animate-spin" /> : <Mic size={13} strokeWidth={2} />}
                       </button>
                     )
                   ) : null}

@@ -9,6 +9,7 @@ type Props = {
   className?: string
   size?: 'sm' | 'md'
   variant?: 'button' | 'chip' | 'inline'
+  iconOnly?: boolean
   onError?: (message: string) => void
 }
 
@@ -23,6 +24,7 @@ export function CharacterVoicePreviewButton({
   className = '',
   size = 'sm',
   variant = 'button',
+  iconOnly = false,
   onError,
 }: Props) {
   const { t } = useI18n()
@@ -84,6 +86,12 @@ export function CharacterVoicePreviewButton({
   if (playing) btnClass = `${btnClass} is-playing`
   if (className) btnClass = `${btnClass} ${className}`
 
+  const tooltip = playing
+    ? t('drama.assetsStep.voiceStop')
+    : label
+      ? t('drama.assetsStep.voiceListenTitle', { label })
+      : t('drama.assetsStep.voiceListenBtn')
+
   return (
     <button
       type="button"
@@ -92,10 +100,11 @@ export function CharacterVoicePreviewButton({
         e.stopPropagation()
         handlePreview()
       }}
-      title={label ? t('drama.assetsStep.voiceListenTitle', { label }) : t('drama.assetsStep.voiceListen')}
+      title={tooltip}
+      aria-label={tooltip}
     >
       {playing ? <Pause size={14} strokeWidth={1.8} aria-hidden /> : <Volume2 size={14} strokeWidth={1.8} aria-hidden />}
-      {playing ? t('drama.assetsStep.voiceStop') : t('drama.assetsStep.voiceListenBtn')}
+      {!iconOnly && (playing ? t('drama.assetsStep.voiceStop') : t('drama.assetsStep.voiceListenBtn'))}
     </button>
   )
 }
