@@ -51,7 +51,6 @@ async def list_assets(
         select(DramaAsset)
         .join(DramaProject, DramaAsset.project_id == DramaProject.id)
         .where(DramaProject.user_id == user.id)
-        .order_by(DramaAsset.updated_at.desc())
     )
     if project_id is not None:
         await get_owned_drama_project(db, project_id, user)
@@ -60,7 +59,9 @@ async def list_assets(
         purged = await purge_voice_like_character_assets(db, int(project_id))
         if removed or purged:
             await db.commit()
-        q = q.where(DramaAsset.project_id == project_id)
+        q = q.where(DramaAsset.project_id == project_id).order_by(DramaAsset.id.asc())
+    else:
+        q = q.order_by(DramaAsset.updated_at.desc(), DramaAsset.id.desc())
     rows = list((await db.execute(q)).scalars().all())
     if library_only:
         canvas_only_types = {"video", "audio", "text"}

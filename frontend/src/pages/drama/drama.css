@@ -1437,6 +1437,48 @@
   color: var(--drama-muted);
 }
 
+.drama-asset-card-voice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.drama-asset-card-voice .pf-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  border: 1px dashed #cbd5e1;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.drama-asset-card-voice .pf-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.drama-asset-card-voice .drama-voice-preview-btn {
+  width: 100%;
+  justify-content: center;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.drama-asset-card-voice .drama-voice-preview-btn:hover:not(:disabled) {
+  background: #dcfce7;
+  color: #15803d;
+}
+
 .drama-asset-card-actions {
   display: flex;
   align-items: center;

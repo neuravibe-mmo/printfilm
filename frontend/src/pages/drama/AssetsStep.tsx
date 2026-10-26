@@ -55,7 +55,8 @@ type AssetsStepProps = {
 
 // Chuẩn hóa giao diện trả về dưới dạng mảng nội dung để tránh sự cố không xác định.filter
 function normalizeAssetList(value: unknown): DramaAsset[] {
-  return filterDramaLibraryAssets(Array.isArray(value) ? (value as DramaAsset[]) : [])
+  const list = filterDramaLibraryAssets(Array.isArray(value) ? (value as DramaAsset[]) : [])
+  return [...list].sort((a, b) => a.id - b.id)
 }
 
 // Xác định xem tài sản chưa được xuất bản hay không (không có ảnh bìa/ảnh chính hợp lệ, việc tải lên hoặc tạo AI sẽ được coi là đã xuất bản)
@@ -546,13 +547,19 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     }
   }
 
-  // Xóa vai trò
-  async function handleDeleteCharacter(asset: DramaAsset) {
+  // Xóa tài sản
+  async function handleDeleteAsset(asset: DramaAsset) {
+    const isChar = (asset.type || '').toLowerCase() === 'character'
+    const title = isChar ? t('drama.assetsStep.deleteCharTitle') : t('drama.assets.deleteAsset')
+    const message = isChar
+      ? t('drama.assetsStep.deleteCharMessage').replace('{name}', asset.name || t('common.unnamed'))
+      : t('drama.assets.deleteConfirm')
     const ok = await dialog.confirm({
-      title: t('drama.assetsStep.deleteCharTitle'),
-      message: t('drama.assetsStep.deleteCharMessage').replace('{name}', asset.name || t('common.unnamed')),
+      title,
+      message,
       tone: 'danger',
       confirmText: t('common.delete'),
+      cancelText: t('common.cancel'),
     })
     if (!ok) return
     if (busyAssetIds.has(asset.id)) {
@@ -562,6 +569,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     try {
       await dramaApi.deleteAsset(asset.id)
       setAssets((prev) => (prev ?? []).filter((a) => a.id !== asset.id))
+      setSelectedCharacterIds((prev) => prev.filter((id) => id !== asset.id))
     } catch (err) {
       onError(err instanceof Error ? err.message : t('common.deleteFailed'))
     }
@@ -781,7 +789,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
             </button>
           ) : null}
 
-          {DRAMA_VOICE_BINDING_ENABLED && tab === 'character' ? (
+          {DRAMA_VOICE_BINDING_ENABLED && tab === 'character' && selectedCharacterIds.length > 0 ? (
             <button
               type="button"
               className="pf-btn pf-btn-lime"
@@ -889,26 +897,38 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                 {asset.type}
                 {isCharacter && voice ? ` · ${voice.label}` : ''}
               </p>
-              {tab === 'character' && isCharacter ? (
-                <label
-                  className="drama-voice-multi-select"
-                  style={{ display: 'inline-flex', gap: 8, alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+
+              {DRAMA_VOICE_BINDING_ENABLED && isCharacter ? (
+                <div
+                  className="drama-asset-card-voice"
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedCharacterIds.includes(asset.id)}
-                    onChange={(e) => {
-                      e.stopPropagation()
-                      setSelectedCharacterIds((prev) =>
-                        prev.includes(asset.id) ? prev.filter((id) => id !== asset.id) : [...prev, asset.id],
-                      )
-                    }}
-                  />
-                  <span className="drama-muted">{t('common.selected')}</span>
-                </label>
+                  {voice ? (
+                    <CharacterVoicePreviewButton
+                      url={voice.url}
+                      label={voice.label}
+                      onError={onError}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="pf-btn pf-btn-sm pf-btn-ghost drama-asset-card-btn-voice"
+                      disabled={
+                        batchBusy ||
+                        batchVoiceBusy ||
+                        characterVoiceBusyIds.has(asset.id)
+                      }
+                      onClick={() => void handleGenerateCharacterVoice(asset)}
+                    >
+                      {characterVoiceBusyIds.has(asset.id)
+                        ? t('drama.assetsStep.generating')
+                        : `🎙️ ${t('drama.assetsStep.genVoice')}`}
+                    </button>
+                  )}
+                </div>
               ) : null}
+
               <div
                 className="drama-asset-card-actions"
                 onClick={(e) => e.stopPropagation()}
@@ -923,38 +943,17 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                   {genButtonLabel(asset)}
                 </button>
                 {isCharacter ? (
-                  <>
-                    {DRAMA_VOICE_BINDING_ENABLED ? (
-                      voice ? (
-                        <CharacterVoicePreviewButton
-                          url={voice.url}
-                          label={voice.label}
-                          onError={onError}
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          className="pf-btn pf-btn-sm pf-btn-lime"
-                          disabled={
-                            batchBusy ||
-                            batchVoiceBusy ||
-                            characterVoiceBusyIds.has(asset.id)
-                          }
-                          onClick={() => void handleGenerateCharacterVoice(asset)}
-                        >
-                          {characterVoiceBusyIds.has(asset.id) ? t('drama.assetsStep.generating') : t('drama.assetsStep.genVoice')}
-                        </button>
-                      )
-                    ) : null}
-                    <button
-                      type="button"
-                      className="pf-btn pf-btn-sm drama-btn-danger-text drama-asset-card-btn-delete"
-                      disabled={busy || batchBusy || batchVoiceBusy}
-                      onClick={() => void handleDeleteCharacter(asset)}
-                    >
-                      {t('common.delete')}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    className="pf-btn pf-btn-sm drama-btn-danger-text drama-asset-card-btn-delete"
+                    disabled={busy || batchBusy || batchVoiceBusy}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handleDeleteAsset(asset)
+                    }}
+                  >
+                    {t('common.delete')}
+                  </button>
                 ) : null}
               </div>
             </article>
@@ -995,7 +994,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
           onBindVoice={DRAMA_VOICE_BINDING_ENABLED ? (a) => setVoiceAsset(a) : undefined}
           onDelete={(a) => {
             setDetailAsset(null)
-            void handleDeleteCharacter(a)
+            void handleDeleteAsset(a)
           }}
           onError={onError}
         />
