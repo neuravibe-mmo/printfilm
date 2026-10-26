@@ -64,7 +64,8 @@ STUB_CAST_INTRO_RE = re.compile(r"剧本分集出场人物|出场\s*->\s*卷入"
 # Các dòng lớp phủ giới thiệu nhân vật đã được viết vào bảng phân cảnh (tương thích với "·Lớp phủ màn hình" cũ và "·Bên cạnh nhân vật" hiện tại)
 CHARACTER_INTRO_CUE = "【人物介绍·画面叠字·角色身旁】"
 CHARACTER_INTRO_LINE_RE = re.compile(
-    r"^【人物介绍·画面叠字(?:·角色身旁)?】\s*([^｜\|\n]+?)(?:\s*[｜|].*)?$"
+    r"^【(?:人物介绍|Giới thiệu nhân vật|giới thiệu nhân vật|Character intro)[^】]*】\s*([^｜\|\n]+?)(?:\s*[｜|].*)?$",
+    re.IGNORECASE,
 )
 LEGACY_CHARACTER_INTRO_CUE = "【人物介绍·画面叠字】"
 # Màn hình thuần túy/thẻ camera trống (trước dấu hai chấm): Cấm coi nó là "Tên nhân vật: hội thoại"
@@ -1191,9 +1192,12 @@ def _is_header_meta_line(line: str) -> bool:
     if (
         stripped.startswith("【BGM")
         or stripped.startswith("【Nhạc nền")
-        or stripped.startswith("【Background Music")
         or stripped.startswith("【字幕")
+        or stripped.startswith("【Phụ đề")
+        or stripped.startswith("【Subtitle")
         or "人物介绍" in stripped
+        or "Giới thiệu nhân vật" in stripped
+        or "giới thiệu nhân vật" in stripped
     ):
         return True
     return False

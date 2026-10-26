@@ -599,7 +599,12 @@ def strip_character_intro_cues(content: str) -> str:
     out: list[str] = []
     for raw in (content or "").replace("\r\n", "\n").split("\n"):
         stripped = raw.strip()
-        if stripped.startswith("【人物介绍"):
+        if (
+            stripped.startswith("【人物介绍")
+            or stripped.startswith("【Giới thiệu nhân vật")
+            or stripped.startswith("【giới thiệu nhân vật")
+            or stripped.startswith("【Character intro")
+        ):
             continue
         out.append(raw)
     return "\n".join(out).replace("\n\n\n", "\n\n").strip()

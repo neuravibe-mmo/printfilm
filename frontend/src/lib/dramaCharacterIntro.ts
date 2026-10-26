@@ -34,7 +34,13 @@ export function readEpisodeCharacterIntroEnabled(
 
 // Xác định xem đó có phải là dòng gợi ý giới thiệu nhân vật hay không.
 export function isCharacterIntroCueLine(line: string): boolean {
-  return line.trim().startsWith('【人物介绍')
+  const t = line.trim()
+  return (
+    t.startsWith('【人物介绍') ||
+    t.startsWith('【Giới thiệu nhân vật') ||
+    t.startsWith('【giới thiệu nhân vật') ||
+    t.startsWith('【Character intro')
+  )
 }
 
 // Loại bỏ các dòng giới thiệu nhân vật chồng chéo khỏi văn bản bảng phân cảnh đơn lẻ.

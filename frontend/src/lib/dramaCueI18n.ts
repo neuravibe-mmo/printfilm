@@ -34,6 +34,16 @@ export const CUE_PAIRS = {
     vi: '【Độc thoại nội tâm · Đồng bộ phụ đề】',
     en: '【Inner monologue · Synced subtitles】',
   },
+  characterIntro: {
+    zh: '【人物介绍·画面叠字·角色身旁】',
+    vi: '【Giới thiệu nhân vật · Chữ trên hình · Bên cạnh nhân vật】',
+    en: '【Character intro · Overlay text · Beside character】',
+  },
+  emptyShot: {
+    zh: '【空镜·可仅环境音与 BGM】',
+    vi: '【Cảnh trống · Chỉ âm thanh môi trường & BGM】',
+    en: '【Empty shot · Ambient sound & BGM】',
+  },
 } as const
 
 /**
@@ -49,7 +59,13 @@ export function hasChineseCues(content: string): boolean {
     content.includes('【字幕') ||
     content.includes('【片头') ||
     content.includes('【背景交代') ||
+    content.includes('【背景介绍') ||
     content.includes('【人物介绍') ||
+    content.includes('【空镜') ||
+    content.includes('【配乐') ||
+    content.includes('【强制约束') ||
+    content.includes('画面叠字') ||
+    content.includes('角色身旁') ||
     content.includes('音量低于人声')
   )
 }
@@ -110,24 +126,26 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
 
     // Dialogue
     text = text.replace(
-      /【(?:对白·慢速清晰·同步字幕|Dialogue · Clear & measured pace · Synced subtitles)】/g,
+      /【(?:对白·(?:慢速清晰|自然语速)·同步字幕|Dialogue · [^】]*Synced subtitles)】/g,
       '【Thoại · Chậm rõ · Đồng bộ phụ đề】',
     )
     text = text.replace(
-      /【(?:对白·慢速清晰|Dialogue · Clear & measured pace)】/g,
+      /【(?:对白·(?:慢速清晰|自然语速)|Dialogue · Clear[^】]*)】/g,
       '【Thoại · Chậm rõ】',
     )
+    text = text.replace(/【(?:对白|Dialogue)(?:·|:|\s*)([^】]*)】/g, '【Thoại · $1】')
     text = text.replace(/【(?:对白|Dialogue)】/g, '【Thoại】')
 
     // Narration
     text = text.replace(
-      /【(?:旁白·慢速清晰·同步字幕|Narration · Clear & measured pace · Synced subtitles)】/g,
+      /【(?:旁白·(?:慢速清晰|自然语速)·同步字幕|Narration · [^】]*Synced subtitles)】/g,
       '【Lời dẫn · Chậm rõ · Đồng bộ phụ đề】',
     )
     text = text.replace(
-      /【(?:旁白·慢速清晰|Narration · Clear & measured pace)】/g,
+      /【(?:旁白·(?:慢速清晰|自然语速)|Narration · Clear[^】]*)】/g,
       '【Lời dẫn · Chậm rõ】',
     )
+    text = text.replace(/【(?:旁白|Narration)(?:·|:|\s*)([^】]*)】/g, '【Lời dẫn · $1】')
     text = text.replace(/【(?:旁白|Narration)】/g, '【Lời dẫn】')
 
     // Inner monologue
@@ -135,6 +153,7 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
       /【(?:内心独白·同步字幕|Inner monologue · Synced subtitles)】/g,
       '【Độc thoại nội tâm · Đồng bộ phụ đề】',
     )
+    text = text.replace(/【(?:内心独白|Inner monologue)(?:·|:|\s*)([^】]*)】/g, '【Độc thoại nội tâm · $1】')
     text = text.replace(/【(?:内心独白|Inner monologue)】/g, '【Độc thoại nội tâm】')
 
     // Production cues
@@ -142,8 +161,49 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
     text = text.replace(/【片头·片名】/g, '【Đầu phim · Chữ tên phim】')
     text = text.replace(/【片头·类型】/g, '【Đầu phim · Thể loại】')
     text = text.replace(/【片头(?:·|:|\s*)([^】]*)】/g, '【Đầu phim · $1】')
-    text = text.replace(/【背景交代·画面叠字】/g, '【Giới thiệu bối cảnh · Chữ trên hình】')
-    text = text.replace(/【人物介绍·画面叠字】/g, '【Giới thiệu nhân vật · Chữ trên hình】')
+    text = text.replace(/【(?:背景交代|背景介绍)·画面叠字】/g, '【Giới thiệu bối cảnh · Chữ trên hình】')
+    text = text.replace(/【(?:背景交代|背景介绍)(?:·|:|\s*)([^】]*)】/g, '【Giới thiệu bối cảnh · $1】')
+    text = text.replace(/【(?:背景交代|背景介绍)】/g, '【Giới thiệu bối cảnh】')
+
+    // Character intro cues (hỗ trợ cả ·角色身旁 và các biến thể)
+    text = text.replace(
+      /【(?:人物介绍·画面叠字·角色身旁|Character intro · Overlay text · Beside character)】/g,
+      CUE_PAIRS.characterIntro.vi,
+    )
+    text = text.replace(
+      /【人物介绍·画面叠字】/g,
+      '【Giới thiệu nhân vật · Chữ trên hình】',
+    )
+    text = text.replace(
+      /【人物介绍·角色身旁】/g,
+      '【Giới thiệu nhân vật · Bên cạnh nhân vật】',
+    )
+    text = text.replace(/【人物介绍(?:·|:|\s*)([^】]*)】/g, (_, rest) => {
+      const cleanRest = (rest || '')
+        .replace(/画面叠字/g, 'Chữ trên hình')
+        .replace(/角色身旁/g, 'Bên cạnh nhân vật')
+        .trim()
+      return cleanRest ? `【Giới thiệu nhân vật · ${cleanRest}】` : '【Giới thiệu nhân vật】'
+    })
+    text = text.replace(/【人物介绍】/g, '【Giới thiệu nhân vật】')
+    text = text.replace(/【Giới thiệu nhân vật([^】]*)】/g, (_, rest) => {
+      const cleanRest = rest
+        .replace(/画面叠字/g, 'Chữ trên hình')
+        .replace(/角色身旁/g, 'Bên cạnh nhân vật')
+      return `【Giới thiệu nhân vật${cleanRest}】`
+    })
+
+    // Empty shot
+    text = text.replace(
+      /【(?:空镜·可仅环境音与\s*BGM|Empty shot · Ambient sound & BGM[^】]*)】/g,
+      CUE_PAIRS.emptyShot.vi,
+    )
+    text = text.replace(
+      /【(?:空镜|Empty shot)(?:·|:|\s*)([^】]*)】/g,
+      '【Cảnh trống · $1】',
+    )
+    text = text.replace(/【(?:空镜|Empty shot)】/g, '【Cảnh trống】')
+    text = text.replace(/【强制约束[：:][^】]*】/g, '【Ràng buộc bắt buộc: Âm thanh, Phụ đề và Nhạc nền】')
   } else if (targetLocale === 'zh') {
     text = text.replace(
       /【(?:BGM|Background Music|Nhạc nền)[：:]\s*(?:Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện[^】]*|Subtle background music matching[^】]*)】/g,
@@ -170,6 +230,14 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
       /【(?:Độc thoại nội tâm[^】]*|Inner monologue[^】]*)】/g,
       CUE_PAIRS.innerMonologue.zh,
     )
+    text = text.replace(
+      /【(?:Giới thiệu nhân vật · Chữ trên hình · Bên cạnh nhân vật|Character intro · Overlay text · Beside character|Giới thiệu nhân vật[^】]*)】/g,
+      CUE_PAIRS.characterIntro.zh,
+    )
+    text = text.replace(
+      /【(?:Cảnh trống · Chỉ âm thanh môi trường & BGM|Empty shot · Ambient sound & BGM[^】]*)】/g,
+      CUE_PAIRS.emptyShot.zh,
+    )
   } else if (targetLocale === 'en') {
     text = text.replace(
       /【(?:BGM|Background Music|Nhạc nền)[：:]\s*(?:贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声|Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện[^】]*)】/g,
@@ -195,6 +263,14 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
     text = text.replace(
       /【(?:内心独白·同步字幕|Độc thoại nội tâm[^】]*)】/g,
       CUE_PAIRS.innerMonologue.en,
+    )
+    text = text.replace(
+      /【(?:人物介绍·画面叠字·角色身旁|Giới thiệu nhân vật · Chữ trên hình · Bên cạnh nhân vật|Giới thiệu nhân vật[^】]*)】/g,
+      CUE_PAIRS.characterIntro.en,
+    )
+    text = text.replace(
+      /【(?:空镜·可仅环境音与\s*BGM|Cảnh trống · Chỉ âm thanh môi trường & BGM[^】]*)】/g,
+      CUE_PAIRS.emptyShot.en,
     )
   }
 
