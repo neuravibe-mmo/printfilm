@@ -727,6 +727,11 @@ export const enDrama = {
             "assetCreateFailed": "Failed to create {label}",
             "assetImported": "Imported \"{name}\" and inserted into current scene",
             "importFailed": "Failed to import asset",
+            "selectFragmentFirst": "Please select a scene first",
+            "noAssetsInLibrary": "No {kind} in Asset Library yet",
+            "noDetectedAssets": "No {kind} from Asset Library detected in this scene",
+            "detectedSuccess": "Detected and linked {n} character(s): {names}",
+            "detectedAlreadyLinked": "Detected characters ({names}) are already linked",
             "unlinkAsset": "Unlinked this scene from \"{name}\". Asset remains in project (switch to \"All Episodes\" to view)",
             "unlinkNoName": "Unlinked this scene. Asset remains in project (switch to \"All Episodes\" to view)",
             "importAssetTitle": "Import {type}",
@@ -922,7 +927,11 @@ export const enDrama = {
             "unlinkTitle": "Only unlink from current scene, without deleting asset",
             "unlink": "Unlink",
             "insertToScript": "Insert into current scene script",
-            "genVoice": "Generate Voice"
+            "genVoice": "Generate Voice",
+            "autoDetectCharacters": "Auto-detect Characters",
+            "autoDetectScenes": "Auto-detect Scenes",
+            "autoDetectProps": "Auto-detect Props",
+            "autoDetectTip": "Automatically scan scene text and link characters from Asset Library"
         },
         "genQueue": {
             "assetPrefix": "Asset",

@@ -35,6 +35,9 @@ type Props = {
   onCreateAsset?: () => void
   /** Nhập từ thư viện nội dung toàn cầu */
   onImportAsset?: () => void
+  /** Tự động nhận diện tài sản từ phân cảnh hiện tại */
+  onAutoDetect?: () => void
+  detectBusy?: boolean
 }
 
 
@@ -58,12 +61,19 @@ export function EpisodeEditAssetPanel({
   onVoiceError,
   onCreateAsset,
   onImportAsset,
+  onAutoDetect,
+  detectBusy,
 }: Props) {
   const { t } = useI18n()
   const createLabel = (tab: AssetTab | null): string => {
     if (tab === 'scene') return t('drama.mention.newScene')
     if (tab === 'prop') return t('drama.mention.newProp')
     return t('drama.mention.newCharacter')
+  }
+  const detectLabel = (tab: AssetTab | null): string => {
+    if (tab === 'scene') return t('drama.mention.autoDetectScenes')
+    if (tab === 'prop') return t('drama.mention.autoDetectProps')
+    return t('drama.mention.autoDetectCharacters')
   }
   return (
     <aside className="drama-ep-assets">
@@ -112,13 +122,13 @@ export function EpisodeEditAssetPanel({
           </button>
         ))}
       </div>
-      {onCreateAsset || onImportAsset ? (
+      {onCreateAsset || onImportAsset || onAutoDetect ? (
         <div className="drama-ep-asset-actions">
           {onCreateAsset ? (
             <button
               type="button"
               className="drama-ep-asset-action-btn"
-              disabled={createBusy}
+              disabled={createBusy || detectBusy}
               onClick={onCreateAsset}
             >
               {createBusy ? t('common.creating') : createLabel(tab)}
@@ -128,10 +138,21 @@ export function EpisodeEditAssetPanel({
             <button
               type="button"
               className="drama-ep-asset-action-btn is-ghost"
-              disabled={createBusy}
+              disabled={createBusy || detectBusy}
               onClick={onImportAsset}
             >
               {t('drama.mention.importBtn')}
+            </button>
+          ) : null}
+          {onAutoDetect ? (
+            <button
+              type="button"
+              className="drama-ep-asset-action-btn drama-ep-asset-action-detect"
+              disabled={createBusy || detectBusy}
+              onClick={onAutoDetect}
+              title={t('drama.mention.autoDetectTip')}
+            >
+              ✨ {detectLabel(tab)}
             </button>
           ) : null}
         </div>

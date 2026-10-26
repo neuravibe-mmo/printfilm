@@ -13,10 +13,12 @@ import {
   RATIO_OPTIONS,
   buildFragmentRefStripItems,
   collectFragmentAssetIds,
+  detectAssetsInContent,
   extractAssetIds,
   filterEpisodeAssets,
   formatFragLabel,
   fragmentQueueBadgeLabel,
+  getAssetTabLabel,
   isFragmentGenerationBusy,
   normalizeAssetTab,
   readFragmentGenerationStatus,
@@ -186,6 +188,7 @@ function EpisodeEditInner() {
   const [failReasonJob, setFailReasonJob] = useState<DramaGenJob | null>(null)
   // assetsCreateBusy/libraryPickerOpen Tạo và nhập thanh bên
   const [assetCreateBusy, setAssetCreateBusy] = useState(false)
+  const [detectBusy, setDetectBusy] = useState(false)
   const [libraryPickerOpen, setLibraryPickerOpen] = useState(false)
   const imageGenQueue = useDramaImageGenQueue()
   const dramaGenQueue = useDramaGenQueue()
@@ -1289,6 +1292,70 @@ function EpisodeEditInner() {
     )
   }
 
+  // Tự động nhận diện các nhân vật/tài sản từ Kho tài sản xuất hiện trong phân cảnh hiện tại
+  async function handleAutoDetectAssets() {
+    if (!selected) {
+      setError(t('drama.episodeEdit.selectFragmentFirst'))
+      return
+    }
+    const currentTab = assetTab || 'character'
+    const targetKind = currentTab === 'scene' ? 'scene' : currentTab === 'prop' ? 'prop' : 'character'
+    const pool = (assets ?? []).filter((a) => (a.type || '').toLowerCase() === targetKind)
+    if (pool.length === 0) {
+      const kindLabel = getAssetTabLabel(currentTab)
+      setStatus(t('drama.episodeEdit.noAssetsInLibrary').replace('{kind}', kindLabel))
+      return
+    }
+
+    setDetectBusy(true)
+    setError('')
+    try {
+      const detected = detectAssetsInContent(selected.content || '', pool)
+      const kindLabel = getAssetTabLabel(currentTab)
+      if (detected.length === 0) {
+        setStatus(t('drama.episodeEdit.noDetectedAssets').replace('{kind}', kindLabel))
+        return
+      }
+
+      const detectedIds = detected.map((a) => a.id)
+      const existingIds = selected.asset_ids || []
+      const newIds = detectedIds.filter((id) => !existingIds.includes(id))
+
+      let nextContent = selected.content || ''
+      for (const id of detectedIds) {
+        if (!new RegExp(`@asset:${id}(?!\\d)`).test(nextContent)) {
+          nextContent = `${nextContent.trimEnd()}\n@asset:${id}`
+        }
+      }
+      const mergedIds = Array.from(new Set([...existingIds, ...detectedIds]))
+
+      const nextFragments = fragments.map((f, i) =>
+        i === selectedIndex ? { ...f, content: nextContent, asset_ids: mergedIds } : f,
+      )
+      setFragments(nextFragments)
+      setEditing(true)
+
+      try {
+        await dramaApi.saveFragments(eid, nextFragments)
+      } catch {
+        /* ignore autosave error */
+      }
+
+      const names = detected.map((a) => a.name || `ID ${a.id}`).join(', ')
+      if (newIds.length === 0) {
+        setStatus(t('drama.episodeEdit.detectedAlreadyLinked').replace('{names}', names))
+      } else {
+        setStatus(
+          t('drama.episodeEdit.detectedSuccess')
+            .replace('{n}', String(newIds.length))
+            .replace('{names}', names),
+        )
+      }
+    } finally {
+      setDetectBusy(false)
+    }
+  }
+
   // Chuyển từ thanh liên kết đến danh mục tương ứng và mở chi tiết tài sản
   function focusLinkedAsset(assetId: number) {
     const asset = assets.find((a) => a.id === assetId)
@@ -1538,6 +1605,8 @@ function EpisodeEditInner() {
           onVoiceError={(message) => setError(message)}
           onCreateAsset={() => void handleCreateSideAsset()}
           onImportAsset={() => setLibraryPickerOpen(true)}
+          onAutoDetect={() => void handleAutoDetectAssets()}
+          detectBusy={detectBusy}
         />
 
         <section className="drama-ep-editor">

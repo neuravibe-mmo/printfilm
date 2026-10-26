@@ -265,3 +265,72 @@ export function filterEpisodeAssets(
   }
   return list
 }
+
+/**
+ * Tự động phát hiện các tài sản (nhân vật / cảnh / đạo cụ) từ kho tài sản xuất hiện trong nội dung phân cảnh.
+ */
+export function detectAssetsInContent(content: string, assetPool: DramaAsset[]): DramaAsset[] {
+  if (!content || !assetPool.length) return []
+  const text = content.toLowerCase()
+  const detected: DramaAsset[] = []
+
+  // Trích xuất các nhân vật người nói từ cấu trúc thoại hoặc lời dẫn:
+  const speakerRegex = /(?:【(?:Thoại|Dialogue|对白|旁白|Lời dẫn|Narration|Hình ảnh|Visual|画面)[^】]*】\s*)?([^\n:：【】@()（）]+)(?:\s*[\(（][^\)）]*[\)）])?\s*[:：]/g
+  const speakers = new Set<string>()
+  let m: RegExpExecArray | null
+  while ((m = speakerRegex.exec(content))) {
+    const s = m[1].trim().toLowerCase()
+    if (s && s.length >= 2 && s.length <= 50) {
+      speakers.add(s)
+    }
+  }
+
+  for (const asset of assetPool) {
+    const rawName = (asset.name || '').trim()
+    if (!rawName) continue
+    const nameLower = rawName.toLowerCase()
+
+    // 1. So khớp tên đầy đủ trong văn bản
+    if (text.includes(nameLower)) {
+      detected.push(asset)
+      continue
+    }
+
+    // 2. So khớp với người nói (speakers)
+    let matchedSpeaker = false
+    for (const sp of speakers) {
+      if (sp === nameLower || nameLower.includes(sp) || sp.includes(nameLower)) {
+        detected.push(asset)
+        matchedSpeaker = true
+        break
+      }
+    }
+    if (matchedSpeaker) continue
+
+    // 3. Tên không tính danh xưng (Ví dụ: "Bác sĩ Vũ Thanh" -> "Vũ Thanh")
+    const titleCleaned = nameLower
+      .replace(/^(bác sĩ|ông|bà|anh|chị|cô|chú|em|tiến sĩ|giáo sư|đại úy|thiếu úy|cảnh sát|luật sư)\s+/i, '')
+      .trim()
+    if (titleCleaned.length >= 2 && text.includes(titleCleaned)) {
+      detected.push(asset)
+      continue
+    }
+
+    // 4. So khớp qua biệt danh/bí danh trong params
+    const params = (asset.params || {}) as Record<string, unknown>
+    const aliases: string[] = []
+    if (typeof params.alias === 'string') aliases.push(params.alias)
+    if (Array.isArray(params.aliases)) aliases.push(...params.aliases.map(String))
+    if (typeof params.nickname === 'string') aliases.push(params.nickname)
+
+    const aliasMatched = aliases.some((al) => {
+      const a = al.trim().toLowerCase()
+      return a && a.length >= 2 && (text.includes(a) || speakers.has(a))
+    })
+    if (aliasMatched) {
+      detected.push(asset)
+    }
+  }
+
+  return detected
+}

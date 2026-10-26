@@ -4624,12 +4624,13 @@
 
 .drama-ep-asset-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 0 12px 8px;
 }
 
 .drama-ep-asset-action-btn {
-  flex: 1;
+  flex: 1 1 calc(50% - 3px);
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   padding: 6px 8px;
@@ -4638,6 +4639,8 @@
   background: #0f172a;
   color: #fff;
   cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
 }
 
 .drama-ep-asset-action-btn:disabled {
@@ -4652,6 +4655,24 @@
 
 .drama-ep-asset-action-btn.is-ghost:hover:not(:disabled) {
   background: #f8fafc;
+}
+
+.drama-ep-asset-action-btn.drama-ep-asset-action-detect {
+  flex: 1 1 100%;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.drama-ep-asset-action-btn.drama-ep-asset-action-detect:hover:not(:disabled) {
+  background: #dcfce7;
+  border-color: #4ade80;
+  color: #166534;
 }
 
 .drama-ep-asset-grid {
