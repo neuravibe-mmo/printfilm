@@ -6,8 +6,8 @@
 export const CUE_PAIRS = {
   bgm: {
     zh: '【BGM：贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声】',
-    vi: '【BGM: Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện, cảm xúc biến chuyển theo khung hình; âm lượng nhỏ hơn giọng nói】',
-    en: '【BGM: Subtle background music matching the narrative atmosphere, emotions ebbing and flowing with the visuals; volume lower than voice】',
+    vi: '【Nhạc nền: Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện, cảm xúc biến chuyển theo khung hình; âm lượng nhỏ hơn giọng nói】',
+    en: '【Background Music: Subtle background music matching the narrative atmosphere, emotions ebbing and flowing with the visuals; volume lower than voice】',
   },
   visual: {
     zh: '【画面·无配音仅环境音】',
@@ -55,6 +55,28 @@ export function hasChineseCues(content: string): boolean {
 }
 
 /**
+ * Kiểm tra xem kịch bản có chứa thẻ lệnh chưa được bản địa hóa hay không.
+ */
+export function hasNonLocalizedCues(content: string, targetLocale: 'vi' | 'zh' | 'en' = 'vi'): boolean {
+  if (!content) return false
+  if (targetLocale === 'vi') {
+    return (
+      hasChineseCues(content) ||
+      content.includes('【BGM') ||
+      content.includes('【Background Music')
+    )
+  }
+  if (targetLocale === 'en') {
+    return (
+      hasChineseCues(content) ||
+      content.includes('【BGM') ||
+      content.includes('【Nhạc nền')
+    )
+  }
+  return content.includes('【Nhạc nền') || content.includes('【Background Music')
+}
+
+/**
  * Chuyển đổi các thẻ lệnh sản xuất sang ngôn ngữ mục tiêu (mặc định 'vi').
  */
 export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 'en' = 'vi'): string {
@@ -62,11 +84,12 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
   let text = content
 
   if (targetLocale === 'vi') {
-    // BGM
+    // BGM / Background Music -> Nhạc nền
     text = text.replace(
-      /【BGM[：:]\s*(?:贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声|Subtle background music matching the narrative atmosphere[^】]*)】/g,
+      /【(?:BGM|Background Music|Nhạc nền)[：:]\s*(?:贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声|Subtle background music matching the narrative atmosphere[^】]*)】/g,
       CUE_PAIRS.bgm.vi,
     )
+    text = text.replace(/【(?:BGM|Background Music)[：:]\s*([^】]*)】/g, '【Nhạc nền: $1】')
     text = text.replace(/[；;]\s*音量低于人声/g, '; âm lượng nhỏ hơn giọng nói')
     text = text.replace(/音量低于人声/g, 'âm lượng nhỏ hơn giọng nói')
 
@@ -123,9 +146,10 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
     text = text.replace(/【人物介绍·画面叠字】/g, '【Giới thiệu nhân vật · Chữ trên hình】')
   } else if (targetLocale === 'zh') {
     text = text.replace(
-      /【BGM[：:]\s*(?:Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện[^】]*|Subtle background music matching[^】]*)】/g,
+      /【(?:BGM|Background Music|Nhạc nền)[：:]\s*(?:Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện[^】]*|Subtle background music matching[^】]*)】/g,
       CUE_PAIRS.bgm.zh,
     )
+    text = text.replace(/【(?:Nhạc nền|Background Music)[：:]\s*([^】]*)】/g, '【BGM：$1】')
     text = text.replace(
       /【(?:Hình ảnh · Không lồng tiếng[^】]*|Visual · Ambient sound only[^】]*)】/g,
       CUE_PAIRS.visual.zh,
@@ -148,9 +172,10 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
     )
   } else if (targetLocale === 'en') {
     text = text.replace(
-      /【BGM[：:]\s*(?:贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声|Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện[^】]*)】/g,
+      /【(?:BGM|Background Music|Nhạc nền)[：:]\s*(?:贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声|Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện[^】]*)】/g,
       CUE_PAIRS.bgm.en,
     )
+    text = text.replace(/【(?:BGM|Nhạc nền)[：:]\s*([^】]*)】/g, '【Background Music: $1】')
     text = text.replace(
       /【(?:画面·无配音仅环境音|Hình ảnh · Không lồng tiếng[^】]*)】/g,
       CUE_PAIRS.visual.en,

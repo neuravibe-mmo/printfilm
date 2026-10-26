@@ -34,7 +34,7 @@ import {
   videoJobId,
   type DramaGenJob,
 } from '../../lib/dramaGenQueue'
-import { hasChineseCues, localizeScriptCues } from '../../lib/dramaCueI18n'
+import { hasNonLocalizedCues, localizeScriptCues } from '../../lib/dramaCueI18n'
 import {
   collectDramaGenerateGateIssues,
   formatDramaGateMessage,
@@ -1465,7 +1465,7 @@ function EpisodeEditInner() {
           >
             {busy && status.includes(t('drama.episodeEdit.shotKeyword')) ? t('drama.episodeEdit.shotting') : t('drama.episodeEdit.aiReplan')}
           </button>
-          {fragments.some((f) => hasChineseCues(f.content || '')) && (
+          {fragments.some((f) => hasNonLocalizedCues(f.content || '', 'vi')) && (
             <button
               type="button"
               className="drama-ep-btn-ghost"
@@ -1553,7 +1553,7 @@ function EpisodeEditInner() {
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              {hasChineseCues(selected?.content || '') && (
+              {hasNonLocalizedCues(selected?.content || '', 'vi') && (
                 <button
                   type="button"
                   className="drama-ep-btn drama-ep-btn-subtle"

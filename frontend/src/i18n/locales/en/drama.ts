@@ -1352,7 +1352,7 @@ export const enDrama = {
             "assetPanelHint": "Clicking assets in left panel or \"Assets in Scene\" strip also inserts reference automatically",
             "assetVoiceHint": "Referenced character requires reference image; dialogue is voiced natively by Seedance from script, no voice binding needed",
             "scriptH3": "Common Cues (do not use full-screen documentary style subtitles)",
-            "bgmExample": "【BGM: Low epic music, volume lower than speech】",
+            "bgmExample": "【Background Music: Low epic music, volume lower than speech】",
             "visualExample": "Empty scene: Yellow River churning against ancient boulders…",
             "dialogueExample": "Yu: Before the flood is quelled, how can we retreat!",
             "narrationExample": "A thousand years later, history still remembers this battle.",

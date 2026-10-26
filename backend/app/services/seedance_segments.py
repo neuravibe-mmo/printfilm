@@ -330,13 +330,16 @@ def normalize_cues_for_seedance(content: str) -> str:
         if line.startswith("【Phụ đề") or line.startswith("【Subtitle"):
             out.append(DRAMA_SUBTITLE_CUE)
             continue
-        # BGM / Nhạc nền cue
-        if line.startswith("【Nhạc nền：") or line.startswith("【Nhạc nền:"):
-            mood = re.sub(r"^【Nhạc nền[：:]\s*", "", line).removesuffix("】").strip()
-            out.append(f"【BGM：{mood}】")
-            continue
-        if line.startswith("【BGM:"):
-            mood = re.sub(r"^【BGM:\s*", "", line).removesuffix("】").strip()
+        # BGM / Nhạc nền / Background Music cue
+        if (
+            line.startswith("【Nhạc nền：")
+            or line.startswith("【Nhạc nền:")
+            or line.startswith("【Background Music：")
+            or line.startswith("【Background Music:")
+            or line.startswith("【BGM:")
+            or line.startswith("【BGM：")
+        ):
+            mood = re.sub(r"^【(?:Nhạc nền|Background Music|BGM)[：:]\s*", "", line).removesuffix("】").strip()
             out.append(f"【BGM：{mood}】")
             continue
         out.append(raw)
@@ -535,12 +538,15 @@ def script_bgm_mood(segment_script: str) -> str:
     """Lấy nhạc nền từ [BGM:], [Nhạc nền:] hoặc [Nhạc]; nếu không, hãy suy ra từ văn bản."""
     for raw in (segment_script or "").replace("\r\n", "\n").split("\n"):
         line = _strip_time_or_duration_prefix(raw)
-        if line.startswith("【BGM：") or line.startswith("【BGM:"):
-            mood = re.sub(r"^【BGM[：:]\s*", "", line).removesuffix("】").strip()
-            if mood:
-                return mood
-        if line.startswith("【Nhạc nền：") or line.startswith("【Nhạc nền:"):
-            mood = re.sub(r"^【Nhạc nền[：:]\s*", "", line).removesuffix("】").strip()
+        if (
+            line.startswith("【BGM：")
+            or line.startswith("【BGM:")
+            or line.startswith("【Nhạc nền：")
+            or line.startswith("【Nhạc nền:")
+            or line.startswith("【Background Music：")
+            or line.startswith("【Background Music:")
+        ):
+            mood = re.sub(r"^【(?:BGM|Nhạc nền|Background Music)[：:]\s*", "", line).removesuffix("】").strip()
             if mood:
                 return mood
         peiyue = parse_peiyue_mood(raw)
@@ -553,7 +559,7 @@ def build_production_cues(bgm_mood: str) -> list[str]:
     mood = (bgm_mood or "").strip() or DEFAULT_BGM_MOOD
     if "âm lượng nhỏ hơn giọng nói" not in mood and "音量低于人声" not in mood:
         mood = f"{mood}, âm lượng nhỏ hơn giọng nói"
-    return [SUBTITLE_CUE, f"【BGM: Hòa âm hậu kỳ · {mood}】"]
+    return [SUBTITLE_CUE, f"【Nhạc nền: Hòa âm hậu kỳ · {mood}】"]
 
 
 # Chế độ hậu phụ đề: Loại bỏ tiền tố Cue/"phụ đề đồng bộ" trước khi gửi để tránh trường hợp mô hình vẫn cháy màn hình theo ký tự.

@@ -922,7 +922,7 @@ export const viDrama = {
       assetPanelHint: 'Nhấp tài nguyên trong bảng bên trái, hoặc thanh "Tài nguyên trong cảnh", cũng tự động ghi tham chiếu',
       assetVoiceHint: 'Nhân vật được tham chiếu cần có ảnh tham chiếu; lời thoại sẽ do Seedance tự phát âm theo lời thoại/dẫn, không cần liên kết giọng đọc',
       scriptH3: 'Cue thường dùng (không dùng kiểu "phụ đề ghi toàn màn hình" của video khoa học)',
-      bgmExample: '【BGM: Nhạc sử thi trầm, âm lượng thấp hơn giọng nói】',
+      bgmExample: '【Nhạc nền: Nhạc sử thi trầm, âm lượng thấp hơn giọng nói】',
       visualExample: 'Cảnh trống: Sông Hoàng Hà đục đập vào tảng đá cũ…',
       dialogueExample: 'Vũ: Chưa dẹp lụt, sao lui được!',
       narrationExample: 'Nghìn năm sau, người đời vẫn nhớ trận chiến này.',

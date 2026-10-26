@@ -935,11 +935,11 @@ def _build_production_cues(
     # Phụ đề/BGM/Phần mở đầu giới thiệu nhân vật (tiêu đề phụ đề không chứa từ "tường thuật" để tránh lời tường thuật đầy đủ của Seedance)
     hint = " ".join(filter(None, [location_line or "", *narrative_lines[:3]]))
     if is_vi:
-        lines = [f"【BGM: {_infer_bgm_mood(hint, is_vi=True)}；âm lượng nhỏ hơn giọng nói】"]
+        lines = [f"【Nhạc nền: {_infer_bgm_mood(hint, is_vi=True)}；âm lượng nhỏ hơn giọng nói】"]
         if include_subtitles:
             lines.insert(0, DRAMA_SUBTITLE_CUE_VI)
     else:
-        lines = [f"【BGM: {_infer_bgm_mood(hint, is_vi=True)}；âm lượng nhỏ hơn giọng nói】"]
+        lines = [f"【Background Music: {_infer_bgm_mood(hint, is_vi=False)}；volume lower than voice】"]
         if include_subtitles:
             lines.insert(0, DRAMA_SUBTITLE_CUE_VI)
     lines.extend(character_intro_lines)
@@ -1188,7 +1188,13 @@ def _is_header_meta_line(line: str) -> bool:
         return True
     if is_production_meta_line(stripped):
         return True
-    if stripped.startswith("【BGM") or stripped.startswith("【字幕") or "人物介绍" in stripped:
+    if (
+        stripped.startswith("【BGM")
+        or stripped.startswith("【Nhạc nền")
+        or stripped.startswith("【Background Music")
+        or stripped.startswith("【字幕")
+        or "人物介绍" in stripped
+    ):
         return True
     return False
 
