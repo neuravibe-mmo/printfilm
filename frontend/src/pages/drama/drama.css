@@ -1359,7 +1359,7 @@
 
 .drama-asset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 14px;
   margin-top: 14px;
 }
@@ -1439,8 +1439,72 @@
 
 .drama-asset-card-actions {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+  margin-top: auto;
+  width: 100%;
+}
+
+.drama-asset-card-actions .pf-btn {
+  padding: 0.38rem 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 999px;
+  transition: all 0.15s ease;
+}
+
+.drama-asset-card-actions .drama-asset-card-btn-gen {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  background: var(--drama-lime, #b6ff00);
+  color: var(--drama-ink, #111);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.drama-asset-card-actions .drama-asset-card-btn-gen:hover:not(:disabled) {
+  background: #c4ff1a;
+  box-shadow: 0 3px 10px rgba(182, 255, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.drama-asset-card-actions .drama-asset-card-btn-gen:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.drama-asset-card-actions .drama-asset-card-btn-gen:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.drama-asset-card-actions .drama-asset-card-btn-delete {
+  flex-shrink: 0;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fee2e2;
+}
+
+.drama-asset-card-actions .drama-asset-card-btn-delete:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.12);
+  transform: translateY(-1px);
+}
+
+.drama-asset-card-actions .drama-asset-card-btn-delete:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.drama-asset-card-actions .drama-asset-card-btn-delete:disabled {
+  background: #f8fafc;
+  color: #cbd5e1;
+  border-color: #f1f5f9;
+  box-shadow: none;
 }
 
 .drama-asset-detail {
@@ -2049,8 +2113,9 @@
 .drama-usage-chip {
   display: inline-flex;
   align-items: center;
-  max-width: min(100%, 280px);
-  padding: 0.35rem 0.7rem;
+  flex-shrink: 0;
+  max-width: min(100%, 460px);
+  padding: 0.35rem 0.75rem;
   border-radius: 999px;
   border: 1px solid rgba(17, 19, 24, 0.1);
   background: #fff;

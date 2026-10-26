@@ -56,7 +56,7 @@ import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
 import { useMediaModelsCatalog } from '../../hooks/useMediaModelsCatalog'
 import { enqueueDramaImageGen } from '../../lib/dramaImageGenQueue'
 import { defaultOptionsForAssetKind } from '../../lib/dramaGenerationOptions'
-import { dramaAssetImageGenButtonLabel } from '../../lib/dramaAssetImage'
+import { dramaAssetHasImage, dramaAssetImageGenButtonLabel } from '../../lib/dramaAssetImage'
 import { readVisualPrompt } from '../../lib/dramaVisualPrompt'
 import { generateAndBindCharacterVoice } from '../../lib/characterVoiceGenerate'
 import { getImageStyleId, isDefaultEpisodeTitle } from './dramaWorkspaceUtils'
@@ -1333,12 +1333,24 @@ function EpisodeEditInner() {
         queueLabel = pos > 1 ? t('drama.episodeEdit.queuePos').replace('{pos}', String(pos)) : t('drama.episodeEdit.queueing')
       }
     }
-    return dramaAssetImageGenButtonLabel(asset, queueLabel)
+    return dramaAssetImageGenButtonLabel(asset, queueLabel, t)
   }
 
   // Thêm biểu đồ tài sản vào hàng đợi chung
-  function enqueueAssetImage(asset: DramaAsset) {
+  async function enqueueAssetImage(asset: DramaAsset) {
     if (imageBusyIds.has(asset.id)) return
+    if (dramaAssetHasImage(asset)) {
+      const ok = await dialog.confirm({
+        title: t('drama.assetsStep.regenConfirmTitle'),
+        message: t('drama.assetsStep.regenConfirmMessage').replace(
+          '{name}',
+          asset.name || t('common.unnamed'),
+        ),
+        confirmText: t('drama.assets.regenImage'),
+        cancelText: t('common.cancel'),
+      })
+      if (!ok) return
+    }
     const options = {
       ...defaultOptionsForAssetKind(asset.type),
       image_style_id: videoStyleId || undefined,

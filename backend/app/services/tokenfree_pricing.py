@@ -305,11 +305,11 @@ def _markup_charge(cost_fen: int, settings: Settings) -> int:
 def _kie_sunburst_tier(size: str | None = "") -> str:
     """Kie định nghĩa sunburst file: 1k/2k/4k."""
     raw = (size or "").strip().upper().replace(" ", "")
-    if raw.startswith("1K"):
+    if raw.startswith("1K") or raw.startswith("480P") or raw.startswith("720P"):
         return "1k"
     if raw.startswith("3K") or raw.startswith("4K"):
         return "4k"
-    if raw.startswith("2K"):
+    if raw.startswith("2K") or raw.startswith("1080P"):
         return "2k"
     for sep in ("X", "×"):
         if sep not in raw:

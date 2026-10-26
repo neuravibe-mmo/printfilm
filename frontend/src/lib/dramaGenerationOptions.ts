@@ -11,7 +11,14 @@ export type GenerationAspectRatioId =
   | '3:4'
   | '1:1'
 
-export type GenerationResolution = '3K' | '4K'
+export type GenerationResolution =
+  | '480p'
+  | '720p'
+  | '1080p'
+  | '1K'
+  | '2K'
+  | '3K'
+  | '4K'
 
 export type ImageGenerationOptions = {
   image_style_id?: string
@@ -21,7 +28,37 @@ export type ImageGenerationOptions = {
 }
 
 /** Danh sách định nghĩa hình ảnh */
-export const GENERATION_RESOLUTION_OPTIONS: GenerationResolution[] = ['3K', '4K']
+export const GENERATION_RESOLUTION_OPTIONS: GenerationResolution[] = [
+  '480p',
+  '720p',
+  '1080p',
+  '1K',
+  '2K',
+  '3K',
+  '4K',
+]
+
+/** Nhãn hiển thị cho độ phân giải */
+export const GENERATION_RESOLUTION_LABELS: Record<GenerationResolution, string> = {
+  '480p': '480p',
+  '720p': '720p (HD - 1280 x 720 px)',
+  '1080p': '1080p (Full HD - 1920 x 1080 px)',
+  '1K': '1K',
+  '2K': '2K',
+  '3K': '3K',
+  '4K': '4K',
+}
+
+/** Chú thích chi tiết */
+export const GENERATION_RESOLUTION_HINTS: Record<GenerationResolution, string> = {
+  '480p': '480p (SD - 854 x 480 px)',
+  '720p': '720p (HD - 1280 x 720 px)',
+  '1080p': '1080p (Full HD - 1920 x 1080 px)',
+  '1K': '1K (1024 x 1024 px)',
+  '2K': '2K (2048 x 2048 px)',
+  '3K': '3K (3072 x 3072 px)',
+  '4K': '4K (4096 x 4096 px)',
+}
 
 /** Danh sách tỷ lệ */
 export const GENERATION_ASPECT_RATIO_OPTIONS: Array<{
@@ -47,7 +84,7 @@ export const IMAGE_GENERATION_MODELS: Array<{
 /** Tùy chọn ảnh thô mặc định (bố cục dọc của ký tự) */
 export const DEFAULT_IMAGE_GENERATION_OPTIONS: ImageGenerationOptions = {
   model_id: '',
-  aspect_ratio: '3:4',
+  aspect_ratio: '9:16',
   resolution: '3K',
 }
 

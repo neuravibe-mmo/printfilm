@@ -11,6 +11,8 @@ import {
   formatOutputSettingsLabel,
   GENERATION_ASPECT_RATIO_OPTIONS,
   GENERATION_RESOLUTION_OPTIONS,
+  GENERATION_RESOLUTION_LABELS,
+  GENERATION_RESOLUTION_HINTS,
   type GenerationAspectRatioId,
   type GenerationResolution,
   type ImageGenerationOptions,
@@ -193,12 +195,13 @@ export function DramaImageGenOptionsBar({
                 key={res}
                 type="button"
                 className={`fc-gen-chip${value.resolution === res ? ' selected' : ''}`}
+                title={GENERATION_RESOLUTION_HINTS[res]}
                 onClick={() => {
                   onChange({ ...value, resolution: res as GenerationResolution })
                   setOpen(null)
                 }}
               >
-                {res}
+                {GENERATION_RESOLUTION_LABELS[res] || res}
               </button>
             ))}
           </div>

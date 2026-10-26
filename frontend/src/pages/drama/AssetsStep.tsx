@@ -34,6 +34,7 @@ import { readVisualPrompt } from '../../lib/dramaVisualPrompt'
 import { filterDramaLibraryAssets } from '../../lib/dramaLibraryAssets'
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../lib/dramaVoiceBinding'
 import {
+  dramaAssetHasImage,
   dramaAssetImageGenButtonLabel,
   dramaAssetNeedsImageGeneration,
 } from '../../lib/dramaAssetImage'
@@ -281,6 +282,18 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
   function enqueueOne(asset: DramaAsset, options = genOptions) {
     if (busyAssetIds.has(asset.id)) return
     void (async () => {
+      if (dramaAssetHasImage(asset)) {
+        const ok = await dialog.confirm({
+          title: t('drama.assetsStep.regenConfirmTitle'),
+          message: t('drama.assetsStep.regenConfirmMessage').replace(
+            '{name}',
+            asset.name || t('common.unnamed'),
+          ),
+          confirmText: t('drama.assets.regenImage'),
+          cancelText: t('common.cancel'),
+        })
+        if (!ok) return
+      }
       if (!(await ensureImageGenBalance(1))) return
       try {
         const updated = await enqueueDramaImageGen({
@@ -661,7 +674,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
         queueLabel = pos > 0 ? (pos > 1 ? t('drama.assetsStep.queuePos').replace('{pos}', String(pos)) : t('drama.assetsStep.queuing')) : t('drama.assetsStep.queuing')
       }
     }
-    return dramaAssetImageGenButtonLabel(asset, queueLabel)
+    return dramaAssetImageGenButtonLabel(asset, queueLabel, t)
   }
 
   const imageAssetCount = assetList.filter((a) => {
@@ -678,9 +691,15 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
           </div>
           <div>
             <h2>{t('drama.assetsStep.title')}</h2>
-            <p className="drama-step-hero-sub">
-              {t('drama.assetsStep.headerInfo').replace('{all}', String(assetList.length)).replace('{n}', String(filtered.length)).replace('{pending}', String(pending.length))}
-            </p>
+            <p
+              className="drama-step-hero-sub"
+              dangerouslySetInnerHTML={{
+                __html: t('drama.assetsStep.headerInfo')
+                  .replace('{all}', String(assetList.length))
+                  .replace('{n}', String(filtered.length))
+                  .replace('{pending}', String(pending.length)),
+              }}
+            />
           </div>
         </div>
       </header>
@@ -870,34 +889,34 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                 {asset.type}
                 {isCharacter && voice ? ` · ${voice.label}` : ''}
               </p>
+              {tab === 'character' && isCharacter ? (
+                <label
+                  className="drama-voice-multi-select"
+                  style={{ display: 'inline-flex', gap: 8, alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCharacterIds.includes(asset.id)}
+                    onChange={(e) => {
+                      e.stopPropagation()
+                      setSelectedCharacterIds((prev) =>
+                        prev.includes(asset.id) ? prev.filter((id) => id !== asset.id) : [...prev, asset.id],
+                      )
+                    }}
+                  />
+                  <span className="drama-muted">{t('common.selected')}</span>
+                </label>
+              ) : null}
               <div
                 className="drama-asset-card-actions"
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => e.stopPropagation()}
               >
-                {tab === 'character' && isCharacter ? (
-                  <label
-                    className="drama-voice-multi-select"
-                    style={{ display: 'inline-flex', gap: 8, alignItems: 'center', marginRight: 8, cursor: 'pointer' }}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedCharacterIds.includes(asset.id)}
-                      onChange={(e) => {
-                        e.stopPropagation()
-                        setSelectedCharacterIds((prev) =>
-                          prev.includes(asset.id) ? prev.filter((id) => id !== asset.id) : [...prev, asset.id],
-                        )
-                      }}
-                    />
-                    <span className="drama-muted">{t('common.selected')}</span>
-                  </label>
-                ) : null}
                 <button
                   type="button"
-                  className="pf-btn pf-btn-sm"
+                  className="pf-btn pf-btn-sm drama-asset-card-btn-gen"
                   disabled={busy || batchBusy}
                   onClick={() => enqueueOne(asset)}
                 >
@@ -929,7 +948,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                     ) : null}
                     <button
                       type="button"
-                      className="pf-btn pf-btn-sm drama-btn-danger-text"
+                      className="pf-btn pf-btn-sm drama-btn-danger-text drama-asset-card-btn-delete"
                       disabled={busy || batchBusy || batchVoiceBusy}
                       onClick={() => void handleDeleteCharacter(asset)}
                     >

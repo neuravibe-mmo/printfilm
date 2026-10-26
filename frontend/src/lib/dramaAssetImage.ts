@@ -1,5 +1,6 @@
 /** Nội dung truyện tranh đã có hình ảnh chưa (do AI tạo hoặc tải lên cục bộ) */
 import type { DramaAsset } from '../api/drama'
+import { getActiveLocale } from '../i18n/detect'
 
 // Đọc URL xem trước có thể có từ các thông số (đồng bộ hóa canvas, v.v.)
 function readParamsMediaUrl(asset: DramaAsset): string {
@@ -38,7 +39,15 @@ export function dramaAssetNeedsImageGeneration(asset: DramaAsset): boolean {
 export function dramaAssetImageGenButtonLabel(
   asset: DramaAsset,
   queueLabel: string | null,
+  t?: (key: string) => string,
 ): string {
   if (queueLabel) return queueLabel
-  return dramaAssetHasImage(asset) ? '重新生成形象' : '生成形象'
+  const hasImage = dramaAssetHasImage(asset)
+  if (t) {
+    return hasImage ? t('drama.assets.regenImage') : t('drama.assets.generateImage')
+  }
+  const loc = getActiveLocale()
+  if (loc === 'vi') return hasImage ? 'Tạo lại ảnh' : 'Tạo ảnh'
+  if (loc === 'en') return hasImage ? 'Regenerate Image' : 'Generate Image'
+  return hasImage ? '重新生成形象' : '生成形象'
 }

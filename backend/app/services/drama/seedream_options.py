@@ -16,6 +16,40 @@ SeedreamResolution = str
 # Seedream 5.0 Pro có thể tùy chỉnh tổng diện tích pixel (tài liệu chính thức)
 SEEDREAM_PRO_MAX_PIXELS = 4_624_220
 
+SEEDREAM_SIZE_480P: dict[str, str] = {
+    "auto": "480x854",
+    "1:1": "480x480",
+    "16:9": "854x480",
+    "9:16": "480x854",
+    "4:3": "640x480",
+    "3:4": "480x640",
+    "3:2": "720x480",
+    "2:3": "480x720",
+    "21:9": "1120x480",
+}
+SEEDREAM_SIZE_720P: dict[str, str] = {
+    "auto": "720x1280",
+    "1:1": "720x720",
+    "16:9": "1280x720",
+    "9:16": "720x1280",
+    "4:3": "960x720",
+    "3:4": "720x960",
+    "3:2": "1080x720",
+    "2:3": "720x1080",
+    "21:9": "1680x720",
+}
+SEEDREAM_SIZE_1080P: dict[str, str] = {
+    "auto": "1080x1920",
+    "1:1": "1080x1080",
+    "16:9": "1920x1080",
+    "9:16": "1080x1920",
+    "4:3": "1440x1080",
+    "3:4": "1080x1440",
+    "3:2": "1620x1080",
+    "2:3": "1080x1620",
+    "21:9": "2520x1080",
+}
+
 # Pixel được đề xuất 1K / 2K chính thức (tất cả đều nằm trong giới hạn Pro)
 SEEDREAM_SIZE_1K: dict[str, str] = {
     "auto": "1K",
@@ -60,6 +94,9 @@ SEEDREAM_SIZE_4K: dict[str, str] = {
 }
 
 SEEDREAM_SIZE_MAP: dict[str, dict[str, str]] = {
+    "480P": SEEDREAM_SIZE_480P,
+    "720P": SEEDREAM_SIZE_720P,
+    "1080P": SEEDREAM_SIZE_1080P,
     "1K": SEEDREAM_SIZE_1K,
     "2K": SEEDREAM_SIZE_2K,
     "3K": SEEDREAM_SIZE_3K,
@@ -149,7 +186,7 @@ def resolve_seedream_size(
     endpoint = resolve_seedream_model_endpoint(model_id) if model_id is not None else settings.model_image
     if is_seedream_pro_model(endpoint) and res in {"3K", "4K"}:
         res = "2K"
-    ratio = (aspect_ratio or "3:4").strip() or "3:4"
+    ratio = (aspect_ratio or "9:16").strip() or "9:16"
     mapped = SEEDREAM_SIZE_MAP[res].get(ratio)
     if not mapped:
         mapped = settings.ark_image_size or "2K"

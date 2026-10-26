@@ -10,7 +10,7 @@ DEFAULT_APPEARANCE_NAME = "Tạo hình cơ bản"
 # DEFAULT_IMAGE_GENEration Tham số tạo hình ảnh mặc định (modelId trống sẽ chuyển sang mặc định TokenFree nền)
 DEFAULT_IMAGE_GENERATION = {
     "modelId": "",
-    "aspectRatio": "3:4",
+    "aspectRatio": "9:16",
     "resolution": "3K",
 }
 

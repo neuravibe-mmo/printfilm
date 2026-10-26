@@ -1283,9 +1283,9 @@ async def generate_asset_image(
     style_id = (image_style_id or "").strip() or str(
         (project.params or {}).get("image_style_id") or ""
     ).strip() or None
-    # Tỷ lệ mặc định: ký tự 3:4, ký tự khác 16:9
+    # Tỷ lệ mặc định: ký tự 9:16, ký tự khác 16:9
     ratio = (aspect_ratio or "").strip() or (
-        "3:4" if (kind or "").lower() == "character" else "16:9"
+        "9:16" if (kind or "").lower() == "character" else "16:9"
     )
     res = (resolution or "").strip() or "2K"
     model = resolve_seedream_model_endpoint(model_id)
