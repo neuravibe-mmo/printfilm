@@ -69,6 +69,7 @@ export function DramaAssetDetailModal({
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null)
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
   const uploadInputRef = useRef<HTMLInputElement>(null)
+  const promptInputRef = useRef<HTMLTextAreaElement>(null)
 
   const mediaSrc = resolveDramaAssetPreviewUrl(asset)
   const hasImage = dramaAssetHasImage(asset)
@@ -90,6 +91,15 @@ export function DramaAssetDetailModal({
     setLightboxSrc(null)
     setRestoringVersionId(null)
   }, [open, asset])
+
+  useEffect(() => {
+    if (!open) return
+    const el = promptInputRef.current
+    if (el) {
+      el.style.height = 'auto'
+      el.style.height = `${Math.max(el.scrollHeight, 120)}px`
+    }
+  }, [open, promptDraft])
 
   // Lưu các từ nhắc nhở vào thông số nội dung
   async function savePrompt() {
@@ -305,7 +315,8 @@ export function DramaAssetDetailModal({
           <label className="drama-field">
             <span>{t('drama.assetDetail.imagePrompt')}</span>
             <textarea
-              rows={8}
+              ref={promptInputRef}
+              className="drama-asset-detail-prompt"
               value={promptDraft}
               onChange={(e) => setPromptDraft(e.target.value)}
               placeholder={t('drama.assetDetail.promptPlaceholder')}
