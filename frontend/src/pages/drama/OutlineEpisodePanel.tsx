@@ -1,31 +1,26 @@
-/** Sơ lược cốt truyện: Mục lục các tập ở cột bên trái + Quảng cáo/tóm tắt/kịch bản của tập ở cột bên phải (kiểu ảnh chụp màn hình căn chỉnh) */
+/** Sơ lược cốt truyện: Mục lục các tập ở cột bên trái + Quảng cáo/tóm tắt/kịch bản của tập ở cột bên phải */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   BookOpen,
-  Check,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Copy,
   FileText,
   Lightbulb,
-  MoreHorizontal,
-  Plus,
   RefreshCw,
   Sparkles,
-  Pencil,
 } from 'lucide-react'
-import { dramaApi, resolveDramaMediaUrl, type DramaEpisode, type DramaEpisodeBody, type DramaProject, type DramaScript } from '../../api/drama'
+import {
+  dramaApi,
+  resolveDramaMediaUrl,
+  type DramaProject,
+  type DramaScript,
+} from '../../api/drama'
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
 import Modal from '../../components/ui/Modal'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import {
-  buildEpisodeContentUpdate,
   buildOutlineDirectory,
   episodeBodyCharLen,
-  isSubstantialEpisodeBody,
   isSubstantialEpisodeCreative,
   mergeDirectoryEpisodeBodies,
   MIN_EPISODE_BODY_CHARS,
@@ -34,20 +29,11 @@ import {
 } from './dramaWorkspaceUtils'
 import { sumFragmentContentDuration } from './dramaEpisodeEditUtils'
 import { OutlineScriptPreview } from './outlineScriptPreview'
+import { OutlineSectionCard, type SectionKey } from './OutlineSectionCard'
+import { OutlineEpisodeSidebar } from './OutlineEpisodeSidebar'
+import { OutlineEpisodeHeader } from './OutlineEpisodeHeader'
+import { useOutlineEpisodeActions } from './hooks/useOutlineEpisodeActions'
 import { useI18n } from '../../i18n'
-
-type SectionKey = 'creative' | 'summary' | 'body'
-
-/** Đã quay toàn bộ bản sao cho danh mục tập */
-function formatOutlineShotDuration(sec: number, t: (k: string) => string): string {
-  if (sec <= 0) return '—'
-  if (sec < 60) return `${sec}s`
-  const m = Math.floor(sec / 60)
-  const s = sec % 60
-  return s
-    ? t('drama.outlinePanel.minSec').replace('{m}', String(m)).replace('{s}', String(s))
-    : t('drama.outlinePanel.min').replace('{m}', String(m))
-}
 
 type OutlineEpisodePanelProps = {
   projectId: number
@@ -64,157 +50,6 @@ type OutlineEpisodePanelProps = {
   children?: (parts: { directory: ReactNode; bodies: ReactNode }) => ReactNode
 }
 
-type SectionCardProps = {
-  sectionKey: SectionKey
-  icon: ReactNode
-  title: string
-  subtitle: string
-  text: string
-  editing: boolean
-  draft: string
-  open: boolean
-  busy: boolean
-  /** Tắt nút "Tạo"; tập này vẫn có thể được chỉnh sửa trong khi các tập khác đang được tạo */
-  generateBusy?: boolean
-  placeholder: string
-  regenerateLabel?: string
-  regenerateIcon?: ReactNode
-  highlighted?: boolean
-  containerRef?: React.Ref<HTMLElement>
-  onToggle: () => void
-  onEdit: () => void
-  onCancel: () => void
-  onSave: () => void
-  onDraftChange: (v: string) => void
-  onRegenerate?: () => void
-  onCopy: () => void
-  /** Vùng tập lệnh: xem trước phân tích + chỉnh sửa phân đoạn */
-  scriptPreview?: ReactNode
-}
-
-// Thẻ phân vùng: tiêu đề biểu tượng + chỉnh sửa/tạo/sao chép/gấp
-function SectionCard({
-  sectionKey,
-  icon,
-  title,
-  subtitle,
-  text,
-  editing,
-  draft,
-  open,
-  busy,
-  generateBusy,
-  placeholder,
-  regenerateLabel,
-  regenerateIcon,
-  highlighted,
-  containerRef,
-  onToggle,
-  onEdit,
-  onCancel,
-  onSave,
-  onDraftChange,
-  onRegenerate,
-  onCopy,
-  scriptPreview,
-}: SectionCardProps) {
-  const { t } = useI18n()
-  const genBusy = generateBusy ?? busy
-  return (
-    <article
-      ref={containerRef}
-      className={`drama-outline-section is-${sectionKey}${open ? ' is-open' : ''}${highlighted ? ' is-highlighted' : ''}`}
-    >
-      <header className="drama-outline-section-head">
-        <div className="drama-outline-section-title">
-          <span className={`drama-outline-section-icon is-${sectionKey}`} aria-hidden>
-            {icon}
-          </span>
-          <div>
-            <strong>{title}</strong>
-            <p>{subtitle}</p>
-          </div>
-        </div>
-        <div className="drama-outline-section-actions">
-          <button type="button" className="drama-outline-text-btn" disabled={busy} onClick={onEdit}>
-            <Pencil size={14} strokeWidth={2} />
-            {t('common.edit')}
-          </button>
-          {onRegenerate && regenerateLabel ? (
-            <button
-              type="button"
-              className={`drama-outline-text-btn${regenerateLabel === 'AI Generate' ? ' is-ai-btn' : ''}`}
-              disabled={genBusy}
-              onClick={onRegenerate}
-            >
-              {regenerateIcon || <RefreshCw size={14} strokeWidth={2} />}
-              {regenerateLabel}
-            </button>
-          ) : null}
-          <button type="button" className="drama-outline-text-btn" onClick={onCopy}>
-            <Copy size={14} strokeWidth={2} />
-            {t('common.copy')}
-          </button>
-          <button
-            type="button"
-            className="drama-outline-text-btn drama-outline-text-btn-icon"
-            onClick={onToggle}
-            aria-label={open ? t('drama.outlinePanel.collapse') : t('drama.outlinePanel.expand')}
-          >
-            {open ? (
-              <ChevronUp size={14} strokeWidth={2} />
-            ) : (
-              <ChevronDown size={14} strokeWidth={2} />
-            )}
-            {open ? t('drama.outlinePanel.collapse') : t('drama.outlinePanel.expand')}
-          </button>
-        </div>
-      </header>
-      {open ? (
-        <div className="drama-outline-section-body">
-          {editing ? (
-            <>
-              <textarea
-                className="drama-ep-section-textarea"
-                value={draft}
-                onChange={(e) => onDraftChange(e.target.value)}
-                rows={sectionKey === 'body' ? 14 : 8}
-                placeholder={placeholder}
-                disabled={busy}
-              />
-              <div className="drama-ep-section-edit-actions">
-                <button type="button" className="drama-btn-ghost" disabled={busy} onClick={onCancel}>
-                  {t('common.cancel')}
-                </button>
-                <button type="button" className="drama-btn-primary" disabled={busy} onClick={onSave}>
-                  {t('common.save')}
-                </button>
-              </div>
-            </>
-          ) : scriptPreview ? (
-            scriptPreview
-          ) : !text.trim() && onRegenerate ? (
-            <div className="drama-outline-empty-creative">
-              <p className="drama-pre drama-outline-section-text">{placeholder}</p>
-              <button
-                type="button"
-                className="drama-outline-ai-gen-btn"
-                disabled={genBusy}
-                onClick={onRegenerate}
-              >
-                {regenerateIcon || <Sparkles size={14} />}
-                <span>{regenerateLabel || 'AI Generate'}</span>
-              </button>
-            </div>
-          ) : (
-            <p className="drama-pre drama-outline-section-text">{text.trim() || placeholder}</p>
-          )}
-        </div>
-      ) : null}
-    </article>
-  )
-}
-// Danh mục tập + Ba thẻ trong tập này
 export function OutlineEpisodePanel({
   projectId,
   script,
@@ -230,7 +65,6 @@ export function OutlineEpisodePanel({
   children,
 }: OutlineEpisodePanelProps) {
   const { t } = useI18n()
-  const navigate = useNavigate()
   const [activeEpisodeNumber, setActiveEpisodeNumber] = useState(1)
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(
     () => new Set(['creative', 'summary', 'body']),
@@ -238,16 +72,6 @@ export function OutlineEpisodePanel({
   const [editingSection, setEditingSection] = useState<SectionKey | null>(null)
   const [sectionDraft, setSectionDraft] = useState('')
   const [titleDraft, setTitleDraft] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [generatingMode, setGeneratingMode] = useState<string | null>(null)
-  const [generatingEpisodeNumber, setGeneratingEpisodeNumber] = useState<number | null>(null)
-  const [confirming, setConfirming] = useState(false)
-  const [enterSkillOpen, setEnterSkillOpen] = useState(false)
-  const [regenFullConfirmOpen, setRegenFullConfirmOpen] = useState(false)
-  const [regenCreativeConfirmOpen, setRegenCreativeConfirmOpen] = useState(false)
-  const [localError, setLocalError] = useState('')
-  const [localNotice, setLocalNotice] = useState('')
   const [episodeCovers, setEpisodeCovers] = useState<Record<number, string>>({})
   const [episodeShotStats, setEpisodeShotStats] = useState<
     Record<number, { fragmentCount: number; totalSec: number }>
@@ -258,18 +82,10 @@ export function OutlineEpisodePanel({
   const menuRef = useRef<HTMLDivElement | null>(null)
   const [highlightedSection, setHighlightedSection] = useState<SectionKey | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
-  const highlightTimerRef = useRef<number | null>(null)
-  const toastTimerRef = useRef<number | null>(null)
+
   const creativeCardRef = useRef<HTMLElement | null>(null)
   const summaryCardRef = useRef<HTMLElement | null>(null)
   const bodyCardRef = useRef<HTMLElement | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current)
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
-    }
-  }, [])
 
   useEffect(() => {
     if (menuEpNumber === null) return
@@ -282,61 +98,41 @@ export function OutlineEpisodePanel({
     return () => document.removeEventListener('mousedown', onDoc)
   }, [menuEpNumber])
 
-  async function handleConfirmRename(epNo: number) {
-    const nextTitle = renameDraft.trim()
-    setRenamingEpisodeNumber(null)
-    setSaving(true)
-    try {
-      const next = displayEpisodes.map((ep) =>
-        ep.episodeNumber === epNo ? { ...ep, title: nextTitle } : ep,
-      )
-      if (selected?.episodeNumber === epNo) {
-        setTitleDraft(nextTitle)
-      }
-      await saveBodies(next)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('drama.outlinePanel.saveFailed')
-      setLocalError(msg)
-      onError(msg)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const episodeBodies = parseEpisodeBodies(script)
-  const directoryEpisodes = buildOutlineDirectory(episodeBodies, episodeCount)
-  const displayEpisodes = mergeDirectoryEpisodeBodies(directoryEpisodes, episodeBodies)
-  const selected =
-    displayEpisodes.find((ep) => ep.episodeNumber === activeEpisodeNumber) || displayEpisodes[0] || null
+  const parsedBodies = useMemo(
+    () => parseEpisodeBodies(script),
+    [script],
+  )
+  const directoryEpisodes = useMemo(
+    () => buildOutlineDirectory(parsedBodies, episodeCount),
+    [parsedBodies, episodeCount],
+  )
+  const displayEpisodes = useMemo(
+    () => mergeDirectoryEpisodeBodies(directoryEpisodes, parsedBodies),
+    [directoryEpisodes, parsedBodies],
+  )
 
   useEffect(() => {
-    if (!selected) return
-    if (!displayEpisodes.some((ep) => ep.episodeNumber === activeEpisodeNumber) && displayEpisodes[0]) {
-      setActiveEpisodeNumber(displayEpisodes[0].episodeNumber || 1)
+    if (!displayEpisodes.some((e) => e.episodeNumber === activeEpisodeNumber)) {
+      setActiveEpisodeNumber(displayEpisodes[0]?.episodeNumber ?? 1)
     }
-  }, [displayEpisodes, activeEpisodeNumber, selected])
+  }, [displayEpisodes, activeEpisodeNumber])
+
+  const selected = useMemo(
+    () => displayEpisodes.find((e) => e.episodeNumber === activeEpisodeNumber),
+    [displayEpisodes, activeEpisodeNumber],
+  )
 
   useEffect(() => {
+    setTitleDraft(selected?.title ?? '')
     setEditingSection(null)
     setSectionDraft('')
-    setTitleDraft(selected?.title || '')
-    setLocalError('')
-    setLocalNotice('')
-  }, [selected?.episodeNumber])
+  }, [selected?.episodeNumber, selected?.title])
 
-  // Kéo các tập đã chia và sử dụng bìa cảnh quay đầu tiên/phim đã hoàn thành làm hình thu nhỏ thư mục
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    void (async () => {
       try {
-        let rows: DramaEpisode[] = await dramaApi.listEpisodes(projectId)
-        if (!rows.length) {
-          try {
-            rows = await dramaApi.seedEpisodes(projectId, false)
-          } catch {
-            rows = []
-          }
-        }
+        const rows = await dramaApi.listEpisodes(projectId)
         if (cancelled) return
         const map: Record<number, string> = {}
         const shotMap: Record<number, { fragmentCount: number; totalSec: number }> = {}
@@ -374,332 +170,72 @@ export function OutlineEpisodePanel({
     return () => {
       cancelled = true
     }
-  }, [projectId, script?.id, episodeCount])
+  }, [projectId, script?.id, script?.episode_content])
+
+  const canAdd =
+    summaryReady &&
+    !episodeGenerating &&
+    directoryEpisodes.length < 120
+
+  const {
+    saving,
+    adding,
+    confirming,
+    generatingMode,
+    generatingEpisodeNumber,
+    enterSkillOpen,
+    setEnterSkillOpen,
+    regenFullConfirmOpen,
+    setRegenFullConfirmOpen,
+    regenCreativeConfirmOpen,
+    setRegenCreativeConfirmOpen,
+    localError,
+    localNotice,
+    saveBodies,
+    handleAddEpisode,
+    handleSaveSection,
+    handleGenerate,
+    executeGenerate,
+    handleConfirmEnter,
+    startEnterWithSkills,
+    handleConfirmRename,
+  } = useOutlineEpisodeActions({
+    projectId,
+    script,
+    selected,
+    displayEpisodes,
+    editingSection,
+    sectionDraft,
+    titleDraft,
+    canAdd,
+    creativeCardRef,
+    summaryCardRef,
+    bodyCardRef,
+    onScriptChange,
+    onProjectChange,
+    onError,
+    onOpenEpisodes,
+    setActiveEpisodeNumber,
+    setEditingSection,
+    setSectionDraft,
+    setTitleDraft,
+    setOpenSections,
+    setHighlightedSection,
+    setToastMessage,
+  })
 
   const selectedGenerating =
     Boolean(generatingMode) && generatingEpisodeNumber === (selected?.episodeNumber ?? null)
   const anyEpisodeGenerating = Boolean(generatingMode)
-  const canAdd =
-    summaryReady &&
-    !episodeGenerating &&
-    !adding &&
-    !anyEpisodeGenerating &&
-    !confirming &&
-    directoryEpisodes.length < 120
-
-  // Chỉ tập đang được tạo mới bị khóa; các tập đã xong có thể được duyệt/chỉnh sửa/vào phân cảnh (việc tạo kịch bản AI song song vẫn bị chặn bởi generateBusy)
   const busy = selectedGenerating || confirming || saving || adding
   const generateBusy = episodeGenerating || anyEpisodeGenerating || confirming || saving || adding
+  const bodyReady = Boolean(selected && selected.body && selected.body.trim().length >= MIN_EPISODE_BODY_CHARS)
 
-  async function pollOptimize(tokenEpisode: number) {
-    const started = Date.now()
-    let lastErr: Error | null = null
-    while (Date.now() - started < 8 * 60 * 1000) {
-      await new Promise((r) => setTimeout(r, 2000))
-      try {
-        const cur = await dramaApi.getScript(projectId)
-        onScriptChange(cur)
-        lastErr = null
-        const st = String((cur.params || {}).episode_optimize_status || '')
-        const num = Number((cur.params || {}).episode_optimize_number || 0)
-        if (num === tokenEpisode && st === 'completed') return cur
-        if (num === tokenEpisode && st === 'failed') {
-          throw new Error(String((cur.params || {}).episode_optimize_error || t('drama.outlinePanel.genFailed')))
-        }
-        if (st !== 'generating') return cur
-      } catch (err) {
-        lastErr = err instanceof Error ? err : new Error(t('drama.outlinePanel.pollFailed'))
-      }
-    }
-    throw lastErr || new Error(t('drama.outlinePanel.genTimeout'))
-  }
-
-  async function saveBodies(nextBodies: DramaEpisodeBody[]) {
-    const updated = await dramaApi.updateScript(projectId, {
-      episode_content: buildEpisodeContentUpdate(script, nextBodies),
-    })
-    onScriptChange(updated)
-    return updated
-  }
-
-  async function handleAddEpisode() {
-    if (!canAdd) return
-    setAdding(true)
-    setLocalError('')
-    try {
-      const res = await dramaApi.addEpisode({ project_id: projectId })
-      onScriptChange(res.script)
-      const p = await dramaApi.getProject(projectId)
-      onProjectChange(p)
-      setActiveEpisodeNumber(res.episode_number)
-      setEditingSection('creative')
-      setSectionDraft('')
-      onOpenEpisodes()
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('drama.outlinePanel.addEpisodeFailed')
-      setLocalError(msg)
-      onError(msg)
-    } finally {
-      setAdding(false)
-    }
-  }
-
-  async function handleSaveSection(section: SectionKey) {
-    if (!selected?.episodeNumber) return
-    setSaving(true)
-    setLocalError('')
-    try {
-      const num = selected.episodeNumber
-      const next = displayEpisodes.map((ep) => {
-        if (ep.episodeNumber !== num) return ep
-        if (section === 'creative') return { ...ep, creative: sectionDraft, title: titleDraft || ep.title }
-        if (section === 'summary') return { ...ep, summary: sectionDraft, title: titleDraft || ep.title }
-        return { ...ep, body: sectionDraft, title: titleDraft || ep.title }
-      })
-      await saveBodies(next)
-      setEditingSection(null)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('drama.outlinePanel.saveFailed')
-      setLocalError(msg)
-      onError(msg)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function executeGenerate(mode: 'summary' | 'body' | 'full' | 'brief' | 'creative') {
-    if (!selected?.episodeNumber) return
-    const hadExistingBody = Boolean(selected.body?.trim())
-    const creative = editingSection === 'creative' ? sectionDraft : selected.creative || ''
-    if ((mode === 'summary' || mode === 'full') && !isSubstantialEpisodeCreative(creative)) {
-      setLocalError(t('drama.outlinePanel.creativeMinChars').replace('{n}', String(MIN_EPISODE_CREATIVE_CHARS)))
-      return
-    }
-    if (mode === 'brief' && !isSubstantialEpisodeBody(selected.body)) {
-      setLocalError(t('drama.outlinePanel.bodyMinCharsBrief').replace('{n}', String(MIN_EPISODE_BODY_CHARS)))
-      return
-    }
-    const targetEpisode = selected.episodeNumber
-    setGeneratingMode(mode)
-    setGeneratingEpisodeNumber(targetEpisode)
-    setLocalError('')
-    setLocalNotice('')
-    try {
-      if (editingSection === 'creative' || titleDraft !== selected.title) {
-        const next = displayEpisodes.map((ep) =>
-          ep.episodeNumber === targetEpisode
-            ? {
-                ...ep,
-                creative: editingSection === 'creative' ? sectionDraft : ep.creative,
-                title: titleDraft || ep.title,
-              }
-            : ep,
-        )
-        await saveBodies(next)
-        setEditingSection(null)
-      }
-      await dramaApi.episodeScript({
-        project_id: projectId,
-        episode_number: targetEpisode,
-        generate_mode: mode,
-        creative: creative || undefined,
-        title: titleDraft || selected.title,
-      })
-      const cur = await pollOptimize(targetEpisode)
-      const created = Number((cur.params || {}).episode_optimize_assets_created || 0)
-      if ((mode === 'body' || mode === 'full') && created > 0) {
-        setLocalNotice(t('drama.outlinePanel.assetsCreated').replace('{n}', String(created)))
-      }
-      if (mode === 'creative') {
-        setOpenSections((prev) => {
-          const next = new Set(prev)
-          next.add('creative')
-          return next
-        })
-        if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current)
-        setHighlightedSection('creative')
-        highlightTimerRef.current = window.setTimeout(() => {
-          setHighlightedSection(null)
-          highlightTimerRef.current = null
-        }, 5000)
-
-        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
-        setToastMessage(t('drama.outlinePanel.creativeGeneratedSuccess') || 'Ý tưởng tập đã được tạo thành công')
-        toastTimerRef.current = window.setTimeout(() => {
-          setToastMessage(null)
-          toastTimerRef.current = null
-        }, 5000)
-
-        window.setTimeout(() => {
-          creativeCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-        }, 50)
-      }
-      if (mode === 'summary') {
-        setOpenSections((prev) => {
-          const next = new Set(prev)
-          next.add('summary')
-          return next
-        })
-        if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current)
-        setHighlightedSection('summary')
-        highlightTimerRef.current = window.setTimeout(() => {
-          setHighlightedSection(null)
-          highlightTimerRef.current = null
-        }, 5000)
-
-        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
-        setToastMessage(t('drama.outlinePanel.summaryGeneratedSuccess') || 'Tóm tắt cốt truyện đã được tạo thành công')
-        toastTimerRef.current = window.setTimeout(() => {
-          setToastMessage(null)
-          toastTimerRef.current = null
-        }, 5000)
-
-        window.setTimeout(() => {
-          summaryCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-        }, 50)
-      }
-      if (mode === 'body') {
-        setOpenSections((prev) => {
-          const next = new Set(prev)
-          next.add('body')
-          return next
-        })
-        if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current)
-        setHighlightedSection('body')
-        highlightTimerRef.current = window.setTimeout(() => {
-          setHighlightedSection(null)
-          highlightTimerRef.current = null
-        }, 5000)
-
-        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
-        const msg = hadExistingBody
-          ? (t('drama.outlinePanel.scriptRegeneratedSuccess') || 'Kịch bản đã được tạo lại thành công')
-          : (t('drama.outlinePanel.scriptGeneratedSuccess') || 'Kịch bản đã được tạo thành công')
-        setToastMessage(msg)
-        toastTimerRef.current = window.setTimeout(() => {
-          setToastMessage(null)
-          toastTimerRef.current = null
-        }, 5000)
-
-        window.setTimeout(() => {
-          bodyCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-        }, 50)
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('drama.outlinePanel.genFailed')
-      setLocalError(msg)
-      onError(msg)
-    } finally {
-      setGeneratingMode(null)
-      setGeneratingEpisodeNumber(null)
-    }
-  }
-
-  function handleGenerate(mode: 'summary' | 'body' | 'full' | 'brief' | 'creative') {
-    if (mode === 'creative') {
-      // Khi đã có ý tưởng gốc (trạng thái tạo lại ý tưởng), cần modal confirm từ người dùng
-      if (selected?.creative?.trim()) {
-        setRegenCreativeConfirmOpen(true)
-        return
-      }
-    }
-    if (mode === 'full') {
-      // Khi đã có kịch bản (trạng thái tạo lại toàn bộ tập), cần modal confirm từ người dùng
-      if (selected?.body?.trim()) {
-        setRegenFullConfirmOpen(true)
-        return
-      }
-    }
-    void executeGenerate(mode)
-  }
-
-  async function handleConfirmEnter() {
-    if (!selected?.episodeNumber) return
-    if (!isSubstantialEpisodeBody(selected.body)) {
-      setLocalError(t('drama.outlinePanel.bodyMinCharsEnter').replace('{n}', String(MIN_EPISODE_BODY_CHARS)))
-      return
-    }
-    setLocalError('')
-    setConfirming(true)
-    try {
-      // Tập này đã được dựng storyboard: vào trực tiếp không cần chơi Skill/cắt lại nếu đã có phân cảnh thực sự
-      const rows = await dramaApi.listEpisodes(projectId)
-      const existing = rows.find(
-        (ep) => Number(ep.params?.episodeNumber) === Number(selected.episodeNumber),
-      )
-      const hasMeaningfulFragments = (existing?.fragments || []).some(
-        (f) => Boolean((f.content || '').trim() || (f.video || '').trim() || (f.cover || '').trim()),
-      )
-      if (existing && hasMeaningfulFragments) {
-        navigate(`/drama/projects/${projectId}/episodes/${existing.id}`)
-        return
-      }
-      setEnterSkillOpen(true)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('drama.outlinePanel.enterFailed')
-      setLocalError(msg)
-      onError(msg)
-    } finally {
-      setConfirming(false)
-    }
-  }
-
-  // Tham gia lần đầu: xác nhận kịch bản + nhấn Kỹ năng đã chọn để thực hiện phân cảnh AI
-  async function startEnterWithSkills(skillIds: number[]) {
-    if (!selected?.episodeNumber) return
-    setEnterSkillOpen(false)
-    setConfirming(true)
-    setLocalError('')
-    try {
-      const res = await dramaApi.confirmEpisodeFromScript({
-        project_id: projectId,
-        episode_number: selected.episodeNumber,
-      })
-      const episodeId = res.episode.id
-      try {
-        await dramaApi.planEpisodeFragments(episodeId, {
-          force: true,
-          fallback_rules: true,
-          skill_ids: skillIds,
-        })
-      } catch (planErr) {
-        onError(planErr instanceof Error ? planErr.message : t('drama.outlinePanel.planQueueFailed'))
-      }
-      navigate(`/drama/projects/${projectId}/episodes/${episodeId}`)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('drama.outlinePanel.enterFailed')
-      setLocalError(msg)
-      onError(msg)
-    } finally {
-      setConfirming(false)
-    }
-  }
-
-  async function handleSaveScenes(nextBody: string) {
-    if (!selected?.episodeNumber) return
-    setSaving(true)
-    setLocalError('')
-    try {
-      const num = selected.episodeNumber
-      const next = displayEpisodes.map((ep) =>
-        ep.episodeNumber === num ? { ...ep, body: nextBody, title: titleDraft || ep.title } : ep,
-      )
-      await saveBodies(next)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('drama.outlinePanel.saveFailed')
-      setLocalError(msg)
-      onError(msg)
-      throw err
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  function toggleSection(key: SectionKey) {
+  function toggleSection(k: SectionKey) {
     setOpenSections((prev) => {
       const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
+      if (next.has(k)) next.delete(k)
+      else next.add(k)
       return next
     })
   }
@@ -707,33 +243,45 @@ export function OutlineEpisodePanel({
   function startEdit(section: SectionKey) {
     if (!selected) return
     setEditingSection(section)
-    setSectionDraft(
-      section === 'creative'
-        ? selected.creative || ''
-        : section === 'summary'
-          ? selected.summary || ''
-          : selected.body || '',
-    )
-    setOpenSections((prev) => new Set(prev).add(section))
+    if (section === 'creative') setSectionDraft(selected.creative || '')
+    else if (section === 'summary') setSectionDraft(selected.summary || '')
+    else setSectionDraft(selected.body || '')
+    setOpenSections((prev) => new Set([...prev, section]))
   }
 
-  async function copyText(text: string) {
+  async function copyText(str: string) {
     try {
-      await navigator.clipboard.writeText(text || '')
+      await navigator.clipboard.writeText(str)
+      setToastMessage(t('common.copied'))
+      window.setTimeout(() => setToastMessage(null), 3000)
     } catch {
-      setLocalError(t('drama.outlinePanel.copyFailed'))
+      onError(t('common.copyFailed'))
     }
+  }
+
+  async function handleSaveScenes(nextFullBody: string) {
+    if (!selected?.episodeNumber) return
+    const num = selected.episodeNumber
+    const next = displayEpisodes.map((ep) =>
+      ep.episodeNumber === num ? { ...ep, body: nextFullBody } : ep,
+    )
+    await saveBodies(next)
   }
 
   const metaTags = useMemo(() => {
     const tags: string[] = []
+    const summary = script?.summary as Record<string, unknown> | undefined
+    if (summary && typeof summary === 'object') {
+      const core = (summary.core_conflict || summary.conflict) as string | undefined
+      if (core && typeof core === 'string') {
+        const parts = core.split(/[+/&]+/).map((s) => s.trim()).filter(Boolean)
+        for (const p of parts.slice(0, 3)) tags.push(p)
+      }
+    }
     if (storyType) tags.push(storyType)
-    if (selected?.origin === 'manual') tags.push(t('drama.outlinePanel.tagManual'))
-    else if (selected?.body) tags.push(t('drama.outlinePanel.tagAuto'))
-    return tags
-  }, [storyType, selected])
+    return tags.slice(0, 3)
+  }, [script?.summary, storyType])
 
-  const bodyReady = isSubstantialEpisodeBody(selected?.body)
   const charHint = selected
     ? [
         selected.creative ? t('drama.outlinePanel.charHintCreative').replace('{n}', String(episodeBodyCharLen(selected.creative))) : null,
@@ -745,144 +293,37 @@ export function OutlineEpisodePanel({
     : ''
 
   const directory = (
-    <aside className="drama-outline-sidebar">
-      <div className="drama-outline-sidebar-head">
-        <div>
-          <h3>{t('drama.outlinePanel.directory')}</h3>
-          <p>{t('drama.outlinePanel.totalEps').replace('{n}', String(directoryEpisodes.length))}</p>
-        </div>
-        {summaryReady ? (
-          <button
-            type="button"
-            className="drama-outline-add-btn"
-            disabled={!canAdd}
-            onClick={() => void handleAddEpisode()}
-          >
-            <Plus size={14} strokeWidth={2.5} />
-            {adding ? t('drama.outlinePanel.adding') : t('drama.outlinePanel.addEp')}
-          </button>
-        ) : null}
-      </div>
-      <ul className="drama-outline-ep-list">
-        {directoryEpisodes.map((ep) => {
-          const body = displayEpisodes.find((x) => x.episodeNumber === ep.episodeNumber)
-          const ready = isSubstantialEpisodeBody(body?.body)
-          const active = activeEpisodeNumber === ep.episodeNumber
-          const shot = episodeShotStats[ep.episodeNumber || 0]
-          const statusLabel = shot && shot.fragmentCount > 0 && shot.totalSec > 0
-            ? t('drama.outlinePanel.shotStat').replace('{n}', String(shot.fragmentCount)).replace('{dur}', formatOutlineShotDuration(shot.totalSec, t))
-            : ready
-              ? t('drama.outlinePanel.bodyReady')
-              : body?.creative
-                ? t('drama.outlinePanel.pendingScript')
-                : t('drama.outlinePanel.pendingCreative')
-          return (
-            <li key={ep.episodeNumber}>
-              <div
-                role="button"
-                tabIndex={0}
-                className={`drama-outline-ep-card${active ? ' is-active' : ''}`}
-                onClick={() => {
-                  onOpenEpisodes()
-                  setActiveEpisodeNumber(ep.episodeNumber)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    onOpenEpisodes()
-                    setActiveEpisodeNumber(ep.episodeNumber)
-                  }
-                }}
-              >
-                <span className="drama-outline-ep-thumb" aria-hidden>
-                  {(() => {
-                    const cover = episodeCovers[ep.episodeNumber || 0]
-                    if (!cover) return ep.episodeNumber
-                    if (/\.(mp4|webm|mov)(\?|$)/i.test(cover)) {
-                      return <video src={cover} muted playsInline preload="metadata" />
-                    }
-                    return <img src={cover} alt="" />
-                  })()}
-                </span>
-                <span className="drama-outline-ep-meta">
-                  <strong>{t('drama.outlinePanel.epLabel').replace('{no}', String(ep.episodeNumber))}</strong>
-                  {renamingEpisodeNumber === ep.episodeNumber ? (
-                    <div className="drama-outline-ep-rename-row" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="text"
-                        className="drama-outline-ep-rename-input"
-                        value={renameDraft}
-                        autoFocus
-                        placeholder={t('drama.outlinePanel.epNamePlaceholder')}
-                        onChange={(e) => setRenameDraft(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            void handleConfirmRename(ep.episodeNumber)
-                          }
-                          if (e.key === 'Escape') {
-                            e.preventDefault()
-                            setRenamingEpisodeNumber(null)
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="drama-outline-ep-rename-btn"
-                        title={t('common.confirm')}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          void handleConfirmRename(ep.episodeNumber)
-                        }}
-                      >
-                        <Check size={14} strokeWidth={2.5} />
-                      </button>
-                    </div>
-                  ) : (
-                    <small>{ep.title || t('common.unnamed')}</small>
-                  )}
-                  <em className={shot && shot.fragmentCount > 0 ? 'is-shot' : undefined}>
-                    {statusLabel}
-                  </em>
-                </span>
-                <div
-                  className="drama-outline-ep-more-wrap"
-                  ref={menuEpNumber === ep.episodeNumber ? menuRef : undefined}
-                >
-                  <button
-                    type="button"
-                    className="drama-outline-ep-more"
-                    aria-label={t('common.more')}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setMenuEpNumber((prev) => (prev === ep.episodeNumber ? null : ep.episodeNumber))
-                    }}
-                  >
-                    <MoreHorizontal size={16} />
-                  </button>
-                  {menuEpNumber === ep.episodeNumber ? (
-                    <div className="drama-outline-ep-menu" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className="drama-outline-ep-menu-item"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setMenuEpNumber(null)
-                          setRenamingEpisodeNumber(ep.episodeNumber)
-                          setRenameDraft(ep.title || '')
-                        }}
-                      >
-                        <Pencil size={13} strokeWidth={2} />
-                        {t('drama.outlinePanel.renameEp')}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
-    </aside>
+    <OutlineEpisodeSidebar
+      directoryEpisodes={directoryEpisodes}
+      displayEpisodes={displayEpisodes}
+      activeEpisodeNumber={activeEpisodeNumber}
+      summaryReady={summaryReady}
+      canAdd={canAdd && !adding}
+      adding={adding}
+      episodeShotStats={episodeShotStats}
+      episodeCovers={episodeCovers}
+      menuEpNumber={menuEpNumber}
+      renamingEpisodeNumber={renamingEpisodeNumber}
+      renameDraft={renameDraft}
+      menuRef={menuRef}
+      onAddEpisode={() => void handleAddEpisode()}
+      onSelectEpisode={(epNo) => {
+        onOpenEpisodes()
+        setActiveEpisodeNumber(epNo)
+      }}
+      onMenuToggle={(epNo) => setMenuEpNumber((prev) => (prev === epNo ? null : epNo))}
+      onStartRename={(epNo, title) => {
+        setMenuEpNumber(null)
+        setRenamingEpisodeNumber(epNo)
+        setRenameDraft(title)
+      }}
+      onRenameDraftChange={setRenameDraft}
+      onConfirmRename={(epNo) => {
+        setRenamingEpisodeNumber(null)
+        void handleConfirmRename(epNo, renameDraft)
+      }}
+      onCancelRename={() => setRenamingEpisodeNumber(null)}
+    />
   )
 
   const bodies = !selected ? (
@@ -891,71 +332,25 @@ export function OutlineEpisodePanel({
     </div>
   ) : (
     <section className="drama-outline-detail">
-      <header className="drama-outline-detail-head">
-        <div className="drama-outline-detail-title">
-          {editingSection ? (
-            <input
-              className="drama-title-input"
-              value={titleDraft}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              placeholder={t('drama.outlinePanel.epNamePlaceholder')}
-            />
-          ) : (
-            <h2>
-              {t('drama.outlinePanel.epLabel').replace('{no}', String(selected.episodeNumber))}
-              {selected.title ? `: ${selected.title}` : ''}
-            </h2>
-          )}
-          {imageStyleLabel ? <span className="drama-outline-style-badge">{imageStyleLabel}</span> : null}
-          <div className="drama-outline-detail-meta">
-            {charHint ? <span>{charHint}</span> : <span>{t('drama.outlinePanel.noContent')}</span>}
-            {metaTags.map((tag) => (
-              <span key={tag} className="drama-outline-tag">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="drama-outline-detail-actions">
-          <span className={`drama-outline-saved${bodyReady ? ' is-ready' : ''}`}>
-            <Check size={14} strokeWidth={2.5} />
-            {bodyReady ? t('drama.outlinePanel.readyForShot') : saving ? t('common.saving') : t('drama.outlinePanel.synced')}
-          </span>
-          {bodyReady &&
-          (!isSubstantialEpisodeCreative(selected.creative) ||
-            episodeBodyCharLen(selected.summary) < 40) ? (
-            <button
-              type="button"
-              className="drama-btn-ghost"
-              disabled={generateBusy}
-              onClick={() => void handleGenerate('brief')}
-            >
-              {selectedGenerating && generatingMode === 'brief' ? t('drama.outlinePanel.filling') : t('drama.outlinePanel.fillBrief')}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className="drama-outline-regen-btn"
-            disabled={generateBusy || !isSubstantialEpisodeCreative(selected.creative)}
-            onClick={() => handleGenerate('full')}
-          >
-            <RefreshCw size={15} strokeWidth={2.25} />
-            {selectedGenerating && generatingMode === 'full'
-              ? t('drama.outlinePanel.generating')
-              : selected?.body?.trim()
-                ? t('drama.outlinePanel.regenFull')
-                : t('drama.outlinePanel.genFull')}
-          </button>
-          <button
-            type="button"
-            className="drama-btn-ghost"
-            disabled={busy || !bodyReady}
-            onClick={() => void handleConfirmEnter()}
-          >
-            {confirming ? t('drama.outlinePanel.entering') : t('drama.outlinePanel.enterShot')}
-          </button>
-        </div>
-      </header>
+      <OutlineEpisodeHeader
+        selected={selected}
+        editingSection={editingSection}
+        titleDraft={titleDraft}
+        imageStyleLabel={imageStyleLabel}
+        charHint={charHint}
+        metaTags={metaTags}
+        bodyReady={bodyReady}
+        saving={saving}
+        busy={busy}
+        generateBusy={generateBusy}
+        selectedGenerating={selectedGenerating}
+        generatingMode={generatingMode}
+        confirming={confirming}
+        onTitleDraftChange={setTitleDraft}
+        onGenerateBrief={() => void handleGenerate('brief')}
+        onGenerateFull={() => handleGenerate('full')}
+        onConfirmEnter={() => void handleConfirmEnter()}
+      />
 
       {localError ? <BillingErrorNotice message={localError} className="drama-error" /> : null}
       {localNotice ? <p className="drama-outline-notice">{localNotice}</p> : null}
@@ -969,7 +364,7 @@ export function OutlineEpisodePanel({
       ) : null}
 
       <div className="drama-outline-sections">
-        <SectionCard
+        <OutlineSectionCard
           sectionKey="creative"
           containerRef={creativeCardRef}
           highlighted={highlightedSection === 'creative'}
@@ -1007,7 +402,7 @@ export function OutlineEpisodePanel({
           onRegenerate={() => void handleGenerate('creative')}
           onCopy={() => void copyText(selected.creative || '')}
         />
-        <SectionCard
+        <OutlineSectionCard
           sectionKey="summary"
           containerRef={summaryCardRef}
           highlighted={highlightedSection === 'summary'}
@@ -1042,7 +437,7 @@ export function OutlineEpisodePanel({
           }
           onCopy={() => void copyText(selected.summary || '')}
         />
-        <SectionCard
+        <OutlineSectionCard
           sectionKey="body"
           containerRef={bodyCardRef}
           highlighted={highlightedSection === 'body'}
@@ -1089,11 +484,7 @@ export function OutlineEpisodePanel({
       className="drama-outline-toast"
       role="status"
       aria-live="polite"
-      onClick={() => {
-        if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
-        setToastMessage(null)
-        toastTimerRef.current = null
-      }}
+      onClick={() => setToastMessage(null)}
     >
       <CheckCircle2 size={16} className="drama-outline-toast-icon" />
       <span>{toastMessage}</span>
@@ -1250,31 +641,8 @@ export function OutlineEpisodePanel({
     </Modal>
   )
 
-  if (children) {
-    return (
-      <>
-        {children({ directory, bodies })}
-        {toastElement}
-        <FragmentPlanSkillModal
-          open={enterSkillOpen}
-          title={t('drama.outlinePanel.enterShot')}
-          message={t('drama.outlinePanel.enterShotMessage')}
-          confirmText={confirming ? t('drama.outlinePanel.entering') : t('drama.outlinePanel.startShot')}
-          onCancel={() => {
-            if (!confirming) setEnterSkillOpen(false)
-          }}
-          onConfirm={(skillIds) => void startEnterWithSkills(skillIds)}
-        />
-        {regenFullConfirmModal}
-        {regenCreativeConfirmModal}
-      </>
-    )
-  }
-  return (
-    <div className="drama-outline drama-outline-v2">
-      {directory}
-      <div className="drama-outline-main">{bodies}</div>
-      {toastElement}
+  const modals = (
+    <>
       <FragmentPlanSkillModal
         open={enterSkillOpen}
         title={t('drama.outlinePanel.enterShot')}
@@ -1287,6 +655,24 @@ export function OutlineEpisodePanel({
       />
       {regenFullConfirmModal}
       {regenCreativeConfirmModal}
+    </>
+  )
+
+  if (children) {
+    return (
+      <>
+        {children({ directory, bodies })}
+        {toastElement}
+        {modals}
+      </>
+    )
+  }
+  return (
+    <div className="drama-outline drama-outline-v2">
+      {directory}
+      <div className="drama-outline-main">{bodies}</div>
+      {toastElement}
+      {modals}
     </div>
   )
 }
