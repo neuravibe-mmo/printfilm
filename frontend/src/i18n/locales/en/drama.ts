@@ -762,7 +762,12 @@ export const enDrama = {
             "viewError": "View Failure Reason",
             "viewFragError": "View Failure Reason for Segment {i}",
             "insert": "Insert",
-            "replanMessage": "Will call AI model to re-plan scenes based on this episode's script (overwriting and removing existing scenes and generated videos), typically taking 10-30s. You can choose a Skill. Subtitle mode inherits current navigation bar setting."
+            "replanMessage": "Will call AI model to re-plan scenes based on this episode's script (overwriting and removing existing scenes and generated videos), typically taking 10-30s. You can choose a Skill. Subtitle mode inherits current navigation bar setting.",
+            "emptyScriptWarning": "This scene currently has no script content.",
+            "emptyScriptTip": "You can quickly generate scenes from the episode script or use AI to plan shots.",
+            "seedFromScript": "Cut from Script",
+            "seedingFromScript": "Cutting scenes from script…",
+            "seedSuccess": "Scenes generated from script successfully!"
         },
         "genError": {
             "genFailed": "Generation failed",

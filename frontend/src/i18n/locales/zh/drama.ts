@@ -465,6 +465,11 @@ export const zhDrama = {
       viewFragError: '查看片段 {i} 失败原因',
       insert: '插入',
       replanMessage: '将调用大模型按本集剧本重新规划分镜（覆盖并清空现有分镜与已生成镜头），通常需要数十秒。可勾选本次使用的 Skill。字幕方式沿用顶栏当前设置。',
+      emptyScriptWarning: '当前镜头暂无剧本内容。',
+      emptyScriptTip: '您可以从本集剧本快速生成分镜，或使用 AI 规划分镜。',
+      seedFromScript: '从剧本切分镜',
+      seedingFromScript: '正在从剧本切分镜…',
+      seedSuccess: '已成功从剧本生成分镜！',
     },
     genError: {
       genFailed: '生成失败',

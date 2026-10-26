@@ -30,7 +30,10 @@ export function buildEpisodeDirItems(episodes: DramaEpisode[], t?: TFunction): D
   })
   return sorted.map((ep) => {
     const epNo = Number(ep.params?.episodeNumber) || 0
-    const fragCount = (ep.fragments || []).length
+    const meaningfulFrags = (ep.fragments || []).filter(
+      (f) => Boolean((f.content || '').trim() || (f.video || '').trim() || (f.cover || '').trim()),
+    )
+    const fragCount = meaningfulFrags.length
     const rawName = (ep.name || '').trim()
     const cleanTitle = isDefaultEpisodeTitle(rawName, epNo)
       ? (t ? (epNo >= 1 ? t('drama.episodes.episode', { n: epNo, no: epNo }) : t('drama.episodes.episodeFallback', { id: ep.id })) : `Tập ${epNo || ep.id}`)

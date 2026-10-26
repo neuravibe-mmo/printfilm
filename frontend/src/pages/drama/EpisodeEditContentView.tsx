@@ -1,6 +1,6 @@
-/** Hiển thị văn bản chỉ đọc trong bảng phân cảnh: hiển thị @asset:id dưới dạng thẻ được liên kết với hình thu nhỏ */
 import { Fragment, useMemo } from 'react'
 import { resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
+import { getCharacterPalette } from '../../lib/dramaEpisodePromptEditor'
 import { useI18n } from '../../i18n'
 
 type Props = {
@@ -62,11 +62,20 @@ export function EpisodeEditContentView({ content, assets, onOpenAsset }: Props) 
         const asset = byId.get(part.assetId)
         const preview = asset ? resolveDramaMediaUrl(asset.cover || asset.url) : ''
         const label = asset?.name || `${t('drama.assets.title')} #${part.assetId}`
+        const palette = getCharacterPalette(label || part.assetId)
         return (
           <button
             key={`a-${idx}-${part.assetId}`}
             type="button"
             className="drama-ep-mention-chip"
+            data-palette={palette.theme}
+            style={{
+              ['--chip-bg' as string]: palette.bg,
+              ['--chip-border' as string]: palette.border,
+              ['--chip-text' as string]: palette.text,
+              ['--chip-avatar-border' as string]: palette.avatarBorder,
+              ['--chip-fallback-bg' as string]: palette.fallbackBg,
+            }}
             title={`@asset:${part.assetId} · ${label}`}
             onClick={() => onOpenAsset?.(part.assetId)}
           >

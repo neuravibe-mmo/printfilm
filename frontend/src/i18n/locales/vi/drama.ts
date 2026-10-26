@@ -440,6 +440,11 @@ export const viDrama = {
       viewFragError: 'Xem nguyên nhân thất bại đoạn {i}',
       insert: 'Chèn',
       replanMessage: 'Sẽ gọi mô hình AI lập kế hoạch lại phân cảnh theo kịch bản tập này (ghi đè và xóa phân cảnh cũng như cảnh quay đã tạo), thường mất vài chục giây. Có thể chọn Skill sử dụng. Cách phụ đề kế thừa cài đặt hiện tại trên thanh điều hướng.',
+      emptyScriptWarning: 'Phân cảnh hiện tại chưa có nội dung kịch bản.',
+      emptyScriptTip: 'Bạn có thể cắt nhanh phân cảnh từ kịch bản tập hoặc nhờ AI lập kế hoạch phân cảnh.',
+      seedFromScript: 'Cắt từ kịch bản',
+      seedingFromScript: 'Đang cắt phân cảnh từ kịch bản…',
+      seedSuccess: 'Đã tạo phân cảnh từ kịch bản thành công!',
     },
     genError: {
       genFailed: 'Tạo thất bại',

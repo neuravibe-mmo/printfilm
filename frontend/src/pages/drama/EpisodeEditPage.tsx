@@ -16,11 +16,7 @@ import {
   extractAssetIds,
   filterEpisodeAssets,
   formatFragLabel,
-  fragmentQueueBadgeLabel,
-  getAssetTabLabel,
-  highlightCharacterNamesInContent,
   isFragmentGenerationBusy,
-  normalizeAssetTab,
   readFragmentGenerationStatus,
   readFragmentVideoVersions,
   resolveFragmentDurationSec,
@@ -28,7 +24,6 @@ import {
   type AssetTab,
 } from './dramaEpisodeEditUtils'
 import {
-  enqueueEpisodeVideoJobs,
   ensureEpisodeVideoStatusPoll,
   subscribeEpisodeGenerateStatus,
   syncEpisodeVideoJobs,
@@ -37,10 +32,7 @@ import {
   type DramaGenJob,
 } from '../../lib/dramaGenQueue'
 import { hasNonLocalizedCues, localizeScriptCues } from '../../lib/dramaCueI18n'
-import {
-  collectDramaGenerateGateIssues,
-  formatDramaGateMessage,
-} from '../../lib/dramaEpisodeScriptValidate'
+import { collectDramaGenerateGateIssues } from '../../lib/dramaEpisodeScriptValidate'
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../lib/dramaVoiceBinding'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import { dialog } from '../../lib/dialog'
@@ -49,28 +41,21 @@ import {
   readEpisodeAspectRatio,
   readEpisodeResolution,
 } from '../../lib/dramaProjectOutputSettings'
-import { DramaFragmentClipSpec } from '../../components/drama/DramaFragmentClipSpec'
 import { FragmentPlanSkillModal } from '../../components/drama/FragmentPlanSkillModal'
 import { DramaGenTaskDetail } from '../../components/drama/DramaGenTaskDetail'
-import { CircleAlert, Terminal } from 'lucide-react'
 import { EpisodeEditCurlModal } from './EpisodeEditCurlModal'
+import { EpisodeStoryboardFooter } from './EpisodeStoryboardFooter'
+import { EpisodeEditScriptSection } from './EpisodeEditScriptSection'
+import { useEpisodeContinuity } from './hooks/useEpisodeContinuity'
+import { useEpisodeAssetActions } from './hooks/useEpisodeAssetActions'
+import { useEpisodeGeneration, readFragmentPlanStatus } from './hooks/useEpisodeGeneration'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
 import { useMediaModelsCatalog } from '../../hooks/useMediaModelsCatalog'
-import { enqueueDramaImageGen } from '../../lib/dramaImageGenQueue'
-import { defaultOptionsForAssetKind } from '../../lib/dramaGenerationOptions'
-import { dramaAssetHasImage, dramaAssetImageGenButtonLabel } from '../../lib/dramaAssetImage'
-import { readVisualPrompt } from '../../lib/dramaVisualPrompt'
-import { generateAndBindCharacterVoice } from '../../lib/characterVoiceGenerate'
 import { getImageStyleId, isDefaultEpisodeTitle } from './dramaWorkspaceUtils'
 import { EpisodeEditAssetPanel } from './EpisodeEditAssetPanel'
 import { EpisodeEditHeaderControls } from './EpisodeEditHeaderControls'
-import { EpisodeEditPromptEditor } from './EpisodeEditPromptEditor'
-import { EpisodeEditReferenceStrip } from './EpisodeEditReferenceStrip'
 import { EpisodeEditSidePane } from './EpisodeEditSidePane'
-import {
-  GlobalAssetPickerModal,
-  importGlobalAssetToProject,
-} from './GlobalAssetPickerModal'
+import { GlobalAssetPickerModal } from './GlobalAssetPickerModal'
 import {
   applySubtitleModeToFragments,
   subtitleModeUsesModelOutput,
@@ -103,19 +88,7 @@ export default function EpisodeEditPage() {
   )
 }
 
-function readFragmentPlanStatus(ep: DramaEpisode | null): string {
-  // Ưu tiên đọc các nhiệm vụ lập kế hoạch bảng phân cảnh trong trung tâm nhiệm vụ thống nhất; trạng thái thông số cũ được sử dụng làm bản sao lưu
-  const active = (ep?.active_tasks || []).find((task) => task.task_type === 'fragment_plan')
-  if (
-    active &&
-    !active.cancel_requested &&
-    ['pending', 'leased', 'running', 'awaiting_poll', 'awaiting_review'].includes(active.status)
-  ) {
-    return 'generating'
-  }
-  const st = ep?.params?.fragment_plan_status
-  return typeof st === 'string' ? st : ''
-}
+
 
 // Phân tích cú pháp thống nhất các giá trị Boolean trong các tham số dự án, tương thích với các phương pháp ghi chuỗi/số lịch sử.
 function coerceProjectBool(value: unknown, defaultValue: boolean): boolean {
@@ -170,26 +143,12 @@ function EpisodeEditInner() {
   const [projectParams, setProjectParams] = useState<Record<string, unknown>>({})
   // epParams bộ nhớ đệm thông số tập (khung/định nghĩa được viết ở đây)
   const [episodeParams, setEpisodeParams] = useState<Record<string, unknown>>({})
-  // planModalOpen Xác nhận lại bảng phân cảnh AI (bao gồm Kiểm tra kỹ năng)
-  const [planModalOpen, setPlanModalOpen] = useState(false)
   const [previewVersionId, setPreviewVersionId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
-  const [characterVoiceBusyIds, setCharacterVoiceBusyIds] = useState<Set<number>>(() => new Set())
-  /*
-   * chi tiết Chi tiết tài sản còn lại của tài sản (chỉnh sửa/tái tạo/tải lên)
-   * voiceBindAsset Mục tiêu cửa sổ bật lên liên kết bằng giọng nói
-   * imageGenQueue ảnh chụp nhanh hàng đợi tạo hình ảnh toàn cầu
-   */
-  const [detailAsset, setDetailAsset] = useState<DramaAsset | null>(null)
-  const [voiceBindAsset, setVoiceBindAsset] = useState<DramaAsset | null>(null)
   /** failedReasonJob Nguyên nhân không mở được dấu chấm than gương dưới */
   const [failReasonJob, setFailReasonJob] = useState<DramaGenJob | null>(null)
-  // assetsCreateBusy/libraryPickerOpen Tạo và nhập thanh bên
-  const [assetCreateBusy, setAssetCreateBusy] = useState(false)
-  const [detectBusy, setDetectBusy] = useState(false)
-  const [libraryPickerOpen, setLibraryPickerOpen] = useState(false)
   const imageGenQueue = useDramaImageGenQueue()
   const dramaGenQueue = useDramaGenQueue()
   const applyStatusRef = useRef<(st: Awaited<ReturnType<typeof dramaApi.generateStatus>>) => Awaited<
@@ -287,55 +246,12 @@ function EpisodeEditInner() {
     return [...blocking, ...warnings]
   }, [selected, assets])
 
-  // prevLastFrameUrl Khung cuối cùng của khung cuối cùng (được kết nối với điều kiện kích hoạt; tương thích với trường phiên bản tạo / lịch sử)
-  const prevLastFrameUrl = useMemo(() => {
-    if (selectedIndex <= 0) return ''
-    const prev = fragments[selectedIndex - 1]
-    const params = prev?.params
-    if (!params || typeof params !== 'object') return ''
-    const rec = params as Record<string, unknown>
-    const fromTop = rec.lastFrameUrl
-    if (typeof fromTop === 'string' && fromTop.trim()) return fromTop.trim()
-    const gen = rec.generation
-    if (gen && typeof gen === 'object') {
-      const fromGen = (gen as Record<string, unknown>).lastFrameUrl
-      if (typeof fromGen === 'string' && fromGen.trim()) return fromGen.trim()
-    }
-    const versions = readFragmentVideoVersions(prev)
-    for (const ver of versions) {
-      if (ver.lastFrameUrl && ver.lastFrameUrl.trim()) return ver.lastFrameUrl.trim()
-    }
-    return ''
-  }, [fragments, selectedIndex])
-
-  // Khi kết nối khung hình cuối cùng được bật: nó chỉ bị tắt nếu ảnh trước đó chưa bao giờ được tạo; trong khi ảnh trước đó đang được tạo/xếp hàng, ảnh này có thể được xếp hàng chờ.
-  const continuityBlockedReason = useMemo(() => {
-    if (!linkLastFrame || selectedIndex <= 0) return ''
-    const prev = fragments[selectedIndex - 1]
-    if (!prev) return t('drama.episodeEdit.noPrevFrame')
-    if (prev.id && generatingIds.has(prev.id)) {
-      return ''
-    }
-    const prevDone =
-      Boolean((prev.video || '').trim()) ||
-      readFragmentGenerationStatus(prev).status === 'done' ||
-      Boolean(prevLastFrameUrl)
-    if (!prevDone) {
-      const prevNum = String(selectedIndex).padStart(2, '0')
-      const currNum = String(selectedIndex + 1).padStart(2, '0')
-      return t('drama.episodeEdit.waitPrevFrame')
-        .replace('{prev}', prevNum)
-        .replace('{curr}', currNum)
-    }
-    return ''
-  }, [linkLastFrame, selectedIndex, fragments, generatingIds, prevLastFrameUrl])
-
-  const continuityQueueHint = useMemo(() => {
-    if (!linkLastFrame || selectedIndex <= 0) return ''
-    const prev = fragments[selectedIndex - 1]
-    if (!prev?.id || !generatingIds.has(prev.id)) return ''
-    return t('drama.episodeEdit.prevQueueing')
-  }, [linkLastFrame, selectedIndex, fragments, generatingIds])
+  const { prevLastFrameUrl, continuityBlockedReason, continuityQueueHint } = useEpisodeContinuity({
+    fragments,
+    selectedIndex,
+    linkLastFrame,
+    generatingIds,
+  })
 
   // selectedGenerateLocked Chỉ khóa nút "Tạo" của cảnh hiện tại (bao gồm kiểm soát truy cập kết nối khung cuối cùng)
   const selectedGenerateLocked = busy || selectedIsGenerating || Boolean(continuityBlockedReason)
@@ -725,6 +641,26 @@ function EpisodeEditInner() {
 
   reloadRef.current = reload
 
+  // Cắt phân cảnh tự động từ kịch bản của tập
+  async function handleSeedFromScript() {
+    if (!epNumber || !pid) return
+    setBusy(true)
+    setStatus(t('drama.episodeEdit.seedingFromScript'))
+    setError('')
+    try {
+      await dramaApi.confirmEpisodeFromScript({
+        project_id: pid,
+        episode_number: epNumber,
+      })
+      await reload()
+      setStatus(t('drama.episodeEdit.seedSuccess'))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('drama.outlinePanel.enterFailed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   // Sử dụng lại việc bỏ phiếu tạo_status toàn cầu để tránh các yêu cầu lặp lại với dramaGenQueue
   useEffect(() => {
     return subscribeEpisodeGenerateStatus(async (episodeId, st) => {
@@ -784,6 +720,57 @@ function EpisodeEditInner() {
       prev.map((f, i) => (i === selectedIndex ? { ...f, ...patch } : f)),
     )
   }
+
+  // ID bản vẽ nội dung hiện đang được xếp hàng/tạo
+  const imageBusyIds = useMemo(() => {
+    const ids = new Set<number>()
+    for (const job of imageGenQueue) {
+      if (job.status === 'queued' || job.status === 'running') ids.add(job.assetId)
+    }
+    return ids
+  }, [imageGenQueue])
+
+  const {
+    detailAsset,
+    setDetailAsset,
+    voiceBindAsset,
+    setVoiceBindAsset,
+    assetCreateBusy,
+    detectBusy,
+    libraryPickerOpen,
+    setLibraryPickerOpen,
+    characterVoiceBusyIds,
+    resolveCreateAssetTab,
+    handleCharacterUpdated,
+    mentionAsset,
+    handleCreateSideAsset,
+    handleImportSideAsset,
+    unlinkSelectedAsset,
+    handleAutoDetectAssets,
+    focusLinkedAsset,
+    enqueueAssetImage,
+    handleGenerateCharacterVoice,
+    assetImageGenLabel,
+  } = useEpisodeAssetActions({
+    pid,
+    eid,
+    selected,
+    selectedIndex,
+    fragments,
+    assets,
+    assetTab,
+    videoStyleId,
+    imageGenQueue,
+    imageBusyIds,
+    setFragments,
+    setAssets,
+    setAssetTab,
+    setAssetScope,
+    setEditing,
+    setStatus,
+    setError,
+    updateSelected,
+  })
 
   // Chèn bảng phân cảnh trống
   function insertFrag(at: number) {
@@ -869,263 +856,45 @@ function EpisodeEditInner() {
     }
   }
 
-  // Xác định xem có thể bỏ qua "tạo bằng một cú nhấp chuột" một cách an toàn hay không: chỉ bỏ qua các bảng phân cảnh cũ chưa được thay đổi và đã hoàn thành.
-  function shouldSkipGenerateAllFragment(frag: DramaFragment): boolean {
-    if (!frag.video || !frag.id) return false
-    const prev = (episode?.fragments || []).find((item) => item.id === frag.id)
-    if (!prev?.video) return false
-    const sameContent = (prev.content || '') === (frag.content || '')
-    const sameCover = (prev.cover || '') === (frag.cover || '')
-    const sameDuration =
-      resolveFragmentDurationSec(prev.content || '', prev.duration_sec) ===
-      resolveFragmentDurationSec(frag.content || '', frag.duration_sec)
-    const prevAssetIds = [...(prev.asset_ids || [])].sort((a, b) => a - b)
-    const nextAssetIds = [...(frag.asset_ids || [])].sort((a, b) => a - b)
-    const sameAssets =
-      prevAssetIds.length === nextAssetIds.length &&
-      prevAssetIds.every((id, index) => id === nextAssetIds[index])
-    return sameContent && sameCover && sameDuration && sameAssets
-  }
-
-  // Chỉ tạo storyboard hiện đang được chọn (lưu và cập nhật theo id, id trả về sau khi lưu vẫn được sử dụng trước khi tạo)
-  async function generateSelected() {
-    if (!selected) {
-      setError(t('drama.episodeEdit.selectFrag'))
-      return
-    }
-    if (selectedGenerateLocked) {
-      if (continuityBlockedReason) {
-        setError(continuityBlockedReason)
-        await dialog.alert({
-          title: t('drama.episodeEdit.cannotGenTitle'),
-          message: `${continuityBlockedReason}. ${t('drama.episodeEdit.needPrevFrame')}`,
-        })
-      } else if (selectedIsGenerating) {
-        setError(t('drama.episodeEdit.waitCurrent'))
-      } else {
-        setError(t('drama.episodeEdit.waitOp'))
-      }
-      return
-    }
-
-    const { blocking, warnings } = collectDramaGenerateGateIssues(selected, assets)
-    if (blocking.length > 0) {
-      setError(blocking.map((i) => i.message).join('；'))
-      await dialog.alert({
-        title: t('drama.episodeEdit.cannotGenTitle'),
-        message: formatDramaGateMessage(blocking, warnings, t('drama.episodeEdit.fixScriptFirst')),
-      })
-      return
-    }
-
-    const fragLabel = formatFragLabel(selectedIndex, selectedDuration, t)
-    const isRegen = Boolean(selected.video)
-    const ok = await dialog.confirm({
-      title: isRegen ? t('drama.episodeEdit.regenVideoTitle') : t('drama.episodeEdit.genVideoTitle'),
-      message: formatDramaGateMessage(
-        [],
-        warnings,
-        isRegen
-          ? t('drama.episodeEdit.regenFragMsg').replace('{label}', fragLabel)
-          : linkLastFrame
-            ? continuityQueueHint
-              ? t('drama.episodeEdit.saveQueueMsg').replace('{label}', fragLabel).replace('{hint}', continuityQueueHint)
-              : t('drama.episodeEdit.saveTailMsg').replace('{label}', fragLabel)
-            : t('drama.episodeEdit.saveIndepMsg').replace('{label}', fragLabel),
-      ),
-      confirmText: warnings.length > 0 ? t('drama.episodeEdit.genAnyway') : isRegen ? t('drama.episodeEdit.regenConfirm') : t('drama.episodeEdit.genConfirm'),
-    })
-    if (!ok) return
-    setBusy(true)
-    setError('')
-    setStatus(isRegen ? t('drama.episodeEdit.statusRegenQueue') : t('drama.episodeEdit.statusGenQueue'))
-    try {
-      const ep = await save()
-      setBusy(true)
-      const frag = (ep.fragments || [])[selectedIndex]
-      if (!frag?.id) {
-        throw new Error(t('drama.episodeEdit.fragNotFound'))
-      }
-      await dramaApi.generateEpisode(eid, [frag.id], modelId)
-      // Ghi tối ưu vào trạng thái xếp hàng để tránh tình trạng video cũ ghi đè lên trạng thái đã hoàn thành
-      setFragments((prev) =>
-        prev.map((f) =>
-          f.id === frag.id
-            ? {
-                ...f,
-                params: {
-                  ...(f.params || {}),
-                  generation: { status: 'queued', message: t('drama.episodeEdit.queued') },
-                },
-              }
-            : f,
-        ),
-      )
-      enqueueEpisodeVideoJobs({
-        projectId: pid,
-        episodeId: eid,
-        episodeName: displayEpisodeName,
-        fragments: (ep.fragments || []).map((f, i) => ({
-          id: f.id,
-          sort_order: f.sort_order ?? i,
-        })),
-        fragmentIds: [frag.id],
-      })
-      setBusy(false)
-      setStatus(isRegen ? t('drama.episodeEdit.regenQueued').replace('{label}', fragLabel) : t('drama.episodeEdit.genQueued').replace('{label}', fragLabel))
-      ensureEpisodeVideoStatusPoll()
-    } catch (err) {
-      setBusy(false)
-      setError(err instanceof Error ? err.message : t('drama.episodeEdit.genFailed'))
-    }
-  }
-
-  // Chuyển video lịch sử sang video xem trước hiện tại
-  async function activateVideoVersion(versionId: string) {
-    if (!selected?.id || selectedIsGenerating) return
-    const ok = await dialog.confirm({
-      title: t('drama.episodeEdit.switchVersionTitle'),
-      message: t('drama.episodeEdit.switchVersionMessage'),
-      confirmText: t('drama.episodeEdit.switchVersionConfirm'),
-    })
-    if (!ok) return
-    setBusy(true)
-    setError('')
-    try {
-      const result = await dramaApi.activateFragmentVideoVersion(selected.id, versionId)
-      setFragments((prev) =>
-        prev.map((f) =>
-          f.id === selected.id
-            ? {
-                ...f,
-                video: result.video,
-                cover: result.cover || '',
-                params: {
-                  ...(f.params || {}),
-                  video_versions: result.video_versions,
-                  lastFrameUrl: result.lastFrameUrl || undefined,
-                  generation: {
-                    status: 'done',
-                    video: result.video,
-                    cover: result.cover,
-                    lastFrameUrl: result.lastFrameUrl,
-                  },
-                },
-              }
-            : f,
-        ),
-      )
-      setPreviewVersionId(null)
-      setStatus(t('drama.episodeEdit.versionSwitched'))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('drama.episodeEdit.switchVersionFailed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // Tạo bằng một cú nhấp chuột: Bảng phân cảnh cho tập này của "Force Regen" (forceRegen bao gồm các phim hiện có)
-  async function generateAll(opts?: { forceRegen?: boolean; skipConfirm?: boolean }) {
-    if (fragments.length === 0) {
-      setError(t('drama.episodeEdit.noFrags'))
-      return
-    }
-    if (generateAllLocked) {
-      setError(t('drama.episodeEdit.submitting'))
-      return
-    }
-
-    const allBlocking: string[] = []
-    const allWarnings: string[] = []
-    const doneIndices: number[] = []
-    for (let i = 0; i < fragments.length; i++) {
-      if (!opts?.forceRegen && shouldSkipGenerateAllFragment(fragments[i])) {
-        doneIndices.push(i)
-        continue
-      }
-      const { blocking, warnings } = collectDramaGenerateGateIssues(fragments[i], assets)
-      const label = formatFragLabel(i, fragments[i]?.duration_sec, t)
-      for (const issue of blocking) allBlocking.push(`${label}：${issue.message}`)
-      for (const issue of warnings) allWarnings.push(`${label}：${issue.message}`)
-    }
-    const pendingCount = fragments.length - doneIndices.length
-    if (pendingCount <= 0) {
-      setStatus(t('drama.episodeEdit.allDoneSkip'))
-      return
-    }
-    if (allBlocking.length > 0) {
-      setError(allBlocking[0] || t('drama.episodeEdit.validateFailed'))
-      await dialog.alert({
-        title: t('drama.episodeEdit.cannotGenAllTitle'),
-        message: [t('drama.episodeEdit.fixFirst'), '', ...allBlocking.slice(0, 8).map((m) => `· ${m}`)].join(
-          '\n',
-        ),
-      })
-      return
-    }
-
-    if (!opts?.skipConfirm) {
-      const ok = await dialog.confirm({
-        title: opts?.forceRegen ? t('drama.episodeEdit.regenAllTitle') : t('drama.episodeEdit.genAllTitle'),
-        message: formatDramaGateMessage(
-          [],
-          allWarnings.slice(0, 8).map((message) => ({ level: 'warn' as const, message })),
-          opts?.forceRegen
-            ? t('drama.episodeEdit.regenAllMsg').replace('{n}', String(pendingCount))
-            : linkLastFrame
-              ? t('drama.episodeEdit.genAllSeqMsg').replace('{n}', String(pendingCount)).replace('{done}', String(doneIndices.length))
-              : t('drama.episodeEdit.genAllParMsg').replace('{n}', String(pendingCount)).replace('{done}', String(doneIndices.length)),
-        ),
-        confirmText: allWarnings.length > 0 ? t('drama.episodeEdit.genAllAnyway') : opts?.forceRegen ? t('drama.episodeEdit.regenAllConfirm') : t('drama.episodeEdit.genAllConfirm'),
-        tone: 'danger',
-      })
-      if (!ok) return
-    }
-    setBusy(true)
-    setError('')
-    setStatus(t('drama.episodeEdit.statusGenAll').replace('{n}', String(pendingCount)))
-    try {
-      const ep = await save()
-      setBusy(true)
-      const ids = (ep.fragments || [])
-        .filter((_, index) => !doneIndices.includes(index))
-        .map((f) => f.id)
-        .filter((id): id is number => typeof id === 'number' && id > 0)
-      if (ids.length === 0) {
-        setStatus(t('drama.episodeEdit.allDoneAfterSave'))
-        setBusy(false)
-        return
-      }
-      const genResult = await dramaApi.generateEpisode(eid, ids, modelId)
-      const queuedIds =
-        Array.isArray(genResult.fragment_ids) && genResult.fragment_ids.length > 0
-          ? genResult.fragment_ids
-          : ids
-      enqueueEpisodeVideoJobs({
-        projectId: pid,
-        episodeId: eid,
-        episodeName: displayEpisodeName,
-        fragments: (ep.fragments || []).map((f, i) => ({
-          id: f.id,
-          sort_order: f.sort_order ?? i,
-        })),
-        fragmentIds: queuedIds,
-      })
-      const deferred = Number(genResult.deferred_count || 0)
-      const limit = Number(genResult.user_job_limit || 0)
-      if (deferred > 0 && limit > 0) {
-        setStatus(
-          t('drama.episodeEdit.queuedWithLimit').replace('{n}', String(queuedIds.length)).replace('{limit}', String(limit)).replace('{deferred}', String(deferred)),
-        )
-      } else {
-        setStatus(t('drama.episodeEdit.queuedN').replace('{n}', String(queuedIds.length)))
-      }
-      setBusy(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('drama.episodeEdit.genAllFailed'))
-      setBusy(false)
-    }
-  }
+  const {
+    planModalOpen,
+    setPlanModalOpen,
+    generateSelected,
+    generateAll,
+    activateVideoVersion,
+    planFragmentsWithLlm,
+    startPlanFragments,
+  } = useEpisodeGeneration({
+    pid,
+    eid,
+    episode,
+    displayEpisodeName,
+    selected,
+    selectedIndex,
+    selectedDuration,
+    fragments,
+    assets,
+    modelId,
+    subtitleMode,
+    linkLastFrame,
+    continuityBlockedReason,
+    continuityQueueHint,
+    selectedIsGenerating,
+    selectedGenerateLocked,
+    generateAllLocked,
+    planFragmentsLocked,
+    episodeParamsRef,
+    save,
+    setEpisode,
+    setEpisodeParams,
+    setFragments,
+    setSelectedIndex,
+    setEditing,
+    setPreviewVersionId,
+    setBusy,
+    setStatus,
+    setError,
+  })
 
   // Quay lại phần tóm tắt cốt truyện
   function handleBack() {
@@ -1137,348 +906,6 @@ function EpisodeEditInner() {
     if (nextId === eid) return
     navigate(`/drama/projects/${pid}/episodes/${nextId}`)
   }
-
-  // Bản phân cảnh lại LLM một tập: Xác nhận và kiểm tra Kỹ năng trước khi tham gia nhóm
-  function planFragmentsWithLlm() {
-    if (planFragmentsLocked) {
-      setError(t('drama.episodeEdit.genRunning'))
-      return
-    }
-    setPlanModalOpen(true)
-  }
-
-  // Sau khi tham gia hàng đợi, hãy thăm dò cho đến khi hoàn thành (phương thức phụ đề tuân theo cài đặt hiện tại của thanh trên cùng)
-  async function startPlanFragments(skillIds: number[]) {
-    setPlanModalOpen(false)
-    setBusy(true)
-    setError('')
-    setStatus(t('drama.episodeEdit.aiPlanning'))
-    try {
-      await dramaApi.planEpisodeFragments(eid, {
-        force: true,
-        fallback_rules: true,
-        skill_ids: skillIds,
-        subtitle_enabled: subtitleModeUsesModelOutput(subtitleMode),
-      })
-      const started = Date.now()
-      while (Date.now() - started < 10 * 60 * 1000) {
-        await new Promise((r) => setTimeout(r, 2500))
-        const ep = await dramaApi.getEpisode(eid)
-        const st = readFragmentPlanStatus(ep)
-        if (st === 'completed') {
-          setEpisode(ep)
-          const nextParams = (ep.params as Record<string, unknown>) || {}
-          setEpisodeParams(nextParams)
-          episodeParamsRef.current = nextParams
-          setFragments(ep.fragments || [])
-          setSelectedIndex(0)
-          setEditing(false)
-          const mode = String(ep.params?.fragment_plan_mode || 'llm')
-          const count = Number(ep.params?.fragment_plan_count) || (ep.fragments || []).length
-          setStatus(
-            mode === 'rules_fallback'
-              ? t('drama.episodeEdit.planRulesFallback').replace('{count}', String(count))
-              : t('drama.episodeEdit.planAiDone').replace('{count}', String(count)),
-          )
-          setBusy(false)
-          return
-        }
-        if (st === 'failed') {
-          const msg = String(ep.params?.fragment_plan_error || t('drama.episodeEdit.aiFailed'))
-          setError(msg)
-          setBusy(false)
-          return
-        }
-        setStatus(t('drama.episodeEdit.aiPlanning'))
-      }
-      throw new Error(t('drama.episodeEdit.aiTimeout'))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('drama.episodeEdit.aiFailed'))
-      setBusy(false)
-    }
-  }
-
-  // Nhấp vào nội dung để chèn tham chiếu @
-  function mentionAsset(asset: DramaAsset) {
-    if (!selected) return
-    const mention = `@asset:${asset.id}`
-    const raw = selected.content || ''
-    const already = new RegExp(`@asset:${asset.id}(?!\\d)`).test(raw)
-    const content = already ? raw : raw ? `${raw.trimEnd()}\n${mention}` : mention
-    const ids = Array.from(new Set([...(selected.asset_ids || []), asset.id]))
-    updateSelected({ content, asset_ids: ids })
-    setEditing(true)
-  }
-
-  // Phân tích loại nội dung hiện được tạo trong thanh bên (vai trò mặc định khi không có danh mục nào được chọn)
-  function resolveCreateAssetTab(): AssetTab {
-    return assetTab || 'character'
-  }
-
-  // Sau khi tạo xong tập mới, hãy treo nó vào bảng phân cảnh hiện tại và mở phần chi tiết để có thể xem ngay danh sách tập này
-  function adoptCreatedAsset(created: DramaAsset, kind: AssetTab) {
-    setAssets((prev) => (prev.some((a) => a.id === created.id) ? prev : [...prev, created]))
-    setAssetTab(kind)
-    mentionAsset(created)
-    if ((created.type || '').toLowerCase() !== 'voice') {
-      setDetailAsset(created)
-    }
-  }
-
-  // Tùy chỉnh nhân vật/cảnh/đạo cụ mới
-  async function handleCreateSideAsset() {
-    const kind = resolveCreateAssetTab()
-    const label = kind === 'scene' ? t('drama.episodeEdit.scene') : kind === 'prop' ? t('drama.episodeEdit.prop') : t('drama.episodeEdit.character')
-    const name = await dialog.prompt({
-      title: t('drama.episodeEdit.createAssetTitle').replace('{label}', label),
-      message: t('drama.episodeEdit.createAssetMsg').replace('{label}', label),
-      placeholder: kind === 'scene' ? t('drama.episodeEdit.scenePlaceholder') : kind === 'prop' ? t('drama.episodeEdit.propPlaceholder') : t('drama.episodeEdit.characterPlaceholder'),
-      confirmText: t('drama.episodeEdit.createConfirm'),
-    })
-    if (!name?.trim()) return
-    setAssetCreateBusy(true)
-    setError('')
-    try {
-      const created = await dramaApi.createAsset({
-        project_id: pid,
-        type: kind,
-        asset_type: 'image',
-        name: name.trim(),
-        params: { kind },
-      })
-      adoptCreatedAsset(created, kind)
-      setStatus(t('drama.episodeEdit.assetCreated').replace('{label}', label).replace('{name}', created.name || ''))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('drama.episodeEdit.assetCreateFailed').replace('{label}', label))
-    } finally {
-      setAssetCreateBusy(false)
-    }
-  }
-
-  // Nhập từ thư viện nội dung toàn cầu vào dự án này và đính kèm vào bảng phân cảnh hiện tại
-  async function handleImportSideAsset(source: DramaAsset) {
-    const kind = normalizeAssetTab(source.type) || resolveCreateAssetTab()
-    setAssetCreateBusy(true)
-    setError('')
-    try {
-      const created = await importGlobalAssetToProject(pid, source)
-      adoptCreatedAsset(created, kind)
-      setLibraryPickerOpen(false)
-      setStatus(t('drama.episodeEdit.assetImported').replace('{name}', created.name || ''))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('drama.episodeEdit.importFailed'))
-      throw err
-    } finally {
-      setAssetCreateBusy(false)
-    }
-  }
-
-  // Chỉ hủy liên kết bảng phân cảnh hiện tại với nội dung (không xóa nội dung dự án)
-  function unlinkSelectedAsset(assetId: number) {
-    if (!selected) return
-    const content = (selected.content || '')
-      .replace(new RegExp(`\\s*@asset:${assetId}(?!\\d)`, 'g'), ' ')
-      .replace(/[ \t]{2,}/g, ' ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-    const asset_ids = (selected.asset_ids || []).filter((id) => id !== assetId)
-    updateSelected({ content, asset_ids })
-    setEditing(true)
-    const name = assets.find((a) => a.id === assetId)?.name
-    setStatus(
-      name
-        ? t('drama.episodeEdit.unlinkAsset').replace('{name}', name)
-        : t('drama.episodeEdit.unlinkNoName'),
-    )
-  }
-
-  // Tự động nhận diện tài sản (nhân vật / cảnh / đạo cụ) từ nội dung phân cảnh thông qua AI
-  async function handleAutoDetectAssets() {
-    if (!selected) {
-      setError(t('drama.episodeEdit.selectFragmentFirst'))
-      return
-    }
-    const content = (selected.content || '').trim()
-    if (!content) {
-      setError('Phân cảnh chưa có nội dung để AI nhận diện.')
-      return
-    }
-    const currentTab = assetTab || 'character'
-    const targetKind = currentTab === 'scene' ? 'scene' : currentTab === 'prop' ? 'prop' : 'character'
-    const pool = (assets ?? []).filter((a) => (a.type || '').toLowerCase() === targetKind)
-    if (pool.length === 0) {
-      const kindLabel = getAssetTabLabel(currentTab)
-      setStatus(t('drama.episodeEdit.noAssetsInLibrary').replace('{kind}', kindLabel))
-      return
-    }
-
-    setDetectBusy(true)
-    setError('')
-    try {
-      const candidates = pool.map((a) => {
-        const p = (a.params || {}) as Record<string, unknown>
-        const intro = String(p.intro || p.visualPrompt || p.prompt || '')
-        const aliases: string[] = []
-        if (typeof p.alias === 'string') aliases.push(p.alias)
-        if (Array.isArray(p.aliases)) aliases.push(...p.aliases.map(String))
-        if (typeof p.nickname === 'string') aliases.push(p.nickname)
-        return {
-          id: a.id,
-          name: a.name || '',
-          type: a.type || 'character',
-          intro,
-          aliases,
-        }
-      })
-
-      const res = await dramaApi.detectAssets({
-        content,
-        asset_type: targetKind,
-        candidate_assets: candidates,
-        project_id: pid,
-      })
-
-      const detectedIds = res.detected_ids || []
-      const detected = pool.filter((a) => detectedIds.includes(a.id))
-      const kindLabel = getAssetTabLabel(currentTab)
-      if (detected.length === 0) {
-        setStatus(t('drama.episodeEdit.noDetectedAssets').replace('{kind}', kindLabel))
-        return
-      }
-
-      const existingIds = selected.asset_ids || []
-      const newIds = detectedIds.filter((id) => !existingIds.includes(id))
-
-      // Dọn dẹp các thẻ @asset:ID bị tự động nối ở cuối nội dung trước đó (nếu có)
-      let nextContent = (selected.content || '').replace(/(?:\s*@asset:\d+\s*)+$/g, '').trimEnd()
-
-
-      // Lấy danh sách tên và bí danh của nhân vật đã phát hiện để in đậm (highlight)
-      const detectedNames: string[] = []
-      for (const a of detected) {
-        if (a.name) detectedNames.push(a.name)
-        const p = (a.params || {}) as Record<string, unknown>
-        if (typeof p.alias === 'string') detectedNames.push(p.alias)
-        if (Array.isArray(p.aliases)) detectedNames.push(...p.aliases.map(String))
-        if (typeof p.nickname === 'string') detectedNames.push(p.nickname)
-      }
-      if (Array.isArray(res.detected_names)) {
-        detectedNames.push(...res.detected_names)
-      }
-
-      // In đậm tên các nhân vật xuất hiện trong nội dung phân cảnh
-      nextContent = highlightCharacterNamesInContent(nextContent, detectedNames)
-
-      const mergedIds = Array.from(new Set([...existingIds, ...detectedIds]))
-
-      const nextFragments = fragments.map((f, i) =>
-        i === selectedIndex ? { ...f, content: nextContent, asset_ids: mergedIds } : f,
-      )
-      setFragments(nextFragments)
-      setEditing(true)
-
-      try {
-        await dramaApi.saveFragments(eid, nextFragments)
-      } catch {
-        /* ignore autosave error */
-      }
-
-      const names = detected.map((a) => a.name || `ID ${a.id}`).join(', ')
-      if (newIds.length === 0) {
-        setStatus(t('drama.episodeEdit.detectedAlreadyLinked').replace('{names}', names))
-      } else {
-        setStatus(
-          t('drama.episodeEdit.detectedSuccess')
-            .replace('{n}', String(newIds.length))
-            .replace('{names}', names),
-        )
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lỗi khi gọi AI nhận diện nhân vật')
-    } finally {
-      setDetectBusy(false)
-    }
-  }
-
-  // Chuyển từ thanh liên kết đến danh mục tương ứng và mở chi tiết tài sản
-  function focusLinkedAsset(assetId: number) {
-    const asset = assets.find((a) => a.id === assetId)
-    if (!asset) return
-    const tab = normalizeAssetTab(asset.type)
-    if (tab) setAssetTab(tab)
-    setAssetScope('series')
-    if ((asset.type || '').toLowerCase() !== 'voice') {
-      setDetailAsset(asset)
-    }
-  }
-
-  // Cập nhật nội dung (làm mới danh sách và chi tiết sau khi liên kết âm sắc/tải lên/tạo hình ảnh)
-  function handleCharacterUpdated(updated: DramaAsset) {
-    setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)))
-    setDetailAsset((prev) => (prev?.id === updated.id ? updated : prev))
-  }
-
-  // ID bản vẽ nội dung hiện đang được xếp hàng/tạo
-  const imageBusyIds = useMemo(() => {
-    const ids = new Set<number>()
-    for (const job of imageGenQueue) {
-      if (job.status === 'queued' || job.status === 'running') ids.add(job.assetId)
-    }
-    return ids
-  }, [imageGenQueue])
-
-  // Chi tiết sao chép nút hình ảnh cửa sổ bật lên
-  function assetImageGenLabel(asset: DramaAsset): string {
-    const job = imageGenQueue.find(
-      (j) =>
-        j.assetId === asset.id && (j.status === 'queued' || j.status === 'running'),
-    )
-    let queueLabel: string | null = null
-    if (job) {
-      if (job.status === 'running') queueLabel = t('drama.episodeEdit.generating')
-      else {
-        const queuedOnly = imageGenQueue.filter(
-          (j) => j.status === 'queued' || j.status === 'running',
-        )
-        const pos = queuedOnly.findIndex((j) => j.id === job.id) + 1
-        queueLabel = pos > 1 ? t('drama.episodeEdit.queuePos').replace('{pos}', String(pos)) : t('drama.episodeEdit.queueing')
-      }
-    }
-    return dramaAssetImageGenButtonLabel(asset, queueLabel, t)
-  }
-
-  // Thêm biểu đồ tài sản vào hàng đợi chung
-  async function enqueueAssetImage(asset: DramaAsset) {
-    if (imageBusyIds.has(asset.id)) return
-    if (dramaAssetHasImage(asset)) {
-      const ok = await dialog.confirm({
-        title: t('drama.assetsStep.regenConfirmTitle'),
-        message: t('drama.assetsStep.regenConfirmMessage').replace(
-          '{name}',
-          asset.name || t('common.unnamed'),
-        ),
-        confirmText: t('drama.assets.regenImage'),
-        cancelText: t('common.cancel'),
-      })
-      if (!ok) return
-    }
-    const options = {
-      ...defaultOptionsForAssetKind(asset.type),
-      image_style_id: videoStyleId || undefined,
-    }
-    void enqueueDramaImageGen({
-      projectId: pid,
-      assetId: asset.id,
-      assetName: asset.name || undefined,
-      assetType: asset.type,
-      prompt: readVisualPrompt(asset),
-      options,
-      onAssetUpdate: handleCharacterUpdated,
-    })
-      .then((updated) => handleCharacterUpdated(updated))
-      .catch((err) => setError(err instanceof Error ? err.message : t('drama.episodeEdit.genImageFailed')))
-  }
-
   // Lý do không mở được bảng phân cảnh (tác vụ xếp hàng ưu tiên, nếu không thì sử dụng params.Generation.error của bảng phân cảnh)
   function openFragmentFailReason(frag: DramaFragment, index: number) {
     if (!frag.id) return
@@ -1502,25 +929,7 @@ function EpisodeEditInner() {
     })
   }
 
-  // AI chỉ bằng một cú nhấp chuột sẽ tạo ra âm sắc của các ký tự và liên kết chúng (mỗi ký tự bận độc lập và không chặn lẫn nhau)
-  async function handleGenerateCharacterVoice(asset: DramaAsset) {
-    if (characterVoiceBusyIds.has(asset.id)) return
-    setCharacterVoiceBusyIds((prev) => new Set(prev).add(asset.id))
-    setError('')
-    try {
-      const { character, voice } = await generateAndBindCharacterVoice(pid, asset)
-      handleCharacterUpdated(character)
-      setAssets((prev) => (prev.some((a) => a.id === voice.id) ? prev : [...prev, voice]))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('drama.episodeEdit.voiceFailed'))
-    } finally {
-      setCharacterVoiceBusyIds((prev) => {
-        const next = new Set(prev)
-        next.delete(asset.id)
-        return next
-      })
-    }
-  }
+
 
   if (!episode) {
     return (
@@ -1653,249 +1062,42 @@ function EpisodeEditInner() {
           detectBusy={detectBusy}
         />
 
-        <section className="drama-ep-editor">
-          <div className="drama-ep-editor-head">
-            <div>
-              <strong>{formatFragLabel(selectedIndex, selectedDuration, t)}</strong>
-              <p>
-                {t('drama.episodeEdit.tipAtRef')}{' '}
-                {formatProjectOutputLabel(
-                  readEpisodeAspectRatio(episodeParams, projectParams),
-                  readEpisodeResolution(episodeParams, projectParams),
-                )}
-              </p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              {hasNonLocalizedCues(selected?.content || '', 'vi') && (
-                <button
-                  type="button"
-                  className="drama-ep-btn drama-ep-btn-subtle"
-                  style={{ fontSize: '0.8rem', padding: '4px 10px', height: 'auto', whiteSpace: 'nowrap' }}
-                  onClick={async () => {
-                    if (!selected) return
-                    const localized = localizeScriptCues(selected.content || '', 'vi')
-                    const nextFragments = fragments.map((f, i) =>
-                      i === selectedIndex ? { ...f, content: localized } : f,
-                    )
-                    setFragments(nextFragments)
-                    try {
-                      await dramaApi.saveFragments(eid, nextFragments)
-                      setStatus(t('drama.episodeEdit.convertCuesSuccess'))
-                    } catch {
-                      setStatus(t('drama.episodeEdit.convertCuesSuccess'))
-                    }
-                  }}
-                  title={t('drama.episodeEdit.convertCuesToVi')}
-                >
-                  🌐 {t('drama.episodeEdit.convertCuesToVi')}
-                </button>
-              )}
-              <label className="drama-ep-duration">
-                {t('drama.episodeEdit.duration')}
-                <input
-                  type="number"
-                  min={4}
-                  max={15}
-                  value={selectedDuration}
-                  disabled={!editing && !selected}
-                  onChange={(e) =>
-                    updateSelected({ duration_sec: Number(e.target.value) || 8 })
-                  }
-                />
-                s
-              </label>
-            </div>
-          </div>
-
-          <EpisodeEditReferenceStrip items={selectedRefItems} onSelect={focusLinkedAsset} />
-
-          <div className={`drama-ep-editor-box ${editing ? 'editing' : ''}`}>
-            <EpisodeEditPromptEditor
-              content={selected?.content || ''}
-              assets={assets}
-              referencedIds={referencedIds}
-              editing={editing}
-              onOpenAsset={focusLinkedAsset}
-              onContentChange={(nextContent) => {
-                const fromContent = extractAssetIds(nextContent)
-                const prevContentIds = extractAssetIds(selected?.content || '')
-                const removed = prevContentIds.filter((id) => !fromContent.includes(id))
-                /* Các tham chiếu đã xóa trong văn bản sẽ được di chuyển đồng bộ ra khỏi assets_ids; chỉ các liên kết bổ sung tồn tại trong assets_ids mới được giữ lại. */
-                const prevContentIdSet = new Set(prevContentIds)
-                const keptExtra = (selected?.asset_ids || []).filter(
-                  (id) => !prevContentIdSet.has(id) || fromContent.includes(id),
-                )
-                updateSelected({
-                  content: nextContent,
-                  asset_ids: Array.from(new Set([...keptExtra, ...fromContent])),
-                })
-                if (removed.length > 0) {
-                  setStatus(t('drama.episodeEdit.unlinkNoName'))
-                }
-              }}
-            />
-
-          {selectedGateIssues.length > 0 ? (
-            <ul className="drama-ep-script-issues" aria-live="polite">
-              {selectedGateIssues.map((issue) => (
-                <li
-                  key={`${issue.level}:${issue.message}`}
-                  className={
-                    issue.level === 'error'
-                      ? 'drama-ep-script-issue is-error'
-                      : 'drama-ep-script-issue is-warn'
-                  }
-                >
-                  {issue.message}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {linkLastFrame && selectedIndex > 0 ? (
-            <p
-              className={`drama-ep-continuity-hint${
-                !continuityBlockedReason ? ' is-ready' : ' is-wait'
-              }`}
-            >
-              {continuityBlockedReason
-                ? t('drama.episodeEdit.continuityEnabled').replace('{reason}', continuityBlockedReason)
-                : continuityQueueHint
-                  ? continuityQueueHint
-                  : prevLastFrameUrl
-                    ? t('drama.episodeEdit.continuityWithPrev')
-                    : t('drama.episodeEdit.continuityAutoTail')}
-            </p>
-          ) : !linkLastFrame ? (
-            <p className="drama-ep-continuity-hint">
-              {t('drama.episodeEdit.noTailContinuity')}
-            </p>
-          ) : null}
-
-          <div className="drama-ep-editor-actions">
-            {editing ? (
-              <>
-                <button
-                  type="button"
-                  className="drama-ep-btn-ghost"
-                  disabled={busy}
-                  onClick={() => {
-                    setEditing(false)
-                    void reload()
-                  }}
-                >
-                  {t('common.cancel')}
-                </button>
-                <button
-                  type="button"
-                  className="drama-ep-btn-dark"
-                  disabled={busy}
-                  onClick={() => void save()}
-                >
-                  {busy ? t('common.saving') : t('common.save')}
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className="drama-ep-btn-ghost"
-                  disabled={!selected || selectedIsGenerating || busy}
-                  onClick={() => setEditing(true)}
-                >
-                  {t('common.edit')}
-                </button>
-                <button
-                  type="button"
-                  className="drama-ep-btn-dark"
-                  disabled={selectedGenerateLocked || !selected}
-                  title={
-                    continuityBlockedReason ||
-                    continuityQueueHint ||
-                    (selectedIsGenerating ? t('drama.episodeEdit.generating') : undefined)
-                  }
-                  onClick={() => void generateSelected()}
-                >
-                  {selectedIsGenerating
-                    ? t('drama.episodeEdit.generating')
-                    : busy
-                      ? t('drama.episodeEdit.processing')
-                      : continuityQueueHint
-                        ? t('drama.episodeEdit.queued')
-                        : continuityBlockedReason
-                          ? t('drama.episodeEdit.waiting')
-                          : selectedHasVideo
-                          ? t('drama.episodeEdit.regenConfirm')
-                          : t('drama.episodeEdit.genConfirm')}
-                </button>
-                <button
-                  type="button"
-                  className="drama-ep-btn-ghost"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    border: '1px solid rgba(0, 0, 0, 0.12)',
-                    minWidth: 'auto',
-                    padding: '0 12px',
-                    fontSize: '0.82rem',
-                    color: '#334155',
-                    background: '#fff',
-                  }}
-                  disabled={!selected}
-                  onClick={() => setShowCurlModal(true)}
-                  title="Xem lệnh cURL gọi API tạo video"
-                >
-                  <Terminal size={13} />
-                  cURL
-                </button>
-              </>
-            )}
-          </div>
-          </div>
-
-          {selectedVersions.length > 0 && selected?.id ? (
-            <div className="drama-ep-versions">
-              <span className="drama-ep-versions-label">{t('drama.episodeEdit.history')}</span>
-              <div className="drama-ep-versions-list">
-                {selectedHasVideo && selected.video ? (
-                  <button
-                    type="button"
-                    className={`drama-ep-version is-active${!previewVersionId ? ' is-current' : ''}`}
-                    disabled={busy || selectedIsGenerating}
-                    title={t('drama.episodeEdit.currentVersion')}
-                    onClick={() => setPreviewVersionId(null)}
-                  >
-                    {selected.cover ? (
-                      <img src={resolveDramaMediaUrl(selected.cover)} alt="" />
-                    ) : (
-                      <video src={resolveDramaMediaUrl(selected.video)} muted />
-                    )}
-                    <em>{t('drama.episodeEdit.current')}</em>
-                  </button>
-                ) : null}
-                {selectedVersions.map((ver, index) => {
-                  const cover = ver.cover ? resolveDramaMediaUrl(ver.cover) : ''
-                  const video = resolveDramaMediaUrl(ver.video)
-                  const versionNo = selectedVersions.length - index
-                  return (
-                    <button
-                      key={ver.id}
-                      type="button"
-                      className={`drama-ep-version${previewVersionId === ver.id ? ' is-previewing' : ''}`}
-                      disabled={busy || selectedIsGenerating}
-                      title={t('drama.episodeEdit.previewOrSwitch')}
-                      onClick={() => setPreviewVersionId(ver.id)}
-                    >
-                      {cover ? <img src={cover} alt="" /> : <video src={video} muted />}
-                      <em>v{versionNo}</em>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ) : null}
-        </section>
+        <EpisodeEditScriptSection
+          eid={eid}
+          selected={selected}
+          selectedIndex={selectedIndex}
+          selectedDuration={selectedDuration}
+          episodeParams={episodeParams}
+          projectParams={projectParams}
+          fragments={fragments}
+          assets={assets}
+          referencedIds={referencedIds}
+          selectedRefItems={selectedRefItems}
+          selectedGateIssues={selectedGateIssues}
+          linkLastFrame={linkLastFrame}
+          continuityBlockedReason={continuityBlockedReason}
+          continuityQueueHint={continuityQueueHint}
+          prevLastFrameUrl={prevLastFrameUrl}
+          editing={editing}
+          busy={busy}
+          selectedIsGenerating={selectedIsGenerating}
+          selectedHasVideo={selectedHasVideo}
+          selectedGenerateLocked={selectedGenerateLocked}
+          selectedVersions={selectedVersions}
+          previewVersionId={previewVersionId}
+          onPreviewVersion={setPreviewVersionId}
+          onFocusLinkedAsset={focusLinkedAsset}
+          onUpdateSelected={updateSelected}
+          onSave={save}
+          onReload={reload}
+          onSetEditing={setEditing}
+          onGenerateSelected={() => void generateSelected()}
+          onShowCurlModal={() => setShowCurlModal(true)}
+          onSetFragments={setFragments}
+          onSetStatus={setStatus}
+          onSeedFromScript={handleSeedFromScript}
+          onPlanFragmentsWithLlm={planFragmentsWithLlm}
+        />
 
         <EpisodeEditSidePane
           fragments={fragments}
@@ -1928,124 +1130,20 @@ function EpisodeEditInner() {
         </div>
       </div>
 
-      <footer className="drama-ep-storyboard">
-        <div className="drama-ep-storyboard-row">
-          <button
-            type="button"
-            className="drama-ep-insert"
-            title={t('drama.episodeEdit.insertAtTop')}
-            aria-label={t('drama.episodeEdit.insertAtTop')}
-            onClick={() => insertFrag(0)}
-          >
-            +
-          </button>
-          {fragments.map((frag, index) => {
-            const genInfo = readFragmentGenerationStatus(frag)
-            const fragStatus = genInfo.status
-            const activeVideoTask = (episode?.active_tasks || []).find(
-              (task) =>
-                task.task_type === 'fragment_video' &&
-                task.fragment_id === frag.id &&
-                !task.cancel_requested &&
-                ['pending', 'leased', 'running', 'awaiting_poll', 'awaiting_review'].includes(
-                  task.status,
-                ),
-            )
-            // Trạng thái cuối cùng được ưu tiên; nó sẽ chỉ bị ghi đè bởi trạng thái tác vụ nền tảng khi nó đang được thực hiện (để tránh việc hoàn thành vẫn bị flash khi được tạo bởi tác vụ zombie)
-            const displayStatus =
-              fragStatus === 'done' ||
-              fragStatus === 'failed' ||
-              fragStatus === 'cancelled'
-                ? fragStatus
-                : activeVideoTask
-                  ? activeVideoTask.status === 'pending' || activeVideoTask.status === 'leased'
-                    ? 'queued'
-                    : 'running'
-                  : fragStatus
-            const fragBusy =
-              Boolean(frag.id && generatingIds.has(frag.id)) &&
-              displayStatus !== 'done' &&
-              displayStatus !== 'failed' &&
-              displayStatus !== 'cancelled'
-            const badge = fragmentQueueBadgeLabel(displayStatus, t)
-            const clipVideo = frag.video ? resolveDramaMediaUrl(frag.video) : ''
-            const clipCover = frag.cover ? resolveDramaMediaUrl(frag.cover) : ''
-            const showFailHint = displayStatus === 'failed' && !fragBusy
-            const fragParams =
-              frag.params && typeof frag.params === 'object' && !Array.isArray(frag.params)
-                ? (frag.params as Record<string, unknown>)
-                : {}
-            return (
-            <div key={`${frag.id}-${index}`} className="drama-ep-clip-wrap">
-              <div
-                className={`drama-ep-clip-shell ${selectedIndex === index ? 'active' : ''}${
-                  fragBusy ? ' is-generating' : ''
-                }${displayStatus === 'queued' ? ' is-queued' : ''}${
-                  displayStatus === 'failed' ? ' is-failed' : ''
-                }`}
-              >
-                <button
-                  type="button"
-                  className="drama-ep-clip"
-                  onClick={() => setSelectedIndex(index)}
-                >
-                  {clipCover ? (
-                    <img src={clipCover} alt="" />
-                  ) : clipVideo ? (
-                    <video src={clipVideo} muted />
-                  ) : (
-                    <span className="drama-ep-clip-empty">
-                      {fragBusy ? '…' : showFailHint ? (
-                        <CircleAlert size={22} strokeWidth={2} aria-hidden />
-                      ) : (
-                        '+'
-                      )}
-                    </span>
-                  )}
-                  {badge ? <span className="drama-ep-clip-badge">{badge}</span> : null}
-                  <em>
-                    {formatFragLabel(index, frag.duration_sec, t)}
-                    <DramaFragmentClipSpec
-                      fragmentParams={fragParams}
-                      episodeParams={episodeParams}
-                      projectParams={projectParams}
-                      videoUrl={clipVideo}
-                    />
-                  </em>
-                </button>
-                {showFailHint ? (
-                  <button
-                    type="button"
-                    className="drama-ep-clip-fail-btn"
-                    title={t('drama.episodeEdit.viewError')}
-                    aria-label={t('drama.episodeEdit.viewFragError').replace('{i}', String(index + 1))}
-                    onClick={() => openFragmentFailReason(frag, index)}
-                  >
-                    <CircleAlert size={14} strokeWidth={2.25} aria-hidden />
-                  </button>
-                ) : null}
-              </div>
-              <div className="drama-ep-clip-ops">
-                <button type="button" aria-label={t('drama.episodeEdit.insert')} onClick={() => insertFrag(index + 1)} disabled={busy}>
-                  +
-                </button>
-                <button type="button" aria-label={t('common.copy')} onClick={() => duplicateFrag(index)} disabled={busy}>
-                  ⧉
-                </button>
-                <button
-                  type="button"
-                  aria-label={t('common.delete')}
-                  disabled={busy || fragments.length <= 1}
-                  onClick={() => deleteFrag(index)}
-                >
-                  ⌫
-                </button>
-              </div>
-            </div>
-            )
-          })}
-        </div>
-      </footer>
+      <EpisodeStoryboardFooter
+        fragments={fragments}
+        selectedIndex={selectedIndex}
+        generatingIds={generatingIds}
+        activeTasks={episode?.active_tasks}
+        busy={busy}
+        episodeParams={episodeParams}
+        projectParams={projectParams}
+        onSelectIndex={setSelectedIndex}
+        onInsertFrag={insertFrag}
+        onDuplicateFrag={duplicateFrag}
+        onDeleteFrag={deleteFrag}
+        onOpenFailReason={openFragmentFailReason}
+      />
 
       <FragmentPlanSkillModal
         open={planModalOpen}

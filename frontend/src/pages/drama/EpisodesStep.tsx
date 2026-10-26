@@ -42,7 +42,9 @@ function readPlanStatus(ep: DramaEpisode): string {
 
 // Tóm tắt cốt truyện từng tập và tiến trình video
 function summarizeEpisode(ep: DramaEpisode): EpisodeSummary {
-  const frags = ep.fragments || []
+  const frags = (ep.fragments || []).filter(
+    (f) => Boolean((f.content || '').trim() || (f.video || '').trim() || (f.cover || '').trim()),
+  )
   const activeFragmentIds = new Set<number>()
   for (const task of ep.active_tasks || []) {
     if (

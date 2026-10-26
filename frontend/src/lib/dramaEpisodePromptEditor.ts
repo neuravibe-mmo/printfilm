@@ -5,6 +5,91 @@ export type DramaMentionChipData = {
   previewUrl: string | null
 }
 
+export type CharacterPalette = {
+  theme: string
+  bg: string
+  border: string
+  text: string
+  avatarBorder: string
+  fallbackBg: string
+}
+
+export const CHARACTER_PALETTES: CharacterPalette[] = [
+  {
+    theme: 'blue',
+    bg: 'rgba(59, 130, 246, 0.09)',
+    border: 'rgba(59, 130, 246, 0.35)',
+    text: '#1d4ed8',
+    avatarBorder: '#3b82f6',
+    fallbackBg: '#dbeafe',
+  },
+  {
+    theme: 'rose',
+    bg: 'rgba(225, 29, 72, 0.09)',
+    border: 'rgba(225, 29, 72, 0.35)',
+    text: '#be123c',
+    avatarBorder: '#f43f5e',
+    fallbackBg: '#ffe4e6',
+  },
+  {
+    theme: 'emerald',
+    bg: 'rgba(16, 185, 129, 0.09)',
+    border: 'rgba(16, 185, 129, 0.35)',
+    text: '#047857',
+    avatarBorder: '#10b981',
+    fallbackBg: '#d1fae5',
+  },
+  {
+    theme: 'amber',
+    bg: 'rgba(217, 119, 6, 0.09)',
+    border: 'rgba(217, 119, 6, 0.35)',
+    text: '#b45309',
+    avatarBorder: '#f59e0b',
+    fallbackBg: '#fef3c7',
+  },
+  {
+    theme: 'purple',
+    bg: 'rgba(147, 51, 234, 0.09)',
+    border: 'rgba(147, 51, 234, 0.35)',
+    text: '#7e22ce',
+    avatarBorder: '#a855f7',
+    fallbackBg: '#f3e8ff',
+  },
+  {
+    theme: 'teal',
+    bg: 'rgba(13, 148, 136, 0.09)',
+    border: 'rgba(13, 148, 136, 0.35)',
+    text: '#0f766e',
+    avatarBorder: '#14b8a6',
+    fallbackBg: '#ccfbf1',
+  },
+  {
+    theme: 'indigo',
+    bg: 'rgba(79, 70, 229, 0.09)',
+    border: 'rgba(79, 70, 229, 0.35)',
+    text: '#4338ca',
+    avatarBorder: '#6366f1',
+    fallbackBg: '#e0e7ff',
+  },
+  {
+    theme: 'orange',
+    bg: 'rgba(234, 88, 12, 0.09)',
+    border: 'rgba(234, 88, 12, 0.35)',
+    text: '#c2410c',
+    avatarBorder: '#f97316',
+    fallbackBg: '#ffedd5',
+  },
+]
+
+export function getCharacterPalette(identifier: string | number): CharacterPalette {
+  let hash = 0
+  const str = String(identifier || '')
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+  }
+  return CHARACTER_PALETTES[hash % CHARACTER_PALETTES.length]
+}
+
 export const DURATION_CHIP_SELECTOR = '[data-duration-sec]'
 export const MENTION_CHIP_SELECTOR = "[data-mention='true']"
 export const CONTENT_TOKEN_PATTERN = /@(asset:\d+|duration:\d+)/g
@@ -226,6 +311,14 @@ export function createMentionChipElement(chip: DramaMentionChipData) {
   chipEl.dataset.mention = 'true'
   chipEl.dataset.assetId = String(chip.assetId)
 
+  const palette = getCharacterPalette(chip.label || chip.assetId)
+  chipEl.dataset.palette = palette.theme
+  chipEl.style.setProperty('--chip-bg', palette.bg)
+  chipEl.style.setProperty('--chip-border', palette.border)
+  chipEl.style.setProperty('--chip-text', palette.text)
+  chipEl.style.setProperty('--chip-avatar-border', palette.avatarBorder)
+  chipEl.style.setProperty('--chip-fallback-bg', palette.fallbackBg)
+
   const thumbEl = document.createElement('span')
   thumbEl.className = 'drama-ep-mention-chip-thumb'
   if (chip.previewUrl) {
@@ -236,7 +329,7 @@ export function createMentionChipElement(chip: DramaMentionChipData) {
     thumbEl.appendChild(image)
   } else {
     thumbEl.className += ' is-fallback'
-    thumbEl.textContent = chip.label[0] || '资'
+    thumbEl.textContent = chip.label[0] || '?'
   }
   chipEl.appendChild(thumbEl)
 

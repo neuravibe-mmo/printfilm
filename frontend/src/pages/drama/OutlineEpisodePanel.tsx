@@ -346,13 +346,16 @@ export function OutlineEpisodePanel({
           const frags = [...(ep.fragments || [])].sort(
             (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
           )
-          if (frags.length > 0) {
-            const totalSec = frags.reduce((sum, f) => {
+          const meaningfulFrags = frags.filter(
+            (f) => Boolean((f.content || '').trim() || (f.video || '').trim() || (f.cover || '').trim()),
+          )
+          if (meaningfulFrags.length > 0) {
+            const totalSec = meaningfulFrags.reduce((sum, f) => {
               const stored = Number(f.duration_sec)
               if (Number.isFinite(stored) && stored > 0) return sum + Math.round(stored)
               return sum + sumFragmentContentDuration(f.content || '')
             }, 0)
-            shotMap[epNo] = { fragmentCount: frags.length, totalSec }
+            shotMap[epNo] = { fragmentCount: meaningfulFrags.length, totalSec }
           }
           const first = frags.find((f) => (f.cover || '').trim() || (f.video || '').trim())
           if (!first) continue
@@ -619,12 +622,15 @@ export function OutlineEpisodePanel({
     setLocalError('')
     setConfirming(true)
     try {
-      // Tập này đã được dựng storyboard: vào trực tiếp không cần chơi Skill/cắt lại
+      // Tập này đã được dựng storyboard: vào trực tiếp không cần chơi Skill/cắt lại nếu đã có phân cảnh thực sự
       const rows = await dramaApi.listEpisodes(projectId)
       const existing = rows.find(
         (ep) => Number(ep.params?.episodeNumber) === Number(selected.episodeNumber),
       )
-      if (existing && (existing.fragments || []).length > 0) {
+      const hasMeaningfulFragments = (existing?.fragments || []).some(
+        (f) => Boolean((f.content || '').trim() || (f.video || '').trim() || (f.cover || '').trim()),
+      )
+      if (existing && hasMeaningfulFragments) {
         navigate(`/drama/projects/${projectId}/episodes/${existing.id}`)
         return
       }
