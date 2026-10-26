@@ -178,6 +178,8 @@ export const viDrama = {
       projectNum: 'Dự án #{id}',
       voiceGenerated: 'Đã tạo giọng',
       voiceNotGenerated: 'Chưa tạo giọng',
+      voiceShort: 'Có giọng',
+      noVoiceShort: 'Chưa có giọng',
       noAvailableImage: 'Tài nguyên đã chọn không có hình ảnh khả dụng',
     },
     // Episodes
@@ -185,6 +187,7 @@ export const viDrama = {
       title: 'Tập phim',
       newEpisode: 'Thêm tập mới',
       episode: 'Tập {n}',
+      episodeFallback: 'Tập {id}',
       episodeTitle: 'Tiêu đề tập',
       generating: 'Đang tạo…',
       generateEpisode: 'Tạo tập này',
@@ -250,6 +253,7 @@ export const viDrama = {
     // Episode edit page
     episodeEdit: {
       fragmentPrefix: 'Phân cảnh',
+      scriptLabel: 'Nội dung kịch bản phân cảnh',
       scriptPlaceholder: 'Nhập mô tả cảnh, lời thoại, lời dẫn; gõ @ để chèn tài nguyên hoặc thời lượng…',
       convertCuesToVi: 'Chuyển thẻ sang Tiếng Việt',
       convertAllCuesToVi: 'Chuyển toàn bộ thẻ sang Tiếng Việt',
@@ -310,7 +314,7 @@ export const viDrama = {
       videoModelLabel: 'Mô hình video',
       // continuity
       noPrevFrame: 'Thiếu cảnh trước, không thể nối',
-      waitPrevFrame: 'Vui lòng tạo cảnh trước và chờ khung cuối sẵn sàng',
+      waitPrevFrame: 'Vui lòng tạo cảnh trước và chờ khung cuối sẵn sàng. Hệ thống sẽ tự lấy khung hình cuối cùng của video {prev} làm điểm bắt đầu cho Phân cảnh {curr}. Kết quả là 2 video nối vào nhau sẽ liền mạch 100%, không bị nhảy hình hay đổi góc đột ngột',
       prevQueueing: 'Cảnh trước đang tạo, cảnh này sẽ xếp hàng chờ cảnh trước hoàn thành',
       tailEnabled: 'Đã bật nối khung cuối: tác vụ chưa bắt đầu đã chuyển sang xếp hàng theo thứ tự cảnh, tác vụ đang chạy không bị ảnh hưởng',
       tailDisabled: 'Đã tắt nối khung cuối: tác vụ chưa bắt đầu đã được khôi phục và có thể tạo song song, tác vụ đang chạy không bị ảnh hưởng',
@@ -702,6 +706,7 @@ export const viDrama = {
       title: 'Canvas tự do',
       freeCanvas: 'Canvas tự do',
       assetCanvas: 'Canvas tài sản',
+      nodeName: 'Tên node',
       storyboardTitle: 'Bảng phân cảnh',
       shotCount: '{n} cảnh',
       unsaved: 'Chưa lưu',

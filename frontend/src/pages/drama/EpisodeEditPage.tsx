@@ -318,7 +318,11 @@ function EpisodeEditInner() {
       readFragmentGenerationStatus(prev).status === 'done' ||
       Boolean(prevLastFrameUrl)
     if (!prevDone) {
+      const prevNum = String(selectedIndex).padStart(2, '0')
+      const currNum = String(selectedIndex + 1).padStart(2, '0')
       return t('drama.episodeEdit.waitPrevFrame')
+        .replace('{prev}', prevNum)
+        .replace('{curr}', currNum)
     }
     return ''
   }, [linkLastFrame, selectedIndex, fragments, generatingIds, prevLastFrameUrl])
