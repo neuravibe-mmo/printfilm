@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
@@ -20,8 +21,11 @@ from app.schemas_drama import (
     DramaAssetCreate,
     DramaAssetOut,
     DramaAssetUpdate,
+    DramaDetectAssetsRequest,
+    DramaDetectAssetsResponse,
     SeedAssetsFromScriptOut,
 )
+from app.services.drama.detect_assets_llm import detect_assets_with_llm
 from app.services.drama.access import get_owned_drama_project
 from app.services.billing import run_billed_ephemeral
 from app.services.billing.http import http_exception_for_value_error
@@ -459,3 +463,49 @@ async def seed_assets(
         llm_errors=result.llm_errors,
         status="done",
     )
+
+
+@router.post("/assets/detect", response_model=DramaDetectAssetsResponse)
+async def detect_fragment_assets(
+    body: DramaDetectAssetsRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> DramaDetectAssetsResponse:
+    """Gửi nội dung phân cảnh và danh sách ứng viên trong Kho tài sản lên AI để nhận diện các mục xuất hiện."""
+    candidates: list[dict[str, Any]] = []
+    if body.candidate_assets:
+        candidates = [c.model_dump() for c in body.candidate_assets]
+    elif body.project_id:
+        await get_owned_drama_project(db, body.project_id, user)
+        stmt = select(DramaAsset).where(DramaAsset.project_id == body.project_id)
+        if body.asset_type and body.asset_type != "all":
+            stmt = stmt.where(DramaAsset.type == body.asset_type)
+        assets = list((await db.execute(stmt)).scalars().all())
+        for a in assets:
+            p = a.params or {}
+            intro = ""
+            aliases: list[str] = []
+            if isinstance(p, dict):
+                intro = str(p.get("intro") or p.get("visualPrompt") or p.get("prompt") or "")
+                if p.get("alias"):
+                    aliases.append(str(p.get("alias")))
+                if isinstance(p.get("aliases"), list):
+                    aliases.extend(str(x) for x in p.get("aliases"))
+            candidates.append({
+                "id": a.id,
+                "name": a.name or "",
+                "type": a.type,
+                "intro": intro,
+                "aliases": aliases,
+            })
+
+    result = await detect_assets_with_llm(
+        content=body.content,
+        candidate_assets=candidates,
+        asset_type=body.asset_type,
+    )
+    return DramaDetectAssetsResponse(
+        detected_ids=result.get("detected_ids", []),
+        detected_names=result.get("detected_names", []),
+    )
+

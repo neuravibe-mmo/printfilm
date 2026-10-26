@@ -315,3 +315,24 @@ class DramaChatRequest(BaseModel):
 
 class DramaRouteRequest(BaseModel):
     message: str
+
+
+class DramaDetectCandidateAsset(BaseModel):
+    id: int
+    name: str
+    type: str = "character"
+    intro: str | None = None
+    aliases: list[str] = Field(default_factory=list)
+
+
+class DramaDetectAssetsRequest(BaseModel):
+    content: str
+    asset_type: str = "character"
+    candidate_assets: list[DramaDetectCandidateAsset] = Field(default_factory=list)
+    project_id: int | None = None
+
+
+class DramaDetectAssetsResponse(BaseModel):
+    detected_ids: list[int] = Field(default_factory=list)
+    detected_names: list[str] = Field(default_factory=list)
+

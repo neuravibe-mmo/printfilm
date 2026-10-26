@@ -389,6 +389,25 @@ export const dramaApi = {
       message: result?.message ?? null,
     }
   },
+  detectAssets: (body: {
+    content: string
+    asset_type?: string
+    candidate_assets?: Array<{
+      id: number
+      name: string
+      type: string
+      intro?: string
+      aliases?: string[]
+    }>
+    project_id?: number
+  }) =>
+    request<{
+      detected_ids: number[]
+      detected_names: string[]
+    }>('/api/drama/assets/detect', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   listEpisodes: (projectId: number) =>
     request<DramaEpisode[]>(`/api/drama/episodes?project_id=${projectId}`),

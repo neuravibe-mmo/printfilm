@@ -12,6 +12,7 @@ import {
 } from './dramaEpisodePromptEditor'
 import { extractDurations, sumDuration } from './segmentDuration'
 import { DRAMA_VOICE_BINDING_ENABLED } from './dramaVoiceBinding'
+import { getActiveLocale } from '../i18n'
 
 /** Tín hiệu phụ đề truyện tranh (phù hợp với phần phụ trợ DRAMA_SUBTITLE_CUE) */
 export const DRAMA_SUBTITLE_CUE = '【字幕：底部居中·简体中文·逐句轮换·与口播同步】'
@@ -237,17 +238,30 @@ export function validateDramaFragmentAssets(
     }
   }
 
+  const isVi = getActiveLocale() === 'vi'
+  const isEn = getActiveLocale() === 'en'
+
   if (missingImage.length > 0) {
+    const list = missingImage.slice(0, 5).join(isVi || isEn ? ', ' : '、') + (missingImage.length > 5 ? '…' : '')
     issues.push({
       level: 'warn',
-      message: `以下资产缺少参考图，生成时可能自动补图或效果不稳定：${missingImage.slice(0, 5).join('、')}${missingImage.length > 5 ? '…' : ''}`,
+      message: isVi
+        ? `Các tài sản sau thiếu ảnh tham chiếu, khi tạo có thể bị tạo tự động hoặc không ổn định: ${list}`
+        : isEn
+        ? `The following assets lack reference images: ${list}`
+        : `以下资产缺少参考图，生成时可能自动补图或效果不稳定：${list}`,
     })
   }
 
   if (missingVoice.length > 0) {
+    const list = missingVoice.slice(0, 5).join(isVi || isEn ? ', ' : '、') + (missingVoice.length > 5 ? '…' : '')
     issues.push({
       level: 'warn',
-      message: `脚本含对白，但以下角色尚未绑定音色：${missingVoice.slice(0, 5).join('、')}${missingVoice.length > 5 ? '…' : ''}`,
+      message: isVi
+        ? `Kịch bản có lời thoại, nhưng các nhân vật sau chưa được liên kết giọng đọc: ${list}`
+        : isEn
+        ? `Script contains dialogue, but the following characters have not been bound to a voice: ${list}`
+        : `脚本含对白，但以下角色尚未绑定音色：${list}`,
     })
   }
 

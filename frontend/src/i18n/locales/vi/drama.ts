@@ -541,6 +541,10 @@ export const viDrama = {
       autoDetectScenes: 'Auto detect cảnh quay',
       autoDetectProps: 'Auto detect đạo cụ',
       autoDetectTip: 'Tự động quét nội dung phân cảnh và liên kết nhân vật từ Kho tài sản',
+      autoDetecting: 'Đang detect...',
+      newCharacterTip: 'Sau khi thêm nhân vật mới thành công, nhân vật sẽ được bổ sung vào Kho tài sản. Bạn có thể sửa nội dung của phân cảnh để thêm nhân vật mới này vào.',
+      newSceneTip: 'Sau khi thêm cảnh quay mới thành công, cảnh quay sẽ được bổ sung vào Kho tài sản. Bạn có thể sửa nội dung của phân cảnh để thêm cảnh quay mới này vào.',
+      newPropTip: 'Sau khi thêm đạo cụ mới thành công, đạo cụ sẽ được bổ sung vào Kho tài sản. Bạn có thể sửa nội dung của phân cảnh để thêm đạo cụ mới này vào.',
     },
     genQueue: {
       assetPrefix: 'Tài sản',

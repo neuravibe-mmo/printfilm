@@ -1,6 +1,6 @@
 /** Biên tập tập: Cột nội dung bên trái (tập này/tập đầy đủ + thẻ danh mục) */
 import { useI18n } from '../../i18n'
-import { Workflow } from 'lucide-react'
+import { Workflow, Loader2 } from 'lucide-react'
 import { resolveDramaAssetPreviewUrl, type DramaAsset } from '../../api/drama'
 import { CharacterVoicePreviewButton } from '../../components/drama/CharacterVoicePreviewButton'
 import { readAssetVoiceBinding } from './CharacterVoiceBindModal'
@@ -70,6 +70,11 @@ export function EpisodeEditAssetPanel({
     if (tab === 'prop') return t('drama.mention.newProp')
     return t('drama.mention.newCharacter')
   }
+  const createTooltip = (tab: AssetTab | null): string => {
+    if (tab === 'scene') return t('drama.mention.newSceneTip')
+    if (tab === 'prop') return t('drama.mention.newPropTip')
+    return t('drama.mention.newCharacterTip')
+  }
   const detectLabel = (tab: AssetTab | null): string => {
     if (tab === 'scene') return t('drama.mention.autoDetectScenes')
     if (tab === 'prop') return t('drama.mention.autoDetectProps')
@@ -130,6 +135,7 @@ export function EpisodeEditAssetPanel({
               className="drama-ep-asset-action-btn"
               disabled={createBusy || detectBusy}
               onClick={onCreateAsset}
+              title={createTooltip(tab)}
             >
               {createBusy ? t('common.creating') : createLabel(tab)}
             </button>
@@ -152,7 +158,17 @@ export function EpisodeEditAssetPanel({
               onClick={onAutoDetect}
               title={t('drama.mention.autoDetectTip')}
             >
-              ✨ {detectLabel(tab)}
+              {detectBusy ? (
+                <>
+                  <Loader2 size={15} className="drama-ep-detect-spin" />
+                  <span>{t('drama.mention.autoDetecting')}</span>
+                </>
+              ) : (
+                <>
+                  <span>✨</span>
+                  <span>{detectLabel(tab)}</span>
+                </>
+              )}
             </button>
           ) : null}
         </div>

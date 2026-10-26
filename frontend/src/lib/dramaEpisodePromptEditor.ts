@@ -188,11 +188,32 @@ function placeCaretAndRemoveChip(
   selection.addRange(caretRange)
 }
 
+// Nối đoạn văn bản có hỗ trợ định dạng in đậm **text**
+function appendFormattedText(root: HTMLElement, text: string) {
+  const boldRegex = /\*\*([^*]+)\*\*/g
+  let last = 0
+  let m: RegExpExecArray | null
+  while ((m = boldRegex.exec(text)) !== null) {
+    if (m.index > last) {
+      root.appendChild(document.createTextNode(text.slice(last, m.index)))
+    }
+    const strong = document.createElement('strong')
+    strong.className = 'drama-ep-character-highlight'
+    strong.dataset.bold = 'true'
+    strong.textContent = m[1]
+    root.appendChild(strong)
+    last = m.index + m[0].length
+  }
+  if (last < text.length) {
+    root.appendChild(document.createTextNode(text.slice(last)))
+  }
+}
+
 // Nối văn bản có ngắt dòng dưới dạng Text + <br>
 function appendTextWithLineBreaks(root: HTMLElement, text: string) {
   const parts = text.split('\n')
   parts.forEach((part, index) => {
-    if (part) root.appendChild(document.createTextNode(part))
+    if (part) appendFormattedText(root, part)
     if (index < parts.length - 1) root.appendChild(document.createElement('br'))
   })
 }
@@ -323,6 +344,20 @@ export function serializePromptEditorContent(root: HTMLElement) {
     const element = node as HTMLElement
     if (element.tagName === 'BR') {
       result += '\n'
+      return
+    }
+    if (element.tagName === 'STRONG' || element.tagName === 'B' || element.dataset.bold === 'true') {
+      let inner = ''
+      element.childNodes.forEach((child) => {
+        if (child.nodeType === Node.TEXT_NODE) {
+          inner += child.textContent ?? ''
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          const el = child as HTMLElement
+          if (el.tagName === 'BR') inner += '\n'
+          else inner += el.textContent ?? ''
+        }
+      })
+      if (inner) result += `**${inner}**`
       return
     }
     if (element.dataset.mention === 'true' && element.dataset.durationSec) {

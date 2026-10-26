@@ -931,7 +931,11 @@ export const enDrama = {
             "autoDetectCharacters": "Auto-detect Characters",
             "autoDetectScenes": "Auto-detect Scenes",
             "autoDetectProps": "Auto-detect Props",
-            "autoDetectTip": "Automatically scan scene text and link characters from Asset Library"
+            "autoDetectTip": "Automatically scan scene text and link characters from Asset Library",
+            "autoDetecting": "Detecting...",
+            "newCharacterTip": "After successfully adding a new character, it will be added to the Asset Library. You can edit the scene script to add this new character.",
+            "newSceneTip": "After successfully adding a new scene, it will be added to the Asset Library. You can edit the scene script to add this new scene.",
+            "newPropTip": "After successfully adding a new prop, it will be added to the Asset Library. You can edit the scene script to add this new prop."
         },
         "genQueue": {
             "assetPrefix": "Asset",

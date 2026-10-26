@@ -566,6 +566,10 @@ export const zhDrama = {
       autoDetectScenes: '自动识别场景',
       autoDetectProps: '自动识别道具',
       autoDetectTip: '自动扫描当前分镜文本并关联资产库中的角色',
+      autoDetecting: '正在识别...',
+      newCharacterTip: '成功添加新角色后，角色将被添加到资产库中。您可以修改当前分镜内容以添加此新角色。',
+      newSceneTip: '成功添加新场景后，场景将被添加到资产库中。您可以修改当前分镜内容以添加此新场景。',
+      newPropTip: '成功添加新道具后，道具将被添加到资产库中。您可以修改当前分镜内容以添加此新道具。',
     },
     genQueue: {
       assetPrefix: '资产',

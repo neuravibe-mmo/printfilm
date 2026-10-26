@@ -13,12 +13,12 @@ import {
   RATIO_OPTIONS,
   buildFragmentRefStripItems,
   collectFragmentAssetIds,
-  detectAssetsInContent,
   extractAssetIds,
   filterEpisodeAssets,
   formatFragLabel,
   fragmentQueueBadgeLabel,
   getAssetTabLabel,
+  highlightCharacterNamesInContent,
   isFragmentGenerationBusy,
   normalizeAssetTab,
   readFragmentGenerationStatus,
@@ -1292,10 +1292,15 @@ function EpisodeEditInner() {
     )
   }
 
-  // Tự động nhận diện các nhân vật/tài sản từ Kho tài sản xuất hiện trong phân cảnh hiện tại
+  // Tự động nhận diện tài sản (nhân vật / cảnh / đạo cụ) từ nội dung phân cảnh thông qua AI
   async function handleAutoDetectAssets() {
     if (!selected) {
       setError(t('drama.episodeEdit.selectFragmentFirst'))
+      return
+    }
+    const content = (selected.content || '').trim()
+    if (!content) {
+      setError('Phân cảnh chưa có nội dung để AI nhận diện.')
       return
     }
     const currentTab = assetTab || 'character'
@@ -1310,23 +1315,60 @@ function EpisodeEditInner() {
     setDetectBusy(true)
     setError('')
     try {
-      const detected = detectAssetsInContent(selected.content || '', pool)
+      const candidates = pool.map((a) => {
+        const p = (a.params || {}) as Record<string, unknown>
+        const intro = String(p.intro || p.visualPrompt || p.prompt || '')
+        const aliases: string[] = []
+        if (typeof p.alias === 'string') aliases.push(p.alias)
+        if (Array.isArray(p.aliases)) aliases.push(...p.aliases.map(String))
+        if (typeof p.nickname === 'string') aliases.push(p.nickname)
+        return {
+          id: a.id,
+          name: a.name || '',
+          type: a.type || 'character',
+          intro,
+          aliases,
+        }
+      })
+
+      const res = await dramaApi.detectAssets({
+        content,
+        asset_type: targetKind,
+        candidate_assets: candidates,
+        project_id: pid,
+      })
+
+      const detectedIds = res.detected_ids || []
+      const detected = pool.filter((a) => detectedIds.includes(a.id))
       const kindLabel = getAssetTabLabel(currentTab)
       if (detected.length === 0) {
         setStatus(t('drama.episodeEdit.noDetectedAssets').replace('{kind}', kindLabel))
         return
       }
 
-      const detectedIds = detected.map((a) => a.id)
       const existingIds = selected.asset_ids || []
       const newIds = detectedIds.filter((id) => !existingIds.includes(id))
 
-      let nextContent = selected.content || ''
-      for (const id of detectedIds) {
-        if (!new RegExp(`@asset:${id}(?!\\d)`).test(nextContent)) {
-          nextContent = `${nextContent.trimEnd()}\n@asset:${id}`
-        }
+      // Dọn dẹp các thẻ @asset:ID bị tự động nối ở cuối nội dung trước đó (nếu có)
+      let nextContent = (selected.content || '').replace(/(?:\s*@asset:\d+\s*)+$/g, '').trimEnd()
+
+
+      // Lấy danh sách tên và bí danh của nhân vật đã phát hiện để in đậm (highlight)
+      const detectedNames: string[] = []
+      for (const a of detected) {
+        if (a.name) detectedNames.push(a.name)
+        const p = (a.params || {}) as Record<string, unknown>
+        if (typeof p.alias === 'string') detectedNames.push(p.alias)
+        if (Array.isArray(p.aliases)) detectedNames.push(...p.aliases.map(String))
+        if (typeof p.nickname === 'string') detectedNames.push(p.nickname)
       }
+      if (Array.isArray(res.detected_names)) {
+        detectedNames.push(...res.detected_names)
+      }
+
+      // In đậm tên các nhân vật xuất hiện trong nội dung phân cảnh
+      nextContent = highlightCharacterNamesInContent(nextContent, detectedNames)
+
       const mergedIds = Array.from(new Set([...existingIds, ...detectedIds]))
 
       const nextFragments = fragments.map((f, i) =>
@@ -1351,6 +1393,8 @@ function EpisodeEditInner() {
             .replace('{names}', names),
         )
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lỗi khi gọi AI nhận diện nhân vật')
     } finally {
       setDetectBusy(false)
     }

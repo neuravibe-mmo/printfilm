@@ -893,7 +893,7 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
                 <div className="drama-asset-placeholder">{asset.type || 'asset'}</div>
               )}
               <h3>{asset.name || t('common.unnamed')}</h3>
-              <p>
+              <p className="drama-asset-card-type">
                 {asset.type}
                 {isCharacter && voice ? ` · ${voice.label}` : ''}
               </p>
