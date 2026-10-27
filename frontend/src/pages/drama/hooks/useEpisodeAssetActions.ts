@@ -219,7 +219,7 @@ export function useEpisodeAssetActions({
       }
     }
     const pool = (assets ?? []).filter((a) => (a.type || '').toLowerCase() === targetKind)
-    if (targetKind !== 'scene' && pool.length === 0) {
+    if (targetKind === 'character' && pool.length === 0) {
       const kindLabel = getAssetTabLabel(currentTab)
       setStatus(t('drama.episodeEdit.noAssetsInLibrary').replace('{kind}', kindLabel))
       return
@@ -305,36 +305,70 @@ export function useEpisodeAssetActions({
       }
 
       const names = detected.map((a) => a.name || `ID ${a.id}`).join(', ')
-      const scenesToGen =
-        targetKind === 'scene'
+      const assetsToGen =
+        targetKind === 'scene' || targetKind === 'prop'
           ? detected.filter((s) => !dramaAssetHasImage(s) && !imageBusyIds.has(s.id))
           : []
 
       if (res.created_assets && res.created_assets.length > 0) {
-        setStatus(
-          scenesToGen.length > 0
-            ? `Đã trích xuất & thêm bối cảnh mới "${names}" vào kho tài sản, đang tự động tạo ảnh cảnh quay…`
-            : `Đã trích xuất & thêm bối cảnh mới "${names}" vào kho tài sản và liên kết với phân cảnh.`,
-        )
+        if (targetKind === 'scene') {
+          setStatus(
+            assetsToGen.length > 0
+              ? `Đã trích xuất & thêm bối cảnh mới "${names}" vào kho tài sản, đang tự động tạo ảnh cảnh quay…`
+              : `Đã trích xuất & thêm bối cảnh mới "${names}" vào kho tài sản và liên kết với phân cảnh.`,
+          )
+        } else if (targetKind === 'prop') {
+          setStatus(
+            assetsToGen.length > 0
+              ? `Đã phát hiện & thêm đạo cụ mới "${names}" vào kho, đang tự động tạo ảnh đạo cụ…`
+              : `Đã phát hiện & thêm đạo cụ mới "${names}" vào kho và liên kết với phân cảnh.`,
+          )
+        } else {
+          setStatus(`Đã thêm mới và liên kết "${names}".`)
+        }
       } else if (newIds.length === 0) {
-        setStatus(
-          scenesToGen.length > 0
-            ? `Bối cảnh "${names}" đã liên kết, đang tự động tạo ảnh cảnh quay…`
-            : t('drama.episodeEdit.detectedAlreadyLinked').replace('{names}', names),
-        )
+        if (targetKind === 'scene') {
+          setStatus(
+            assetsToGen.length > 0
+              ? `Bối cảnh "${names}" đã liên kết, đang tự động tạo ảnh cảnh quay…`
+              : t('drama.episodeEdit.detectedAlreadyLinked').replace('{names}', names),
+          )
+        } else if (targetKind === 'prop') {
+          setStatus(
+            assetsToGen.length > 0
+              ? `Đạo cụ "${names}" đã có trong kho và đã liên kết, đang tự động tạo ảnh đạo cụ…`
+              : `Đạo cụ "${names}" đã có trong kho và đã được liên kết với phân cảnh.`,
+          )
+        } else {
+          setStatus(t('drama.episodeEdit.detectedAlreadyLinked').replace('{names}', names))
+        }
       } else {
-        setStatus(
-          scenesToGen.length > 0
-            ? `Đã liên kết cảnh quay "${names}", đang tự động tạo ảnh cảnh quay…`
-            : t('drama.episodeEdit.detectedSuccess')
-                .replace('{n}', String(newIds.length))
-                .replace('{names}', names),
-        )
+        if (targetKind === 'scene') {
+          setStatus(
+            assetsToGen.length > 0
+              ? `Đã liên kết cảnh quay "${names}", đang tự động tạo ảnh cảnh quay…`
+              : t('drama.episodeEdit.detectedSuccess')
+                  .replace('{n}', String(newIds.length))
+                  .replace('{names}', names),
+          )
+        } else if (targetKind === 'prop') {
+          setStatus(
+            assetsToGen.length > 0
+              ? `Đã đối chiếu & liên kết đạo cụ "${names}" từ kho, đang tự động tạo ảnh…`
+              : `Đã đối chiếu & liên kết đạo cụ "${names}" từ kho tài sản.`,
+          )
+        } else {
+          setStatus(
+            t('drama.episodeEdit.detectedSuccess')
+              .replace('{n}', String(newIds.length))
+              .replace('{names}', names),
+          )
+        }
       }
 
-      // Tự động tạo ảnh cảnh quay nếu cảnh chưa có ảnh
-      for (const sceneAsset of scenesToGen) {
-        void enqueueAssetImage(sceneAsset, true)
+      // Tự động tạo ảnh nếu tài sản (scene/prop) chưa có ảnh
+      for (const assetToGen of assetsToGen) {
+        void enqueueAssetImage(assetToGen, true)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lỗi khi gọi AI nhận diện tài sản')

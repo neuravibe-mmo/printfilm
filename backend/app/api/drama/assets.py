@@ -27,6 +27,7 @@ from app.schemas_drama import (
 )
 from app.services.drama.detect_assets_llm import (
     detect_assets_with_llm,
+    detect_or_create_props_with_llm,
     detect_or_create_scene_with_llm,
 )
 from app.services.drama.seed_asset_params import build_named_image_params
@@ -661,6 +662,100 @@ async def detect_fragment_assets(
                 )
 
         return DramaDetectAssetsResponse(detected_ids=[], detected_names=[], created_assets=[])
+
+    # Xử lý riêng cho đạo cụ: nếu chưa có trong kho thì tự động tạo mới, nếu đã có thì đối chiếu và dùng lại
+    elif body.asset_type == "prop":
+        existing_props: list[DramaAsset] = []
+        if body.project_id:
+            await get_owned_drama_project(db, body.project_id, user)
+            stmt = select(DramaAsset).where(
+                DramaAsset.project_id == body.project_id,
+                DramaAsset.type == "prop",
+            )
+            existing_props = list((await db.execute(stmt)).scalars().all())
+
+        candidates: list[dict[str, Any]] = []
+        if body.candidate_assets:
+            candidates = [c.model_dump() for c in body.candidate_assets if c.type == "prop"]
+        if not candidates and existing_props:
+            for a in existing_props:
+                p = a.params or {}
+                intro = str(p.get("intro") or p.get("visualPrompt") or p.get("prompt") or "") if isinstance(p, dict) else ""
+                candidates.append({
+                    "id": a.id,
+                    "name": a.name or "",
+                    "type": "prop",
+                    "intro": intro,
+                })
+
+        prop_res = await detect_or_create_props_with_llm(
+            content=body.content,
+            candidate_props=candidates,
+        )
+
+        detected_ids: list[int] = []
+        detected_names: list[str] = []
+        created_assets: list[DramaAssetOut] = []
+
+        # 1. Các đạo cụ đã có sẵn trong kho
+        for mp in prop_res.get("matched_props", []):
+            mid = int(mp.get("id") or 0)
+            mname = str(mp.get("name") or "")
+            if mid and mid not in detected_ids:
+                detected_ids.append(mid)
+                detected_names.append(mname)
+
+        # 2. Các đạo cụ mới cần thêm vào kho
+        new_props_to_create = prop_res.get("new_props", [])
+        new_assets: list[DramaAsset] = []
+        if new_props_to_create and body.project_id:
+            for np in new_props_to_create:
+                norm_name = _normalize_asset_name(str(np.get("name") or ""))
+                if not norm_name:
+                    continue
+
+                # Đối chiếu lại với existing_props để tránh tạo trùng
+                matched_row = next(
+                    (s for s in existing_props if _normalize_asset_name(s.name or "").lower() == norm_name.lower()),
+                    None,
+                )
+                if matched_row:
+                    if matched_row.id not in detected_ids:
+                        detected_ids.append(matched_row.id)
+                        detected_names.append(str(matched_row.name or norm_name))
+                    continue
+
+                base_prompt = str(np.get("prompt") or "").strip()
+                if not base_prompt:
+                    base_prompt = f"Đạo cụ {norm_name}, vật phẩm điện ảnh chi tiết cao, chất liệu chân thực, chụp cận cảnh studio trên phông nền tối giản, ánh sáng nghệ thuật sắc nét, tỉ lệ 1:1."
+                if len(base_prompt) < 80:
+                    base_prompt = f"{base_prompt}. Thiết kế điện ảnh chi tiết cao, chất liệu tinh tế, ánh sáng studio sắc nét, tỉ lệ 1:1, chất lượng 4K Ultra HD."
+
+                created_asset = DramaAsset(
+                    project_id=body.project_id,
+                    type="prop",
+                    asset_type="image",
+                    name=norm_name,
+                    params=build_named_image_params(base_prompt, "1:1", kind="prop"),
+                )
+                db.add(created_asset)
+                existing_props.append(created_asset)
+                new_assets.append(created_asset)
+
+            if new_assets:
+                await db.commit()
+                for na in new_assets:
+                    await db.refresh(na)
+                    if na.id not in detected_ids:
+                        detected_ids.append(na.id)
+                        detected_names.append(na.name or "")
+                    created_assets.append(DramaAssetOut.model_validate(na))
+
+        return DramaDetectAssetsResponse(
+            detected_ids=detected_ids,
+            detected_names=detected_names,
+            created_assets=created_assets,
+        )
 
     candidates: list[dict[str, Any]] = []
     if body.candidate_assets:

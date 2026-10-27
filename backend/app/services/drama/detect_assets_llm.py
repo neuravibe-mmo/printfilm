@@ -343,3 +343,163 @@ async def detect_or_create_scene_with_llm(
         }
 
     return _fallback_scene_detect(cleaned_content, candidate_scenes)
+
+
+DETECT_PROPS_SYSTEM = """Bạn là trợ lý AI chuyên nghiệp phân tích kịch bản điện ảnh và phim ngắn.
+Nhiệm vụ của bạn là đọc kỹ nội dung phân cảnh và trích xuất TẤT CẢ các ĐẠO CỤ (props) xuất hiện, được nhân vật tương tác, cầm nắm, sử dụng hoặc đặc tả trong cảnh.
+
+Đạo cụ (props) bao gồm:
+- Các đồ vật, vật phẩm cụ thể: vũ khí (súng, kiếm, dao, cung...), đồ dùng cá nhân (điện thoại, chìa khóa, đồng hồ, ví tiền, nhẫn, kính mắt, gậy...), vật phẩm quan trọng (vali, túi xách, tài liệu, phong bì, chai rượu, chén trà, hộp quà, máy tính, đèn pin, búp bê, còng tay...), v.v.
+- KHÔNG phải đạo cụ: địa điểm/bối cảnh (phòng khách, nhà ga, đường phố...), nhân vật (người), hiện tượng thời tiết (mưa, tuyết, ánh nắng).
+
+Quy tắc đối chiếu với Kho tài sản:
+1. Bạn sẽ được cung cấp danh sách đạo cụ ĐÃ CÓ trong Kho tài sản của dự án (nếu có).
+2. Với mỗi đạo cụ phát hiện được trong phân cảnh:
+   - Nếu đạo cụ này tương đồng hoặc trùng khớp với một đạo cụ ĐÃ CÓ trong kho (ví dụ: "Chiếc điện thoại" vs "Điện thoại", "Khẩu súng ngắn" vs "Súng lục"), hãy CHỌN đạo cụ ĐÃ CÓ đó (trả về id và name trong danh sách matched_props).
+   - Nếu đạo cụ này CHƯA CÓ trong kho: hãy trích xuất đạo cụ MỚI trong danh sách new_props:
+     * name: Tên ngắn gọn của đạo cụ (1-4 từ, ví dụ "Vali da màu đen", "Chìa khóa cổ", "Điện thoại thông minh").
+     * prompt: Mô tả trực quan chi tiết về hình dáng, chất liệu, màu sắc, phong cách để vẽ ảnh chất lượng cao 1:1, chụp cận cảnh studio trên phông nền tối giản.
+3. Nếu phân cảnh không có bất kỳ đạo cụ nào, trả về matched_props: [], new_props: [].
+
+Trả về kết quả dưới định dạng JSON thuần túy (không kèm markdown):
+{
+  "matched_props": [
+    {"id": 12, "name": "Điện thoại"}
+  ],
+  "new_props": [
+    {
+      "name": "Vali da màu đen",
+      "prompt": "Vali da cao cấp màu đen, khóa kim loại sáng bóng, chi tiết sang trọng, ánh sáng studio nghệ thuật, chụp cận cảnh chi tiết, tỉ lệ vuông 1:1"
+    }
+  ]
+}
+"""
+
+
+def _fallback_prop_detect(
+    content: str,
+    candidate_props: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Phát hiện khẩn cấp dự phòng cho đạo cụ khi LLM không khả dụng."""
+    text = (content or "").strip()
+    if not text:
+        return {"matched_props": [], "new_props": []}
+
+    matched: list[dict[str, Any]] = []
+    matched_ids: set[int] = set()
+    text_lower = text.lower()
+
+    # 1. So khớp với các đạo cụ đã có trong kho
+    for c in candidate_props:
+        cid = int(c.get("id") or 0)
+        cname = str(c.get("name") or "").strip()
+        if not cname or cid in matched_ids:
+            continue
+        if re.search(rf"(?:\b|(?<=\W)){re.escape(cname.lower())}(?:\b|(?=\W))", text_lower):
+            matched.append({"id": cid, "name": cname})
+            matched_ids.add(cid)
+
+    # 2. Quét thẻ regex phân cảnh đạo cụ: 【Đạo cụ: ...】 hoặc 【Vật phẩm: ...】
+    new_props: list[dict[str, str]] = []
+    prop_matches = re.finditer(r"【(?:Đạo cụ|Vật phẩm|Prop|Props)[:：]\s*([^】\n]+)】", text, re.IGNORECASE)
+    for m in prop_matches:
+        raw = m.group(1).strip()
+        names = [n.strip() for n in re.split(r"[,;，；/]", raw) if len(n.strip()) >= 2]
+        for name in names:
+            hit = next((c for c in candidate_props if str(c.get("name") or "").strip().lower() == name.lower()), None)
+            if hit:
+                hid = int(hit.get("id") or 0)
+                if hid not in matched_ids:
+                    matched.append({"id": hid, "name": str(hit.get("name") or name)})
+                    matched_ids.add(hid)
+            else:
+                if not any(np["name"].lower() == name.lower() for np in new_props):
+                    new_props.append({
+                        "name": name,
+                        "prompt": f"Đạo cụ {name}, chụp cận cảnh chi tiết studio trên phông nền tối giản, ánh sáng nghệ thuật sắc nét, tỉ lệ 1:1",
+                    })
+
+    return {"matched_props": matched, "new_props": new_props}
+
+
+async def detect_or_create_props_with_llm(
+    content: str,
+    candidate_props: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Phân tích nội dung phân cảnh để nhận diện các đạo cụ đã có hoặc trích xuất đạo cụ mới."""
+    cleaned_content = (content or "").strip()
+    if not cleaned_content:
+        return {"matched_props": [], "new_props": []}
+
+    candidate_lines: list[str] = []
+    for c in candidate_props:
+        cid = c.get("id")
+        cname = c.get("name")
+        intro = c.get("intro") or ""
+        intro_str = f" - Mô tả: {intro}" if intro else ""
+        candidate_lines.append(f"- ID {cid}: \"{cname}\"{intro_str}")
+
+    candidates_block = "\n".join(candidate_lines) if candidate_lines else "(Kho dự án hiện chưa có đạo cụ nào)"
+
+    user_prompt = (
+        f"【Nội dung phân cảnh cần phân tích】:\n"
+        f"{cleaned_content}\n\n"
+        f"【Danh sách đạo cụ ĐÃ CÓ trong kho tài sản】:\n"
+        f"{candidates_block}\n\n"
+        f"Hãy đọc nội dung phân cảnh và trích xuất tất cả đạo cụ xuất hiện. Đối chiếu với kho: nếu đã có trong kho thì đưa vào matched_props (id, name), nếu chưa có thì đưa vào new_props (name, prompt).\n"
+        f"Trả về JSON:"
+    )
+
+    try:
+        raw_res = await drama_chat_json(
+            DETECT_PROPS_SYSTEM,
+            user_prompt,
+            temperature=0.1,
+            max_tokens=1024,
+        )
+    except Exception as exc:
+        logger.warning("Lỗi gọi LLM detect props: %s, chuyển sang fallback", exc)
+        return _fallback_prop_detect(cleaned_content, candidate_props)
+
+    if not isinstance(raw_res, dict):
+        return _fallback_prop_detect(cleaned_content, candidate_props)
+
+    matched_props_raw = raw_res.get("matched_props") or []
+    new_props_raw = raw_res.get("new_props") or []
+
+    valid_matched: list[dict[str, Any]] = []
+    seen_ids: set[int] = set()
+
+    for item in matched_props_raw:
+        if isinstance(item, dict):
+            pid = item.get("id")
+            try:
+                ipid = int(pid)
+                c_hit = next((c for c in candidate_props if int(c.get("id") or 0) == ipid), None)
+                if c_hit and ipid not in seen_ids:
+                    seen_ids.add(ipid)
+                    valid_matched.append({"id": ipid, "name": str(c_hit.get("name") or item.get("name") or "")})
+            except (ValueError, TypeError):
+                continue
+
+    valid_new: list[dict[str, str]] = []
+    seen_new_names: set[str] = set()
+
+    for item in new_props_raw:
+        if isinstance(item, dict) and item.get("name"):
+            pname = str(item.get("name") or "").strip()
+            if not pname or pname.lower() in seen_new_names:
+                continue
+            c_hit = next((c for c in candidate_props if str(c.get("name") or "").strip().lower() == pname.lower()), None)
+            if c_hit:
+                cid = int(c_hit.get("id") or 0)
+                if cid not in seen_ids:
+                    seen_ids.add(cid)
+                    valid_matched.append({"id": cid, "name": str(c_hit.get("name") or pname)})
+                continue
+
+            seen_new_names.add(pname.lower())
+            prompt = str(item.get("prompt") or f"Đạo cụ: {pname}, chụp cận cảnh chi tiết studio trên phông nền tối giản, ánh sáng nghệ thuật sắc nét, tỉ lệ 1:1").strip()
+            valid_new.append({"name": pname, "prompt": prompt})
+
+    return {"matched_props": valid_matched, "new_props": valid_new}
