@@ -135,7 +135,11 @@ function EpisodeEditInner() {
     setModelId((prev) => (ids.includes(prev) ? prev : mediaCatalog.defaults.video_model || ids[0]))
   }, [mediaCatalog])
 
-  const selected = fragments[selectedIndex] || null
+  const effectiveIndex =
+    fragments.length > 0 && (selectedIndex < 0 || selectedIndex >= fragments.length)
+      ? 0
+      : selectedIndex
+  const selected = fragments[effectiveIndex] || null
   const selectedDuration = selected?.duration_sec ?? 8
 
   // generateIds Id tập hiện đang được xếp hàng/tạo
@@ -223,7 +227,7 @@ function EpisodeEditInner() {
 
   const { prevLastFrameUrl, continuityBlockedReason, continuityQueueHint } = useEpisodeContinuity({
     fragments,
-    selectedIndex,
+    selectedIndex: effectiveIndex,
     linkLastFrame,
     generatingIds,
   })
@@ -267,7 +271,7 @@ function EpisodeEditInner() {
     eid,
     epNumber,
     fragments,
-    selectedIndex,
+    selectedIndex: effectiveIndex,
     setFragments,
     setSelectedIndex,
     setEditing,
@@ -306,7 +310,7 @@ function EpisodeEditInner() {
     pid,
     eid,
     selected,
-    selectedIndex,
+    selectedIndex: effectiveIndex,
     fragments,
     assets,
     assetTab,
@@ -338,7 +342,7 @@ function EpisodeEditInner() {
     episode,
     displayEpisodeName,
     selected,
-    selectedIndex,
+    selectedIndex: effectiveIndex,
     selectedDuration,
     fragments,
     assets,
@@ -568,10 +572,18 @@ function EpisodeEditInner() {
   // Thoát khỏi bản xem trước phiên bản lịch sử khi chuyển đổi bảng phân cảnh
   useEffect(() => {
     setPreviewVersionId(null)
-  }, [selectedIndex, selected?.id])
+  }, [effectiveIndex, selected?.id])
+
+  // Đảm bảo selectedIndex luôn nằm trong phạm vi fragments
+  useEffect(() => {
+    if (fragments.length > 0 && selectedIndex >= fragments.length) {
+      setSelectedIndex(0)
+    }
+  }, [fragments.length, selectedIndex])
 
   useEffect(() => {
     if (!eid || !pid) return
+    setSelectedIndex(0)
     setBusy(false)
     setStatus('')
     setError('')
@@ -615,6 +627,7 @@ function EpisodeEditInner() {
   // Tập chuyển đổi thư mục bên trái
   function handleSelectEpisode(nextId: number) {
     if (nextId === eid) return
+    setSelectedIndex(0)
     navigate(`/drama/projects/${pid}/episodes/${nextId}`)
   }
 
@@ -775,7 +788,7 @@ function EpisodeEditInner() {
           <EpisodeEditScriptSection
             eid={eid}
             selected={selected}
-            selectedIndex={selectedIndex}
+            selectedIndex={effectiveIndex}
             selectedDuration={selectedDuration}
             episodeParams={episodeParams}
             projectParams={projectParams}
@@ -842,7 +855,7 @@ function EpisodeEditInner() {
 
       <EpisodeStoryboardFooter
         fragments={fragments}
-        selectedIndex={selectedIndex}
+        selectedIndex={effectiveIndex}
         generatingIds={generatingIds}
         activeTasks={episode?.active_tasks}
         busy={busy}

@@ -47,7 +47,10 @@ Phân cảnh đầu tiên của mỗi tập (fragments[0]) luôn là cảnh mở
 
 ## Các quy tắc cứng (BẮT BUỘC TUÂN THỦ)
 1. Thời lượng mỗi phân cảnh (duration_sec) phải từ 4 đến 15 giây, ưu tiên 5–15 giây; mỗi phân cảnh phải trọn vẹn một hành động/tình huống và có thể đứng độc lập thành 1 video clip.
-2. Nhịp độ và số lượng phân cảnh: **Mỗi tập bắt buộc phải chia thành nhiều phân cảnh (từ 2 đến 3 phân cảnh), và mảng fragments TỐI ĐA KHÔNG QUÁ 3 PHÂN CẢNH (kể cả cảnh mở màn, tối đa 3 cảnh)**. Mục tiêu tổng thời lượng tập phim từ 20–45 giây. Các câu thoại liên tiếp trong cùng một bối cảnh phải gộp chung vào 1 phân cảnh, lược bỏ những biểu cảm thừa hoặc cảnh chuyển tiếp không cần thiết, tuyệt đối không cắt vụn mỗi câu thoại thành một cảnh.
+2. Nhịp độ và số lượng phân cảnh: **Toàn tập phim CHỈ ĐƯỢC XUẤT TỪ 2 ĐẾN 6 PHÂN CẢNH (SHOT) TỔNG CỘNG** (tuyệt đối không được vượt quá 6 phân cảnh trong mảng fragments).
+   - MỖI PHẦN TỬ trong mảng fragments[] là 1 SHOT QUAY ĐƠN (video clip từ 5–15 giây cho mô hình AI video). CẤM băm nhỏ vụn vặt từng câu nói thành 1 shot.
+   - Với kịch bản có các phân đoạn lớn: Mỗi phân đoạn kịch bản chỉ chọn lọc 1–2 khoảnh khắc cao trào đắt giá nhất để tạo thành 1–2 shot (tổng toàn tập từ 2 đến 6 shot).
+   - Lược bỏ toàn bộ các câu thoại phụ/hành động rườm rà. Mỗi shot chỉ gồm 1 mô tả hình ảnh cao trào + 1 câu thoại đắt giá nhất để thời lượng vừa vặn từ 5–15 giây.
 3. lines chỉ viết: Hình ảnh góc máy, hành động, lời thoại, lời dẫn; giữ nguyên tên thật của nhân vật.
    - Mô tả góc máy / hình ảnh thuần túy bắt buộc phải bắt đầu bằng: "Cảnh trống: ...", "Toàn cảnh: ...", "Trung cảnh: ...", "Cận cảnh: ...", "Đặc tả: ...", v.v. CẤM viết mô tả hình ảnh thành lời dẫn hoặc "Tên nhân vật: Lời thoại".
    - Chỉ những nội dung thực sự phát ra tiếng nói mới ghi dạng "Tên nhân vật: Lời thoại" hoặc "Lời dẫn (VO): ...".
@@ -160,12 +163,14 @@ def build_fragment_plan_user_prompt(
     lines.extend(
         [
             "",
-            "【RÀNG BUỘC CỨNG VỀ SỐ LƯỢNG PHÂN CẢNH ｜ BẮT BUỘC TUÂN THỦ】",
-            f"- Mảng fragments bắt buộc phải chia thành nhiều phân cảnh (2–3 phân cảnh), và tổng số lượng ≤ {EPISODE_FRAGMENT_MAX} (tối đa 3 phân cảnh, bao gồm cả cảnh mở màn); thời lượng toàn tập 20–45 giây.",
-            "- Các câu thoại liên tiếp trong cùng cảnh/nhân vật phải gộp thành 1 phân cảnh; bỏ qua các phản ứng thừa.",
-            "- Thời lượng mỗi đoạn trong cảnh từ 3–15 giây, tổng thời lượng cả phân cảnh không quá 15 giây.",
+            "【QUY TẮC CỨNG VỀ SỐ LƯỢNG PHÂN CẢNH ｜ BẮT BUỘC TUÂN THỦ】",
+            "- MỖI PHẦN TỬ TRONG MẢNG fragments[] LÀ 1 SHOT QUAY VIDEO ĐƠN (5–15 giây cho 1 video AI).",
+            f"- TOÀN TẬP PHIM CHỈ ĐƯỢC XUẤT TỪ 2 ĐẾN 6 PHÂN CẢNH (SHOT) TỔNG CỘNG TRONG MẢNG fragments (tuyệt đối không quá {EPISODE_FRAGMENT_MAX} shot).",
+            "- Mỗi phân đoạn kịch bản lớn chỉ chọn lọc 1–2 khoảnh khắc cao trào nhất để tạo thành 1–2 shot.",
+            "- Lược bỏ triệt để các câu thoại dài dòng và hành động rườm rà; mỗi shot chỉ giữ 1 mô tả góc máy/hành động và tối đa 1 câu thoại then chốt.",
+            "- Thời lượng mỗi shot từ 8–15 giây.",
             "- Mỗi phân cảnh tối đa 3 nhân vật xuất hiện, 2 đạo cụ; không ghi toàn bộ danh sách nhân vật vào character_names.",
-            "- NGÔN NGỮ BẮT BUỘC: Giữ nguyên 100% tiếng Việt tự nhiên của kịch bản, giữ đúng tên nhân vật (như LAN, MẸ LAN...), cấm dịch sang tiếng Trung hay tiếng Anh!",
+            "- NGÔN NGỮ BẮT BUỘC: Giữ nguyên 100% tiếng Việt tự nhiên của kịch bản, giữ đúng tên nhân vật, cấm dịch sang tiếng Trung hay tiếng Anh!",
             "",
             "【KỊCH BẢN TẬP PHIM】",
             body_text,
@@ -176,7 +181,7 @@ def build_fragment_plan_user_prompt(
     if body_len > 550:
         lines.insert(
             lines.index("【KỊCH BẢN TẬP PHIM】"),
-            f"【Kịch bản khá dài (khoảng {body_len} từ)】Khi lập phân cảnh hãy chủ động cô đọng: gộp cảnh, tinh giản hành động phụ, vẫn chỉ xuất tối đa ≤{EPISODE_FRAGMENT_MAX} phân cảnh.",
+            f"【Kịch bản dài ({body_len} từ)】Hãy chủ động cô đọng: mỗi phân đoạn chỉ chọn 1–2 khoảnh khắc đắt giá nhất, toàn tập CHỈ XUẤT TỪ 2 ĐẾN 6 SHOT (tối đa ≤{EPISODE_FRAGMENT_MAX} shot), tuyệt đối không cắt vụn từng câu thoại.",
         )
     if not asset_catalog:
         lines.append("(Chưa có tài sản)")

@@ -407,14 +407,10 @@ def normalize_llm_fragment_items(
             continue
 
         llm_target = _clamp_duration(int(item.get("duration_sec") or 0))
+        target_dur = min(FRAGMENT_TOTAL_MAX, max(FRAGMENT_DURATION_MIN, llm_target if llm_target > 0 else 10))
         block_sum = sum(d for d, _ in timed_blocks)
-        # Chỉ trong khả năng của một ống kính duy nhất, phân đoạn được giảm theo thời gian LLM; giới hạn trên siêu cứng vẫn tuân theo logic tháo ống kính
-        if (
-            llm_target > 0
-            and block_sum > llm_target
-            and block_sum <= FRAGMENT_TOTAL_MAX
-        ):
-            timed_blocks = _rescale_timed_blocks(timed_blocks, llm_target)
+        if block_sum > target_dur:
+            timed_blocks = _rescale_timed_blocks(timed_blocks, target_dur)
 
         chunk_index = 0
 

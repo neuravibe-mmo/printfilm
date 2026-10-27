@@ -25,14 +25,17 @@ _DURATION_LINE = re.compile(r"^@duration:\d+\s*$")
 
 
 def draft_duration_sec(draft: dict[str, Any]) -> int:
+    try:
+        dur = int(draft.get("duration_sec") or 0)
+        if dur > 0:
+            return min(FRAGMENT_TOTAL_MAX, max(FRAGMENT_DURATION_MIN, dur))
+    except (TypeError, ValueError):
+        pass
     content = str(draft.get("content") or "")
     tagged = sum_fragment_content_duration_seconds(content)
     if tagged > 0:
-        return tagged
-    try:
-        return max(0, int(draft.get("duration_sec") or 0))
-    except (TypeError, ValueError):
-        return 0
+        return min(FRAGMENT_TOTAL_MAX, max(FRAGMENT_DURATION_MIN, tagged))
+    return FRAGMENT_DURATION_MIN
 
 
 def _merge_unique_ids(left: list[int], right: list[int]) -> list[int]:
@@ -272,10 +275,32 @@ def cap_llm_fragment_items(items: list[Any], max_items: int = EPISODE_FRAGMENT_M
         return items
     merged: list[dict[str, Any]] = [dict(x) for x in items if isinstance(x, dict)]
     while len(merged) > max_items:
-        idx = len(merged) - 2
-        if idx < 0:
+        best_idx = None
+        min_lines = 999
+        # Ưu tiên gộp cặp liền kề có cùng scene_name
+        for i in range(len(merged) - 1):
+            if bool(merged[i].get("is_opening")):
+                continue
+            sc_a = str(merged[i].get("scene_name") or "").strip().lower()
+            sc_b = str(merged[i + 1].get("scene_name") or "").strip().lower()
+            if sc_a and sc_a == sc_b:
+                lines_len = len(merged[i].get("lines") or []) + len(merged[i + 1].get("lines") or [])
+                if lines_len < min_lines:
+                    min_lines = lines_len
+                    best_idx = i
+        if best_idx is None:
+            for i in range(len(merged) - 1):
+                if bool(merged[i].get("is_opening")):
+                    continue
+                lines_len = len(merged[i].get("lines") or []) + len(merged[i + 1].get("lines") or [])
+                if lines_len < min_lines:
+                    min_lines = lines_len
+                    best_idx = i
+        if best_idx is None:
+            best_idx = max(0, len(merged) - 2)
+        if best_idx < 0 or best_idx >= len(merged) - 1:
             break
-        a, b = merged[idx], merged[idx + 1]
+        a, b = merged[best_idx], merged[best_idx + 1]
         a_lines = a.get("lines") or a.get("content") or []
         b_lines = b.get("lines") or b.get("content") or []
         if isinstance(a_lines, str):
@@ -287,5 +312,5 @@ def cap_llm_fragment_items(items: list[Any], max_items: int = EPISODE_FRAGMENT_M
         dur_b = int(b.get("duration_sec") or 0)
         if dur_a or dur_b:
             a["duration_sec"] = min(FRAGMENT_TOTAL_MAX, dur_a + dur_b)
-        merged.pop(idx + 1)
+        merged.pop(best_idx + 1)
     return merged

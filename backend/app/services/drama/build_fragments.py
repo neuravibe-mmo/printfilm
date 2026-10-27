@@ -48,9 +48,9 @@ FRAGMENT_DURATION_MAX = 15
 FRAGMENT_SOFT_MAX = 15
 # Giới hạn trên cứng đối với tổng thời lượng của một câu chuyện (nhịp chơi ngắn; Seedance vẫn hỗ trợ lâu hơn, nhưng được cố tình thắt chặt ở đây)
 FRAGMENT_TOTAL_MAX = 15
-# Số lượng bảng phân cảnh/ngân sách thời lượng cho toàn bộ tập (được chia sẻ giữa việc viết lại phân cảnh và phân đoạn thông thường, giới hạn trên được đặt ở mức tối đa là 3 câu chuyện)
-EPISODE_FRAGMENT_MAX = int(os.getenv("EPISODE_FRAGMENT_MAX", "3"))
-EPISODE_DURATION_BUDGET_SEC = 45
+# Số lượng bảng phân cảnh/ngân sách thời lượng cho toàn bộ tập (mỗi phân đoạn 1-2 shot, toàn tập từ 2-6 shot)
+EPISODE_FRAGMENT_MAX = int(os.getenv("EPISODE_FRAGMENT_MAX", "6"))
+EPISODE_DURATION_BUDGET_SEC = int(os.getenv("EPISODE_DURATION_BUDGET_SEC", "90"))
 # Các vai trò quan trọng: roleType/title/tags Nếu đánh trúng cần giới thiệu nhân vật và lặp lại nhân vật.
 IMPORTANT_ROLE_RE = re.compile(r"主角|男主|女主|重要|反派|BOSS|核心|主人公")
 # Định vị phụ: mặc định không được giới thiệu
