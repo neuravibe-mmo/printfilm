@@ -105,7 +105,8 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
       /【(?:BGM|Background Music|Nhạc nền)[：:]\s*(?:贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声|Subtle background music matching the narrative atmosphere[^】]*)】/g,
       CUE_PAIRS.bgm.vi,
     )
-    text = text.replace(/【(?:BGM|Background Music)[：:]\s*([^】]*)】/g, '【Nhạc nền: $1】')
+    text = text.replace(/【(?:BGM|Background Music|配乐)[：:]\s*([^】]*)】/g, '【Nhạc nền: $1】')
+    text = text.replace(/【配乐】/g, '【Nhạc nền】')
     text = text.replace(/[；;]\s*音量低于人声/g, '; âm lượng nhỏ hơn giọng nói')
     text = text.replace(/音量低于人声/g, 'âm lượng nhỏ hơn giọng nói')
 
@@ -202,8 +203,10 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
       /【(?:空镜|Empty shot)(?:·|:|\s*)([^】]*)】/g,
       '【Cảnh trống · $1】',
     )
-    text = text.replace(/【(?:空镜|Empty shot)】/g, '【Cảnh trống】')
     text = text.replace(/【强制约束[：:][^】]*】/g, '【Ràng buộc bắt buộc: Âm thanh, Phụ đề và Nhạc nền】')
+    text = text.replace(/【强制约束】/g, '【Ràng buộc bắt buộc】')
+    text = text.replace(/画面叠字/g, 'Chữ trên hình')
+    text = text.replace(/角色身旁/g, 'Bên cạnh nhân vật')
   } else if (targetLocale === 'zh') {
     text = text.replace(
       /【(?:BGM|Background Music|Nhạc nền)[：:]\s*(?:Nhạc nền nhẹ nhàng phù hợp không khí cốt truyện[^】]*|Subtle background music matching[^】]*)】/g,

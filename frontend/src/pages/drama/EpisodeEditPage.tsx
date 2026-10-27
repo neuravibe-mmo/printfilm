@@ -126,6 +126,8 @@ function EpisodeEditInner() {
   const reloadRef = useRef<() => Promise<void>>(async () => {})
   const projectParamsRef = useRef<Record<string, unknown>>({})
   const episodeParamsRef = useRef<Record<string, unknown>>({})
+  const autoConvertAttemptedRef = useRef<string>('')
+  const isAutoConvertingRef = useRef(false)
 
   useEffect(() => {
     // Sau khi thư mục đến, hãy thay thế ID Kie/Ark cũ bằng mô hình video mặc định nền
@@ -581,6 +583,49 @@ function EpisodeEditInner() {
     }
   }, [fragments.length, selectedIndex])
 
+  // Tự động chạy logic chuyển đổi thẻ sang Tiếng Việt khi có phân cảnh chứa thẻ chưa Việt hoá. Nếu lỗi thì bỏ qua và vẫn hiển thị button.
+  useEffect(() => {
+    if (!eid || busy || isAutoConvertingRef.current) return
+    const needsConvert = fragments.some((f) => hasNonLocalizedCues(f.content || '', 'vi'))
+    if (!needsConvert) return
+
+    // Fingerprint các phân cảnh để tránh lặp vô hạn nếu API lưu thất bại
+    const fingerprint = `${eid}:${fragments.map((f) => `${f.id}:${f.content}`).join('|')}`
+    if (autoConvertAttemptedRef.current === fingerprint) return
+    autoConvertAttemptedRef.current = fingerprint
+
+    const nextFragments = fragments.map((f) => ({
+      ...f,
+      content: localizeScriptCues(f.content || '', 'vi'),
+    }))
+
+    const hasChanges = nextFragments.some((f, i) => f.content !== fragments[i]?.content)
+    if (!hasChanges) return
+
+    let cancelled = false
+    isAutoConvertingRef.current = true
+
+    dramaApi
+      .saveFragments(eid, nextFragments)
+      .then(() => {
+        if (!cancelled) {
+          setFragments(nextFragments)
+          setStatus(t('drama.episodeEdit.convertAllCuesSuccess'))
+        }
+      })
+      .catch((err) => {
+        // Nếu lỗi thì bỏ qua và vẫn hiển thị button
+        console.warn('Tự động chuyển đổi thẻ kịch bản sang Tiếng Việt thất bại:', err)
+      })
+      .finally(() => {
+        isAutoConvertingRef.current = false
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [eid, fragments, busy, t])
+
   useEffect(() => {
     if (!eid || !pid) return
     setSelectedIndex(0)
@@ -728,12 +773,12 @@ function EpisodeEditInner() {
                   ...f,
                   content: localizeScriptCues(f.content || '', 'vi'),
                 }))
-                setFragments(nextFragments)
                 try {
                   await dramaApi.saveFragments(eid, nextFragments)
+                  setFragments(nextFragments)
                   setStatus(t('drama.episodeEdit.convertAllCuesSuccess'))
-                } catch {
-                  setStatus(t('drama.episodeEdit.convertAllCuesSuccess'))
+                } catch (err) {
+                  console.warn('Chuyển toàn bộ thẻ sang Tiếng Việt thất bại:', err)
                 }
               }}
               title={t('drama.episodeEdit.convertAllCuesToVi')}

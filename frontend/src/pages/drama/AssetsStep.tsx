@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { Link } from 'react-router-dom'
-import { Sparkles, ChevronLeft } from 'lucide-react'
+import { Sparkles, ChevronLeft, Loader2, Mic } from 'lucide-react'
 import { dramaApi, resolveDramaAssetPreviewUrl, type DramaAsset, type DramaAssetUsage, type DramaProject } from '../../api/drama'
 import { api, type BillingPreflight } from '../../api'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
@@ -230,6 +230,13 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
   )
   // Chưa được xuất bản: Không có bìa/url hợp lệ và nó hiện không có trong hàng đợi.
   const pending = filtered.filter((a) => needsImageGeneration(a) && !busyAssetIds.has(a.id))
+  // Chưa có giọng đọc: là nhân vật, chưa có voice binding, và hiện không trong quá trình tạo
+  const pendingVoiceCharacters = filtered.filter(
+    (a) =>
+      (a.type || '').toLowerCase() === 'character' &&
+      !readAssetVoiceBinding(a) &&
+      !characterVoiceBusyIds.has(a.id),
+  )
   const queueBusy = busyAssetIds.size > 0
   const pageCount = pageCountOf(filtered.length, pageSize)
   const safePage = Math.min(page, pageCount)
@@ -322,20 +329,30 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
       (a) => needsImageGeneration(a) && !busyAssetIds.has(a.id),
     )
     if (targets.length === 0) {
-      onError(t('drama.assetsStep.noPendingAssets'))
+      if (queueBusy) {
+        onError(t('drama.assetsStep.generatingCount').replace('{n}', String(busyAssetIds.size)))
+      } else {
+        onError(
+          tab === 'character'
+            ? 'Tất cả nhân vật đã có ảnh đại diện. Những nhân vật đã có ảnh được bỏ qua.'
+            : t('drama.assetsStep.noPendingAssets'),
+        )
+      }
       return
     }
+
     const pre = await ensureImageGenBalance(targets.length)
     if (!pre) return
-    const unitYuan = pre.unit_estimate_yuan ?? pre.unit_estimate_fen / 100
-    const totalYuan = pre.requested_total_yuan ?? pre.requested_total_fen / 100
-    const balanceYuan = pre.balance_yuan ?? pre.balance_fen / 100
+
+    const itemLabel = tab === 'character' ? 'nhân vật' : tab === 'scene' ? 'bối cảnh' : 'đạo cụ'
     const ok = await dialog.confirm({
-      title: t('drama.assetsStep.batchGenTitle'),
+      title: 'Tự động tạo ảnh',
       message:
-        `${t('drama.assetsStep.batchGenMessage').replace('{label}', ASSET_TABS.find((tab2) => tab2.key === tab)?.label || t('drama.assetsStep.category')).replace('{n}', String(targets.length))}${t('drama.assetsStep.batchGenParallel')}\n\n` +
-        `${t('drama.assetsStep.batchGenBilling').replace('{unit}', unitYuan.toFixed(2)).replace('{total}', totalYuan.toFixed(2)).replace('{balance}', balanceYuan.toFixed(2))}${t('drama.assetsStep.batchGenAdjust')}`,
-      confirmText: t('drama.assetsStep.startGen'),
+        `Hệ thống sẽ tự động tạo ảnh cho ${targets.length} ${itemLabel} chưa có ảnh.\n\n` +
+        `Những ${itemLabel} đã có ảnh rồi sẽ được bỏ qua.`,
+      confirmText: 'Bắt đầu tạo',
+      cancelText: 'Hủy',
+      tone: 'success',
     })
     if (!ok) return
     setBatchBusy(true)
@@ -432,6 +449,70 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     setSelectedCharacterIds([])
     if (failCount > 0) {
       onError(t('drama.assetsStep.batchVoiceFailed').replace('{n}', String(failCount)))
+    }
+  }
+
+  // Tự động tạo giọng cho tất cả nhân vật chưa có giọng đọc (bỏ qua những nhân vật đã có)
+  async function handleAutoGenerateVoices() {
+    const targets = filtered.filter(
+      (a) =>
+        (a.type || '').toLowerCase() === 'character' &&
+        !readAssetVoiceBinding(a) &&
+        !characterVoiceBusyIds.has(a.id),
+    )
+
+    if (targets.length === 0) {
+      if (characterVoiceBusyIds.size > 0 || batchVoiceBusy) {
+        onError('Hệ thống đang trong quá trình tạo giọng đọc, vui lòng chờ trong giây lát.')
+      } else {
+        onError('Tất cả nhân vật đã có giọng đọc. Những nhân vật đã có giọng đọc được bỏ qua.')
+      }
+      return
+    }
+
+    const ok = await dialog.confirm({
+      title: 'Tự động tạo giọng đọc',
+      message:
+        `Hệ thống sẽ tự động tạo giọng cho ${targets.length} nhân vật chưa có giọng đọc.\n\n` +
+        `Những nhân vật đã có giọng đọc rồi sẽ được bỏ qua.`,
+      confirmText: 'Bắt đầu tạo',
+      cancelText: 'Hủy',
+      tone: 'success',
+    })
+    if (!ok) return
+
+    setBatchVoiceBusy(true)
+    let failCount = 0
+    const CONCURRENCY = 2
+    let index = 0
+
+    async function worker() {
+      while (index < targets.length) {
+        const asset = targets[index++]
+        if (!asset) break
+        setCharacterVoiceBusyIds((prev) => new Set(prev).add(asset.id))
+        try {
+          const { character, voice } = await generateAndBindCharacterVoice(projectId, asset)
+          handleVoiceBound(character)
+          handleVoiceCreated(voice)
+        } catch {
+          failCount += 1
+        } finally {
+          setCharacterVoiceBusyIds((prev) => {
+            const next = new Set(prev)
+            next.delete(asset.id)
+            return next
+          })
+        }
+      }
+    }
+
+    const workers = Array.from({ length: Math.min(CONCURRENCY, targets.length) }, () => worker())
+    await Promise.all(workers)
+
+    setBatchVoiceBusy(false)
+    if (failCount > 0) {
+      onError(`Có ${failCount} nhân vật tạo giọng thất bại, vui lòng thử lại sau.`)
     }
   }
 
@@ -885,9 +966,69 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
       {loading ? <p className="drama-muted">{t('drama.assetsStep.extracting')}</p> : null}
 
       {!loading && filtered.length > 0 ? (
-        <p className="drama-muted drama-assets-page-meta">
-          {t('drama.assetsStep.pageInfo').replace('{page}', String(safePage)).replace('{total_pages}', String(pageCount)).replace('{n}', String(filtered.length))}
-        </p>
+        <div className="drama-assets-meta-bar">
+          <p className="drama-muted drama-assets-page-meta">
+            {t('drama.assetsStep.pageInfo').replace('{page}', String(safePage)).replace('{total_pages}', String(pageCount)).replace('{n}', String(filtered.length))}
+          </p>
+
+          <div className="drama-assets-meta-actions">
+            {DRAMA_VOICE_BINDING_ENABLED && tab === 'character' ? (
+              <button
+                type="button"
+                className="pf-btn drama-assets-auto-voice-btn"
+                disabled={batchVoiceBusy || (pendingVoiceCharacters.length === 0 && characterVoiceBusyIds.size === 0)}
+                onClick={() => void handleAutoGenerateVoices()}
+                title={
+                  pendingVoiceCharacters.length > 0
+                    ? `Tự động tạo giọng cho ${pendingVoiceCharacters.length} nhân vật chưa có giọng đọc`
+                    : characterVoiceBusyIds.size > 0
+                    ? 'Đang trong quá trình tạo giọng...'
+                    : 'Tất cả nhân vật đã có giọng đọc'
+                }
+              >
+                {batchVoiceBusy || characterVoiceBusyIds.size > 0 ? (
+                  <>
+                    <Loader2 size={15} style={{ animation: 'pf-spin 1s linear infinite' }} />
+                    <span>Đang tạo giọng ({characterVoiceBusyIds.size})...</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic size={15} />
+                    <span>Tự động tạo giọng</span>
+                  </>
+                )}
+              </button>
+            ) : null}
+
+            {tab !== 'voice' ? (
+              <button
+                type="button"
+                className="pf-btn pf-btn-lime drama-assets-auto-gen-btn"
+                disabled={batchBusy || (pending.length === 0 && !queueBusy)}
+                onClick={() => void batchGenerate()}
+                title={
+                  pending.length > 0
+                    ? `Tự động tạo ảnh cho ${pending.length} ${tab === 'character' ? 'nhân vật' : 'tài sản'} chưa có ảnh`
+                    : queueBusy
+                    ? 'Đang trong quá trình tạo ảnh...'
+                    : 'Tất cả nhân vật đã có ảnh'
+                }
+              >
+                {batchBusy || queueBusy ? (
+                  <>
+                    <Loader2 size={15} style={{ animation: 'pf-spin 1s linear infinite' }} />
+                    <span>Đang tạo ảnh ({busyAssetIds.size})...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={15} />
+                    <span>Tự động tạo ảnh</span>
+                  </>
+                )}
+              </button>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       <div className={`drama-asset-grid${tab === 'voice' ? ' is-voice' : ''}`}>

@@ -108,10 +108,13 @@ function DramaListInner() {
   const curlCommand = useMemo(() => {
     const base = getApiBase() || window.location.origin
     const token = localStorage.getItem('token') || 'YOUR_AUTH_TOKEN'
+    const currentInput = storyText.trim()
+    const prompt = currentInput
+      ? `Dựa trên ý tưởng/gợi ý sau của tôi: "${currentInput}". Hãy mở rộng và phát triển thành một ý tưởng câu chuyện phim ngắn hoàn chỉnh, hấp dẫn khoảng 80-150 từ bằng Tiếng Việt, có bối cảnh rõ ràng, đặc điểm nhân vật chính, xung đột kịch tính và kết thúc bất ngờ. Chỉ trả lời duy nhất nội dung ý tưởng câu chuyện.`
+      : 'Hãy viết 1 ý tưởng câu chuyện phim ngắn hấp dẫn khoảng 80-120 từ bằng Tiếng Việt, đầy đủ bối cảnh, nhân vật chính, xung đột và kết thúc bất ngờ. Chỉ trả lời duy nhất nội dung ý tưởng câu chuyện.'
     const body = JSON.stringify(
       {
-        message:
-          'Hãy viết 1 ý tưởng câu chuyện phim ngắn hấp dẫn khoảng 80-120 từ, đầy đủ bối cảnh, nhân vật chính, xung đột và kết thúc bất ngờ. Chỉ trả lời nội dung ý tưởng.',
+        message: prompt,
       },
       null,
       2,
@@ -120,7 +123,7 @@ function DramaListInner() {
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${token}" \\
   -d '${body}'`
-  }, [])
+  }, [storyText])
 
   // Tải danh sách dự án
   async function loadProjects() {
@@ -184,25 +187,38 @@ function DramaListInner() {
 
   async function handleGenerateIdea() {
     if (generatingIdea) return
+    const currentInput = storyText.trim()
     setGeneratingIdea(true)
     setError('')
     try {
       const timeoutPromise = new Promise<{ reply: string }>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 3500),
+        setTimeout(() => reject(new Error('timeout')), 60000),
       )
-      const chatPromise = dramaApi.chat(
-        'Hãy viết 1 ý tưởng câu chuyện phim ngắn hấp dẫn khoảng 80-120 từ, đầy đủ bối cảnh, nhân vật chính, xung đột và kết thúc bất ngờ. Chỉ trả lời nội dung ý tưởng.',
-      )
+      const prompt = currentInput
+        ? `Dựa trên ý tưởng/gợi ý sau của tôi: "${currentInput}". Hãy mở rộng và phát triển thành một ý tưởng câu chuyện phim ngắn hoàn chỉnh, hấp dẫn khoảng 80-150 từ bằng Tiếng Việt, có bối cảnh rõ ràng, đặc điểm nhân vật chính, xung đột kịch tính và kết thúc bất ngờ. Chỉ trả lời duy nhất nội dung ý tưởng câu chuyện, không thêm lời dẫn hay giải thích.`
+        : 'Hãy viết 1 ý tưởng câu chuyện phim ngắn hấp dẫn khoảng 80-120 từ bằng Tiếng Việt, đầy đủ bối cảnh, nhân vật chính, xung đột và kết thúc bất ngờ. Chỉ trả lời duy nhất nội dung ý tưởng câu chuyện.'
+
+      const chatPromise = dramaApi.chat(prompt)
       const res = await Promise.race([chatPromise, timeoutPromise])
       if (res?.reply && res.reply.trim().length >= 25) {
         setStoryText(res.reply.trim())
       } else {
         throw new Error('empty reply')
       }
-    } catch {
-      const available = SAMPLE_STORIES.filter((s) => s !== storyText)
-      const picked = available[Math.floor(Math.random() * available.length)] || SAMPLE_STORIES[0]
-      setStoryText(picked)
+    } catch (err) {
+      if (currentInput) {
+        const msg =
+          err instanceof Error
+            ? err.message === 'timeout'
+              ? 'Thời gian chờ AI phản hồi quá lâu (quá 60s), vui lòng thử lại.'
+              : err.message
+            : t('common.generateFailed')
+        setError(msg)
+      } else {
+        const available = SAMPLE_STORIES.filter((s) => s !== storyText)
+        const picked = available[Math.floor(Math.random() * available.length)] || SAMPLE_STORIES[0]
+        setStoryText(picked)
+      }
     } finally {
       setGeneratingIdea(false)
       setTimeout(() => {

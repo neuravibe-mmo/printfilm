@@ -4,8 +4,10 @@ import {
   AlertTriangle,
   BookOpen,
   CheckCircle2,
+  Clock,
   FileText,
   Lightbulb,
+  Loader2,
   RefreshCw,
   Sparkles,
 } from 'lucide-react'
@@ -226,6 +228,35 @@ export function OutlineEpisodePanel({
 
   const selectedGenerating =
     Boolean(generatingMode) && generatingEpisodeNumber === (selected?.episodeNumber ?? null)
+
+  const summaryStatus = (script?.params || {}).summary_status as string | undefined
+  const isSummaryGenerating =
+    summaryStatus === 'generating' || (!summaryReady && summaryStatus !== 'failed')
+
+  const prog = (script?.params || {}).episode_content_progress as
+    | { done?: number; total?: number }
+    | undefined
+  const isBatchGenerating =
+    episodeGenerating ||
+    (script?.params || {}).episode_content_status === 'generating'
+  const batchDoneCount = Number(prog?.done) || 0
+  const batchTotalCount = Number(prog?.total) || episodeCount || 0
+  const batchCurrentEpisodeNumber = isBatchGenerating ? batchDoneCount + 1 : null
+
+  const isSelectedGenerating =
+    selectedGenerating ||
+    (isBatchGenerating &&
+      (!selected?.body?.trim() || selected.body.trim().length === 0) &&
+      batchCurrentEpisodeNumber === selected?.episodeNumber)
+
+  const isSelectedQueued =
+    !isSelectedGenerating &&
+    isBatchGenerating &&
+    (!selected?.body?.trim() || selected.body.trim().length === 0) &&
+    batchCurrentEpisodeNumber !== null &&
+    selected?.episodeNumber !== undefined &&
+    selected.episodeNumber > batchCurrentEpisodeNumber
+
   const anyEpisodeGenerating = Boolean(generatingMode)
   const busy = selectedGenerating || confirming || saving || adding
   const generateBusy = episodeGenerating || anyEpisodeGenerating || confirming || saving || adding
@@ -354,16 +385,269 @@ export function OutlineEpisodePanel({
 
       {localError ? <BillingErrorNotice message={localError} className="drama-error" /> : null}
       {localNotice ? <p className="drama-outline-notice">{localNotice}</p> : null}
-      {episodeGenerating ? <p className="drama-loader">{t('drama.outlinePanel.allGenerating')}</p> : null}
-      {selectedGenerating ? (
+      {!isSummaryGenerating && !isSelectedGenerating && !isSelectedQueued && episodeGenerating ? (
+        <p className="drama-loader">{t('drama.outlinePanel.allGenerating')}</p>
+      ) : null}
+      {!isSummaryGenerating && !isSelectedGenerating && !isSelectedQueued && selectedGenerating ? (
         <p className="drama-loader">{t('drama.outlinePanel.thisGenerating').replace('{mode}', generatingMode || '')}</p>
-      ) : anyEpisodeGenerating && generatingEpisodeNumber ? (
+      ) : !isSummaryGenerating && !isSelectedGenerating && !isSelectedQueued && anyEpisodeGenerating && generatingEpisodeNumber ? (
         <p className="drama-loader">
           {t('drama.outlinePanel.otherGenerating').replace('{no}', String(generatingEpisodeNumber))}
         </p>
       ) : null}
 
-      <div className="drama-outline-sections">
+      {isSummaryGenerating ? (
+        <div
+          className="drama-episode-loading-box"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '64px 24px',
+            margin: '20px 0',
+            background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+            borderRadius: 16,
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: 76,
+              height: 76,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+              border: '2px solid #a7f3d0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 18,
+              boxShadow: '0 0 25px rgba(16, 185, 129, 0.25)',
+            }}
+          >
+            <Sparkles size={32} color="#059669" />
+            <Loader2
+              size={50}
+              color="#10b981"
+              style={{ position: 'absolute', animation: 'pf-spin 1.2s linear infinite' }}
+            />
+          </div>
+
+          <h3
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#0f172a',
+              margin: '0 0 8px',
+            }}
+          >
+            Hệ thống đang xây dựng cấu trúc và cốt truyện toàn bộ phim...
+          </h3>
+
+          <p
+            style={{
+              fontSize: '14px',
+              color: '#64748b',
+              maxWidth: 520,
+              margin: '0 0 18px',
+              lineHeight: 1.6,
+            }}
+          >
+            AI đang phân tích ý tưởng, thiết lập các tuyến nhân vật và chia mạch truyện cho {episodeCount || 12} tập. Quá trình có thể mất khoảng vài chục giây, vui lòng chờ đợi...
+          </p>
+
+          <div
+            style={{
+              fontSize: '12.5px',
+              color: '#059669',
+              background: '#ecfdf5',
+              padding: '8px 16px',
+              borderRadius: 8,
+              border: '1px solid #a7f3d0',
+              fontWeight: 500,
+            }}
+          >
+            ⏳ Vui lòng chờ đợi trong giây lát...
+          </div>
+        </div>
+      ) : isSelectedGenerating ? (
+        <div
+          className="drama-episode-loading-box"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '64px 24px',
+            margin: '20px 0',
+            background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+            borderRadius: 16,
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: 76,
+              height: 76,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+              border: '2px solid #a7f3d0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 18,
+              boxShadow: '0 0 25px rgba(16, 185, 129, 0.25)',
+            }}
+          >
+            <Sparkles size={32} color="#059669" />
+            <Loader2
+              size={50}
+              color="#10b981"
+              style={{ position: 'absolute', animation: 'pf-spin 1.2s linear infinite' }}
+            />
+          </div>
+
+          <h3
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#0f172a',
+              margin: '0 0 8px',
+            }}
+          >
+            Hệ thống đang viết nội dung cho {selected.title ? `Tập ${selected.episodeNumber}: ${selected.title}` : `Tập ${selected.episodeNumber}`}...
+          </h3>
+
+          <p
+            style={{
+              fontSize: '14px',
+              color: '#64748b',
+              maxWidth: 520,
+              margin: '0 0 18px',
+              lineHeight: 1.6,
+            }}
+          >
+            AI đang tự động lên ý tưởng, tóm tắt và chi tiết kịch bản phân cảnh cho tập này. Quá trình có thể mất khoảng vài chục giây, vui lòng chờ đợi...
+          </p>
+
+          {isBatchGenerating && batchTotalCount > 0 && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 16px',
+                borderRadius: 999,
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#334155',
+                marginBottom: 14,
+              }}
+            >
+              <span>Tiến độ toàn bộ phim:</span>
+              <span style={{ color: '#059669', fontWeight: 700 }}>
+                {batchDoneCount} / {batchTotalCount} tập
+              </span>
+            </div>
+          )}
+
+          <div
+            style={{
+              fontSize: '12.5px',
+              color: '#64748b',
+              background: '#ffffff',
+              padding: '8px 16px',
+              borderRadius: 8,
+              border: '1px dashed #cbd5e1',
+            }}
+          >
+            💡 Mẹo: Bạn có thể nhấn vào các tập đã hoàn thành ở danh sách bên trái để đọc duyệt trước.
+          </div>
+        </div>
+      ) : isSelectedQueued ? (
+        <div
+          className="drama-episode-loading-box"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: '64px 24px',
+            margin: '20px 0',
+            background: 'linear-gradient(180deg, #f8fafc 0%, #ffffff 100%)',
+            borderRadius: 16,
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
+          }}
+        >
+          <div
+            style={{
+              width: 68,
+              height: 68,
+              borderRadius: '50%',
+              background: '#f1f5f9',
+              border: '2px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 18,
+            }}
+          >
+            <Clock size={30} color="#64748b" />
+          </div>
+
+          <h3
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#0f172a',
+              margin: '0 0 8px',
+            }}
+          >
+            {selected.title ? `Tập ${selected.episodeNumber}: ${selected.title}` : `Tập ${selected.episodeNumber}`} đang trong hàng đợi
+          </h3>
+
+          <p
+            style={{
+              fontSize: '14px',
+              color: '#64748b',
+              maxWidth: 500,
+              margin: '0 0 16px',
+              lineHeight: 1.6,
+            }}
+          >
+            Hệ thống đang viết nội dung cho <strong>Tập {batchCurrentEpisodeNumber}</strong>. Tập này sẽ được AI tự động viết tiếp theo, vui lòng chờ đợi...
+          </p>
+
+          {batchTotalCount > 0 && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 16px',
+                borderRadius: 999,
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                fontSize: '13px',
+                color: '#475569',
+              }}
+            >
+              <span>Tiến độ hiện tại: {batchDoneCount} / {batchTotalCount} tập hoàn thành</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="drama-outline-sections">
         <OutlineSectionCard
           sectionKey="creative"
           containerRef={creativeCardRef}
@@ -476,6 +760,7 @@ export function OutlineEpisodePanel({
           }
         />
       </div>
+      )}
     </section>
   )
 

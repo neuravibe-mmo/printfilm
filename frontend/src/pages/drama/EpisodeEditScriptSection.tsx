@@ -120,12 +120,12 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
                   const nextFragments = fragments.map((f, i) =>
                     i === selectedIndex ? { ...f, content: localized } : f,
                   )
-                  onSetFragments(nextFragments)
                   try {
                     await dramaApi.saveFragments(eid, nextFragments)
+                    onSetFragments(nextFragments)
                     onSetStatus(t('drama.episodeEdit.convertCuesSuccess'))
-                  } catch {
-                    onSetStatus(t('drama.episodeEdit.convertCuesSuccess'))
+                  } catch (err) {
+                    console.warn('Chuyển thẻ sang Tiếng Việt thất bại:', err)
                   }
                 }}
                 title={t('drama.episodeEdit.convertCuesToVi')}
