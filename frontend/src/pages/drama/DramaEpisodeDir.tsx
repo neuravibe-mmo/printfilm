@@ -80,14 +80,7 @@ export function DramaEpisodeDir({
                   aria-current={isActive ? 'true' : undefined}
                   onClick={() => onSelect(item.id)}
                 >
-                  <div className="drama-episode-dir-item-head">
-                    <span className="drama-episode-dir-item-label">{item.label}</span>
-                    {isActive ? (
-                      <span className="drama-episode-dir-badge">
-                        {t ? t('drama.episodeEdit.current') || 'Hiện tại' : 'Hiện tại'}
-                      </span>
-                    ) : null}
-                  </div>
+                  <span className="drama-episode-dir-item-label">{item.label}</span>
                   <small>
                     {item.title}
                     {item.meta ? ` · ${item.meta}` : ''}

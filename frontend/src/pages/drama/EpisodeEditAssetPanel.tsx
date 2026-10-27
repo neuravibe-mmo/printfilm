@@ -88,6 +88,12 @@ export function EpisodeEditAssetPanel({
     assets.some((a) => normalizeAssetTab(a.type) === 'scene' && activeIds?.has(a.id))
   const isDetectDisabled =
     createBusy || detectBusy || (tab === 'scene' && isSceneLinked)
+  const isActionsDisabled =
+    createBusy || detectBusy || (tab === 'scene' && isSceneLinked)
+  const actionDisabledTip =
+    tab === 'scene' && isSceneLinked
+      ? t('drama.mention.sceneAlreadyLinkedTip')
+      : undefined
   const detectTip =
     tab === 'scene' && isSceneLinked
       ? t('drama.mention.sceneAlreadyLinkedTip')
@@ -145,9 +151,9 @@ export function EpisodeEditAssetPanel({
             <button
               type="button"
               className="drama-ep-asset-action-btn"
-              disabled={createBusy || detectBusy}
+              disabled={isActionsDisabled}
               onClick={onCreateAsset}
-              title={createTooltip(tab)}
+              title={actionDisabledTip || createTooltip(tab)}
             >
               {createBusy ? t('common.creating') : createLabel(tab)}
             </button>
@@ -156,8 +162,9 @@ export function EpisodeEditAssetPanel({
             <button
               type="button"
               className="drama-ep-asset-action-btn is-ghost"
-              disabled={createBusy || detectBusy}
+              disabled={isActionsDisabled}
               onClick={onImportAsset}
+              title={actionDisabledTip || t('drama.mention.importBtn')}
             >
               {t('drama.mention.importBtn')}
             </button>
