@@ -1,6 +1,7 @@
 /** Trình chỉnh sửa tập: Tái tạo bố cục bốn cột của dự án gốc (Assets/Script/Preview/Storyboard) */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ChevronLeft } from 'lucide-react'
 import {
   dramaApi,
   resolveDramaMediaUrl,
@@ -660,13 +661,16 @@ function EpisodeEditInner() {
         <div className="drama-ep-header-left">
           <button
             type="button"
-            className="drama-ep-icon-btn"
+            className="drama-ep-back-btn"
             aria-label={t('drama.episodeEdit.back')}
+            title={t('drama.episodeEdit.back')}
             onClick={handleBack}
           >
-            ‹
+            <ChevronLeft size={18} strokeWidth={2.2} />
           </button>
-          <h1>{displayEpisodeName}</h1>
+          <div className="drama-ep-header-title-wrap">
+            <h1 className="drama-ep-header-title">{displayEpisodeName}</h1>
+          </div>
         </div>
         <div className="drama-ep-header-controls">
           <EpisodeEditHeaderControls

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { Link } from 'react-router-dom'
-import { Boxes, Sparkles } from 'lucide-react'
+import { Boxes, Sparkles, ChevronLeft } from 'lucide-react'
 import { dramaApi, resolveDramaAssetPreviewUrl, type DramaAsset, type DramaProject } from '../../api/drama'
 import { api, type BillingPreflight } from '../../api'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
@@ -51,6 +51,7 @@ const seedingProjectIds = new Set<number>()
 type AssetsStepProps = {
   projectId: number
   onError: (m: string) => void
+  onBack?: () => void
 }
 
 // Chuẩn hóa giao diện trả về dưới dạng mảng nội dung để tránh sự cố không xác định.filter
@@ -65,7 +66,7 @@ function needsImageGeneration(asset: DramaAsset): boolean {
 }
 
 // Hiển thị các bước thư viện nội dung
-export function AssetsStep({ projectId, onError }: AssetsStepProps) {
+export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
   const { t } = useI18n()
   const ASSET_TABS: Array<{ key: AssetTabKey; label: string }> = [
     { key: 'character', label: t('drama.assetsStep.character') },
@@ -694,6 +695,18 @@ export function AssetsStep({ projectId, onError }: AssetsStepProps) {
     <div className="drama-assets-step">
       <header className="drama-assets-hero">
         <div className="drama-step-hero-main">
+          {onBack && (
+            <button
+              type="button"
+              className="drama-workspace-back-btn"
+              onClick={onBack}
+              title={t('common.back')}
+              aria-label={t('common.back')}
+              style={{ marginRight: 8 }}
+            >
+              <ChevronLeft size={18} strokeWidth={2.2} />
+            </button>
+          )}
           <div className="drama-step-hero-icon" aria-hidden>
             <Boxes size={22} strokeWidth={1.75} />
           </div>

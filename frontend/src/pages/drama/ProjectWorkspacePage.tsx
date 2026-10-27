@@ -1,7 +1,7 @@
 /** Quy trình làm việc của dự án phim truyền hình truyện tranh: phác thảo cốt truyện → bảng phân cảnh → tạo video; thư viện tài sản là một lối vào độc lập */
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { Boxes, ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Pencil } from 'lucide-react'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
 import AppShell from '../../components/layout/AppShell'
 import { useI18n } from '../../i18n'
@@ -185,11 +185,18 @@ function WorkspaceInner() {
           <div className="drama-workspace-top-left">
             <button
               type="button"
-              className="drama-icon-btn"
+              className="drama-workspace-back-btn drama-icon-btn"
               aria-label={t('common.back')}
-              onClick={() => navigate('/drama/dramas')}
+              title={t('common.back')}
+              onClick={() => {
+                if (assetsOpen) {
+                  setAssetsOpen(false)
+                } else {
+                  navigate('/drama/dramas')
+                }
+              }}
             >
-              <ChevronLeft size={20} strokeWidth={1.75} />
+              <ChevronLeft size={18} strokeWidth={2.2} />
             </button>
             {editingTitle ? (
               <input
@@ -207,8 +214,14 @@ function WorkspaceInner() {
                 }}
               />
             ) : (
-              <button type="button" className="drama-title-display" onClick={() => setEditingTitle(true)}>
-                {project.title}
+              <button
+                type="button"
+                className="drama-title-display"
+                title={t('common.edit')}
+                onClick={() => setEditingTitle(true)}
+              >
+                <span>{project.title}</span>
+                <Pencil size={13} className="drama-title-edit-icon" aria-hidden />
               </button>
             )}
           </div>
@@ -219,21 +232,19 @@ function WorkspaceInner() {
                 {formatDramaUsageBrief(project.usage)}
               </span>
             ) : null}
-            <button
-              type="button"
-              className={`drama-assets-entry-btn${assetsOpen ? ' is-active' : ''}`}
-              onClick={() => setAssetsOpen((open) => !open)}
-            >
-              <Boxes size={15} strokeWidth={2} aria-hidden />
-              {t('drama.workspace.assets')}
-            </button>
           </div>
         </header>
 
         {error ? <BillingErrorNotice message={error} className="drama-error drama-workspace-banner" /> : null}
 
         <main className="drama-workspace-main">
-          {assetsOpen ? <AssetsStep projectId={id} onError={setError} /> : null}
+          {assetsOpen ? (
+            <AssetsStep
+              projectId={id}
+              onError={setError}
+              onBack={() => setAssetsOpen(false)}
+            />
+          ) : null}
           {!assetsOpen && activeStep === 'outline' ? (
             <OutlineStep
               projectId={id}
@@ -243,6 +254,7 @@ function WorkspaceInner() {
                 setTitleDraft(p.title)
               }}
               onError={setError}
+              onOpenAssets={() => setAssetsOpen(true)}
             />
           ) : null}
         </main>

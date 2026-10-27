@@ -20,6 +20,7 @@ import { DramaImageStyleModal } from './DramaImageStyleModal'
 import { DramaProjectSettingsModal } from './DramaProjectSettingsModal'
 import { OutlineEpisodePanel } from './OutlineEpisodePanel'
 import BillingErrorNotice from '../../components/billing/BillingErrorNotice'
+import { Boxes } from 'lucide-react'
 import { useI18n } from '../../i18n'
 
 type MetaModalKey = 'source' | 'summary' | 'project'
@@ -30,6 +31,7 @@ export type OutlineStepProps = {
   onProjectChange: (p: DramaProject) => void
   onOutlineReadyChange?: (ready: boolean) => void
   onError: (msg: string) => void
+  onOpenAssets?: () => void
 }
 
 export function OutlineStep({
@@ -38,6 +40,7 @@ export function OutlineStep({
   onProjectChange,
   onOutlineReadyChange,
   onError,
+  onOpenAssets,
 }: OutlineStepProps) {
   const { t } = useI18n()
   const notifyOutlineReady = (ready: boolean) => onOutlineReadyChange?.(ready)
@@ -364,6 +367,16 @@ export function OutlineStep({
           >
             {t('drama.outline.globalSettings')}
           </button>
+          {onOpenAssets && (
+            <button
+              type="button"
+              className="drama-outline-chip-btn drama-outline-assets-btn"
+              onClick={onOpenAssets}
+            >
+              <Boxes size={14} strokeWidth={2} aria-hidden />
+              {t('drama.workspace.assets')}
+            </button>
+          )}
           {(episodeError || episodeStatus === 'failed') && (
             <button type="button" className="drama-outline-chip-btn" onClick={() => void handleRegenerateEpisodes()}>
               {t('drama.outline.rerunAllEpisodes')}
