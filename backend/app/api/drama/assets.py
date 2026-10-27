@@ -25,7 +25,11 @@ from app.schemas_drama import (
     DramaDetectAssetsResponse,
     SeedAssetsFromScriptOut,
 )
-from app.services.drama.detect_assets_llm import detect_assets_with_llm
+from app.services.drama.detect_assets_llm import (
+    detect_assets_with_llm,
+    detect_or_create_scene_with_llm,
+)
+from app.services.drama.seed_asset_params import build_named_image_params
 from app.services.drama.access import get_owned_drama_project
 from app.services.billing import run_billed_ephemeral
 from app.services.billing.http import http_exception_for_value_error
@@ -314,13 +318,13 @@ async def activate_image_version(
     return DramaAssetOut.model_validate(asset)
 
 
-@router.delete("/assets/{asset_id}")
-async def delete_asset(
+@router.get("/assets/{asset_id}/usage")
+async def get_asset_usage(
     asset_id: int,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
-) -> dict:
-    from app.models_drama import DramaProject
+) -> dict[str, Any]:
+    from app.models_drama import DramaAsset, DramaEpisode, DramaEpisodeFragment, DramaFragmentAssetRef, DramaProject
 
     result = await db.execute(
         select(DramaAsset)
@@ -329,7 +333,114 @@ async def delete_asset(
     )
     asset = result.scalar_one_or_none()
     if not asset:
-        raise HTTPException(status_code=404, detail="资产不存在")
+        raise HTTPException(status_code=404, detail="Tài sản không tồn tại")
+
+    ref_stmt = (
+        select(
+            DramaEpisode.id.label("episode_id"),
+            DramaEpisode.name.label("episode_name"),
+            DramaEpisode.params.label("episode_params"),
+            DramaEpisodeFragment.id.label("fragment_id"),
+            DramaEpisodeFragment.sort_order.label("fragment_order"),
+        )
+        .select_from(DramaFragmentAssetRef)
+        .join(DramaEpisodeFragment, DramaFragmentAssetRef.fragment_id == DramaEpisodeFragment.id)
+        .join(DramaEpisode, DramaEpisodeFragment.episode_id == DramaEpisode.id)
+        .where(DramaFragmentAssetRef.asset_id == asset_id)
+    )
+    ref_rows = (await db.execute(ref_stmt)).all()
+
+    text_stmt = (
+        select(
+            DramaEpisode.id.label("episode_id"),
+            DramaEpisode.name.label("episode_name"),
+            DramaEpisode.params.label("episode_params"),
+            DramaEpisodeFragment.id.label("fragment_id"),
+            DramaEpisodeFragment.sort_order.label("fragment_order"),
+        )
+        .select_from(DramaEpisodeFragment)
+        .join(DramaEpisode, DramaEpisodeFragment.episode_id == DramaEpisode.id)
+        .where(
+            DramaEpisode.project_id == asset.project_id,
+            DramaEpisodeFragment.content.like(f"%@asset:{asset_id}%"),
+        )
+    )
+    text_rows = (await db.execute(text_stmt)).all()
+
+    frag_seen: set[int] = set()
+    episode_map: dict[int, dict[str, Any]] = {}
+
+    for r in list(ref_rows) + list(text_rows):
+        fid = int(r.fragment_id)
+        if fid in frag_seen:
+            continue
+        frag_seen.add(fid)
+
+        eid = int(r.episode_id)
+        if eid not in episode_map:
+            ep_no = (r.episode_params or {}).get("episodeNumber") if isinstance(r.episode_params, dict) else None
+            ep_label = f"Tập {ep_no}" if ep_no else (r.episode_name or f"Tập {eid}")
+            episode_map[eid] = {
+                "episode_id": eid,
+                "label": ep_label,
+                "fragment_count": 0,
+                "_frag_orders": [],
+            }
+        episode_map[eid]["fragment_count"] += 1
+        order_idx = int(r.fragment_order) if r.fragment_order is not None else 0
+        episode_map[eid]["_frag_orders"].append(order_idx)
+
+    episodes_list = []
+    for ep in episode_map.values():
+        frag_orders = sorted(set(ep.pop("_frag_orders", [])))
+        ep["fragment_orders"] = [idx + 1 for idx in frag_orders]
+        ep["fragments"] = [f"Phân cảnh {idx + 1:02d}" for idx in frag_orders]
+        episodes_list.append(ep)
+
+    episodes_list.sort(key=lambda x: x["episode_id"])
+
+    return {
+        "asset_id": asset_id,
+        "asset_name": asset.name,
+        "asset_type": asset.type,
+        "linked_fragment_count": len(frag_seen),
+        "episodes": episodes_list,
+    }
+
+
+@router.delete("/assets/{asset_id}")
+async def delete_asset(
+    asset_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    from app.models_drama import DramaAsset, DramaAssetEpisode, DramaFragmentAssetRef, DramaProject
+    from app.models_tasks import TaskRun
+    from sqlalchemy import delete, update
+
+    result = await db.execute(
+        select(DramaAsset)
+        .join(DramaProject, DramaAsset.project_id == DramaProject.id)
+        .where(DramaAsset.id == asset_id, DramaProject.user_id == user.id)
+    )
+    asset = result.scalar_one_or_none()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Tài sản không tồn tại")
+
+    # 1. Bỏ liên kết các task runs đang tham chiếu tới asset này để tránh lỗi foreign key constraint
+    await db.execute(
+        update(TaskRun).where(TaskRun.asset_id == asset.id).values(asset_id=None)
+    )
+
+    # 2. Xóa các liên kết tham chiếu phân cảnh và tập
+    await db.execute(
+        delete(DramaFragmentAssetRef).where(DramaFragmentAssetRef.asset_id == asset.id)
+    )
+    await db.execute(
+        delete(DramaAssetEpisode).where(DramaAssetEpisode.asset_id == asset.id)
+    )
+
+    # 3. Xóa chính asset
     await db.delete(asset)
     await db.commit()
     return {"ok": True}
@@ -472,6 +583,85 @@ async def detect_fragment_assets(
     user: User = Depends(get_current_user),
 ) -> DramaDetectAssetsResponse:
     """Gửi nội dung phân cảnh và danh sách ứng viên trong Kho tài sản lên AI để nhận diện các mục xuất hiện."""
+    # Xử lý riêng cho cảnh quay (bối cảnh): nếu chưa có trong kho thì tự động tạo mới
+    if body.asset_type == "scene":
+        existing_scenes: list[DramaAsset] = []
+        if body.project_id:
+            await get_owned_drama_project(db, body.project_id, user)
+            stmt = select(DramaAsset).where(
+                DramaAsset.project_id == body.project_id,
+                DramaAsset.type == "scene",
+            )
+            existing_scenes = list((await db.execute(stmt)).scalars().all())
+
+        candidates: list[dict[str, Any]] = []
+        if body.candidate_assets:
+            candidates = [c.model_dump() for c in body.candidate_assets if c.type == "scene"]
+        if not candidates and existing_scenes:
+            for a in existing_scenes:
+                p = a.params or {}
+                intro = str(p.get("visualPrompt") or p.get("prompt") or "") if isinstance(p, dict) else ""
+                candidates.append({
+                    "id": a.id,
+                    "name": a.name or "",
+                    "type": "scene",
+                    "intro": intro,
+                })
+
+        scene_res = await detect_or_create_scene_with_llm(
+            content=body.content,
+            candidate_scenes=candidates,
+        )
+
+        matched_id = scene_res.get("matched_id")
+        matched_name = scene_res.get("matched_name")
+        new_scene = scene_res.get("new_scene")
+
+        if matched_id:
+            return DramaDetectAssetsResponse(
+                detected_ids=[int(matched_id)],
+                detected_names=[str(matched_name or "")],
+                created_assets=[],
+            )
+
+        if isinstance(new_scene, dict) and new_scene.get("name") and body.project_id:
+            norm_name = _normalize_asset_name(str(new_scene.get("name") or ""))
+            if norm_name:
+                matched_row = next(
+                    (s for s in existing_scenes if _normalize_asset_name(s.name or "").lower() == norm_name.lower()),
+                    None,
+                )
+                if matched_row:
+                    return DramaDetectAssetsResponse(
+                        detected_ids=[int(matched_row.id)],
+                        detected_names=[str(matched_row.name or norm_name)],
+                        created_assets=[],
+                    )
+
+                base_prompt = str(new_scene.get("prompt") or "").strip()
+                if not base_prompt:
+                    base_prompt = f"Bối cảnh {norm_name}, không gian bối cảnh phim điện ảnh chi tiết, chân thực, ánh sáng tự nhiên ấn tượng, góc quay rộng 16:9."
+                if len(base_prompt) < 100:
+                    base_prompt = f"{base_prompt}. Bối cảnh điện ảnh độ nét cao, bố cục không gian rõ ràng, chiều sâu điện ảnh, tỉ lệ khung hình 16:9, chất lượng 4K Ultra HD."
+                prompt_text = base_prompt
+                created_asset = DramaAsset(
+                    project_id=body.project_id,
+                    type="scene",
+                    asset_type="image",
+                    name=norm_name,
+                    params=build_named_image_params(prompt_text, "16:9", kind="scene"),
+                )
+                db.add(created_asset)
+                await db.commit()
+                await db.refresh(created_asset)
+                return DramaDetectAssetsResponse(
+                    detected_ids=[int(created_asset.id)],
+                    detected_names=[str(created_asset.name or norm_name)],
+                    created_assets=[DramaAssetOut.model_validate(created_asset)],
+                )
+
+        return DramaDetectAssetsResponse(detected_ids=[], detected_names=[], created_assets=[])
+
     candidates: list[dict[str, Any]] = []
     if body.candidate_assets:
         candidates = [c.model_dump() for c in body.candidate_assets]
@@ -507,5 +697,6 @@ async def detect_fragment_assets(
     return DramaDetectAssetsResponse(
         detected_ids=result.get("detected_ids", []),
         detected_names=result.get("detected_names", []),
+        created_assets=[],
     )
 

@@ -265,6 +265,16 @@ async def _apply_schema_patches() -> None:
             await conn.execute(text(f"DROP INDEX IF EXISTS ix_task_runs_{col}"))
             await conn.execute(text(f"ALTER TABLE task_runs DROP COLUMN {col}"))
 
+        # Ensure task_runs.asset_id has ON DELETE SET NULL
+        try:
+            await conn.execute(text("""
+                ALTER TABLE task_runs DROP CONSTRAINT IF EXISTS task_runs_asset_id_fkey;
+                ALTER TABLE task_runs ADD CONSTRAINT task_runs_asset_id_fkey
+                    FOREIGN KEY (asset_id) REFERENCES drama_assets(id) ON DELETE SET NULL;
+            """))
+        except Exception:
+            pass
+
 
 async def bootstrap_admins() -> None:
     # Promote matching emails to admin (does not create users)

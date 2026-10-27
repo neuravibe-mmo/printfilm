@@ -38,6 +38,7 @@ type Props = {
   /** Tự động nhận diện tài sản từ phân cảnh hiện tại */
   onAutoDetect?: () => void
   detectBusy?: boolean
+  hasLinkedScene?: boolean
 }
 
 
@@ -63,6 +64,7 @@ export function EpisodeEditAssetPanel({
   onImportAsset,
   onAutoDetect,
   detectBusy,
+  hasLinkedScene,
 }: Props) {
   const { t } = useI18n()
   const createLabel = (tab: AssetTab | null): string => {
@@ -80,6 +82,16 @@ export function EpisodeEditAssetPanel({
     if (tab === 'prop') return t('drama.mention.autoDetectProps')
     return t('drama.mention.autoDetectCharacters')
   }
+
+  const isSceneLinked =
+    hasLinkedScene ??
+    assets.some((a) => normalizeAssetTab(a.type) === 'scene' && activeIds?.has(a.id))
+  const isDetectDisabled =
+    createBusy || detectBusy || (tab === 'scene' && isSceneLinked)
+  const detectTip =
+    tab === 'scene' && isSceneLinked
+      ? t('drama.mention.sceneAlreadyLinkedTip')
+      : t('drama.mention.autoDetectTip')
   return (
     <aside className="drama-ep-assets">
       <div className="drama-ep-assets-top">
@@ -154,9 +166,9 @@ export function EpisodeEditAssetPanel({
             <button
               type="button"
               className="drama-ep-asset-action-btn drama-ep-asset-action-detect"
-              disabled={createBusy || detectBusy}
+              disabled={isDetectDisabled}
               onClick={onAutoDetect}
-              title={t('drama.mention.autoDetectTip')}
+              title={detectTip}
             >
               {detectBusy ? (
                 <>

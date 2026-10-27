@@ -70,21 +70,32 @@ export function DramaEpisodeDir({
         <p className="drama-episode-dir-empty">{displayEmpty}</p>
       ) : (
         <ul>
-          {items.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className={activeId === item.id ? 'active' : ''}
-                onClick={() => onSelect(item.id)}
-              >
-                <span>{item.label}</span>
-                <small>
-                  {item.title}
-                  {item.meta ? ` · ${item.meta}` : ''}
-                </small>
-              </button>
-            </li>
-          ))}
+          {items.map((item) => {
+            const isActive = activeId === item.id
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={isActive ? 'active' : ''}
+                  aria-current={isActive ? 'true' : undefined}
+                  onClick={() => onSelect(item.id)}
+                >
+                  <div className="drama-episode-dir-item-head">
+                    <span className="drama-episode-dir-item-label">{item.label}</span>
+                    {isActive ? (
+                      <span className="drama-episode-dir-badge">
+                        {t ? t('drama.episodeEdit.current') || 'Hiện tại' : 'Hiện tại'}
+                      </span>
+                    ) : null}
+                  </div>
+                  <small>
+                    {item.title}
+                    {item.meta ? ` · ${item.meta}` : ''}
+                  </small>
+                </button>
+              </li>
+            )
+          })}
         </ul>
       )}
     </aside>

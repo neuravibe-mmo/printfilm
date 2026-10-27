@@ -171,6 +171,20 @@ export type SeedAssetsResult = {
   message?: string | null
 }
 
+export type DramaAssetUsage = {
+  asset_id: number
+  asset_name?: string
+  asset_type?: string
+  linked_fragment_count: number
+  episodes: Array<{
+    episode_id: number
+    label: string
+    fragment_count: number
+    fragments?: string[]
+    fragment_orders?: number[]
+  }>
+}
+
 export type DramaFragment = {
   id: number
   episode_id: number
@@ -368,6 +382,8 @@ export const dramaApi = {
     }),
   deleteAsset: (id: number) =>
     request<{ ok: boolean }>(`/api/drama/assets/${id}`, { method: 'DELETE' }),
+  getAssetUsage: (id: number) =>
+    request<DramaAssetUsage>(`/api/drama/assets/${id}/usage`),
   seedAssets: async (
     projectId: number,
     options?: { refreshPrompts?: boolean; reextractProps?: boolean },
@@ -404,6 +420,7 @@ export const dramaApi = {
     request<{
       detected_ids: number[]
       detected_names: string[]
+      created_assets?: DramaAsset[]
     }>('/api/drama/assets/detect', {
       method: 'POST',
       body: JSON.stringify(body),

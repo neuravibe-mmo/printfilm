@@ -2505,6 +2505,36 @@
   letter-spacing: -0.02em;
 }
 
+.drama-assets-hero-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.drama-assets-hero-header-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drama-assets-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drama-assets-hero-title-row h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.drama-step-hero-sub.has-back {
+  padding-left: 46px;
+}
+
 .drama-outline-style {
   flex-shrink: 0;
   align-self: flex-start;
@@ -3694,7 +3724,8 @@
 .drama-episode-dir button {
   width: 100%;
   text-align: left;
-  border: none;
+  border: 1px solid transparent;
+  border-left: 3.5px solid transparent;
   background: transparent;
   border-radius: 10px;
   padding: 8px 10px;
@@ -3702,13 +3733,23 @@
   font: inherit;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.drama-episode-dir-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
 }
 
 .drama-episode-dir button span {
   font-size: 13px;
   font-weight: 600;
   color: #334155;
+  transition: color 0.15s ease;
 }
 
 .drama-episode-dir button small {
@@ -3717,11 +3758,44 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.15s ease;
 }
 
-.drama-episode-dir button.active,
-.drama-episode-dir button:hover {
-  background: #fff;
+.drama-episode-dir button:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: #e2e8f0;
+  border-left-color: #cbd5e1;
+}
+
+.drama-episode-dir button.active {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  border-left-color: #0f172a;
+  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.08), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
+}
+
+.drama-episode-dir button.active span {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.drama-episode-dir button.active small {
+  color: #475569;
+  font-weight: 500;
+}
+
+.drama-episode-dir-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
 .drama-outline-main {
@@ -3975,9 +4049,11 @@
 /* Assets / Episodes steps */
 .drama-assets-step,
 .drama-episodes-step {
-  max-width: 1080px;
+  width: 100%;
+  max-width: 1520px;
   margin: 0 auto;
-  padding: 28px 20px 72px;
+  padding: 28px 32px 72px;
+  box-sizing: border-box;
 }
 
 .drama-assets-toolbar {
@@ -4787,6 +4863,14 @@
   background: #dcfce7;
   border-color: #4ade80;
   color: #166534;
+}
+
+.drama-ep-asset-action-btn.drama-ep-asset-action-detect:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
 }
 
 .drama-ep-asset-action-btn.drama-ep-asset-action-detect .drama-ep-detect-spin {

@@ -18,6 +18,7 @@ import {
   filterEpisodeAssets,
   formatFragLabel,
   isFragmentGenerationBusy,
+  normalizeAssetTab,
   readFragmentGenerationStatus,
   readFragmentVideoVersions,
   type AssetScope,
@@ -209,6 +210,10 @@ function EpisodeEditInner() {
         return voice ? { label: voice.label, url: voice.url } : null
       }),
     [selected, assets],
+  )
+  const hasLinkedScene = useMemo(
+    () => selectedRefItems.some((item) => normalizeAssetTab(item.type) === 'scene'),
+    [selectedRefItems],
   )
   // selectedGateIssues Kiểm soát truy cập tập lệnh/nội dung hiện tại (lời nhắc ngay lập tức trong khu vực chỉnh sửa)
   const selectedGateIssues = useMemo(() => {
@@ -745,6 +750,7 @@ function EpisodeEditInner() {
             tab={assetTab}
             assets={filteredAssets}
             activeIds={selectedRefIds}
+            hasLinkedScene={hasLinkedScene}
             imageBusyIds={imageBusyIds}
             createBusy={assetCreateBusy}
             onScopeChange={setAssetScope}

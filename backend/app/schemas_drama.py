@@ -335,4 +335,5 @@ class DramaDetectAssetsRequest(BaseModel):
 class DramaDetectAssetsResponse(BaseModel):
     detected_ids: list[int] = Field(default_factory=list)
     detected_names: list[str] = Field(default_factory=list)
+    created_assets: list[DramaAssetOut] = Field(default_factory=list)
 

@@ -209,8 +209,17 @@ export function useEpisodeAssetActions({
     }
     const currentTab = assetTab || 'character'
     const targetKind = currentTab === 'scene' ? 'scene' : currentTab === 'prop' ? 'prop' : 'character'
+    if (targetKind === 'scene') {
+      const hasScene = (assets ?? []).some(
+        (a) => (a.type || '').toLowerCase() === 'scene' && (selected.asset_ids || []).includes(a.id),
+      )
+      if (hasScene) {
+        setStatus(t('drama.mention.sceneAlreadyLinkedTip'))
+        return
+      }
+    }
     const pool = (assets ?? []).filter((a) => (a.type || '').toLowerCase() === targetKind)
-    if (pool.length === 0) {
+    if (targetKind !== 'scene' && pool.length === 0) {
       const kindLabel = getAssetTabLabel(currentTab)
       setStatus(t('drama.episodeEdit.noAssetsInLibrary').replace('{kind}', kindLabel))
       return
@@ -242,8 +251,18 @@ export function useEpisodeAssetActions({
         project_id: pid,
       })
 
+      let currentAssets = assets ?? []
+      if (res.created_assets && res.created_assets.length > 0) {
+        const existingIdsSet = new Set(currentAssets.map((a) => a.id))
+        const fresh = res.created_assets.filter((a) => !existingIdsSet.has(a.id))
+        if (fresh.length > 0) {
+          currentAssets = [...currentAssets, ...fresh]
+          setAssets(currentAssets)
+        }
+      }
+
       const detectedIds = res.detected_ids || []
-      const detected = pool.filter((a) => detectedIds.includes(a.id))
+      const detected = currentAssets.filter((a) => detectedIds.includes(a.id))
       const kindLabel = getAssetTabLabel(currentTab)
       if (detected.length === 0) {
         setStatus(t('drama.episodeEdit.noDetectedAssets').replace('{kind}', kindLabel))
@@ -267,7 +286,9 @@ export function useEpisodeAssetActions({
         detectedNames.push(...res.detected_names)
       }
 
-      nextContent = highlightCharacterNamesInContent(nextContent, detectedNames)
+      if (targetKind === 'character') {
+        nextContent = highlightCharacterNamesInContent(nextContent, detectedNames)
+      }
 
       const mergedIds = Array.from(new Set([...existingIds, ...detectedIds]))
 
@@ -284,17 +305,39 @@ export function useEpisodeAssetActions({
       }
 
       const names = detected.map((a) => a.name || `ID ${a.id}`).join(', ')
-      if (newIds.length === 0) {
-        setStatus(t('drama.episodeEdit.detectedAlreadyLinked').replace('{names}', names))
+      const scenesToGen =
+        targetKind === 'scene'
+          ? detected.filter((s) => !dramaAssetHasImage(s) && !imageBusyIds.has(s.id))
+          : []
+
+      if (res.created_assets && res.created_assets.length > 0) {
+        setStatus(
+          scenesToGen.length > 0
+            ? `Đã trích xuất & thêm bối cảnh mới "${names}" vào kho tài sản, đang tự động tạo ảnh cảnh quay…`
+            : `Đã trích xuất & thêm bối cảnh mới "${names}" vào kho tài sản và liên kết với phân cảnh.`,
+        )
+      } else if (newIds.length === 0) {
+        setStatus(
+          scenesToGen.length > 0
+            ? `Bối cảnh "${names}" đã liên kết, đang tự động tạo ảnh cảnh quay…`
+            : t('drama.episodeEdit.detectedAlreadyLinked').replace('{names}', names),
+        )
       } else {
         setStatus(
-          t('drama.episodeEdit.detectedSuccess')
-            .replace('{n}', String(newIds.length))
-            .replace('{names}', names),
+          scenesToGen.length > 0
+            ? `Đã liên kết cảnh quay "${names}", đang tự động tạo ảnh cảnh quay…`
+            : t('drama.episodeEdit.detectedSuccess')
+                .replace('{n}', String(newIds.length))
+                .replace('{names}', names),
         )
       }
+
+      // Tự động tạo ảnh cảnh quay nếu cảnh chưa có ảnh
+      for (const sceneAsset of scenesToGen) {
+        void enqueueAssetImage(sceneAsset, true)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lỗi khi gọi AI nhận diện nhân vật')
+      setError(err instanceof Error ? err.message : 'Lỗi khi gọi AI nhận diện tài sản')
     } finally {
       setDetectBusy(false)
     }
@@ -311,9 +354,9 @@ export function useEpisodeAssetActions({
     }
   }
 
-  async function enqueueAssetImage(asset: DramaAsset) {
+  async function enqueueAssetImage(asset: DramaAsset, skipConfirm = false) {
     if (imageBusyIds.has(asset.id)) return
-    if (dramaAssetHasImage(asset)) {
+    if (!skipConfirm && dramaAssetHasImage(asset)) {
       const ok = await dialog.confirm({
         title: t('drama.assetsStep.regenConfirmTitle'),
         message: t('drama.assetsStep.regenConfirmMessage').replace(

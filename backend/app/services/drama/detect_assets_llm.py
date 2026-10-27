@@ -171,3 +171,175 @@ async def detect_assets_with_llm(
         "detected_ids": detected_ids,
         "detected_names": detected_names,
     }
+
+
+DETECT_SCENE_SYSTEM = """Bạn là chuyên gia phân tích bối cảnh kịch bản phim.
+Nhiệm vụ của bạn là đọc nội dung của một phân cảnh cụ thể và xác định BỐI CẢNH / ĐỊA ĐIỂM (Scene / Location) chính diễn ra phân cảnh đó.
+
+Đầu vào gồm:
+1. Nội dung phân cảnh.
+2. Danh sách các bối cảnh (cảnh quay) ĐÃ CÓ trong Kho tài sản của dự án (nếu có).
+
+Quy tắc:
+1. Xác định địa điểm chính diễn ra phân cảnh (ví dụ: "Phòng khách", "Phòng thí nghiệm", "Quán cà phê", "Bệnh viện", "Văn phòng cảnh sát", "Đường phố ban đêm"...).
+2. Nếu địa điểm này tương đồng hoặc trùng khớp với một bối cảnh trong danh sách ĐÃ CÓ (dù tên viết khác đôi chút, ví dụ "Phòng Lab" vs "Phòng thí nghiệm"), hãy CHỌN bối cảnh ĐÃ CÓ đó (trả về matched_id và matched_name).
+3. Nếu địa điểm này CHƯA CÓ trong danh sách ĐÃ CÓ: hãy trích xuất một bối cảnh MỚI:
+   - name: Tên ngắn gọn của địa điểm (2-5 từ, ví dụ "Phòng thí nghiệm bí mật", "Quán cà phê", "Văn phòng cảnh sát").
+   - prompt: Mô tả trực quan ngắn gọn về bối cảnh này để vẽ ảnh minh họa chất lượng cao (ánh sáng, phong cách, chi tiết không gian, nội thất, góc nhìn rộng 16:9).
+4. Nếu phân cảnh hoàn toàn trừu tượng hoặc không thể xác định được địa điểm, trả về matched_id: null, new_scene: null.
+
+Trả về kết quả dưới định dạng JSON thuần túy (không kèm markdown):
+{
+  "matched_id": 123,
+  "matched_name": "Tên bối cảnh đã có",
+  "new_scene": {
+    "name": "Tên bối cảnh mới",
+    "prompt": "Mô tả chi tiết bối cảnh"
+  }
+}
+Lưu ý: Nếu đã có matched_id thì new_scene là null; nếu là bối cảnh mới thì matched_id và matched_name là null.
+"""
+
+
+def _fallback_scene_detect(
+    content: str,
+    candidates: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Phát hiện khẩn cấp dự phòng cho bối cảnh khi LLM không khả dụng."""
+    text = (content or "").strip()
+    if not text:
+        return {"matched_id": None, "matched_name": None, "new_scene": None}
+
+    # 1. Kiểm tra xem tên bối cảnh có sẵn nào xuất hiện trong text
+    for c in candidates:
+        cid = int(c.get("id") or 0)
+        cname = str(c.get("name") or "").strip()
+        if not cname:
+            continue
+        if re.search(rf"(?:\b|(?<=\W)){re.escape(cname.lower())}(?:\b|(?=\W))", text.lower()):
+            return {"matched_id": cid, "matched_name": cname, "new_scene": None}
+
+    # 2. Quét regex các thẻ phân cảnh phổ biến (Tiếng Việt, Tiếng Anh, Tiếng Trung)
+    scene_regexes = [
+        r"【(?:Bối cảnh|Cảnh|Địa điểm|Bối cảnh chính|Scene)[:：]\s*([^】\n]+)】",
+        r"^(?:NỘI|NGOẠI|NỘI\/NGOẠI|INT|EXT|INT\/EXT)[. \t\/-]+(?:NGÀY|ĐÊM|SÁNG|TỐI|CHIỀU)?[. \t\/-]*(.+)$",
+        r"^(?:NGÀY|ĐÊM|SÁNG|TỐI|CHIỀU)?[. \t\/-]*(?:NỘI|NGOẠI|NỘI\/NGOẠI|INT|EXT|INT\/EXT)[. \t\/-]+(.+)$",
+        r"^Cảnh\s*\d*[:.]\s*(.+)$",
+        r"^(?:日|夜|晨|黄昏|傍晚|凌晨|清晨|午|晚)?[ \t]*(?:内|外|内外)[ \t]+(.+)$",
+    ]
+    for pattern in scene_regexes:
+        m = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+        if m:
+            raw_name = m.group(1).strip().split("／")[0].split("/")[0].split("-")[0].strip()
+            raw_name = re.sub(r"^[0-9]+[.:\s]*", "", raw_name).strip()
+            if len(raw_name) >= 2:
+                for c in candidates:
+                    if str(c.get("name") or "").strip().lower() == raw_name.lower():
+                        return {"matched_id": int(c.get("id") or 0), "matched_name": c.get("name"), "new_scene": None}
+                return {
+                    "matched_id": None,
+                    "matched_name": None,
+                    "new_scene": {
+                        "name": raw_name,
+                        "prompt": f"Bối cảnh: {raw_name}, phong cách điện ảnh chân thực, góc rộng, 16:9",
+                    },
+                }
+
+    # 3. Quét thẻ hình ảnh: 【Hình ảnh: ...】 tìm từ chỉ nơi chốn
+    img_match = re.search(r"【Hình ảnh[：:]\s*([^】\n]+)】", text, re.IGNORECASE)
+    if img_match:
+        img_desc = img_match.group(1).strip()
+        loc_match = re.search(r"(?:tại|ở|trong|bên trong|ngoài|bên ngoài)\s+([^,.;]+)", img_desc, re.IGNORECASE)
+        if loc_match:
+            loc_name = loc_match.group(1).strip().capitalize()
+            if 2 <= len(loc_name.split()) <= 6:
+                return {
+                    "matched_id": None,
+                    "matched_name": None,
+                    "new_scene": {
+                        "name": loc_name,
+                        "prompt": f"Bối cảnh: {loc_name}, {img_desc}, góc rộng 16:9",
+                    },
+                }
+
+    return {"matched_id": None, "matched_name": None, "new_scene": None}
+
+
+async def detect_or_create_scene_with_llm(
+    content: str,
+    candidate_scenes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Phân tích nội dung phân cảnh để nhận diện bối cảnh đã có hoặc trích xuất bối cảnh mới."""
+    cleaned_content = (content or "").strip()
+    if not cleaned_content:
+        return {"matched_id": None, "matched_name": None, "new_scene": None}
+
+    candidate_lines: list[str] = []
+    for c in candidate_scenes:
+        cid = c.get("id")
+        cname = c.get("name")
+        intro = c.get("intro") or ""
+        intro_str = f" - Mô tả: {intro}" if intro else ""
+        candidate_lines.append(f"- ID {cid}: \"{cname}\"{intro_str}")
+
+    candidates_block = "\n".join(candidate_lines) if candidate_lines else "(Kho dự án hiện chưa có bối cảnh nào)"
+
+    user_prompt = (
+        f"【Nội dung phân cảnh cần phân tích】:\n"
+        f"{cleaned_content}\n\n"
+        f"【Danh sách bối cảnh ĐÃ CÓ trong kho tài sản】:\n"
+        f"{candidates_block}\n\n"
+        f"Hãy đọc nội dung phân cảnh và thực hiện nhiệm vụ: nếu địa điểm đã có trong kho thì trả về matched_id, nếu chưa có thì trích xuất new_scene (name và prompt).\n"
+        f"Trả về JSON:"
+    )
+
+    try:
+        raw_res = await drama_chat_json(
+            DETECT_SCENE_SYSTEM,
+            user_prompt,
+            temperature=0.1,
+            max_tokens=1024,
+        )
+    except Exception as exc:
+        logger.warning("Lỗi gọi LLM detect scene: %s, chuyển sang fallback", exc)
+        return _fallback_scene_detect(cleaned_content, candidate_scenes)
+
+    if not isinstance(raw_res, dict):
+        return _fallback_scene_detect(cleaned_content, candidate_scenes)
+
+    matched_id = raw_res.get("matched_id")
+    matched_name = raw_res.get("matched_name")
+    new_scene = raw_res.get("new_scene")
+
+    if matched_id:
+        try:
+            mid = int(matched_id)
+            c_hit = next((c for c in candidate_scenes if int(c.get("id") or 0) == mid), None)
+            if c_hit:
+                return {
+                    "matched_id": mid,
+                    "matched_name": str(c_hit.get("name") or matched_name or ""),
+                    "new_scene": None,
+                }
+        except (ValueError, TypeError):
+            pass
+
+    if isinstance(new_scene, dict) and new_scene.get("name"):
+        name_clean = str(new_scene.get("name") or "").strip()
+        c_hit = next((c for c in candidate_scenes if str(c.get("name") or "").strip().lower() == name_clean.lower()), None)
+        if c_hit:
+            return {
+                "matched_id": int(c_hit.get("id") or 0),
+                "matched_name": str(c_hit.get("name") or ""),
+                "new_scene": None,
+            }
+        return {
+            "matched_id": None,
+            "matched_name": None,
+            "new_scene": {
+                "name": name_clean,
+                "prompt": str(new_scene.get("prompt") or f"Bối cảnh: {name_clean}, bối cảnh điện ảnh chân thực, góc rộng, 16:9").strip(),
+            },
+        }
+
+    return _fallback_scene_detect(cleaned_content, candidate_scenes)

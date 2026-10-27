@@ -2,8 +2,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { Link } from 'react-router-dom'
-import { Boxes, Sparkles, ChevronLeft } from 'lucide-react'
-import { dramaApi, resolveDramaAssetPreviewUrl, type DramaAsset, type DramaProject } from '../../api/drama'
+import { Sparkles, ChevronLeft } from 'lucide-react'
+import { dramaApi, resolveDramaAssetPreviewUrl, type DramaAsset, type DramaAssetUsage, type DramaProject } from '../../api/drama'
 import { api, type BillingPreflight } from '../../api'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
 import { enqueueDramaImageGen, resumeDramaImageGensFromAssets } from '../../lib/dramaImageGenQueue'
@@ -67,7 +67,7 @@ function needsImageGeneration(asset: DramaAsset): boolean {
 
 // Hiển thị các bước thư viện nội dung
 export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const ASSET_TABS: Array<{ key: AssetTabKey; label: string }> = [
     { key: 'character', label: t('drama.assetsStep.character') },
     { key: 'scene', label: t('drama.assetsStep.scene') },
@@ -550,23 +550,75 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
 
   // Xóa tài sản
   async function handleDeleteAsset(asset: DramaAsset) {
-    const isChar = (asset.type || '').toLowerCase() === 'character'
-    const title = isChar ? t('drama.assetsStep.deleteCharTitle') : t('drama.assets.deleteAsset')
-    const message = isChar
-      ? t('drama.assetsStep.deleteCharMessage').replace('{name}', asset.name || t('common.unnamed'))
-      : t('drama.assets.deleteConfirm')
-    const ok = await dialog.confirm({
-      title,
-      message,
-      tone: 'danger',
-      confirmText: t('common.delete'),
-      cancelText: t('common.cancel'),
-    })
-    if (!ok) return
     if (busyAssetIds.has(asset.id)) {
       onError(t('drama.assetsStep.charGenerating'))
       return
     }
+
+    const kind = (asset.type || '').toLowerCase()
+    const isChar = kind === 'character' || kind === '角色'
+    const isScene = kind === 'scene' || kind === '场景'
+    const kindLabel = isChar
+      ? (locale === 'zh' ? '角色' : locale === 'en' ? 'character' : 'nhân vật')
+      : isScene
+        ? (locale === 'zh' ? '场景' : locale === 'en' ? 'scene' : 'cảnh quay')
+        : (locale === 'zh' ? '道具' : locale === 'en' ? 'prop' : 'đạo cụ')
+
+    // Kiểm tra tài sản có đang được liên kết với phân cảnh nào không
+    let usage: DramaAssetUsage | null = null
+    try {
+      usage = await dramaApi.getAssetUsage(asset.id)
+    } catch {
+      /* ignore usage query error */
+    }
+
+    const isLinked = Boolean(usage && usage.linked_fragment_count > 0)
+    let title: string
+    let message: string
+    let confirmText = t('common.delete')
+
+    if (isLinked && usage) {
+      const fragPrefix = locale === 'zh' ? '片段' : locale === 'en' ? 'Scene' : 'Phân cảnh'
+      const details = usage.episodes
+        .map((ep) => {
+          const fragList = (ep.fragment_orders || []).length > 0
+            ? ep.fragment_orders!.map((num) => `${fragPrefix} ${String(num).padStart(2, '0')}`).join(', ')
+            : ep.fragments && ep.fragments.length > 0
+              ? ep.fragments.join(', ')
+              : `${ep.fragment_count} ${fragPrefix.toLowerCase()}`
+          return `• ${ep.label}: ${fragList}`
+        })
+        .join('\n')
+
+      title = t('drama.assetsStep.deleteAssetInUseTitle', { kind: kindLabel })
+      message = t('drama.assetsStep.deleteAssetInUseMessage', {
+        name: asset.name || t('common.unnamed'),
+        details,
+        kind: kindLabel,
+      })
+      confirmText = t('drama.assetsStep.deleteAssetInUseConfirm')
+    } else {
+      title = isChar
+        ? t('drama.assetsStep.deleteCharTitle')
+        : isScene
+          ? t('drama.assetsStep.deleteSceneTitle')
+          : t('drama.assets.deleteAsset')
+      message = isChar
+        ? t('drama.assetsStep.deleteCharMessage', { name: asset.name || t('common.unnamed') })
+        : isScene
+          ? t('drama.assetsStep.deleteSceneMessage', { name: asset.name || t('common.unnamed') })
+          : t('drama.assets.deleteConfirm')
+    }
+
+    const ok = await dialog.confirm({
+      title,
+      message,
+      tone: 'danger',
+      confirmText,
+      cancelText: t('common.cancel'),
+    })
+    if (!ok) return
+
     try {
       await dramaApi.deleteAsset(asset.id)
       setAssets((prev) => (prev ?? []).filter((a) => a.id !== asset.id))
@@ -694,26 +746,24 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
   return (
     <div className="drama-assets-step">
       <header className="drama-assets-hero">
-        <div className="drama-step-hero-main">
-          {onBack && (
-            <button
-              type="button"
-              className="drama-workspace-back-btn"
-              onClick={onBack}
-              title={t('common.back')}
-              aria-label={t('common.back')}
-              style={{ marginRight: 8 }}
-            >
-              <ChevronLeft size={18} strokeWidth={2.2} />
-            </button>
-          )}
-          <div className="drama-step-hero-icon" aria-hidden>
-            <Boxes size={22} strokeWidth={1.75} />
-          </div>
-          <div>
-            <h2>{t('drama.assetsStep.title')}</h2>
+        <div className="drama-step-hero-main drama-assets-hero-main">
+          <div className="drama-assets-hero-header-wrap">
+            <div className="drama-assets-hero-title-row">
+              {onBack && (
+                <button
+                  type="button"
+                  className="drama-workspace-back-btn"
+                  onClick={onBack}
+                  title={t('common.back')}
+                  aria-label={t('common.back')}
+                >
+                  <ChevronLeft size={18} strokeWidth={2.2} />
+                </button>
+              )}
+              <h2>{t('drama.assetsStep.title')}</h2>
+            </div>
             <p
-              className="drama-step-hero-sub"
+              className={`drama-step-hero-sub${onBack ? ' has-back' : ''}`}
               dangerouslySetInnerHTML={{
                 __html: t('drama.assetsStep.headerInfo')
                   .replace('{all}', String(assetList.length))
@@ -955,19 +1005,18 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
                 >
                   {genButtonLabel(asset)}
                 </button>
-                {isCharacter ? (
-                  <button
-                    type="button"
-                    className="pf-btn pf-btn-sm drama-btn-danger-text drama-asset-card-btn-delete"
-                    disabled={busy || batchBusy || batchVoiceBusy}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      void handleDeleteAsset(asset)
-                    }}
-                  >
-                    {t('common.delete')}
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  className="pf-btn pf-btn-sm drama-btn-danger-text drama-asset-card-btn-delete"
+                  disabled={busy || batchBusy || batchVoiceBusy}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    void handleDeleteAsset(asset)
+                  }}
+                  title={t('common.delete')}
+                >
+                  {t('common.delete')}
+                </button>
               </div>
             </article>
           )
