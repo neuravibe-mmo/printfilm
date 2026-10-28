@@ -833,7 +833,17 @@ async def upload_asset_to_flow_endpoint(
         or FLOW_PROJECT_ID
     )
 
-    media_id = await upload_image_to_flow(img_ref, project_id=target_flow_project_id)
+    from app.services.drama.prompt_optimizer import get_asset_type_slug, to_vietnamese_slug
+
+    type_slug = get_asset_type_slug(asset.type)
+    name_slug = to_vietnamese_slug(asset.name) if asset.name else f"Asset{asset.id}"
+    asset_file_name = f"{asset.id}_{type_slug}_{name_slug}"
+
+    media_id = await upload_image_to_flow(
+        img_ref,
+        project_id=target_flow_project_id,
+        file_name=asset_file_name,
+    )
     if not media_id:
         raise HTTPException(status_code=502, detail="Upload ảnh lên Google Flow thất bại. Vui lòng kiểm tra Flow API.")
 

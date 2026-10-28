@@ -168,10 +168,15 @@ export function EpisodeEditCurlModal({
 
     let curl = ''
     if (refUrl) {
+      const firstAsset = refAssets[0]
+      const assetTypeSlug = firstAsset ? getAssetTypeSlug(firstAsset.type) : 'Asset'
+      const assetNameSlug = firstAsset?.name ? toVietnameseSlug(firstAsset.name) : (firstAsset ? `Asset${firstAsset.id}` : 'ref')
+      const sampleFileName = firstAsset ? `${firstAsset.id}_${assetTypeSlug}_${assetNameSlug}.jpg` : 'ref_image.jpg'
+
       curl += `# Bước 1: Upload ảnh tham chiếu nhân vật / bối cảnh lên Flow API\n`
       curl += `curl -X POST "https://neuravibemmo.dpdns.org/api/flow/upload-image-b64" \\\n`
       curl += `  -H "Content-Type: application/json" \\\n`
-      curl += `  -d '{"image_base64": "data:image/jpeg;base64,...", "project_id": "${projectFlowId || FLOW_FALLBACK}", "mime_type": "image/jpeg"}'\n\n`
+      curl += `  -d '{"image_base64": "data:image/jpeg;base64,...", "project_id": "${projectFlowId || FLOW_FALLBACK}", "mime_type": "image/jpeg", "file_name": "${sampleFileName}"}'\n\n`
       curl += `# Bước 2: Gọi API tạo video Google Veo 3.1\n`
     }
 

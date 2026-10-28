@@ -1,8 +1,9 @@
 /** Các bước của thư viện nội dung: Tự động khởi tạo khi không có nội dung lần đầu tiên, Tab phân loại + hàng đợi tạo hình ảnh + liên kết tông màu ký tự */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
-import { Sparkles, ChevronLeft, Loader2, Mic, UploadCloud, Check, Copy, CheckCheck, AlertCircle } from 'lucide-react'
-import { dramaApi, resolveDramaAssetPreviewUrl, type DramaAsset, type DramaAssetUsage, type DramaProject } from '../../api/drama'
+import { Sparkles, ChevronLeft, Loader2, Mic, UploadCloud, Check, Copy, CheckCheck, AlertCircle, Download } from 'lucide-react'
+import { getAssetTypeSlug, toVietnameseSlug } from './EpisodeEditCurlModal'
+import { dramaApi, resolveDramaAssetPreviewUrl, getDramaApiBase, type DramaAsset, type DramaAssetUsage, type DramaProject } from '../../api/drama'
 import { api, type BillingPreflight } from '../../api'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
 import { enqueueDramaImageGen, resumeDramaImageGensFromAssets } from '../../lib/dramaImageGenQueue'
@@ -224,6 +225,205 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
 
   function handleCancelFlowUpload() {
     flowCancelRef.current = true
+  }
+
+  // Download assets states
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number; fileName: string } | null>(null)
+  const downloadCancelRef = useRef(false)
+
+  function getAssetDownloadFileName(asset: DramaAsset, mimeType?: string): string {
+    const typeSlug = getAssetTypeSlug(asset.type)
+    const nameSlug = asset.name ? toVietnameseSlug(asset.name) : `Asset${asset.id}`
+    let ext = 'jpg'
+    if (mimeType) {
+      if (mimeType.includes('png')) ext = 'png'
+      else if (mimeType.includes('webp')) ext = 'webp'
+      else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg'
+    } else {
+      const url = asset.cover || asset.url || ''
+      if (url.toLowerCase().endsWith('.png')) ext = 'png'
+      else if (url.toLowerCase().endsWith('.webp')) ext = 'webp'
+    }
+    return `${asset.id}_${typeSlug}_${nameSlug}.${ext}`
+  }
+
+  async function handleDownloadAssetsToFolder() {
+    if (uploadableImageAssets.length === 0) {
+      await dialog.alert({
+        title: 'Thông báo',
+        message: 'Không có tài sản nào có hình ảnh để tải về.',
+      })
+      return
+    }
+
+    const targets = uploadableImageAssets
+    const hasDirectoryPicker = typeof (window as any).showDirectoryPicker === 'function'
+
+    let dirHandle: any = null
+    if (hasDirectoryPicker) {
+      try {
+        dirHandle = await (window as any).showDirectoryPicker({
+          mode: 'readwrite',
+        })
+      } catch (err: any) {
+        if (err.name === 'AbortError') {
+          // Người dùng bấm Cancel / Hủy trong hộp thoại Finder / Explorer
+          return
+        }
+        console.warn('showDirectoryPicker error, will fallback to ZIP:', err)
+      }
+    }
+
+    // Yêu cầu xác thực quyền ghi ngay khi người dùng vừa chọn thư mục
+    if (dirHandle && typeof dirHandle.queryPermission === 'function') {
+      try {
+        const q = await dirHandle.queryPermission({ mode: 'readwrite' })
+        if (q !== 'granted' && typeof dirHandle.requestPermission === 'function') {
+          const req = await dirHandle.requestPermission({ mode: 'readwrite' })
+          if (req !== 'granted') {
+            await dialog.alert({
+              title: 'Cần cấp quyền ghi',
+              message: 'Trình duyệt cần quyền ghi để lưu ảnh vào thư mục bạn chọn. Vui lòng thử lại và chọn Cho phép (Allow).',
+              tone: 'danger',
+            })
+            return
+          }
+        }
+      } catch (permErr) {
+        console.warn('Permission query/request error:', permErr)
+      }
+    }
+
+    downloadCancelRef.current = false
+    setIsDownloading(true)
+    let successCount = 0
+
+    try {
+      if (dirHandle) {
+        for (let i = 0; i < targets.length; i++) {
+          if (downloadCancelRef.current) break
+          const asset = targets[i]
+          let mediaUrl = resolveDramaAssetPreviewUrl(asset)
+          if (!mediaUrl) continue
+
+          if (mediaUrl.startsWith('/')) {
+            const base = getDramaApiBase() || 'http://localhost:8001'
+            mediaUrl = `${base}${mediaUrl}`
+          }
+
+          try {
+            const resp = await fetch(mediaUrl)
+            if (!resp.ok) {
+              console.warn(`[Download] Không thể tải ảnh asset ${asset.id}: HTTP ${resp.status}`)
+              continue
+            }
+            const blob = await resp.blob()
+            const fileName = getAssetDownloadFileName(asset, blob.type)
+
+            setDownloadProgress({
+              current: i + 1,
+              total: targets.length,
+              fileName,
+            })
+
+            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true })
+            const writable = await fileHandle.createWritable()
+            await writable.write(blob)
+            await writable.close()
+            successCount++
+            console.log(`[Download] Đã lưu file: ${fileName} (${blob.size} bytes)`)
+          } catch (fileErr) {
+            console.error(`[Download] Lỗi khi lưu file cho asset #${asset.id} (${asset.name}):`, fileErr)
+          }
+        }
+
+        if (!downloadCancelRef.current) {
+          if (successCount > 0) {
+            await dialog.alert({
+              title: 'Tải thành công',
+              message: `Đã lưu thành công ${successCount}/${targets.length} file tài sản vào thư mục bạn đã chọn trên máy tính.`,
+              tone: 'success',
+            })
+          } else {
+            // Nếu không lưu được file nào qua dirHandle (do sandbox/bảo mật hệ điều hành), fallback sang xuất file ZIP
+            console.warn('[Download] Không lưu được qua DirectoryHandle, tự động xuất file ZIP...')
+            await handleDownloadAsZipFallback(targets)
+          }
+        }
+      } else {
+        // Fallback: nếu trình duyệt không hỗ trợ showDirectoryPicker hoặc không chọn được thư mục
+        await handleDownloadAsZipFallback(targets)
+      }
+    } catch (err: any) {
+      console.error('[Download error]', err)
+      await dialog.alert({
+        title: 'Lỗi tải ảnh',
+        message: err.message || 'Không thể lưu file vào thư mục đã chọn. Vui lòng thử lại.',
+        tone: 'danger',
+      })
+    } finally {
+      setIsDownloading(false)
+      setDownloadProgress(null)
+    }
+  }
+
+  async function handleDownloadAsZipFallback(targets: DramaAsset[]) {
+    const JSZip = (await import('jszip')).default
+    const zip = new JSZip()
+    let zipSuccessCount = 0
+
+    for (let i = 0; i < targets.length; i++) {
+      if (downloadCancelRef.current) break
+      const asset = targets[i]
+      let mediaUrl = resolveDramaAssetPreviewUrl(asset)
+      if (!mediaUrl) continue
+
+      if (mediaUrl.startsWith('/')) {
+        const base = getDramaApiBase() || 'http://localhost:8001'
+        mediaUrl = `${base}${mediaUrl}`
+      }
+
+      try {
+        const resp = await fetch(mediaUrl)
+        if (!resp.ok) continue
+        const blob = await resp.blob()
+        const fileName = getAssetDownloadFileName(asset, blob.type)
+
+        setDownloadProgress({
+          current: i + 1,
+          total: targets.length,
+          fileName,
+        })
+
+        zip.file(fileName, blob)
+        zipSuccessCount++
+      } catch (fetchErr) {
+        console.error(`[Download ZIP] Lỗi tải ảnh asset ${asset.id}:`, fetchErr)
+      }
+    }
+
+    if (!downloadCancelRef.current && zipSuccessCount > 0) {
+      const content = await zip.generateAsync({ type: 'blob' })
+      const zipUrl = URL.createObjectURL(content)
+      const a = document.createElement('a')
+      a.href = zipUrl
+      a.download = `${project?.title || 'assets'}_images.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(zipUrl)
+
+      await dialog.alert({
+        title: 'Đã xuất file ZIP',
+        message: `Đã nén và tải về ${zipSuccessCount} ảnh tài sản dạng file ZIP.`,
+        tone: 'success',
+      })
+    }
+  }
+
+  function handleCancelDownload() {
+    downloadCancelRef.current = true
   }
 
   useEffect(() => {
@@ -797,6 +997,66 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
           ))}
         </div>
         <div className="drama-actions">
+          {/* Nút Download tuần tự từng tài sản về máy tính */}
+          {isDownloading ? (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#f1f5f9',
+                border: '1px solid #cbd5e1',
+                padding: '4px 12px',
+                borderRadius: 6,
+                fontSize: '0.82rem',
+                color: '#334155',
+              }}
+            >
+              <Loader2 size={15} className="pf-spin" />
+              <span>
+                Đang tải {downloadProgress?.current}/{downloadProgress?.total}
+                {downloadProgress?.fileName ? ` (${downloadProgress.fileName})` : ''}...
+              </span>
+              <button
+                type="button"
+                onClick={handleCancelDownload}
+                style={{
+                  border: 'none',
+                  background: '#ef4444',
+                  color: '#fff',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  marginLeft: 4,
+                }}
+              >
+                Dừng
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="pf-btn"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: '#ffffff',
+                borderColor: '#cbd5e1',
+                color: '#1e293b',
+                fontWeight: 500,
+              }}
+              disabled={flowUploading || isDownloading || uploadableImageAssets.length === 0}
+              onClick={() => void handleDownloadAssetsToFolder()}
+              title={`Mở Finder / File Explorer để chọn thư mục lưu và tải toàn bộ ${uploadableImageAssets.length} file tài sản theo cú pháp <ID>_<LoaiAsset>_<TenVietLienKhongDau>.<ext>`}
+            >
+              <Download size={16} />
+              <span>Download ({uploadableImageAssets.length})</span>
+            </button>
+          )}
+
           {flowUploading ? (
             <div
               style={{

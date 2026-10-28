@@ -77,18 +77,32 @@ async def _to_base64_data_uri(image_path_or_url: str) -> str | None:
     return None
 
 
-async def upload_image_to_flow(image_ref: str, project_id: str = FLOW_PROJECT_ID) -> str | None:
-    """Upload ảnh lên Flow API lấy media_id."""
+async def upload_image_to_flow(
+    image_ref: str,
+    project_id: str = FLOW_PROJECT_ID,
+    file_name: str | None = None,
+) -> str | None:
+    """Upload ảnh lên Flow API lấy media_id.
+    file_name: tên file gợi ý cho Google Flow, nếu không có đuôi sẽ tự động thêm .png/.jpg.
+    Ví dụ: '14_NhanVat_NguyenVanLam.jpg'
+    """
     data_uri = await _to_base64_data_uri(image_ref)
     if not data_uri:
         logger.warning("Không thể chuyển đổi ảnh sang data URI: %s", str(image_ref)[:100])
         return None
-    mime = "image/png" if "image/png" in data_uri else "image/jpeg"
+    is_png = "image/png" in data_uri
+    mime = "image/png" if is_png else "image/jpeg"
+    ext = "png" if is_png else "jpg"
+
+    target_file_name = file_name.strip() if file_name and file_name.strip() else f"ref_{ext}"
+    if not any(target_file_name.lower().endswith(e) for e in (".png", ".jpg", ".jpeg", ".webp")):
+        target_file_name = f"{target_file_name}.{ext}"
+
     payload = {
         "image_base64": data_uri,
         "project_id": project_id,
         "mime_type": mime,
-        "file_name": f"ref_{mime.split('/')[-1]}",
+        "file_name": target_file_name,
     }
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
@@ -96,8 +110,9 @@ async def upload_image_to_flow(image_ref: str, project_id: str = FLOW_PROJECT_ID
             if resp.status_code == 200:
                 media_id = resp.json().get("media_id")
                 logger.info(
-                    "Upload ảnh Flow thành công media_id=%s project_id=%s (size=%d bytes)",
+                    "Upload ảnh Flow thành công media_id=%s file_name=%s project_id=%s (size=%d bytes)",
                     media_id,
+                    target_file_name,
                     project_id,
                     len(data_uri),
                 )
@@ -127,8 +142,9 @@ async def _run_flow_generation(
         cleaned = clean_raw_script(prompt)
         final_prompt = cleaned or (prompt or "").strip() or "Phim điện ảnh"
 
-        # Tự động thay thế @asset:<id> thành @asset:<TênViếtLiềnKhôngDấu> nếu còn tồn tại
-        if db_project_id and re.search(r"@asset:\d+", final_prompt):
+        # Tự động thay thế @asset:<id> thành @asset:<TênViếtLiềnKhôngDấu> và nạp danh sách tài sản dự án
+        project_assets = []
+        if db_project_id:
             try:
                 from app.database import AsyncSessionLocal
                 from app.models_drama import DramaAsset
@@ -136,12 +152,21 @@ async def _run_flow_generation(
 
                 async with AsyncSessionLocal() as session:
                     res = await session.execute(
-                        select(DramaAsset.id, DramaAsset.name, DramaAsset.type).where(DramaAsset.project_id == db_project_id)
+                        select(
+                            DramaAsset.id,
+                            DramaAsset.name,
+                            DramaAsset.type,
+                            DramaAsset.cover,
+                            DramaAsset.url,
+                            DramaAsset.flow_media_id,
+                        ).where(DramaAsset.project_id == db_project_id)
                     )
-                    asset_map = {row[0]: (row[1], row[2]) for row in res.fetchall() if row[1]}
-                    if asset_map:
+                    rows = res.fetchall()
+                    asset_map = {row[0]: (row[1], row[2]) for row in rows if row[1]}
+                    if asset_map and re.search(r"@asset:\d+", final_prompt):
                         final_prompt = replace_asset_tokens_with_slugs(final_prompt, asset_map)
                         logger.info("Đã chuyển đổi thẻ @asset sang tên slug cho task=%s", task_id)
+                    project_assets = rows
             except Exception as e:
                 logger.warning("Không thể load asset map để chuyển đổi slug cho project %s: %s", db_project_id, e)
 
@@ -155,19 +180,41 @@ async def _run_flow_generation(
         # Google Flow Veo 3.1 R2V khuyến nghị tối đa 3 ảnh tham chiếu
         refs_to_upload = raw_list[:3]
         if refs_to_upload:
+            from app.services.drama.prompt_optimizer import get_asset_type_slug, to_vietnamese_slug
+
             logger.info(
-                "Task=%s bắt đầu upload %d ảnh tham chiếu lên Flow (project_id=%s)...",
+                "Task=%s bắt đầu chuẩn bị %d ảnh tham chiếu cho Flow (project_id=%s)...",
                 task_id,
                 len(refs_to_upload),
                 project_id,
             )
             for idx, img in enumerate(refs_to_upload):
-                mid = await upload_image_to_flow(img, project_id=project_id)
+                matched_row = None
+                for a in project_assets:
+                    # row: id, name, type, cover, url, flow_media_id
+                    aid, aname, atype, acover, aurl, aflow_id = a[0], a[1], a[2], a[3], a[4], a[5]
+                    if (acover and acover in img) or (aurl and aurl in img) or (img in str(acover)) or (img in str(aurl)):
+                        matched_row = a
+                        break
+
+                mid = None
+                if matched_row and matched_row[5]:
+                    mid = str(matched_row[5]).strip()
+                    logger.info("Tái sử dụng Flow Media ID đã đồng bộ: %s (Asset #%s %s)", mid, matched_row[0], matched_row[1])
+                else:
+                    if matched_row:
+                        tslug = get_asset_type_slug(matched_row[2])
+                        nslug = to_vietnamese_slug(matched_row[1]) if matched_row[1] else f"Asset{matched_row[0]}"
+                        suggested_file_name = f"{matched_row[0]}_{tslug}_{nslug}"
+                    else:
+                        suggested_file_name = f"ref_scene_{idx + 1}"
+                    mid = await upload_image_to_flow(img, project_id=project_id, file_name=suggested_file_name)
+
                 if mid and mid not in ref_ids:
                     ref_ids.append(mid)
-                    logger.info("Ảnh [%d/%d] upload thành công media_id=%s", idx + 1, len(refs_to_upload), mid)
+                    logger.info("Ảnh tham chiếu [%d/%d] media_id=%s", idx + 1, len(refs_to_upload), mid)
                 else:
-                    logger.warning("Ảnh [%d/%d] upload không thành công: %s", idx + 1, len(refs_to_upload), img[:80])
+                    logger.warning("Ảnh [%d/%d] không lấy được media_id: %s", idx + 1, len(refs_to_upload), img[:80])
 
         payload = {
             "reference_media_ids": ref_ids,
