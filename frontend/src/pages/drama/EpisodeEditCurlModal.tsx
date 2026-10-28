@@ -32,6 +32,93 @@ interface EpisodeEditCurlModalProps {
   projectFlowId?: string | null
 }
 
+/**
+ * Chuyển đổi tên tiếng Việt có dấu thành dạng viết liền không dấu (PascalCase).
+ * Ví dụ: 'Nguyễn Văn Lâm' -> 'NguyenVanLam', 'Hộp kim loại' -> 'HopKimLoai'
+ */
+export function toVietnameseSlug(text: string): string {
+  if (!text) return ''
+  let s = text.replace(/đ/g, 'd').replace(/Đ/g, 'D')
+  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const words = s.match(/[a-zA-Z0-9]+/g) || []
+  return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('')
+}
+
+/**
+ * Ánh xạ loại asset sang slug tiếng Việt chuẩn: NhanVat, CanhQuay, DaoCu.
+ */
+export function getAssetTypeSlug(type?: string): string {
+  const t = (type || '').toLowerCase().trim()
+  if (t === 'character') return 'NhanVat'
+  if (t === 'scene' || t === 'location') return 'CanhQuay'
+  if (t === 'prop') return 'DaoCu'
+  return 'NhanVat'
+}
+
+/**
+ * Khử lặp chuỗi slug nếu bị lặp (vd: @asset:14_NhanVat_NguyenVanLam_NhanVat_NguyenVanLam -> @asset:14_NhanVat_NguyenVanLam).
+ */
+export function deduplicateAssetSlug(token: string): string {
+  const match = token.match(/^@asset:(\d+)_(.+)$/)
+  if (!match) return token
+  const [_, aid, slug] = match
+  const parts = slug.split('_')
+  const half = parts.length / 2
+  if (parts.length >= 2 && Number.isInteger(half)) {
+    const firstHalf = parts.slice(0, half).join('_')
+    const secondHalf = parts.slice(half).join('_')
+    if (firstHalf === secondHalf) {
+      return `@asset:${aid}_${firstHalf}`
+    }
+  }
+  return token
+}
+
+/**
+ * Thay thế @asset:<id> thành @asset:<ID>_<LoaiAsset>_<TênViếtLiềnKhôngDấu> theo danh sách tài sản (assets).
+ * Ví dụ: @asset:14_NhanVat_NguyenVanLam, @asset:58_CanhQuay_NgoiLangDoNatThoiChien, @asset:32_DaoCu_ChiecCaoSat
+ * Đảm bảo tính idempotent: nếu đã có slug hoặc bị lặp thì thu gọn chuẩn xác, không bao giờ nhân đôi.
+ */
+export function replaceAssetTokensWithSlugs(text: string, assets: DramaAsset[] = []): string {
+  if (!text) return ''
+  const assetMap = new Map<number, { slug: string; typeSlug: string }>()
+  if (assets && assets.length > 0) {
+    for (const a of assets) {
+      if (a && a.id) {
+        const typeSlug = getAssetTypeSlug(a.type)
+        const nameSlug = a.name ? toVietnameseSlug(a.name) : `Asset${a.id}`
+        assetMap.set(a.id, { slug: nameSlug, typeSlug })
+      }
+    }
+  }
+  return text.replace(/@asset:(\d+)(?:_[a-zA-Z0-9_]+)?/g, (fullMatch, idStr) => {
+    const aid = Number(idStr)
+    const info = assetMap.get(aid)
+    if (info) {
+      return `@asset:${aid}_${info.typeSlug}_${info.slug}`
+    }
+    return deduplicateAssetSlug(fullMatch)
+  })
+}
+
+/**
+ * Làm sạch kịch bản phân cảnh thô thành prompt chuẩn cho Google Flow (Veo 3.1):
+ * - Loại bỏ các khối chú thích kỹ thuật đạo diễn: 【Nhạc nền...】, 【Hình ảnh...】, 【Thoại...】
+ * - Loại bỏ các chỉ thị thời lượng: @duration:3...
+ * - Thay thế thẻ @asset:<id> thành @asset:<ID>_<LoaiAsset>_<TênViếtLiềnKhôngDấu>
+ * - Giữ nguyên các mô tả bối cảnh, hành động và lời thoại (khớp 100% với backend và Google Flow)
+ */
+export function cleanFlowScript(text: string, assets: DramaAsset[] = []): string {
+  if (!text) return ''
+  let cleaned = text.replace(/【[^】]*】/g, '').replace(/@duration:\d+/g, '')
+  cleaned = replaceAssetTokensWithSlugs(cleaned, assets)
+  const lines = cleaned
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  return lines.join('\n')
+}
+
 export function EpisodeEditCurlModal({
   open,
   onClose,
@@ -60,19 +147,18 @@ export function EpisodeEditCurlModal({
 
   const promptText = useMemo(() => {
     const raw = fragment?.content || 'A cinematic sci-fi scene in deep space'
-    return raw.trim()
-  }, [fragment])
+    return cleanFlowScript(raw, assets) || raw.trim()
+  }, [fragment, assets])
 
   // Lệnh cURL gửi trực tiếp sang cổng Flow API (neuravibemmo.dpdns.org)
   const upstreamCurl = useMemo(() => {
     const refImg = refAssets[0]?.cover || refAssets[0]?.url
     const refUrl = refImg ? resolveDramaMediaUrl(refImg) : ''
-    const escapedPrompt = promptText.replace(/"/g, '\\"').replace(/\n/g, ' ')
 
     const FLOW_FALLBACK = '746c4f17-5aa9-4cf1-b824-f8d0bd7aa6c4'
     const payloadObj = {
       reference_media_ids: refUrl ? ['media_ref_id_from_upload'] : [],
-      prompt: escapedPrompt,
+      prompt: promptText,
       project_id: projectFlowId || FLOW_FALLBACK,
       scene_id: `scene_${(fragmentIndex + 1).toString().padStart(2, '0')}`,
       aspect_ratio: aspectRatio || '9:16',
@@ -140,12 +226,6 @@ export function EpisodeEditCurlModal({
     }
   }
 
-  // Prompt sạch dự phòng (loại bỏ thẻ @asset)
-  const cleanPromptFallback = useMemo(() => {
-    if (!fragment?.content) return ''
-    return fragment.content.replace(/@asset:[a-zA-Z0-9_.-]+/g, '').trim()
-  }, [fragment])
-
   async function handleDownloadAsset(url: string, name: string) {
     try {
       const res = await fetch(url)
@@ -187,9 +267,12 @@ export function EpisodeEditCurlModal({
       `  -d '${JSON.stringify(body, null, 2)}'`
   }, [episodeId, fragment, modelId])
 
-  if (!open) return null
+  const activePrompt = useMemo(() => {
+    const raw = extractedPromptInfo?.prompt || fragment?.content || ''
+    return cleanFlowScript(raw, assets)
+  }, [extractedPromptInfo?.prompt, fragment?.content, assets])
 
-  const activePrompt = extractedPromptInfo?.prompt || cleanPromptFallback
+  if (!open) return null
 
   return (
     <Modal
@@ -496,10 +579,22 @@ export function EpisodeEditCurlModal({
                   gap: '0.5rem',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
                   <Sparkles size={16} color="#6366f1" />
                   <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0f172a' }}>
                     Prompt văn bản cho Google Flow (Veo 3.1)
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      color: '#166534',
+                      background: '#dcfce7',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Đã lọc chuẩn Flow
                   </span>
                 </div>
                 <button

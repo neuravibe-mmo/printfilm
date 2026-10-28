@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import re
+import unicodedata
 
 from app.services.llm_client import chatgpt2api_completions
 
@@ -17,6 +18,71 @@ Rules:
 3. Keep the prompt concise, vivid, and cinematic (around 40-90 words).
 4. If there is dialogue, describe the character speaking with appropriate emotion and body language, and specify natural ambient sound.
 """
+
+
+def to_vietnamese_slug(text: str) -> str:
+    """Chuyển đổi tên tiếng Việt có dấu thành dạng viết liền không dấu (PascalCase).
+    Ví dụ: 'Nguyễn Văn Lâm' -> 'NguyenVanLam', 'Hộp kim loại' -> 'HopKimLoai'
+    """
+    if not text:
+        return ""
+    s = text.replace("đ", "d").replace("Đ", "D")
+    s = unicodedata.normalize("NFD", s)
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    words = re.findall(r"[a-zA-Z0-9]+", s)
+    return "".join(w.capitalize() for w in words)
+
+
+def get_asset_type_slug(asset_type: str | None) -> str:
+    """Ánh xạ loại asset sang slug tiếng Việt chuẩn: NhanVat, CanhQuay, DaoCu."""
+    t = (asset_type or "").lower().strip()
+    if t == "character":
+        return "NhanVat"
+    if t in ("scene", "location"):
+        return "CanhQuay"
+    if t == "prop":
+        return "DaoCu"
+    return "NhanVat"
+
+
+def deduplicate_asset_slug(token: str) -> str:
+    """Khử lặp chuỗi slug nếu bị lặp (vd: @asset:14_NhanVat_NguyenVanLam_NhanVat_NguyenVanLam -> @asset:14_NhanVat_NguyenVanLam)."""
+    m = re.match(r"^@asset:(\d+)_(.+)$", token)
+    if not m:
+        return token
+    aid, slug = m.group(1), m.group(2)
+    parts = slug.split("_")
+    half = len(parts) // 2
+    if len(parts) >= 2 and len(parts) % 2 == 0:
+        first_half = "_".join(parts[:half])
+        second_half = "_".join(parts[half:])
+        if first_half == second_half:
+            return f"@asset:{aid}_{first_half}"
+    return token
+
+
+def replace_asset_tokens_with_slugs(text: str, asset_info_map: dict[int, tuple[str, str | None] | str] | None) -> str:
+    """Thay thế @asset:<id> thành @asset:<ID>_<LoaiAsset>_<TênViếtLiềnKhôngDấu>.
+    Ví dụ: @asset:14_NhanVat_NguyenVanLam, @asset:58_CanhQuay_NgoiLangDoNatThoiChien, @asset:32_DaoCu_ChiecCaoSat
+    Đảm bảo tính idempotent: nếu đã có slug hoặc bị lặp thì thu gọn chuẩn xác, không bao giờ nhân đôi.
+    """
+    if not text:
+        return text
+
+    def _repl(m: re.Match) -> str:
+        aid = int(m.group(1))
+        info = asset_info_map.get(aid) if asset_info_map else None
+        if info:
+            if isinstance(info, tuple):
+                name, atype = info
+            else:
+                name, atype = info, None
+            type_slug = get_asset_type_slug(atype)
+            slug = to_vietnamese_slug(name) if name else f"Asset{aid}"
+            return f"@asset:{aid}_{type_slug}_{slug}"
+        return deduplicate_asset_slug(m.group(0))
+
+    return re.sub(r"@asset:(\d+)(?:_[a-zA-Z0-9_]+)?", _repl, text)
 
 
 def clean_raw_script(text: str) -> str:

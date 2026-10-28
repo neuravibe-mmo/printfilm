@@ -122,10 +122,28 @@ async def _run_flow_generation(
         ref_ids: list[str] = []
 
         # Giữ nguyên nội dung tiếng Việt của phân cảnh, không dịch sang tiếng Anh
-        from app.services.drama.prompt_optimizer import clean_raw_script
+        from app.services.drama.prompt_optimizer import clean_raw_script, replace_asset_tokens_with_slugs
 
         cleaned = clean_raw_script(prompt)
         final_prompt = cleaned or (prompt or "").strip() or "Phim điện ảnh"
+
+        # Tự động thay thế @asset:<id> thành @asset:<TênViếtLiềnKhôngDấu> nếu còn tồn tại
+        if db_project_id and re.search(r"@asset:\d+", final_prompt):
+            try:
+                from app.database import AsyncSessionLocal
+                from app.models_drama import DramaAsset
+                from sqlalchemy import select
+
+                async with AsyncSessionLocal() as session:
+                    res = await session.execute(
+                        select(DramaAsset.id, DramaAsset.name, DramaAsset.type).where(DramaAsset.project_id == db_project_id)
+                    )
+                    asset_map = {row[0]: (row[1], row[2]) for row in res.fetchall() if row[1]}
+                    if asset_map:
+                        final_prompt = replace_asset_tokens_with_slugs(final_prompt, asset_map)
+                        logger.info("Đã chuyển đổi thẻ @asset sang tên slug cho task=%s", task_id)
+            except Exception as e:
+                logger.warning("Không thể load asset map để chuyển đổi slug cho project %s: %s", db_project_id, e)
 
         # Chuẩn hoá danh sách ảnh tham chiếu
         raw_list: list[str] = []
