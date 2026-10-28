@@ -160,6 +160,7 @@ export type DramaAsset = {
   params?: Record<string, unknown> | null
   project_id: number
   updated_at?: string | null
+  flow_media_id?: string | null
 }
 
 export type SeedAssetsResult = {
@@ -383,6 +384,15 @@ export const dramaApi = {
     }),
   deleteAsset: (id: number) =>
     request<{ ok: boolean }>(`/api/drama/assets/${id}`, { method: 'DELETE' }),
+  uploadAssetToFlow: (assetId: number, body?: { flow_project_id?: string }) =>
+    request<{ ok: boolean; asset_id: number; media_id: string; flow_media_id: string; flow_project_id: string }>(
+      `/api/drama/assets/${assetId}/upload-flow`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {}),
+      },
+    ),
   getAssetUsage: (id: number) =>
     request<DramaAssetUsage>(`/api/drama/assets/${id}/usage`),
   seedAssets: async (

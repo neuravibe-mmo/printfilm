@@ -252,6 +252,11 @@ async def _apply_schema_patches() -> None:
         if "flow_project_id" not in dpcols:
             await conn.execute(text("ALTER TABLE drama_projects ADD COLUMN flow_project_id VARCHAR(128)"))
 
+        # drama_assets additive columns
+        dacols = await _pg_columns(conn, "drama_assets")
+        if "flow_media_id" not in dacols:
+            await conn.execute(text("ALTER TABLE drama_assets ADD COLUMN flow_media_id VARCHAR(128)"))
+
         # Drop leftover worker-era columns that block the new task platform.
         legacy_task_run_cols = (
             "execution_phase",

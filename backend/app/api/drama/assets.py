@@ -9,6 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +25,7 @@ from app.schemas_drama import (
     DramaDetectAssetsRequest,
     DramaDetectAssetsResponse,
     SeedAssetsFromScriptOut,
+    UploadAssetFlowRequest,
 )
 from app.services.drama.detect_assets_llm import (
     detect_assets_with_llm,
@@ -172,7 +174,7 @@ async def update_asset(
     asset = result.scalar_one_or_none()
     if not asset:
         raise HTTPException(status_code=404, detail="资产不存在")
-    for field in ("type", "asset_type", "name", "cover", "url", "params"):
+    for field in ("type", "asset_type", "name", "cover", "url", "params", "flow_media_id"):
         val = getattr(body, field)
         if val is None:
             continue
@@ -794,4 +796,61 @@ async def detect_fragment_assets(
         detected_names=result.get("detected_names", []),
         created_assets=[],
     )
+
+
+@router.post("/assets/{asset_id}/upload-flow")
+async def upload_asset_to_flow_endpoint(
+    asset_id: int,
+    body: UploadAssetFlowRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Upload một hình ảnh tài sản lên Google Flow API (neuravibemmo.dpdns.org/api/flow/upload-image-b64)
+    và lưu lại flow_media_id vào database.
+    """
+    from app.models_drama import DramaAsset, DramaProject
+    from app.services.drama.flow_api import FLOW_PROJECT_ID, upload_image_to_flow
+
+    result = await db.execute(
+        select(DramaAsset, DramaProject)
+        .join(DramaProject, DramaAsset.project_id == DramaProject.id)
+        .where(DramaAsset.id == asset_id, DramaProject.user_id == user.id)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Tài sản không tồn tại")
+    asset, project = row[0], row[1]
+
+    img_ref = asset.cover or asset.url
+    if not img_ref:
+        raise HTTPException(status_code=400, detail="Tài sản chưa có hình ảnh để upload")
+
+    user_flow_id = (body.flow_project_id.strip() if body and body.flow_project_id else None)
+    target_flow_project_id = (
+        user_flow_id
+        or project.flow_project_id
+        or (project.params or {}).get("flow_project_id")
+        or FLOW_PROJECT_ID
+    )
+
+    media_id = await upload_image_to_flow(img_ref, project_id=target_flow_project_id)
+    if not media_id:
+        raise HTTPException(status_code=502, detail="Upload ảnh lên Google Flow thất bại. Vui lòng kiểm tra Flow API.")
+
+    asset.flow_media_id = media_id
+    cur_params = dict(asset.params or {})
+    cur_params["flow_media_id"] = media_id
+    asset.params = cur_params
+
+    await db.commit()
+    await db.refresh(asset)
+
+    return {
+        "ok": True,
+        "asset_id": asset.id,
+        "media_id": media_id,
+        "flow_media_id": media_id,
+        "flow_project_id": target_flow_project_id,
+    }
+
 

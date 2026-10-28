@@ -1,8 +1,7 @@
 /** Các bước của thư viện nội dung: Tự động khởi tạo khi không có nội dung lần đầu tiên, Tab phân loại + hàng đợi tạo hình ảnh + liên kết tông màu ký tự */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
-import { Link } from 'react-router-dom'
-import { Sparkles, ChevronLeft, Loader2, Mic } from 'lucide-react'
+import { Sparkles, ChevronLeft, Loader2, Mic, UploadCloud, Check, Copy, CheckCheck, AlertCircle } from 'lucide-react'
 import { dramaApi, resolveDramaAssetPreviewUrl, type DramaAsset, type DramaAssetUsage, type DramaProject } from '../../api/drama'
 import { api, type BillingPreflight } from '../../api'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
@@ -104,13 +103,128 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
   const [voiceSynthBusyId, setVoiceSynthBusyId] = useState<number | null>(null)
   const [voicePromptDrafts, setVoicePromptDrafts] = useState<Record<number, string>>({})
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [reseedBusy, setReseedBusy] = useState(false)
   const [project, setProject] = useState<DramaProject | null>(null)
-  const [selectedCharacterIds, setSelectedCharacterIds] = useState<number[]>([])
   const [characterVoiceBusyIds, setCharacterVoiceBusyIds] = useState<Set<number>>(() => new Set())
   const [batchVoiceBusy, setBatchVoiceBusy] = useState(false)
   const [narratorVoiceOpen, setNarratorVoiceOpen] = useState(false)
   const genQueue = useDramaImageGenQueue()
+
+  // Google Flow upload states
+  const [flowUploading, setFlowUploading] = useState(false)
+  const [flowUploadProgress, setFlowUploadProgress] = useState<{ current: number; total: number; assetName: string } | null>(null)
+  const [flowUploadingAssetId, setFlowUploadingAssetId] = useState<number | null>(null)
+  const [flowUploadErrors, setFlowUploadErrors] = useState<Record<number, string>>({})
+  const [copiedAssetId, setCopiedAssetId] = useState<number | null>(null)
+  const flowCancelRef = useRef(false)
+
+  // Danh sách các tài sản có hình ảnh để upload
+  const uploadableImageAssets = useMemo(() => {
+    return assets.filter((a) => (a.cover || a.url) && a.type !== 'voice')
+  }, [assets])
+
+  // Số lượng tài sản đã có mã Flow Media ID
+  const uploadedFlowCount = useMemo(() => {
+    return uploadableImageAssets.filter((a) => Boolean(a.flow_media_id || (a.params as any)?.flow_media_id)).length
+  }, [uploadableImageAssets])
+
+  async function handleCopyMediaId(e: React.MouseEvent, assetId: number, mediaId: string) {
+    e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(mediaId)
+      setCopiedAssetId(assetId)
+      setTimeout(() => setCopiedAssetId((cur) => (cur === assetId ? null : cur)), 2000)
+    } catch {
+      // fallback
+    }
+  }
+
+  async function handleUploadSingleAssetToFlow(asset: DramaAsset) {
+    if (!asset.cover && !asset.url) {
+      onError('Tài sản chưa có hình ảnh để upload')
+      return
+    }
+    setFlowUploadingAssetId(asset.id)
+    setFlowUploadErrors((prev) => {
+      const copy = { ...prev }
+      delete copy[asset.id]
+      return copy
+    })
+    try {
+      const flowPid = project?.flow_project_id || undefined
+      const res = await dramaApi.uploadAssetToFlow(asset.id, { flow_project_id: flowPid })
+      if (res.ok && res.media_id) {
+        setAssets((prev) =>
+          (prev ?? []).map((a) =>
+            a.id === asset.id
+              ? { ...a, flow_media_id: res.media_id, params: { ...(a.params || {}), flow_media_id: res.media_id } }
+              : a,
+          ),
+        )
+      }
+    } catch (err: any) {
+      const msg = err.message || 'Lỗi upload ảnh lên Google Flow'
+      onError(msg)
+      setFlowUploadErrors((prev) => ({ ...prev, [asset.id]: msg }))
+    } finally {
+      setFlowUploadingAssetId(null)
+    }
+  }
+
+  async function handleBatchUploadFlowAssets() {
+    if (uploadableImageAssets.length === 0) {
+      onError('Chưa có tài sản nào có hình ảnh để upload lên Google Flow')
+      return
+    }
+
+    const unuploaded = uploadableImageAssets.filter((a) => !a.flow_media_id && !(a.params as any)?.flow_media_id)
+    let targets = unuploaded
+    if (targets.length === 0) {
+      const ok = window.confirm(
+        `Tất cả ${uploadableImageAssets.length} tài sản đã có mã Flow Media ID. Bạn có muốn upload và cập nhật lại toàn bộ không?`,
+      )
+      if (!ok) return
+      targets = uploadableImageAssets
+    }
+
+    flowCancelRef.current = false
+    setFlowUploading(true)
+
+    for (let i = 0; i < targets.length; i++) {
+      if (flowCancelRef.current) break
+      const asset = targets[i]
+      setFlowUploadProgress({
+        current: i + 1,
+        total: targets.length,
+        assetName: asset.name || `Tài sản #${asset.id}`,
+      })
+      setFlowUploadingAssetId(asset.id)
+
+      try {
+        const flowPid = project?.flow_project_id || undefined
+        const res = await dramaApi.uploadAssetToFlow(asset.id, { flow_project_id: flowPid })
+        if (res.ok && res.media_id) {
+          setAssets((prev) =>
+            (prev ?? []).map((a) =>
+              a.id === asset.id
+                ? { ...a, flow_media_id: res.media_id, params: { ...(a.params || {}), flow_media_id: res.media_id } }
+                : a,
+            ),
+          )
+        }
+      } catch (err: any) {
+        const msg = err.message || 'Lỗi upload'
+        setFlowUploadErrors((prev) => ({ ...prev, [asset.id]: msg }))
+      }
+    }
+
+    setFlowUploading(false)
+    setFlowUploadingAssetId(null)
+    setFlowUploadProgress(null)
+  }
+
+  function handleCancelFlowUpload() {
+    flowCancelRef.current = true
+  }
 
   useEffect(() => {
     async function enter() {
@@ -170,9 +284,6 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
   }, [tab])
 
   useEffect(() => {
-    if (tab !== 'character') {
-      setSelectedCharacterIds([])
-    }
     setPage(1)
   }, [tab])
 
@@ -205,21 +316,11 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
   }, [genQueue, projectId])
 
   const assetList = assets ?? []
-  const narrationVoiceLabel =
-    project?.params && typeof project.params === 'object'
-      ? String(
-          ((project.params as Record<string, unknown>).narrationVoiceAudio as Record<string, unknown> | undefined)?.label ||
-            t('drama.assetsStep.notSet'),
-        )
-      : t('drama.assetsStep.notSet')
   const filtered = assetList.filter((a) => {
     const t = (a.type || '').toLowerCase()
     if (tab === 'voice') return t === 'voice'
     return t === tab
   })
-  const selectedCharacterAssets = assetList.filter(
-    (a) => (a.type || '').toLowerCase() === 'character' && selectedCharacterIds.includes(a.id),
-  )
   const busyAssetIds = new Set(
     genQueue
       .filter(
@@ -418,40 +519,6 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     }
   }
 
-  // Tạo âm thanh theo nhóm dựa trên cài đặt ký tự
-  async function batchGenerateCharacterVoices() {
-    if (batchVoiceBusy || selectedCharacterAssets.length === 0) return
-    const ok = await dialog.confirm({
-      title: t('drama.assetsStep.batchVoiceTitle'),
-      message: t('drama.assetsStep.batchVoiceMessage').replace('{n}', String(selectedCharacterAssets.length)),
-      confirmText: t('drama.assetsStep.startGen'),
-    })
-    if (!ok) return
-    setBatchVoiceBusy(true)
-    let failCount = 0
-    for (const asset of selectedCharacterAssets) {
-      setCharacterVoiceBusyIds((prev) => new Set(prev).add(asset.id))
-      try {
-        const { character, voice } = await generateAndBindCharacterVoice(projectId, asset)
-        handleVoiceBound(character)
-        handleVoiceCreated(voice)
-      } catch {
-        failCount += 1
-      } finally {
-        setCharacterVoiceBusyIds((prev) => {
-          const next = new Set(prev)
-          next.delete(asset.id)
-          return next
-        })
-      }
-    }
-    setBatchVoiceBusy(false)
-    setSelectedCharacterIds([])
-    if (failCount > 0) {
-      onError(t('drama.assetsStep.batchVoiceFailed').replace('{n}', String(failCount)))
-    }
-  }
-
   // Tự động tạo giọng cho tất cả nhân vật chưa có giọng đọc (bỏ qua những nhân vật đã có)
   async function handleAutoGenerateVoices() {
     const targets = filtered.filter(
@@ -535,30 +602,6 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     setAssets((prev) => [...(prev ?? []), created])
   }
 
-  // Đã thêm nội dung âm thanh
-  async function handleAddVoice() {
-    const name = await dialog.prompt({
-      title: t('drama.assetsStep.addVoiceTitle'),
-      message: t('drama.assetsStep.addVoiceMessage'),
-      placeholder: t('drama.assetsStep.addVoicePlaceholder'),
-      confirmText: t('drama.assetsStep.create'),
-    })
-    if (!name?.trim()) return
-    try {
-      const created = await dramaApi.createAsset({
-        project_id: projectId,
-        type: 'voice',
-        asset_type: 'audio',
-        name: name.trim(),
-        params: { voicePrompt: '' },
-      })
-      setAssets((prev) => [...(prev ?? []), created])
-      setVoicePromptDrafts((prev) => ({ ...prev, [created.id]: '' }))
-    } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.assetsStep.createVoiceFailed'))
-    }
-  }
-
   // Lưu mô tả âm sắc vào thông số nội dung
   async function persistVoicePrompt(asset: DramaAsset, prompt: string) {
     const nextParams = { ...(asset.params || {}), voicePrompt: prompt.trim() }
@@ -603,29 +646,6 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
       setAssets((prev) => (prev ?? []).filter((a) => a.id !== asset.id))
     } catch (err) {
       onError(err instanceof Error ? err.message : t('common.deleteFailed'))
-    }
-  }
-
-  // Vai trò mới
-  async function handleAddCharacter() {
-    const name = await dialog.prompt({
-      title: t('drama.assetsStep.addCharTitle'),
-      message: t('drama.assetsStep.addCharMessage'),
-      placeholder: t('drama.assetsStep.addCharPlaceholder'),
-      confirmText: t('drama.assetsStep.create'),
-    })
-    if (!name?.trim()) return
-    try {
-      const created = await dramaApi.createAsset({
-        project_id: projectId,
-        type: 'character',
-        asset_type: 'image',
-        name: name.trim(),
-        params: { kind: 'character' },
-      })
-      setAssets((prev) => [...(prev ?? []), created])
-    } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.assetsStep.createCharFailed'))
     }
   }
 
@@ -703,101 +723,8 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     try {
       await dramaApi.deleteAsset(asset.id)
       setAssets((prev) => (prev ?? []).filter((a) => a.id !== asset.id))
-      setSelectedCharacterIds((prev) => prev.filter((id) => id !== asset.id))
     } catch (err) {
       onError(err instanceof Error ? err.message : t('common.deleteFailed'))
-    }
-  }
-
-  // Trích xuất lại nội dung từ tập lệnh và làm mới tất cả lời nhắc vẽ bằng AI
-  async function handleReseedAssets() {
-    if (reseedBusy || batchBusy) return
-    const ok = await dialog.confirm({
-      title: t('drama.assetsStep.reseedTitle'),
-      message:
-        t('drama.assetsStep.reseedMessage'),
-      confirmText: t('drama.assetsStep.startSeed'),
-      tone: 'danger',
-    })
-    if (!ok) return
-    setReseedBusy(true)
-    try {
-      const result = await dramaApi.seedAssets(projectId, {
-        refreshPrompts: true,
-        reextractProps: true,
-      })
-      if (result.status === 'generating') {
-        let seedStatus = 'generating'
-        for (let i = 0; i < 90; i += 1) {
-          await new Promise((r) => window.setTimeout(r, 2000))
-          const p = await dramaApi.getProject(projectId)
-          seedStatus = String(
-            (p.params as Record<string, unknown> | undefined)?.assets_seed_status || '',
-          )
-          if (seedStatus === 'done' || seedStatus === 'failed') break
-        }
-        const list = normalizeAssetList(
-          await dramaApi.listAssets(projectId, { libraryOnly: true }),
-        )
-        setAssets(list)
-        const p = await dramaApi.getProject(projectId)
-        const params = (p.params || {}) as Record<string, unknown>
-        const created = Number(params.assets_seed_created ?? 0)
-        const refreshed = Number(params.assets_seed_refreshed ?? 0)
-        const propsUpdated = Number(params.assets_seed_props_updated ?? 0)
-        const llmErrors = Array.isArray(params.assets_seed_llm_errors)
-          ? (params.assets_seed_llm_errors as string[])
-          : []
-        const failed = seedStatus === 'failed'
-        const parts = [t('drama.assetsStep.seeded').replace('{n}', String(created)), t('drama.assetsStep.refreshed').replace('{n}', String(refreshed))]
-        if (propsUpdated > 0) {
-          parts.push(t('drama.assetsStep.updatedProps').replace('{n}', String(propsUpdated)))
-        }
-        let detail = failed
-          ? String(params.assets_seed_error || t('drama.assetsStep.seedFailed'))
-          : parts.join('，') + '。'
-        if (!failed && created === 0 && refreshed === 0 && llmErrors.length === 0) {
-          detail +=
-            t('drama.assetsStep.seedNoResult')
-        } else if (!failed && llmErrors.length > 0) {
-          detail += '\n\n' + t('drama.assetsStep.llmErrorPrefix') + '\n' + llmErrors.slice(0, 5).join('\n') + (llmErrors.length > 5 ? ('\n' + t('drama.assetsStep.llmErrorTotal').replace('{n}', String(llmErrors.length))) : '')
-        } else if (!failed) {
-          detail += t('drama.assetsStep.seedCheckCanvas')
-        }
-        await dialog.alert({
-          title: failed || llmErrors.length > 0 ? t('drama.assetsStep.seedDonePartial') : t('drama.assetsStep.seedDone'),
-          message: detail,
-          tone: failed || llmErrors.length > 0 ? 'danger' : 'success',
-        })
-        return
-      }
-      setAssets(normalizeAssetList(result?.assets))
-      const created = result.created_count ?? 0
-      const refreshed = result.prompts_refreshed ?? 0
-      const propsUpdated = result.props_updated ?? 0
-      const llmErrors = Array.isArray(result.llm_errors) ? result.llm_errors : []
-      const parts = [t('drama.assetsStep.seeded').replace('{n}', String(created)), t('drama.assetsStep.refreshed').replace('{n}', String(refreshed))]
-      if (propsUpdated > 0) {
-        parts.push(t('drama.assetsStep.updatedProps').replace('{n}', String(propsUpdated)))
-      }
-      let detail = parts.join('，') + '。'
-      if (created === 0 && refreshed === 0 && llmErrors.length === 0) {
-        detail +=
-          t('drama.assetsStep.seedNoResult')
-      } else if (llmErrors.length > 0) {
-        detail += '\n\n' + t('drama.assetsStep.llmErrorPrefix') + '\n' + llmErrors.slice(0, 5).join('\n') + (llmErrors.length > 5 ? ('\n' + t('drama.assetsStep.llmErrorTotal').replace('{n}', String(llmErrors.length))) : '')
-      } else {
-        detail += t('drama.assetsStep.seedCheckCanvas')
-      }
-      await dialog.alert({
-        title: llmErrors.length > 0 ? t('drama.assetsStep.seedDonePartial') : t('drama.assetsStep.seedDone'),
-        message: detail,
-        tone: llmErrors.length > 0 ? 'danger' : 'success',
-      })
-    } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.assetsStep.reseedFailed'))
-    } finally {
-      setReseedBusy(false)
     }
   }
 
@@ -818,11 +745,6 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     }
     return dramaAssetImageGenButtonLabel(asset, queueLabel, t)
   }
-
-  const imageAssetCount = assetList.filter((a) => {
-    const t = (a.type || '').toLowerCase()
-    return !['voice', 'video', 'audio', 'text'].includes(t)
-  }).length
 
   return (
     <div className="drama-assets-step">
@@ -875,80 +797,66 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
           ))}
         </div>
         <div className="drama-actions">
-          {tab === 'character' ? (
-            <button type="button" className="pf-btn" onClick={() => void handleAddCharacter()}>
-              {t('drama.assetsStep.addChar')}
-            </button>
-          ) : null}
-          {DRAMA_VOICE_BINDING_ENABLED && tab === 'voice' ? (
-            <button type="button" className="pf-btn" onClick={() => void handleAddVoice()}>
-              {t('drama.assetsStep.addVoice')}
-            </button>
-          ) : null}
-          {DRAMA_VOICE_BINDING_ENABLED && tab !== 'voice' ? (
+          {flowUploading ? (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: '#e0f2fe',
+                border: '1px solid #7dd3fc',
+                padding: '4px 12px',
+                borderRadius: 6,
+                fontSize: '0.82rem',
+                color: '#0369a1',
+              }}
+            >
+              <Loader2 size={15} className="pf-spin" />
+              <span>
+                Đang upload {flowUploadProgress?.current}/{flowUploadProgress?.total}
+                {flowUploadProgress?.assetName ? ` (${flowUploadProgress.assetName})` : ''}...
+              </span>
+              <button
+                type="button"
+                onClick={handleCancelFlowUpload}
+                style={{
+                  border: 'none',
+                  background: '#ef4444',
+                  color: '#fff',
+                  borderRadius: 4,
+                  padding: '2px 8px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  marginLeft: 4,
+                }}
+              >
+                Dừng
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
               className="pf-btn"
-              onClick={() => setNarratorVoiceOpen(true)}
-              title={t('drama.assetsStep.narratorVoiceTip')}
-              disabled={!project}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: '#0284c7',
+                borderColor: '#0369a1',
+                color: '#ffffff',
+                fontWeight: 500,
+              }}
+              disabled={batchBusy || batchVoiceBusy || uploadableImageAssets.length === 0}
+              onClick={() => void handleBatchUploadFlowAssets()}
+              title={`Upload tuần tự từng hình ảnh trong danh sách tài sản lên Flow API (${uploadedFlowCount}/${uploadableImageAssets.length} đã có Media ID)`}
             >
-              {t('drama.assetsStep.narratorVoice')}：{narrationVoiceLabel}
+              <UploadCloud size={16} />
+              <span>
+                Upload lên Flow ({uploadedFlowCount}/{uploadableImageAssets.length})
+              </span>
             </button>
-          ) : null}
-          <button type="button" className="pf-btn" onClick={() => setPickerOpen(true)}>
-            {t('drama.assetsStep.selectFromLib')}
-          </button>
-          <Link className="pf-btn" to="/drama/assets">
-            {t('drama.assetsStep.browseAll')}
-          </Link>
-          <button
-            type="button"
-            className="pf-btn"
-            disabled={reseedBusy || batchBusy}
-            onClick={() => void handleReseedAssets()}
-          >
-            {reseedBusy
-              ? t('drama.assetsStep.seeding').replace('{n}', String(Math.max(imageAssetCount, 1)))
-              : t('drama.assetsStep.reseed')}
-          </button>
-          {/* 一键生成未出图：暂时隐藏，恢复时去掉 && false */}
-          {tab !== 'voice' && false ? (
-            <button
-              type="button"
-              className="drama-btn-primary"
-              disabled={batchBusy || pending.length === 0}
-              onClick={() => void batchGenerate()}
-              title={
-                pending.length > 0
-                  ? t('drama.assetsStep.batchGenHint').replace('{n}', String(pending.length))
-                  : t('drama.assetsStep.noUngenerated')
-              }
-            >
-              {batchBusy || queueBusy
-                ? t('drama.assetsStep.generatingCount').replace('{n}', String(busyAssetIds.size))
-                : pending.length > 0
-                  ? t('drama.assetsStep.genPending').replace('{n}', String(pending.length))
-                  : t('drama.assetsStep.genAllPending')}
-            </button>
-          ) : null}
-
-          {DRAMA_VOICE_BINDING_ENABLED && tab === 'character' && selectedCharacterIds.length > 0 ? (
-            <button
-              type="button"
-              className="pf-btn pf-btn-lime"
-              disabled={batchBusy || batchVoiceBusy || selectedCharacterIds.length === 0}
-              onClick={() => void batchGenerateCharacterVoices()}
-              title={t('drama.assetsStep.batchVoiceTip')}
-            >
-              {batchVoiceBusy
-                ? t('drama.assetsStep.batchGenerating')
-                : t('drama.assetsStep.batchGenVoice').replace('{n}', String(selectedCharacterIds.length))}
-            </button>
-          ) : null}
-          <Link className="pf-btn" to={`/drama/projects/${projectId}/canvas`}>
-            {t('drama.assetsStep.openCanvas')}
-          </Link>
+          )}
         </div>
       </div>
 
@@ -1102,6 +1010,102 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
                 {isCharacter && voice ? ` · ${voice.label}` : ''}
               </p>
 
+              {/* Hiển thị trạng thái Flow & Media ID */}
+              <div
+                className="drama-asset-flow-panel"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+                style={{ margin: '4px 0 6px 0', minHeight: 24 }}
+              >
+                {flowUploadingAssetId === asset.id ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      fontSize: '0.73rem',
+                      color: '#0284c7',
+                      background: '#f0f9ff',
+                      border: '1px solid #bae6fd',
+                      borderRadius: 4,
+                      padding: '3px 6px',
+                    }}
+                  >
+                    <Loader2 size={12} className="pf-spin" />
+                    <span>Đang upload Flow...</span>
+                  </div>
+                ) : (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 4,
+                      fontSize: '0.73rem',
+                      color: '#15803d',
+                      background: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: 4,
+                      padding: '2px 6px',
+                    }}
+                    title={`Google Flow Media ID: ${asset.flow_media_id || (asset.params as any)?.flow_media_id}`}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
+                      <Check size={12} color="#16a34a" />
+                      <span style={{ fontWeight: 600 }}>Flow ID:</span>
+                      <span
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '0.7rem',
+                          maxWidth: 82,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {asset.flow_media_id || (asset.params as any)?.flow_media_id}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        padding: '1px 2px',
+                        cursor: 'pointer',
+                        color: copiedAssetId === asset.id ? '#15803d' : '#16a34a',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      title="Sao chép Media ID"
+                      onClick={(e) => void handleCopyMediaId(e, asset.id, String(asset.flow_media_id || (asset.params as any)?.flow_media_id))}
+                    >
+                      {copiedAssetId === asset.id ? <CheckCheck size={12} /> : <Copy size={11} />}
+                    </button>
+                  </div>
+                ) : flowUploadErrors[asset.id] ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: '0.72rem',
+                      color: '#b91c1c',
+                      background: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: 4,
+                      padding: '2px 6px',
+                    }}
+                    title={flowUploadErrors[asset.id]}
+                  >
+                    <AlertCircle size={12} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      Lỗi upload
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+
               {DRAMA_VOICE_BINDING_ENABLED && isCharacter ? (
                 <div
                   className="drama-asset-card-voice"
@@ -1146,10 +1150,37 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
                 >
                   {genButtonLabel(asset)}
                 </button>
+                {mediaSrc ? (
+                  <button
+                    type="button"
+                    className="pf-btn pf-btn-sm"
+                    style={{
+                      padding: '0 8px',
+                      height: 28,
+                      fontSize: '0.75rem',
+                      background: (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? '#f0fdf4' : '#f8fafc',
+                      borderColor: (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? '#86efac' : '#cbd5e1',
+                      color: (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? '#166534' : '#475569',
+                    }}
+                    disabled={busy || batchBusy || flowUploading || flowUploadingAssetId === asset.id}
+                    onClick={() => void handleUploadSingleAssetToFlow(asset)}
+                    title={
+                      (asset.flow_media_id || (asset.params as any)?.flow_media_id)
+                        ? 'Upload lại ảnh này lên Google Flow'
+                        : 'Upload ảnh này lên Google Flow'
+                    }
+                  >
+                    {flowUploadingAssetId === asset.id ? (
+                      <Loader2 size={12} className="pf-spin" />
+                    ) : (
+                      <UploadCloud size={12} />
+                    )}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="pf-btn pf-btn-sm drama-btn-danger-text drama-asset-card-btn-delete"
-                  disabled={busy || batchBusy || batchVoiceBusy}
+                  disabled={busy || batchBusy || batchVoiceBusy || flowUploadingAssetId === asset.id}
                   onClick={(e) => {
                     e.stopPropagation()
                     void handleDeleteAsset(asset)

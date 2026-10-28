@@ -5,7 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 from app.schemas_tasks import TaskRunBriefOut
 
@@ -53,8 +54,15 @@ class DramaAssetOut(BaseModel):
     derive_id: str | None = None
     project_id: int
     updated_at: datetime | None = None
+    flow_media_id: str | None = None
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def populate_flow_media_id(self) -> Self:
+        if not self.flow_media_id and isinstance(self.params, dict):
+            self.flow_media_id = self.params.get("flow_media_id")
+        return self
 
 
 class DramaProjectUsageStats(BaseModel):
@@ -208,6 +216,11 @@ class DramaAssetUpdate(BaseModel):
     cover: str | None = None
     url: str | None = None
     params: dict | None = None
+    flow_media_id: str | None = None
+
+
+class UploadAssetFlowRequest(BaseModel):
+    flow_project_id: str | None = None
 
 
 class DramaImageGenerateRequest(BaseModel):
