@@ -5,7 +5,19 @@ import { useI18n } from '../../i18n'
 import type { DramaAsset, DramaFragment } from '../../api/drama'
 import { resolveDramaMediaUrl } from '../../api/drama'
 import { api, type ExtractedPromptResult } from '../../api'
-import { Sparkles, RefreshCw, AlertCircle, Copy, Check, ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  Sparkles,
+  RefreshCw,
+  AlertCircle,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  ExternalLink,
+  Image as ImageIcon,
+  HelpCircle,
+} from 'lucide-react'
 
 interface EpisodeEditCurlModalProps {
   open: boolean
@@ -31,7 +43,7 @@ export function EpisodeEditCurlModal({
   modelId,
 }: EpisodeEditCurlModalProps) {
   const { t } = useI18n()
-  const [tab, setTab] = useState<'upstream' | 'internal'>('upstream')
+  const [tab, setTab] = useState<'flow' | 'upstream' | 'internal'>('flow')
   const [extractedPromptInfo, setExtractedPromptInfo] = useState<ExtractedPromptResult | null>(null)
   const [extractingPrompt, setExtractingPrompt] = useState(false)
   const [extractPromptError, setExtractPromptError] = useState<string | null>(null)
@@ -125,6 +137,29 @@ export function EpisodeEditCurlModal({
     }
   }
 
+  // Prompt sạch dự phòng (loại bỏ thẻ @asset)
+  const cleanPromptFallback = useMemo(() => {
+    if (!fragment?.content) return ''
+    return fragment.content.replace(/@asset:[a-zA-Z0-9_.-]+/g, '').trim()
+  }, [fragment])
+
+  async function handleDownloadAsset(url: string, name: string) {
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const blobUrl = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = `${name.replace(/\s+/g, '_')}_ref.jpg`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(blobUrl)
+    } catch {
+      window.open(url, '_blank')
+    }
+  }
+
   async function handleCopyPrompt(text: string) {
     if (!text) return
     try {
@@ -134,7 +169,7 @@ export function EpisodeEditCurlModal({
     } catch {}
   }
 
-  // Lệnh cURL gọi qua backend PrintFilm
+  // Lệnh cURL gọi qua backend GenCine
   const internalCurl = useMemo(() => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8001'
     const fragId = fragment?.id || 0
@@ -151,11 +186,13 @@ export function EpisodeEditCurlModal({
 
   if (!open) return null
 
+  const activePrompt = extractedPromptInfo?.prompt || cleanPromptFallback
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={`Lệnh cURL API Tạo video · Phân cảnh ${(fragmentIndex + 1).toString().padStart(2, '0')}`}
+      title={`Dữ liệu Phân cảnh ${(fragmentIndex + 1).toString().padStart(2, '0')} · Tạo video Google Flow & cURL`}
       size="lg"
       footer={
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', width: '100%' }}>
@@ -171,32 +208,345 @@ export function EpisodeEditCurlModal({
       }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <p className="pf-muted" style={{ margin: 0, fontSize: '0.875rem', lineHeight: 1.5 }}>
-          Lệnh cURL gọi API để kết xuất video cho phân cảnh này bằng mô hình{' '}
-          <strong>Google Veo 3.1</strong> qua cổng máy chủ <strong>neuravibemmo.dpdns.org</strong>.
-        </p>
-
-        {/* Tab chuyển đổi Upstream / Internal */}
-        <div style={{ display: 'flex', gap: 8 }}>
+        {/* Tab chuyển đổi Google Flow / Upstream / Internal */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className={`drama-ep-btn ${tab === 'flow' ? 'drama-ep-btn-dark' : 'drama-ep-btn-ghost'}`}
+            style={{ fontSize: '0.82rem', padding: '6px 14px', height: 'auto', fontWeight: 600 }}
+            onClick={() => setTab('flow')}
+          >
+            ✨ Tạo trên Google Flow (flow.google.com)
+          </button>
           <button
             type="button"
             className={`drama-ep-btn ${tab === 'upstream' ? 'drama-ep-btn-dark' : 'drama-ep-btn-ghost'}`}
-            style={{ fontSize: '0.82rem', padding: '4px 12px', height: 'auto' }}
+            style={{ fontSize: '0.82rem', padding: '6px 14px', height: 'auto' }}
             onClick={() => setTab('upstream')}
           >
-            🌐 Upstream API (neuravibemmo.dpdns.org)
+            🌐 Upstream API cURL (Veo 3.1)
           </button>
           <button
             type="button"
             className={`drama-ep-btn ${tab === 'internal' ? 'drama-ep-btn-dark' : 'drama-ep-btn-ghost'}`}
-            style={{ fontSize: '0.82rem', padding: '4px 12px', height: 'auto' }}
+            style={{ fontSize: '0.82rem', padding: '6px 14px', height: 'auto' }}
             onClick={() => setTab('internal')}
           >
-            🖥️ Internal API (PrintFilm Backend)
+            🖥️ Internal Backend cURL
           </button>
         </div>
 
-        {/* Khối thông tin chi tiết */}
+        {/* TAB 1: GOOGLE FLOW HƯỚNG DẪN & DỮ LIỆU */}
+        {tab === 'flow' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Khối hướng dẫn từng bước */}
+            <div
+              style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '10px',
+                padding: '0.9rem 1.1rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '0.6rem',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <HelpCircle size={18} color="#2563eb" />
+                  <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e3a8a' }}>
+                    Quy trình 4 bước tạo video bằng Google Flow và đưa về hệ thống:
+                  </span>
+                </div>
+                <a
+                  href="https://flow.google.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="drama-ep-btn drama-ep-btn-ghost"
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '0.25rem 0.65rem',
+                    height: 'auto',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    color: '#1d4ed8',
+                    borderColor: '#93c5fd',
+                    background: '#fff',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <ExternalLink size={13} />
+                  Mở Google Flow ↗
+                </a>
+              </div>
+
+              <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.84rem', color: '#1e293b', lineHeight: 1.6 }}>
+                <li>
+                  <strong>Tải ảnh tham chiếu:</strong> Nhấn nút <em>"Tải ảnh về máy"</em> ở mục Ảnh tham chiếu bên dưới.
+                </li>
+                <li>
+                  <strong>Sao chép Prompt:</strong> Nhấn <em>"Sao chép prompt"</em> để copy câu lệnh mô tả phân cảnh đã tối ưu.
+                </li>
+                <li>
+                  <strong>Nhập vào Google Flow (flow.google.com):</strong>
+                  <ul style={{ margin: '0.2rem 0', paddingLeft: '1.1rem' }}>
+                    <li>
+                      Chọn mô hình <strong>Google Veo</strong>.
+                    </li>
+                    <li>
+                      Dán văn bản vào ô <strong>Prompt</strong>.
+                    </li>
+                    <li>
+                      Tải ảnh tham chiếu nhân vật/bối cảnh vừa lưu vào mục <strong>Reference / Ingredients</strong> (chọn vai trò <em>Character/Subject</em> để giữ đồng nhất khuôn mặt).
+                    </li>
+                    <li>
+                      Chọn tỷ lệ <strong>{aspectRatio || '9:16'}</strong>, thời lượng <strong>{duration || 8}s</strong> và bấm <strong>Generate</strong>.
+                    </li>
+                  </ul>
+                </li>
+                <li>
+                  <strong>Tải video về GenCine:</strong> Tải file <code>.mp4</code> từ Google Flow về máy tính → quay lại GenCine và bấm nút <strong style={{ color: '#2563eb' }}>"Tải video lên"</strong> trên phân cảnh này.
+                </li>
+              </ol>
+            </div>
+
+            {/* Khối Ảnh tham chiếu */}
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '0.85rem 1rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '0.7rem',
+                  flexWrap: 'wrap',
+                  gap: '0.4rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <ImageIcon size={16} color="#059669" />
+                  <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0f172a' }}>
+                    Ảnh tham chiếu nhân vật & bối cảnh ({refAssets.length})
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  Đưa ảnh này vào mục Reference Image trên Google Flow
+                </span>
+              </div>
+
+              {refAssets.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                  {refAssets.map((asset) => {
+                    const imgUrl = resolveDramaMediaUrl(asset.cover || asset.url || '')
+                    const assetName = asset.name || 'Tài sản'
+                    return (
+                      <div
+                        key={asset.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.65rem',
+                          padding: '0.5rem',
+                          border: '1px solid #f1f5f9',
+                          background: '#f8fafc',
+                          borderRadius: '8px',
+                        }}
+                      >
+                        {imgUrl ? (
+                          <img
+                            src={imgUrl}
+                            alt={assetName}
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: '6px',
+                              objectFit: 'cover',
+                              border: '1px solid #e2e8f0',
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: '6px',
+                              background: '#e2e8f0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <ImageIcon size={18} color="#94a3b8" />
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              fontSize: '0.82rem',
+                              color: '#1e293b',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                            title={assetName}
+                          >
+                            {assetName}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'capitalize' }}>
+                            {asset.type === 'character' ? 'Nhân vật' : asset.type === 'scene' ? 'Cảnh quay' : 'Đạo cụ'}
+                          </div>
+                          {imgUrl && (
+                            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.25rem' }}>
+                              <button
+                                type="button"
+                                className="drama-ep-btn drama-ep-btn-ghost"
+                                style={{
+                                  fontSize: '0.72rem',
+                                  padding: '0.15rem 0.45rem',
+                                  height: 'auto',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  color: '#2563eb',
+                                }}
+                                onClick={() => handleDownloadAsset(imgUrl, assetName)}
+                                title="Tải ảnh tham chiếu này về máy tính"
+                              >
+                                <Download size={11} />
+                                Tải ảnh
+                              </button>
+                              <a
+                                href={imgUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="drama-ep-btn drama-ep-btn-ghost"
+                                style={{
+                                  fontSize: '0.72rem',
+                                  padding: '0.15rem 0.45rem',
+                                  height: 'auto',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  color: '#64748b',
+                                  textDecoration: 'none',
+                                }}
+                                title="Xem ảnh kích thước gốc"
+                              >
+                                <ExternalLink size={11} />
+                                Xem
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    padding: '0.8rem',
+                    background: '#f8fafc',
+                    borderRadius: '6px',
+                    fontSize: '0.82rem',
+                    color: '#64748b',
+                    textAlign: 'center',
+                  }}
+                >
+                  Phân cảnh này chưa gắn thẻ nhân vật nào. Hãy gắn thẻ nhân vật ở cột bên trái hoặc tải ảnh nhân vật trực tiếp từ bảng tài sản.
+                </div>
+              )}
+            </div>
+
+            {/* Khối Prompt Text cho Google Flow */}
+            <div
+              style={{
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '0.85rem 1rem',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '0.6rem',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Sparkles size={16} color="#6366f1" />
+                  <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0f172a' }}>
+                    Prompt văn bản cho Google Flow (Veo 3.1)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="drama-ep-btn"
+                  style={{
+                    padding: '0.3rem 0.8rem',
+                    fontSize: '0.82rem',
+                    height: 'auto',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    background: '#6366f1',
+                    color: '#fff',
+                    border: 'none',
+                    fontWeight: 500,
+                  }}
+                  onClick={() => handleCopyPrompt(activePrompt)}
+                  title="Sao chép toàn bộ Prompt text"
+                >
+                  {promptCopied ? <Check size={14} color="#fff" /> : <Copy size={14} />}
+                  <span>{promptCopied ? 'Đã sao chép!' : 'Sao chép Prompt'}</span>
+                </button>
+              </div>
+
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '0.85rem 1rem',
+                  fontSize: '0.85rem',
+                  lineHeight: 1.6,
+                  color: '#0f172a',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {activePrompt || (
+                  <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                    Chưa có nội dung prompt cho phân cảnh này.
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Khối thông tin chi tiết Upstream */}
         {tab === 'upstream' ? (
           <div>
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>
@@ -454,7 +804,7 @@ export function EpisodeEditCurlModal({
         ) : (
           <div>
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', marginBottom: 6 }}>
-              Endpoint PrintFilm Backend:
+              Endpoint GenCine Backend:
             </div>
             <CurlCodeBox code={internalCurl} />
 

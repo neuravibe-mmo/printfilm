@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
+import time
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -47,6 +49,7 @@ from app.services.drama.access import (
 )
 from app.services.drama.generation import (
     activate_fragment_video_version,
+    archive_fragment_video_version,
     collect_active_fragment_ids_from_tasks,
     fragment_generation_status,
     overlay_fragment_status_with_active_task,
@@ -54,7 +57,16 @@ from app.services.drama.generation import (
     project_link_last_frame_enabled,
     read_fragment_last_frame_url,
     reconcile_orphaned_fragment_generations,
+    resolve_episode_video_output,
+    write_fragment_last_frame_url,
+    write_fragment_video_output_meta,
 )
+from app.services.ffmpeg_compose import (
+    extract_video_last_frame,
+    extract_video_poster_frame,
+    probe_duration,
+)
+from app.services import storage as storage_svc
 from app.services.drama.build_fragments import prepare_fragment_content
 from app.services.drama.fragment_content_duration import resolve_seedance_duration_from_content
 from app.services.drama.billing_util import record_seed_assets_llm_usage
@@ -917,3 +929,109 @@ async def cancel_all_video_jobs(
     result = await cancel_all_episode_video_jobs(user.id)
     logger.info("已取消全部视频任务 user_id=%s result=%s", user.id, result)
     return result
+
+
+@router.post("/fragments/{fragment_id}/upload-video", response_model=DramaFragmentOut)
+async def upload_fragment_video(
+    fragment_id: int,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> DramaFragmentOut:
+    """Tải lên file video thủ công (từ công cụ ngoài như Google Flow, Runway...) để gán vào phân cảnh."""
+    result = await db.execute(
+        select(DramaEpisodeFragment)
+        .options(selectinload(DramaEpisodeFragment.asset_references))
+        .where(DramaEpisodeFragment.id == fragment_id)
+    )
+    fragment = result.scalar_one_or_none()
+    if not fragment:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phân cảnh")
+
+    ep = await get_owned_episode(db, fragment.episode_id, user)
+    project = await get_owned_drama_project(db, ep.project_id, user)
+
+    content_type = (file.content_type or "").lower()
+    allowed_mime = {
+        "video/mp4": ".mp4",
+        "video/webm": ".webm",
+        "video/quicktime": ".mov",
+        "video/x-matroska": ".mkv",
+        "video/mpeg": ".mpeg",
+    }
+    ext = allowed_mime.get(content_type)
+    if not ext:
+        suffix = Path(file.filename or "").suffix.lower()
+        if suffix in {".mp4", ".webm", ".mov", ".mkv", ".mpeg"}:
+            ext = suffix
+        else:
+            raise HTTPException(status_code=400, detail="Chỉ hỗ trợ file video MP4, WebM, MOV, MKV")
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Tập tin video rỗng")
+    max_size = 500 * 1024 * 1024  # 500 MB
+    if len(raw) > max_size:
+        raise HTTPException(status_code=400, detail="Video không được vượt quá 500MB")
+
+    ts = int(time.time())
+    dest = storage_svc.project_dir(project.id) / f"shot_{fragment.id}_{ts}_upload{ext}"
+    dest.write_bytes(raw)
+    video_src = storage_svc.rel_static_url(dest)
+    video_url = storage_svc.republish_url(video_src, sync=True) or video_src
+
+    # Lưu lại phiên bản video trước đó vào lịch sử video_versions (nếu có)
+    archive_fragment_video_version(fragment)
+
+    # Đo thời lượng thực tế của video
+    actual_duration = probe_duration(dest)
+    if actual_duration and actual_duration > 0:
+        fragment.duration_sec = max(1, round(actual_duration))
+
+    # Trích xuất ảnh bìa (poster)
+    poster_dest = storage_svc.project_dir(project.id) / f"shot_{fragment.id}_{ts}_cover.jpg"
+    cover_url = ""
+    if extract_video_poster_frame(dest, poster_dest):
+        cover_src = storage_svc.rel_static_url(poster_dest)
+        cover_url = storage_svc.republish_url(cover_src, sync=True) or cover_src
+
+    # Trích xuất khung hình cuối cùng (last frame) phục vụ nối cảnh
+    frame_dest = storage_svc.project_dir(project.id) / f"shot_{fragment.id}_{ts}_last.jpg"
+    last_frame_url = None
+    if extract_video_last_frame(dest, frame_dest):
+        frame_src = storage_svc.rel_static_url(frame_dest)
+        last_frame_url = storage_svc.republish_url(frame_src, sync=True) or frame_src
+
+    fragment.video = video_url
+    fragment.cover = cover_url or ""
+    write_fragment_last_frame_url(fragment, last_frame_url)
+
+    ratio, resolution = resolve_episode_video_output(
+        ep.params if ep else None,
+        project.params,
+    )
+    write_fragment_video_output_meta(
+        fragment,
+        aspect_ratio=ratio,
+        resolution=resolution,
+        video_path=dest,
+    )
+
+    params = dict(fragment.params or {})
+    params.pop("generation_attempts", None)
+    gen = dict(params.get("generation") or {}) if isinstance(params.get("generation"), dict) else {}
+    gen.update({
+        "status": "done",
+        "video": fragment.video,
+        "cover": fragment.cover,
+        "lastFrameUrl": last_frame_url or None,
+        "source": "upload",
+    })
+    params["generation"] = gen
+    if last_frame_url:
+        params["lastFrameUrl"] = last_frame_url
+    fragment.params = params
+
+    await db.commit()
+    await db.refresh(fragment)
+    return _fragment_out(fragment)

@@ -30,6 +30,8 @@ type Props = {
   previewLabel?: string
   onClearPreview?: () => void
   onActivatePreview?: () => void
+  videoUploading?: boolean
+  onUploadVideo?: (file: File) => void
 }
 
 /** Chuyển tiến trình tổng hợp thành bản sao nút */
@@ -56,6 +58,8 @@ export function EpisodeEditSidePane({
   previewLabel = '',
   onClearPreview,
   onActivatePreview,
+  videoUploading = false,
+  onUploadVideo,
 }: Props) {
   const { t } = useI18n()
   const resolvedEpisodeName = episodeName || t('drama.episodeEdit.thisEpisode')
@@ -160,6 +164,8 @@ export function EpisodeEditSidePane({
               aspectRatio={aspectRatio}
               overrideVideoUrl={previewVideoUrl}
               overridePosterUrl={previewPosterUrl}
+              videoUploading={videoUploading}
+              onUploadVideo={onUploadVideo}
             />
             {!fragments.some((f) => f.video) && (
               <button type="button" className="drama-ep-open-canvas" onClick={onOpenStoryboard}>

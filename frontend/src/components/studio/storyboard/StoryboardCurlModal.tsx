@@ -300,7 +300,7 @@ export default function StoryboardCurlModal({
             style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
             onClick={() => setCurlViewMode('internal')}
           >
-            🖥️ Internal API (PrintFilm Backend)
+            🖥️ Internal API (GenCine Backend)
           </button>
           <button
             type="button"
@@ -715,7 +715,7 @@ export default function StoryboardCurlModal({
               {tab === 'video' ? (t('studio.storyboard.regenVideo') || 'Tạo lại video') : (t('studio.storyboard.redrawImage') || 'Vẽ lại hình ảnh')} - <code>POST /api/projects/{project.id}/shots/{shot.id}/{tab === 'video' ? 'regen-video' : 'regen-image'}</code> · Cảnh {String(shot.shot_no).padStart(2, '0')}
             </p>
             <p className="pf-muted" style={{ margin: '0 0 0.75rem', fontSize: '0.78rem' }}>
-              API nội bộ này kích hoạt background task trên backend PrintFilm, sau đó hệ thống sẽ chuẩn bị prompt và gửi tiếp sang neuravibemmo.dpdns.org.
+              API nội bộ này kích hoạt background task trên backend GenCine, sau đó hệ thống sẽ chuẩn bị prompt và gửi tiếp sang neuravibemmo.dpdns.org.
             </p>
             <CurlCodeBox code={getShotCurlCommand(shot, tab)} />
           </>

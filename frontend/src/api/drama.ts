@@ -476,6 +476,28 @@ export const dramaApi = {
       method: 'POST',
       body: JSON.stringify({ fragments }),
     }),
+  uploadFragmentVideo: async (fragmentId: number, file: File): Promise<DramaFragment> => {
+    const token = localStorage.getItem('token')
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${API_BASE}/api/drama/fragments/${fragmentId}/upload-video`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      const detail = err.detail
+      const message =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+            ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
+            : res.statusText
+      throw new Error(message || 'Tải lên video thất bại')
+    }
+    return res.json() as Promise<DramaFragment>
+  },
   generateEpisode: (episodeId: number, fragment_ids?: number[], model_id?: string) =>
     request<{
       ok: boolean

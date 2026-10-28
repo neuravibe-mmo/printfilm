@@ -1,5 +1,5 @@
 /** Chỉnh sửa tập: trình phát video có thanh tiến trình bảng phân cảnh (phát sóng tuần tự phía máy khách) */
-import { Download, Maximize, Minimize, MonitorPlay, Pause, Play, Volume2, VolumeX } from 'lucide-react'
+import { Download, Loader2, Maximize, Minimize, MonitorPlay, Pause, Play, Upload, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { resolveDramaMediaUrl, type DramaFragment } from '../../api/drama'
@@ -23,6 +23,8 @@ type Props = {
   /** Ghi đè địa chỉ video nhân bản hiện tại khi xem trước các phiên bản lịch sử */
   overrideVideoUrl?: string | null
   overridePosterUrl?: string | null
+  videoUploading?: boolean
+  onUploadVideo?: (file: File) => void
 }
 
 // Kết xuất trình phát video với thanh tiến trình phân đoạn bảng phân cảnh
@@ -33,6 +35,8 @@ export function DramaFragmentSegmentedVideoPlayer({
   aspectRatio,
   overrideVideoUrl = null,
   overridePosterUrl = null,
+  videoUploading = false,
+  onUploadVideo,
 }: Props) {
   const { t } = useI18n()
   // tham chiếu phần tử video videoRef
@@ -383,8 +387,49 @@ export function DramaFragmentSegmentedVideoPlayer({
   // playheadLeft Chơi phần trăm vị trí ngang của con trỏ
   const playheadLeft = totalDuration > 0 ? (globalCurrentTime / totalDuration) * 100 : 0
 
+  const [isDragOver, setIsDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!onUploadVideo) return
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!onUploadVideo) return
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!onUploadVideo) return
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file && (file.type.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(file.name))) {
+      onUploadVideo(file)
+    }
+  }
+
   return (
     <div className="drama-ep-segmented-player">
+      {onUploadVideo && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime,video/x-matroska"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) onUploadVideo(file)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+          }}
+        />
+      )}
       <div
         ref={screenRef}
         className={`drama-ep-player drama-ep-segmented-screen ${ratioClass}${
@@ -401,6 +446,22 @@ export function DramaFragmentSegmentedVideoPlayer({
               preload="auto"
             />
             <div className="drama-ep-video-overlay-actions">
+              {onUploadVideo && (
+                <button
+                  type="button"
+                  aria-label="Tải video khác lên thay thế"
+                  title="Tải lên video khác từ máy tính để thay thế"
+                  className="drama-ep-video-overlay-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={videoUploading}
+                >
+                  {videoUploading ? (
+                    <Loader2 size={16} className="drama-ep-detect-spin" />
+                  ) : (
+                    <Upload size={16} strokeWidth={1.8} />
+                  )}
+                </button>
+              )}
               <button
                 type="button"
                 aria-label={isFullscreen ? t('drama.player.exitFullscreen') : t('drama.player.fullscreen')}
@@ -426,8 +487,31 @@ export function DramaFragmentSegmentedVideoPlayer({
         ) : posterUrl ? (
           <img src={posterUrl} alt={t('drama.player.shotPreview')} />
         ) : (
-          <div className="drama-ep-player-placeholder">
-            <span>{t('drama.player.videoPending')}</span>
+          <div
+            className={`drama-ep-player-placeholder ${isDragOver ? 'is-dragover' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => onUploadVideo && !videoUploading && fileInputRef.current?.click()}
+            style={{ cursor: onUploadVideo && !videoUploading ? 'pointer' : 'default', padding: '24px 16px' }}
+            title={onUploadVideo ? 'Bấm hoặc kéo thả file video (MP4/MOV) vào đây để tải lên' : undefined}
+          >
+            {videoUploading ? (
+              <>
+                <Loader2 size={24} className="drama-ep-detect-spin" style={{ margin: '0 auto 8px' }} />
+                <span>Đang tải video lên…</span>
+              </>
+            ) : (
+              <>
+                {onUploadVideo && <Upload size={22} style={{ margin: '0 auto 6px', opacity: 0.6 }} />}
+                <span>{t('drama.player.videoPending')}</span>
+                {onUploadVideo && (
+                  <small style={{ marginTop: 4, display: 'block', opacity: 0.7 }}>
+                    Bấm hoặc kéo thả video vào đây
+                  </small>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>

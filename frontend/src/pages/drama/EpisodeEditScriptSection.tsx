@@ -1,5 +1,5 @@
-import React from 'react'
-import { Terminal } from 'lucide-react'
+import React, { useRef } from 'react'
+import { Loader2, Terminal, Upload } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { dramaApi, type DramaAsset, type DramaEpisode, type DramaFragment } from '../../api/drama'
 import { hasNonLocalizedCues, localizeScriptCues } from '../../lib/dramaCueI18n'
@@ -54,6 +54,8 @@ interface EpisodeEditScriptSectionProps {
   onSetStatus: (status: string) => void
   onSeedFromScript?: () => void | Promise<void>
   onPlanFragmentsWithLlm?: () => void
+  videoUploading?: boolean
+  onUploadVideo?: (file: File) => void
 }
 
 export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> = React.memo(
@@ -92,8 +94,11 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
     onSetStatus,
     onSeedFromScript,
     onPlanFragmentsWithLlm,
+    videoUploading = false,
+    onUploadVideo,
   }) {
     const { t } = useI18n()
+    const uploadVideoInputRef = useRef<HTMLInputElement>(null)
 
     return (
       <section className="drama-ep-editor">
@@ -336,10 +341,51 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
                   }}
                   disabled={!selected}
                   onClick={onShowCurlModal}
-                  title="Xem lệnh cURL gọi API tạo video"
+                  title="Lấy Prompt, Ảnh tham chiếu & cURL để tạo video ngoài (Google Flow, Runway...)"
                 >
                   <Terminal size={13} />
-                  cURL
+                  cURL / Flow
+                </button>
+
+                <input
+                  ref={uploadVideoInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,video/x-matroska"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file && onUploadVideo) {
+                      onUploadVideo(file)
+                    }
+                    if (uploadVideoInputRef.current) {
+                      uploadVideoInputRef.current.value = ''
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="drama-ep-btn-ghost"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    border: '1px solid rgba(0, 0, 0, 0.12)',
+                    minWidth: 'auto',
+                    padding: '0 12px',
+                    fontSize: '0.82rem',
+                    color: '#2563eb',
+                    background: '#fff',
+                  }}
+                  disabled={!selected || videoUploading || selectedIsGenerating}
+                  onClick={() => uploadVideoInputRef.current?.click()}
+                  title="Tải lên video từ máy tính (tạo từ Google Flow, Runway, Sora...)"
+                >
+                  {videoUploading ? (
+                    <Loader2 size={13} className="drama-ep-detect-spin" />
+                  ) : (
+                    <Upload size={13} />
+                  )}
+                  {videoUploading ? 'Đang tải video…' : 'Tải video lên'}
                 </button>
               </>
             )}

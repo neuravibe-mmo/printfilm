@@ -1,7 +1,7 @@
 /** Trình chỉnh sửa tập: Tái tạo bố cục bốn cột của dự án gốc (Assets/Script/Preview/Storyboard) */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, X } from 'lucide-react'
 import {
   dramaApi,
   resolveDramaMediaUrl,
@@ -73,7 +73,7 @@ export default function EpisodeEditPage() {
 
 // Nội dung chính của trang chỉnh sửa tập
 function EpisodeEditInner() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const { projectId, episodeId } = useParams()
   const pid = Number(projectId)
   const eid = Number(episodeId)
@@ -137,6 +137,15 @@ function EpisodeEditInner() {
     }, 10000)
     return () => window.clearTimeout(timer)
   }, [error])
+
+  // Tự động tắt thông báo status sau 10 phút
+  useEffect(() => {
+    if (!status) return
+    const timer = window.setTimeout(() => {
+      setStatus('')
+    }, 10 * 60 * 1000) // 10 phút
+    return () => window.clearTimeout(timer)
+  }, [status])
 
   useEffect(() => {
     // Sau khi thư mục đến, hãy thay thế ID Kie/Ark cũ bằng mô hình video mặc định nền
@@ -536,6 +545,33 @@ function EpisodeEditInner() {
     navigate(`/drama/projects/${pid}/episodes/${eid}/canvas`)
   }
 
+  const [videoUploading, setVideoUploading] = useState(false)
+
+  async function handleUploadFragmentVideo(file: File) {
+    if (!selected?.id) return
+    setVideoUploading(true)
+    setError('')
+    setStatus('Đang tải video lên phân cảnh…')
+    try {
+      const updatedFrag = await dramaApi.uploadFragmentVideo(selected.id, file)
+      setFragments((prev) =>
+        prev.map((f) => (f.id === selected.id ? { ...f, ...updatedFrag } : f)),
+      )
+      setStatus(
+        locale === 'vi'
+          ? `Đã tải lên video thành công cho phân cảnh (${updatedFrag.duration_sec ?? 0}s).`
+          : locale === 'en'
+            ? `Uploaded video successfully for shot (${updatedFrag.duration_sec ?? 0}s).`
+            : `视频上传成功 (${updatedFrag.duration_sec ?? 0}秒)`,
+      )
+      window.setTimeout(() => setStatus(''), 4000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Tải lên video thất bại')
+    } finally {
+      setVideoUploading(false)
+    }
+  }
+
   // Tải lại các tập
   async function reload() {
     const ep = await dramaApi.getEpisode(eid)
@@ -808,7 +844,38 @@ function EpisodeEditInner() {
               onClose={() => setError('')}
             />
           ) : null}
-          {!error && status ? <span>{status}</span> : null}
+          {!error && status ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                gap: '0.75rem',
+              }}
+            >
+              <span>{status}</span>
+              <button
+                type="button"
+                onClick={() => setStatus('')}
+                className="drama-ep-banner-close-btn"
+                aria-label={locale === 'vi' ? 'Đóng' : locale === 'en' ? 'Close' : '关闭'}
+                title={locale === 'vi' ? 'Đóng thông báo' : 'Close notification'}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  opacity: 0.7,
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -881,6 +948,8 @@ function EpisodeEditInner() {
             onSetStatus={setStatus}
             onSeedFromScript={handleSeedFromScript}
             onPlanFragmentsWithLlm={planFragmentsWithLlm}
+            videoUploading={videoUploading}
+            onUploadVideo={handleUploadFragmentVideo}
           />
 
           <EpisodeEditSidePane
@@ -910,6 +979,8 @@ function EpisodeEditInner() {
                   }
                 : undefined
             }
+            videoUploading={videoUploading}
+            onUploadVideo={handleUploadFragmentVideo}
           />
         </div>
       </div>
