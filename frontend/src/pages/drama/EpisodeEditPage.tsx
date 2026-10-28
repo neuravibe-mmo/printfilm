@@ -129,6 +129,15 @@ function EpisodeEditInner() {
   const autoConvertAttemptedRef = useRef<string>('')
   const isAutoConvertingRef = useRef(false)
 
+  // Tự động tắt thông báo lỗi sau 10 giây
+  useEffect(() => {
+    if (!error) return
+    const timer = window.setTimeout(() => {
+      setError('')
+    }, 10000)
+    return () => window.clearTimeout(timer)
+  }, [error])
+
   useEffect(() => {
     // Sau khi thư mục đến, hãy thay thế ID Kie/Ark cũ bằng mô hình video mặc định nền
     if (!mediaCatalog) return
@@ -791,7 +800,14 @@ function EpisodeEditInner() {
 
       {(status || error) && (
         <div className="drama-ep-banner">
-          {error ? <BillingErrorNotice message={error} className="drama-ep-banner-error" inline /> : null}
+          {error ? (
+            <BillingErrorNotice
+              message={error}
+              className="drama-ep-banner-error"
+              style={{ width: '100%' }}
+              onClose={() => setError('')}
+            />
+          ) : null}
           {!error && status ? <span>{status}</span> : null}
         </div>
       )}

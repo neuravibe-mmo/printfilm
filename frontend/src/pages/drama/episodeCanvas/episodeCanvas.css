@@ -79,12 +79,19 @@
 }
 
 .ep-storyboard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: none;
   border-radius: 999px;
   height: 34px;
   padding: 0 14px;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
 }
 
 .ep-storyboard-btn.ghost {
@@ -92,19 +99,23 @@
   color: #334155;
 }
 
+.ep-storyboard-btn.ghost:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
 .ep-storyboard-btn.dark {
   background: #0f172a;
   color: #fff;
 }
 
+.ep-storyboard-btn.dark:hover:not(:disabled) {
+  background: #1e293b;
+}
+
 .ep-storyboard-btn.primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   background: #2563eb;
   color: #fff;
-  font-weight: 500;
-  transition: background-color 0.15s ease;
 }
 
 .ep-storyboard-btn.primary:hover:not(:disabled) {
@@ -195,25 +206,46 @@
   text-overflow: ellipsis;
 }
 
-.ep-frag-link-btn {
+.ep-frag-link-count {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 1px 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.ep-frag-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ep-frag-icon-btn {
   width: 22px;
   height: 22px;
   border: none;
   border-radius: 999px;
-  background: #0f172a;
-  color: #fff;
+  background: #f1f5f9;
+  color: #475569;
   display: grid;
   place-items: center;
   cursor: pointer;
   flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
-.ep-frag-link-count {
-  font-style: normal;
-  font-size: 11px;
-  font-weight: 500;
-  color: #94a3b8;
-  flex-shrink: 0;
+.ep-frag-icon-btn:hover {
+  background: #0f172a;
+  color: #fff;
+}
+
+.ep-frag-icon-btn.is-delete:hover {
+  background: #ef4444;
+  color: #fff;
 }
 
 .ep-frag-media {

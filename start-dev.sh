@@ -104,7 +104,18 @@ if [ "$PG_RUNNING" = false ] || [ "$REDIS_RUNNING" = false ]; then
             [ -n "$PG_FORMULA" ] && brew services start "$PG_FORMULA" 2>/dev/null || brew services start postgresql 2>/dev/null || true
         fi
         [ "$REDIS_RUNNING" = false ] && brew services start redis 2>/dev/null || true
-        sleep 2
+        echo -n "Đang đợi PostgreSQL và Redis sẵn sàng..."
+        for _ in {1..15}; do
+            (is_port_listening 5432 || is_port_listening 15432) && PG_RUNNING=true
+            (is_port_listening 6379 || is_port_listening 16379) && REDIS_RUNNING=true
+            if [ "$PG_RUNNING" = true ] && [ "$REDIS_RUNNING" = true ]; then
+                echo -e " ${GREEN}✓ Sẵn sàng!${NC}"
+                break
+            fi
+            sleep 1
+            echo -n "."
+        done
+        echo ""
     fi
 
     # Kiểm tra lại sau brew

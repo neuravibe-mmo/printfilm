@@ -1,13 +1,14 @@
 /** Các nút trong bảng phân cảnh: video ở trên cùng, lời nhắc ở dưới cùng; tài sản gửi đi có liên quan thông qua các kết nối nút ở bên trái */
 import { memo, useCallback, type ChangeEvent } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
-import { Clapperboard, Plus } from 'lucide-react'
+import { Clapperboard, Plus, Trash2 } from 'lucide-react'
 import { useI18n } from '../../../i18n'
 import type { EpisodeFragmentNodeData } from './buildEpisodeFlow'
 
 type Props = NodeProps<Node<EpisodeFragmentNodeData>> & {
   onPromptChange?: (fragmentId: number, content: string) => void
   onRequestLinkAsset?: (fragmentId: number) => void
+  onRequestDelete?: (fragmentId: number) => void
 }
 
 // Kết xuất một nút video bảng phân cảnh duy nhất
@@ -16,6 +17,7 @@ function EpisodeFragmentNodeComponent({
   selected,
   onPromptChange,
   onRequestLinkAsset,
+  onRequestDelete,
 }: Props) {
   const { t } = useI18n()
   const hasVideo = Boolean(data.videoUrl)
@@ -33,19 +35,34 @@ function EpisodeFragmentNodeComponent({
       <div className="ep-frag-node-head">
         <Clapperboard size={14} strokeWidth={1.8} aria-hidden />
         <span>{data.label}</span>
-        {selected ? (
+        {data.linkedCount > 0 ? (
+          <em className="ep-frag-link-count" title={`${data.linkedCount} ${t('drama.episodeEdit.assetsUnit')}`}>
+            {data.linkedCount}
+          </em>
+        ) : null}
+        <div className="ep-frag-head-actions">
           <button
             type="button"
-            className="ep-frag-link-btn nodrag nopan"
+            className="ep-frag-icon-btn nodrag nopan"
             title={t('drama.episodeEdit.linkAsset')}
             aria-label={t('drama.episodeEdit.linkAsset')}
             onClick={() => onRequestLinkAsset?.(data.fragmentId)}
           >
-            <Plus size={14} strokeWidth={2} />
+            <Plus size={13} strokeWidth={2.2} />
           </button>
-        ) : (
-          <em className="ep-frag-link-count">{data.linkedCount || 0} {t('drama.episodeEdit.assetsUnit')}</em>
-        )}
+          <button
+            type="button"
+            className="ep-frag-icon-btn is-delete nodrag nopan"
+            title={t('common.delete')}
+            aria-label={t('common.delete')}
+            onClick={(e) => {
+              e.stopPropagation()
+              onRequestDelete?.(data.fragmentId)
+            }}
+          >
+            <Trash2 size={12} strokeWidth={1.9} />
+          </button>
+        </div>
       </div>
 
       <div className="ep-frag-media">

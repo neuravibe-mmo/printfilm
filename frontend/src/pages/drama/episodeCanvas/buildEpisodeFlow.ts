@@ -40,6 +40,8 @@ export type EpisodeAssetNodeData = {
 
 export type EpisodeFlowNodeData = EpisodeFragmentNodeData | EpisodeAssetNodeData
 
+export type EpisodeLayoutPositions = Record<string, { x: number; y: number }>
+
 export const EPISODE_FRAGMENT_NODE_WIDTH = 220
 export const EPISODE_ASSET_NODE_WIDTH = 148
 export const EPISODE_FRAGMENT_COL_GAP = 36
@@ -98,6 +100,7 @@ export function episodeSequenceHandles(fromIndex: number, toIndex: number, cols:
 export function buildEpisodeFragmentFlow(
   fragments: DramaFragment[],
   assets: DramaAsset[] = [],
+  savedPositions?: EpisodeLayoutPositions | null,
 ): {
   nodes: Node<EpisodeFlowNodeData>[]
   edges: Edge[]
@@ -153,10 +156,12 @@ export function buildEpisodeFragmentFlow(
     lastAssetY = y + EPISODE_ASSET_NODE_EST_HEIGHT + EPISODE_ASSET_ROW_GAP
 
     const loc = getActiveLocale()
+    const assetNodeId = episodeAssetNodeId(assetId)
+    const assetPos = savedPositions?.[assetNodeId] ?? { x: 0, y }
     nodes.push({
-      id: episodeAssetNodeId(assetId),
+      id: assetNodeId,
       type: 'episodeAsset',
-      position: { x: 0, y },
+      position: assetPos,
       data: {
         assetId,
         linkedFragments: fragmentIds.map((fragmentId) => ({
@@ -189,12 +194,13 @@ export function buildEpisodeFragmentFlow(
   ordered.forEach((frag, index) => {
     const fragNodeId = episodeFragmentNodeId(frag.id)
     const linkedIds = collectFragmentAssetIds(frag)
-    const { x, y } = episodeFragmentGridPosition(index, gridCols, fragGridStartX)
+    const defaultPos = episodeFragmentGridPosition(index, gridCols, fragGridStartX)
+    const fragPos = savedPositions?.[fragNodeId] ?? defaultPos
 
     nodes.push({
       id: fragNodeId,
       type: 'episodeFragment',
-      position: { x, y },
+      position: fragPos,
       data: {
         fragmentId: frag.id,
         sortOrder: frag.sort_order ?? index,

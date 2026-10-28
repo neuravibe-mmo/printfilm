@@ -4766,14 +4766,20 @@
 }
 
 .drama-ep-banner {
-  padding: 6px 16px;
-  font-size: 12px;
+  padding: 8px 16px;
+  font-size: 13px;
   color: var(--ep-muted);
   border-bottom: 1px solid var(--ep-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fef2f2;
 }
 
 .drama-ep-banner-error {
   color: #dc2626;
+  width: 100%;
+  font-weight: 500;
 }
 
 .drama-ep-body {

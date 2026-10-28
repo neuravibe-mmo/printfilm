@@ -14,7 +14,7 @@ import {
   type NodeTypes,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { ChevronLeft, Plus } from 'lucide-react'
+import { ChevronLeft, Plus, LayoutGrid } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   dramaApi,
@@ -24,6 +24,7 @@ import {
   type DramaFragment,
 } from '../../../api/drama'
 import Modal from '../../../components/ui/Modal'
+import { dialog } from '../../../lib/dialog'
 import { useI18n } from '../../../i18n'
 import {
   collectFragmentAssetIds,
@@ -93,9 +94,12 @@ function EpisodeStoryboardInner() {
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
   const [dirty, setDirty] = useState(false)
+  const [layoutDirty, setLayoutDirty] = useState(false)
   const fittedRef = useRef(false)
   const fragmentsRef = useRef<DramaFragment[]>([])
   const assetsRef = useRef<DramaAsset[]>([])
+  const episodeRef = useRef<DramaEpisode | null>(null)
+  const positionsRef = useRef<Record<string, { x: number; y: number }>>({})
   const saveTimer = useRef<number | null>(null)
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<EpisodeFlowNodeData>>([])
@@ -109,6 +113,23 @@ function EpisodeStoryboardInner() {
     assetsRef.current = assets
   }, [assets])
 
+  useEffect(() => {
+    episodeRef.current = episode
+  }, [episode])
+
+  // Đồng bộ positionsRef khi nodes thay đổi
+  useEffect(() => {
+    if (nodes.length > 0) {
+      const map: Record<string, { x: number; y: number }> = { ...positionsRef.current }
+      for (const n of nodes) {
+        if (n.position) {
+          map[n.id] = { x: Math.round(n.position.x), y: Math.round(n.position.y) }
+        }
+      }
+      positionsRef.current = map
+    }
+  }, [nodes])
+
   // Khóa cấu trúc: thành từng phần + được xây dựng lại khi tài sản liên quan thay đổi; trình soạn thảo từ nhắc nhở thực hiện cập nhật một phần
   const structureKey = fragments
     .map((f) => {
@@ -118,10 +139,15 @@ function EpisodeStoryboardInner() {
     .join('|')
 
   useEffect(() => {
-    const flow = buildEpisodeFragmentFlow(fragmentsRef.current, assetsRef.current)
+    const saved =
+      positionsRef.current && Object.keys(positionsRef.current).length > 0
+        ? positionsRef.current
+        : ((episode?.params?.storyboard_layout as { positions?: Record<string, { x: number; y: number }> } | undefined)?.positions || null)
+
+    const flow = buildEpisodeFragmentFlow(fragmentsRef.current, assetsRef.current, saved)
     setNodes(flow.nodes)
     setEdges(flow.edges)
-  }, [structureKey, assets, setNodes, setEdges])
+  }, [structureKey, assets, episode?.params?.storyboard_layout, setNodes, setEdges])
 
   useEffect(() => {
     fittedRef.current = false
@@ -145,6 +171,12 @@ function EpisodeStoryboardInner() {
         setEpisode(ep)
         setFragments(ep.fragments || [])
         setAssets(assetList || [])
+        const savedLayout = ep.params?.storyboard_layout as
+          | { positions?: Record<string, { x: number; y: number }> }
+          | undefined
+        if (savedLayout?.positions) {
+          positionsRef.current = { ...savedLayout.positions }
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : t('common.loadFailed'))
@@ -298,6 +330,148 @@ function EpisodeStoryboardInner() {
     [linkTargetFragId, scheduleSave],
   )
 
+  // Khi người dùng kéo thả xong: chỉ ghi nhận toạ độ và bật cờ layoutDirty (chờ người dùng bấm nút "Lưu")
+  const handleNodeDragStop = useCallback(() => {
+    setNodes((currentNodes) => {
+      const map: Record<string, { x: number; y: number }> = { ...positionsRef.current }
+      for (const n of currentNodes) {
+        if (n.position) {
+          map[n.id] = { x: Math.round(n.position.x), y: Math.round(n.position.y) }
+        }
+      }
+      positionsRef.current = map
+      return currentNodes
+    })
+    setLayoutDirty(true)
+  }, [setNodes])
+
+  // Đặt lại bố cục mặc định dạng lưới và bật cờ layoutDirty
+  const handleResetLayout = useCallback(() => {
+    positionsRef.current = {}
+    const flow = buildEpisodeFragmentFlow(fragmentsRef.current, assetsRef.current, null)
+    setNodes(flow.nodes)
+    setEdges(flow.edges)
+    setLayoutDirty(true)
+    window.setTimeout(() => {
+      void fitView({ padding: 0.22, duration: 320 })
+    }, 150)
+  }, [fitView, setNodes, setEdges])
+
+  // Lưu thủ công: chỉ thực hiện khi người dùng nhấn vào nút "Lưu"
+  const handleSaveAll = useCallback(async () => {
+    if (!eid || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      if (dirty) {
+        const saved = await dramaApi.saveFragments(
+          eid,
+          fragmentsRef.current.map((f, index) => {
+            const prevParams =
+              f.params && typeof f.params === 'object' && !Array.isArray(f.params)
+                ? (f.params as Record<string, unknown>)
+                : {}
+            return {
+              id: typeof f.id === 'number' && f.id > 0 ? f.id : undefined,
+              sort_order: index,
+              content: f.content || '',
+              cover: f.cover || '',
+              video: f.video || '',
+              duration_sec: f.duration_sec ?? 8,
+              params: prevParams,
+              asset_ids: collectFragmentAssetIds(f),
+            }
+          }),
+        )
+        setEpisode(saved)
+        setFragments(saved.fragments || [])
+        setDirty(false)
+      }
+
+      if (layoutDirty) {
+        const currentParams =
+          episodeRef.current?.params &&
+          typeof episodeRef.current.params === 'object' &&
+          !Array.isArray(episodeRef.current.params)
+            ? { ...episodeRef.current.params }
+            : {}
+
+        let nextParams: Record<string, unknown>
+        if (positionsRef.current && Object.keys(positionsRef.current).length > 0) {
+          nextParams = {
+            ...currentParams,
+            storyboard_layout: {
+              positions: positionsRef.current,
+              updated_at: Date.now(),
+            },
+          }
+        } else {
+          nextParams = { ...currentParams }
+          delete nextParams.storyboard_layout
+        }
+
+        const updated = await dramaApi.updateEpisode(eid, { params: nextParams })
+        setEpisode((prev) => (prev ? { ...prev, params: updated.params } : updated))
+        setLayoutDirty(false)
+      }
+
+      setStatus(t('common.saved'))
+      window.setTimeout(() => setStatus(''), 1800)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.saveFailed'))
+    } finally {
+      setBusy(false)
+    }
+  }, [eid, busy, dirty, layoutDirty, t])
+
+  // Xoá phân cảnh
+  const handleDeleteFragment = useCallback(
+    async (fragmentId: number) => {
+      if (!eid || busy) return
+      if (fragments.length <= 1) {
+        setError(
+          locale === 'vi'
+            ? 'Mỗi tập phải có ít nhất 1 phân cảnh'
+            : locale === 'en'
+              ? 'Each episode must have at least 1 shot'
+              : '每集至少保留 1 个分镜',
+        )
+        return
+      }
+
+      const target = fragments.find((f) => f.id === fragmentId)
+      const hasContent = Boolean(
+        (target?.content || '').trim() || (target?.video || '').trim() || (target?.cover || '').trim(),
+      )
+
+      if (hasContent) {
+        const ok = await dialog.confirm({
+          title: locale === 'vi' ? 'Xoá phân cảnh' : locale === 'en' ? 'Delete Shot' : '删除分镜',
+          message:
+            locale === 'vi'
+              ? 'Bạn có chắc chắn muốn xoá phân cảnh này không? Thao tác không thể hoàn tác.'
+              : locale === 'en'
+                ? 'Are you sure you want to delete this shot? This cannot be undone.'
+                : '确定要删除此分镜吗？此操作无法撤销。',
+          confirmText: t('common.delete'),
+          cancelText: t('common.cancel'),
+          tone: 'danger',
+        })
+        if (!ok) return
+      }
+
+      // 1. Xoá khỏi danh sách fragments
+      const next = fragments.filter((f) => f.id !== fragmentId)
+      // 2. Xoá toạ độ đã lưu nếu có
+      if (positionsRef.current) {
+        delete positionsRef.current[`frag-${fragmentId}`]
+      }
+      // 3. Persist fragments
+      await persistFragments(next)
+    },
+    [eid, busy, fragments, locale, persistFragments, t],
+  )
+
   const nodeTypes: NodeTypes = useMemo(
     () => ({
       episodeFragment: (props) => (
@@ -305,13 +479,14 @@ function EpisodeStoryboardInner() {
           {...props}
           onPromptChange={handlePromptChange}
           onRequestLinkAsset={handleRequestLinkAsset}
+          onRequestDelete={handleDeleteFragment}
         />
       ),
       episodeAsset: (props) => (
         <EpisodeAssetNode {...props} onUnlinkAsset={handleUnlinkAsset} />
       ),
     }),
-    [handlePromptChange, handleRequestLinkAsset, handleUnlinkAsset],
+    [handlePromptChange, handleRequestLinkAsset, handleUnlinkAsset, handleDeleteFragment],
   )
 
   const linkFrag = fragments.find((f) => f.id === linkTargetFragId) || null
@@ -353,7 +528,11 @@ function EpisodeStoryboardInner() {
             <strong>{displayEpisodeName}</strong>
             <span>
               {t('drama.canvas.storyboardTitle')} · {t('drama.canvas.shotCount', { n: fragments.length })}
-              {dirty ? ` · ${t('drama.canvas.unsaved')}` : status ? ` · ${status}` : ''}
+              {dirty || layoutDirty
+                ? ` · ${t('drama.canvas.unsaved')}`
+                : status
+                  ? ` · ${status}`
+                  : ''}
             </span>
           </div>
         </div>
@@ -371,6 +550,15 @@ function EpisodeStoryboardInner() {
           <button
             type="button"
             className="ep-storyboard-btn ghost"
+            onClick={() => void handleResetLayout()}
+            title={locale === 'vi' ? 'Đặt lại bố cục lưới mặc định' : locale === 'en' ? 'Reset to default grid' : '重置为默认网格'}
+          >
+            <LayoutGrid size={15} strokeWidth={2} />
+            <span>{locale === 'vi' ? 'Sắp xếp lưới' : locale === 'en' ? 'Reset Grid' : '重置布局'}</span>
+          </button>
+          <button
+            type="button"
+            className="ep-storyboard-btn ghost"
             onClick={() => navigate(`/drama/projects/${pid}/canvas`)}
           >
             {t('drama.canvas.assetCanvas')}
@@ -378,8 +566,8 @@ function EpisodeStoryboardInner() {
           <button
             type="button"
             className="ep-storyboard-btn dark"
-            disabled={busy || !dirty}
-            onClick={() => void persistFragments(fragments)}
+            disabled={busy || (!dirty && !layoutDirty)}
+            onClick={() => void handleSaveAll()}
           >
             {busy ? t('common.saving') : t('common.save')}
           </button>
@@ -407,6 +595,15 @@ function EpisodeStoryboardInner() {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeDragStop={handleNodeDragStop}
+          onNodesDelete={(deletedNodes) => {
+            for (const n of deletedNodes) {
+              if (n.type === 'episodeFragment') {
+                const data = n.data as EpisodeFragmentNodeData
+                void handleDeleteFragment(data.fragmentId)
+              }
+            }
+          }}
           nodeTypes={nodeTypes}
           fitView
           minZoom={0.35}

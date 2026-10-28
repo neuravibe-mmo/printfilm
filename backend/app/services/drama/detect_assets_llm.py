@@ -349,15 +349,25 @@ DETECT_PROPS_SYSTEM = """Bạn là trợ lý AI chuyên nghiệp phân tích k�
 Nhiệm vụ của bạn là đọc kỹ nội dung phân cảnh và trích xuất TẤT CẢ các ĐẠO CỤ (props) xuất hiện, được nhân vật tương tác, cầm nắm, sử dụng hoặc đặc tả trong cảnh.
 
 Đạo cụ (props) bao gồm:
-- Các đồ vật, vật phẩm cụ thể: vũ khí (súng, kiếm, dao, cung...), đồ dùng cá nhân (điện thoại, chìa khóa, đồng hồ, ví tiền, nhẫn, kính mắt, gậy...), vật phẩm quan trọng (vali, túi xách, tài liệu, phong bì, chai rượu, chén trà, hộp quà, máy tính, đèn pin, búp bê, còng tay...), v.v.
-- KHÔNG phải đạo cụ: địa điểm/bối cảnh (phòng khách, nhà ga, đường phố...), nhân vật (người), hiện tượng thời tiết (mưa, tuyết, ánh nắng).
+- Các đồ vật, vật phẩm cụ thể: vũ khí (súng, kiếm, dao...), đồ dùng cá nhân (chìa khóa, đồng hồ, ví tiền, đèn pin...), phương tiện nhỏ hoặc vật phẩm quan trọng (xe bò, túi cứu thương, cuộn băng, vali, tài liệu, bát sứ, bi đông...), v.v.
+- KHÔNG phải đạo cụ: địa điểm/bối cảnh (phòng khách, đường phố...), nhân vật (người), hiện tượng thời tiết.
+
+QUY TẮC BẮT BUỘC VỀ ĐẶT TÊN ĐẠO CỤ (field "name"):
+1. TÊN ĐẠO CỤ PHẢI KHỚP CHÍNH XÁC VỚI TEXT XUẤT HIỆN TRONG NỘI DUNG PHÂN CẢNH:
+   - Bạn PHẢI trích xuất nguyên văn từ hoặc cụm từ chỉ đạo cụ có mặt trực tiếp trong văn bản phân cảnh.
+   - BẮT BUỘC cụm từ này phải tìm thấy được (match) nguyên vẹn trong nội dung phân cảnh.
+2. TUYỆT ĐỐI KHÔNG tự ý thêm/bớt từ, KHÔNG tự ý suy diễn hoặc gắn thêm tính từ mô tả không có trong văn bản (như "cũ", "mới", "cổ", "dã chiến", "thông minh", "của ai đó"... nếu văn bản không có các từ đó):
+   - Ví dụ trong cảnh có: "chiếc xe bò nằm nghiêng..." -> name: "xe bò" (hoặc "chiếc xe bò"), TUYỆT ĐỐI KHÔNG ghi "xe bò cũ".
+   - Ví dụ trong cảnh có: "siết chặt chiếc chìa khóa sắt..." -> name: "chìa khóa sắt" (hoặc "chiếc chìa khóa sắt"), TUYỆT ĐỐI KHÔNG ghi "chìa khóa sắt mở hầm".
+   - Ví dụ trong cảnh có: "mở túi cứu thương..." -> name: "túi cứu thương", TUYỆT ĐỐI KHÔNG ghi "túi cứu thương của Phượng".
+   - Ví dụ trong cảnh có: "quấn cuộn băng sang gương mặt..." -> name: "cuộn băng", TUYỆT ĐỐI KHÔNG ghi "cuộn băng gạc sơ cứu".
 
 Quy tắc đối chiếu với Kho tài sản:
 1. Bạn sẽ được cung cấp danh sách đạo cụ ĐÃ CÓ trong Kho tài sản của dự án (nếu có).
 2. Với mỗi đạo cụ phát hiện được trong phân cảnh:
-   - Nếu đạo cụ này tương đồng hoặc trùng khớp với một đạo cụ ĐÃ CÓ trong kho (ví dụ: "Chiếc điện thoại" vs "Điện thoại", "Khẩu súng ngắn" vs "Súng lục"), hãy CHỌN đạo cụ ĐÃ CÓ đó (trả về id và name trong danh sách matched_props).
+   - Nếu đạo cụ này tương đồng hoặc trùng khớp với một đạo cụ ĐÃ CÓ trong kho, hãy CHỌN đạo cụ ĐÃ CÓ đó (trả về id và name trong danh sách matched_props).
    - Nếu đạo cụ này CHƯA CÓ trong kho: hãy trích xuất đạo cụ MỚI trong danh sách new_props:
-     * name: Tên ngắn gọn của đạo cụ (1-4 từ, ví dụ "Vali da màu đen", "Chìa khóa cổ", "Điện thoại thông minh").
+     * name: Tên đạo cụ khớp chính xác với text trong phân cảnh như quy tắc bắt buộc ở trên.
      * prompt: Mô tả trực quan chi tiết về hình dáng, chất liệu, màu sắc, phong cách để vẽ ảnh chất lượng cao 1:1, chụp cận cảnh studio trên phông nền tối giản.
 3. Nếu phân cảnh không có bất kỳ đạo cụ nào, trả về matched_props: [], new_props: [].
 
@@ -368,12 +378,56 @@ Trả về kết quả dưới định dạng JSON thuần túy (không kèm mar
   ],
   "new_props": [
     {
-      "name": "Vali da màu đen",
-      "prompt": "Vali da cao cấp màu đen, khóa kim loại sáng bóng, chi tiết sang trọng, ánh sáng studio nghệ thuật, chụp cận cảnh chi tiết, tỉ lệ vuông 1:1"
+      "name": "xe bò",
+      "prompt": "Chiếc xe bò gỗ truyền thống, bánh xe gỗ to chắc chắn, chụp cận cảnh chi tiết studio trên phông nền tối giản, ánh sáng nghệ thuật sắc nét, tỉ lệ 1:1"
     }
   ]
 }
 """
+
+
+def align_prop_name_with_content(pname: str, content: str) -> str:
+    """Đảm bảo tên đạo cụ khớp chính xác với text xuất hiện trong nội dung phân cảnh."""
+    cleaned_name = re.sub(r"\s+", " ", (pname or "").strip())
+    if not cleaned_name or not content:
+        return cleaned_name
+
+    text = content
+    text_lower = text.lower()
+    name_lower = cleaned_name.lower()
+
+    # 1. So khớp nguyên cụm tên trong văn bản (không phân biệt hoa/thường)
+    pattern = rf"(?:\b|(?<=\W)){re.escape(name_lower)}(?:\b|(?=\W))"
+    m = re.search(pattern, text, re.IGNORECASE)
+    if m:
+        raw_match = m.group(0).strip()
+        return raw_match[:1].upper() + raw_match[1:]
+
+    # Fallback tìm vị trí chuỗi con đơn thuần
+    idx = text_lower.find(name_lower)
+    if idx != -1:
+        raw_match = text[idx : idx + len(name_lower)].strip()
+        return raw_match[:1].upper() + raw_match[1:]
+
+    # 2. Nếu LLM trả về tên có kèm từ thừa (như "Xe bò cũ" thay vì "xe bò"),
+    # quét các cụm từ con (n-grams) từ dài tới ngắn để tìm cụm từ thực sự xuất hiện trong văn bản
+    words = cleaned_name.split()
+    best_match = ""
+    for length in range(len(words), 0, -1):
+        for start in range(len(words) - length + 1):
+            subphrase = " ".join(words[start : start + length]).strip()
+            if len(subphrase) < 2:
+                continue
+            sub_pat = rf"(?:\b|(?<=\W)){re.escape(subphrase.lower())}(?:\b|(?=\W))"
+            sm = re.search(sub_pat, text, re.IGNORECASE)
+            if sm:
+                matched_str = sm.group(0).strip()
+                if len(matched_str) > len(best_match):
+                    best_match = matched_str
+        if best_match:
+            return best_match[:1].upper() + best_match[1:]
+
+    return cleaned_name[:1].upper() + cleaned_name[1:]
 
 
 def _fallback_prop_detect(
@@ -413,10 +467,11 @@ def _fallback_prop_detect(
                     matched.append({"id": hid, "name": str(hit.get("name") or name)})
                     matched_ids.add(hid)
             else:
-                if not any(np["name"].lower() == name.lower() for np in new_props):
+                aligned_name = align_prop_name_with_content(name, text)
+                if not any(np["name"].lower() == aligned_name.lower() for np in new_props):
                     new_props.append({
-                        "name": name,
-                        "prompt": f"Đạo cụ {name}, chụp cận cảnh chi tiết studio trên phông nền tối giản, ánh sáng nghệ thuật sắc nét, tỉ lệ 1:1",
+                        "name": aligned_name,
+                        "prompt": f"Đạo cụ {aligned_name}, chụp cận cảnh chi tiết studio trên phông nền tối giản, ánh sáng nghệ thuật sắc nét, tỉ lệ 1:1",
                     })
 
     return {"matched_props": matched, "new_props": new_props}
@@ -447,6 +502,7 @@ async def detect_or_create_props_with_llm(
         f"【Danh sách đạo cụ ĐÃ CÓ trong kho tài sản】:\n"
         f"{candidates_block}\n\n"
         f"Hãy đọc nội dung phân cảnh và trích xuất tất cả đạo cụ xuất hiện. Đối chiếu với kho: nếu đã có trong kho thì đưa vào matched_props (id, name), nếu chưa có thì đưa vào new_props (name, prompt).\n"
+        f"LƯU Ý QUAN TRỌNG: Tên đạo cụ (field 'name' trong new_props) BẮT BUỘC phải trích xuất khớp chính xác với từ/cụm từ xuất hiện trong nội dung phân cảnh trên (ví dụ 'xe bò', 'chìa khóa sắt', 'túi cứu thương'), tuyệt đối không tự ý thêm các từ hoặc tính từ như 'cũ', 'cổ', 'của...'.\n"
         f"Trả về JSON:"
     )
 
@@ -487,7 +543,11 @@ async def detect_or_create_props_with_llm(
 
     for item in new_props_raw:
         if isinstance(item, dict) and item.get("name"):
-            pname = str(item.get("name") or "").strip()
+            raw_pname = str(item.get("name") or "").strip()
+            if not raw_pname:
+                continue
+            # Bắt buộc căn chỉnh tên đạo cụ khớp với text xuất hiện trong nội dung phân cảnh
+            pname = align_prop_name_with_content(raw_pname, cleaned_content)
             if not pname or pname.lower() in seen_new_names:
                 continue
             c_hit = next((c for c in candidate_props if str(c.get("name") or "").strip().lower() == pname.lower()), None)

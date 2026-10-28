@@ -57,7 +57,7 @@ export function useEpisodeAssetActions({
   setError,
   updateSelected,
 }: UseEpisodeAssetActionsParams) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [detailAsset, setDetailAsset] = useState<DramaAsset | null>(null)
   const [voiceBindAsset, setVoiceBindAsset] = useState<DramaAsset | null>(null)
   const [assetCreateBusy, setAssetCreateBusy] = useState(false)
@@ -95,21 +95,130 @@ export function useEpisodeAssetActions({
     setDetailAsset((prev) => (prev?.id === updated.id ? updated : prev))
   }
 
-  function mentionAsset(asset: DramaAsset) {
-    if (!selected) return
-    const mention = `@asset:${asset.id}`
+  function mentionAsset(asset: DramaAsset, options?: { allowAppendFallback?: boolean }) {
+    if (!selected) {
+      setError(
+        locale === 'vi'
+          ? 'Vui lòng chọn phân cảnh trước khi liên kết.'
+          : t('drama.episodeEdit.selectFragmentFirst'),
+      )
+      return
+    }
+
+    const assetName = (asset.name || '').trim()
+    if (!assetName) {
+      setError(
+        locale === 'vi'
+          ? 'Tài sản không có tên hợp lệ để liên kết.'
+          : 'Asset has no name to link.',
+      )
+      return
+    }
+
     const raw = selected.content || ''
-    const already = new RegExp(`@asset:${asset.id}(?!\\d)`).test(raw)
-    const content = already ? raw : raw ? `${raw.trimEnd()}\n${mention}` : mention
+    const mention = `@asset:${asset.id}`
+
+    // Lấy tất cả tên ứng viên: tên chính, bí danh (alias, nickname)
+    const p = (asset.params || {}) as Record<string, unknown>
+    const nameCandidates: string[] = [assetName]
+    if (typeof p.alias === 'string' && p.alias.trim()) nameCandidates.push(p.alias.trim())
+    if (Array.isArray(p.aliases)) {
+      p.aliases.forEach((a) => {
+        if (typeof a === 'string' && a.trim()) nameCandidates.push(a.trim())
+      })
+    }
+    if (typeof p.nickname === 'string' && p.nickname.trim()) nameCandidates.push(p.nickname.trim())
+
+    // Bổ sung các cụm từ con của tên tài sản (ví dụ "Xe bò cũ" -> tìm "Xe bò", "Chìa khóa sắt mở hầm" -> tìm "Chìa khóa sắt")
+    const words = assetName.split(/\s+/)
+    if (words.length > 1) {
+      for (let len = words.length - 1; len >= 1; len--) {
+        for (let st = 0; st <= words.length - len; st++) {
+          const sub = words.slice(st, st + len).join(' ').trim()
+          if (sub.length >= 2) nameCandidates.push(sub)
+        }
+      }
+    }
+
+    // Sắp xếp theo độ dài giảm dần (để khớp tên dài trước)
+    const uniqueCandidates = Array.from(new Set(nameCandidates)).sort((a, b) => b.length - a.length)
+
+    // Xác định nhãn loại tài sản theo ngôn ngữ
+    const isProp = (asset.type || '').toLowerCase() === 'prop'
+    const isScene = (asset.type || '').toLowerCase() === 'scene'
+    const assetKindLabel = isProp
+      ? locale === 'vi' ? 'Đạo cụ' : locale === 'en' ? 'Prop' : '道具'
+      : isScene
+        ? locale === 'vi' ? 'Cảnh quay' : locale === 'en' ? 'Scene' : '场景'
+        : locale === 'vi' ? 'Nhân vật' : locale === 'en' ? 'Character' : '角色'
+
+    // Tìm kiếm vị trí tên trong văn bản phân cảnh
+    let matchedName: string | null = null
+    let matchIndex = -1
+
+    for (const cand of uniqueCandidates) {
+      const idx = raw.toLowerCase().indexOf(cand.toLowerCase())
+      if (idx !== -1) {
+        matchedName = raw.slice(idx, idx + cand.length)
+        matchIndex = idx
+        break
+      }
+    }
+
+    // Nếu không tìm thấy tên trong văn bản
+    if (matchIndex === -1 || !matchedName) {
+      if (options?.allowAppendFallback) {
+        const already = new RegExp(`@asset:${asset.id}(?!\\d)`).test(raw)
+        const content = already ? raw : raw ? `${raw.trimEnd()}\n${mention}` : mention
+        const ids = Array.from(new Set([...(selected.asset_ids || []), asset.id]))
+        updateSelected({ content, asset_ids: ids })
+        setEditing(true)
+        return
+      }
+
+      const alreadyLinked = new RegExp(`@asset:${asset.id}(?!\\d)`).test(raw)
+      if (alreadyLinked) {
+        setStatus(
+          locale === 'vi'
+            ? `${assetKindLabel} "${assetName}" đã được gắn thẻ trong phân cảnh này rồi.`
+            : locale === 'en'
+              ? `${assetKindLabel} "${assetName}" is already linked in this shot.`
+              : `"${assetName}"已在该分镜中关联`,
+        )
+        return
+      }
+
+      setError(
+        locale === 'vi'
+          ? `Liên kết thất bại: Không tìm thấy tên "${assetName}" trong nội dung phân cảnh này.`
+          : locale === 'en'
+            ? `Link failed: Name "${assetName}" not found in this shot.`
+            : `关联失败：当前分镜未找到"${assetName}"`,
+      )
+      return
+    }
+
+    // Thay thế trực tiếp tên thành thẻ @asset:id
+    const nextContent = raw.slice(0, matchIndex) + mention + raw.slice(matchIndex + matchedName.length)
     const ids = Array.from(new Set([...(selected.asset_ids || []), asset.id]))
-    updateSelected({ content, asset_ids: ids })
+
+    updateSelected({ content: nextContent, asset_ids: ids })
     setEditing(true)
+    setError('')
+    setStatus(
+      locale === 'vi'
+        ? `Đã liên kết ${assetKindLabel.toLowerCase()} "${assetName}" vào kịch bản.`
+        : locale === 'en'
+          ? `Linked ${assetKindLabel.toLowerCase()} "${assetName}" to script.`
+          : `已关联"${assetName}"到剧本`,
+    )
+    window.setTimeout(() => setStatus(''), 2000)
   }
 
   function adoptCreatedAsset(created: DramaAsset, kind: AssetTab) {
     setAssets((prev) => (prev.some((a) => a.id === created.id) ? prev : [...prev, created]))
     setAssetTab(kind)
-    mentionAsset(created)
+    mentionAsset(created, { allowAppendFallback: true })
     if ((created.type || '').toLowerCase() !== 'voice') {
       setDetailAsset(created)
     }
@@ -288,6 +397,38 @@ export function useEpisodeAssetActions({
 
       if (targetKind === 'character') {
         nextContent = highlightCharacterNamesInContent(nextContent, detectedNames)
+      } else if (targetKind === 'prop' && detected.length > 0) {
+        // Tự động gắn thẻ đạo cụ vào nội dung nếu tìm thấy tên đạo cụ xuất hiện trong văn bản
+        let updatedContent = nextContent
+        for (const a of detected) {
+          const mentionTag = `@asset:${a.id}`
+          if (updatedContent.includes(mentionTag)) continue
+          const candNames: string[] = []
+          if (a.name) candNames.push(a.name)
+          const p = (a.params || {}) as Record<string, unknown>
+          if (typeof p.alias === 'string') candNames.push(p.alias)
+          if (Array.isArray(p.aliases)) candNames.push(...p.aliases.map(String))
+          if (typeof p.nickname === 'string') candNames.push(p.nickname)
+
+          const words = (a.name || '').split(/\s+/)
+          if (words.length > 1) {
+            for (let len = words.length - 1; len >= 1; len--) {
+              for (let st = 0; st <= words.length - len; st++) {
+                const sub = words.slice(st, st + len).join(' ').trim()
+                if (sub.length >= 2) candNames.push(sub)
+              }
+            }
+          }
+          const sortedCands = Array.from(new Set(candNames)).sort((x, y) => y.length - x.length)
+          for (const cand of sortedCands) {
+            const idx = updatedContent.toLowerCase().indexOf(cand.toLowerCase())
+            if (idx !== -1) {
+              updatedContent = updatedContent.slice(0, idx) + mentionTag + updatedContent.slice(idx + cand.length)
+              break
+            }
+          }
+        }
+        nextContent = updatedContent
       }
 
       const mergedIds = Array.from(new Set([...existingIds, ...detectedIds]))
