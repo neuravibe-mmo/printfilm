@@ -131,6 +131,7 @@ export type DramaProject = {
   workflow?: 'script' | 'canvas'
   usage?: DramaProjectUsageStats
   active_tasks?: DramaTaskBrief[]
+  flow_project_id?: string | null
 }
 
 export type DramaProjectListItem = {
@@ -271,7 +272,7 @@ export const dramaApi = {
   }) =>
     request<DramaProject>('/api/drama/projects', { method: 'POST', body: JSON.stringify(body) }),
   getProject: (id: number) => request<DramaProject>(`/api/drama/projects/${id}`),
-  updateProject: (id: number, body: { title?: string; description?: string; params?: Record<string, unknown> | null }) =>
+  updateProject: (id: number, body: { title?: string; description?: string; params?: Record<string, unknown> | null; flow_project_id?: string | null }) =>
     request<DramaProject>(`/api/drama/projects/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteProject: (id: number) =>
     request<{ ok: boolean }>(`/api/drama/projects/${id}`, { method: 'DELETE' }),

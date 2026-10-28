@@ -1195,7 +1195,11 @@ async def submit_fragment_video_task(task: TaskRun) -> dict[str, Any]:
         task_row.current_step_status = "submitting"
         await db.commit()
 
-        provider_task_id = await submit_prepared_fragment_video(prepared, project_id=project.id)
+        provider_task_id = await submit_prepared_fragment_video(
+            prepared,
+            project_id=project.id,
+            flow_project_id=project.flow_project_id or None,
+        )
         poll_interval = max(1.0, float(get_settings().ark_video_poll_interval or 8.0))
         now = datetime.now(UTC)
         # Viết chạy/bỏ phiếu ngay sau khi gửi thành công để tránh tình trạng giao diện người dùng bị kẹt trong "xếp hàng" trong một thời gian dài.

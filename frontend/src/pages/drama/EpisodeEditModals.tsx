@@ -40,6 +40,7 @@ export type EpisodeEditModalsProps = {
   aspectRatio: string
   selectedDuration: number
   modelId: string
+  projectFlowId?: string | null
 }
 
 export const EpisodeEditModals: React.FC<EpisodeEditModalsProps> = React.memo(
@@ -73,6 +74,7 @@ export const EpisodeEditModals: React.FC<EpisodeEditModalsProps> = React.memo(
     aspectRatio,
     selectedDuration,
     modelId,
+    projectFlowId,
   }) {
     const { t } = useI18n()
 
@@ -151,6 +153,7 @@ export const EpisodeEditModals: React.FC<EpisodeEditModalsProps> = React.memo(
           aspectRatio={aspectRatio}
           duration={selectedDuration}
           modelId={modelId}
+          projectFlowId={projectFlowId}
         />
       </>
     )

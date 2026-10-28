@@ -109,6 +109,7 @@ async def _run_flow_generation(
     aspect_ratio: str = "9:16",
     project_id: str = FLOW_PROJECT_ID,
     model_key: str = "abra_r2v_10s",
+    db_project_id: int | None = None,
 ) -> None:
     _save_task_state(task_id, {"status": "running", "created_at": time.time()})
     try:
@@ -161,6 +162,7 @@ async def _run_flow_generation(
             data = resp.json()
             video_url = data.get("video_url")
             if data.get("success") and video_url:
+                returned_project_url: str = data.get("project_url") or ""
                 logger.info("Flow tạo video thành công task=%s url=%s", task_id, video_url[:60])
                 _save_task_state(
                     task_id,
@@ -169,11 +171,14 @@ async def _run_flow_generation(
                         "video_url": video_url,
                         "thumbnail_url": data.get("thumbnail_url"),
                         "media_id": data.get("media_id"),
-                        "project_url": data.get("project_url"),
+                        "project_url": returned_project_url,
                         "edit_url": data.get("edit_url"),
                         "elapsed": data.get("elapsed"),
                     },
                 )
+                # Auto-capture: nếu dự án chưa có flow_project_id, bóc tách từ project_url và lưu vào DB
+                if db_project_id and project_id == FLOW_PROJECT_ID and returned_project_url:
+                    await _auto_capture_flow_project_id(db_project_id, returned_project_url)
             else:
                 _save_task_state(task_id, {"status": "failed", "error": str(data)})
     except Exception as e:
@@ -187,10 +192,44 @@ async def _run_flow_generation(
         _save_task_state(task_id, {"status": "failed", "error": err_msg})
 
 
+async def _auto_capture_flow_project_id(db_project_id: int, project_url: str) -> None:
+    """Bóc tách flow_project_id từ project_url và lưu vào drama_projects nếu chưa có."""
+    import re
+    # Google Flow project URL dạng: https://flow.google.com/project/<uuid>/...
+    m = re.search(r"/project/([0-9a-f-]{32,})", project_url)
+    if not m:
+        return
+    captured_id = m.group(1)
+    try:
+        from app.database import AsyncSessionLocal
+        from sqlalchemy import select, update
+        from app.models_drama import DramaProject
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(DramaProject).where(
+                    DramaProject.id == db_project_id,
+                    DramaProject.flow_project_id.is_(None),
+                )
+            )
+            proj = result.scalar_one_or_none()
+            if proj:
+                proj.flow_project_id = captured_id
+                cur_params: dict = dict(proj.params or {})
+                cur_params["flow_project_id"] = captured_id
+                proj.params = cur_params
+                await db.commit()
+                logger.info("Auto-capture flow_project_id=%s cho db_project_id=%s", captured_id, db_project_id)
+    except Exception as exc:
+        logger.warning("Auto-capture flow_project_id thất bại: %s", exc)
+
+
+
 def submit_flow_video(
     prompt: str,
     image_ref: str | None = None,
     aspect_ratio: str = "9:16",
+    flow_project_id: str | None = None,
+    db_project_id: int | None = None,
 ) -> str:
     import uuid
 
@@ -201,6 +240,8 @@ def submit_flow_video(
             prompt=prompt,
             image_ref=image_ref,
             aspect_ratio=aspect_ratio,
+            project_id=flow_project_id or FLOW_PROJECT_ID,
+            db_project_id=db_project_id,
         )
     )
     return task_id

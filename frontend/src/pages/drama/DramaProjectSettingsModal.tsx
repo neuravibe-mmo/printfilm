@@ -1,5 +1,7 @@
 /** Phác thảo "Cài đặt dự án": khung/kiểu/phụ đề/giới thiệu nhân vật/kết nối khung cuối cùng (có thể thay đổi toàn cục; trang bảng phân cảnh ở chế độ chỉ đọc) */
 import { useState } from 'react'
+import { Link } from 'lucide-react'
+
 import { useI18n } from '../../i18n'
 import Modal from '../../components/ui/Modal'
 import { DramaImageStyleModal } from './DramaImageStyleModal'
@@ -100,6 +102,10 @@ export function DramaProjectSettingsModal({
   const subtitleMode = readEpisodeSubtitleMode(projectParams)
   const characterIntroMode = readEpisodeCharacterIntroMode(projectParams)
   const linkLastFrame = coerceLinkLastFrame(projectParams)
+  const [flowProjectId, setFlowProjectId] = useState<string>(
+    project.flow_project_id || String(projectParams.flow_project_id || '') || ''
+  )
+  const [flowProjectIdSaving, setFlowProjectIdSaving] = useState(false)
 
   async function patchProjectParams(patch: Record<string, unknown>) {
     setSaving(true)
@@ -111,6 +117,32 @@ export function DramaProjectSettingsModal({
       onError(err instanceof Error ? err.message : t('drama.projectSettings.saveFailed'))
     } finally {
       setSaving(false)
+    }
+  }
+
+  /** Bóc tách UUID từ Google Flow URL hoặc dùng trực tiếp nếu đã là UUID */
+  function parseFlowProjectId(input: string): string {
+    const trimmed = input.trim()
+    // Thử bóc tách từ URL: https://flow.google.com/project/<uuid>/...
+    const m = trimmed.match(/\/project\/([0-9a-f-]{32,})/i)
+    if (m) return m[1]
+    return trimmed
+  }
+
+  async function saveFlowProjectId() {
+    setFlowProjectIdSaving(true)
+    try {
+      const parsed = parseFlowProjectId(flowProjectId)
+      const updated = await dramaApi.updateProject(projectId, {
+        flow_project_id: parsed || null,
+        params: { ...projectParams, flow_project_id: parsed || undefined },
+      })
+      onProjectChange(updated)
+      setFlowProjectId(parsed)
+    } catch (err) {
+      onError(err instanceof Error ? err.message : t('drama.projectSettings.saveFailed'))
+    } finally {
+      setFlowProjectIdSaving(false)
     }
   }
 
@@ -239,6 +271,39 @@ export function DramaProjectSettingsModal({
             onChange={(enabled) => void patchProjectParams({ linkLastFrame: enabled })}
           />
           <p className="drama-muted">{t('drama.projectSettings.tailFrameHint')}</p>
+        </section>
+
+        <section className="drama-project-settings-section">
+          <div className="drama-project-settings-head">
+            <h4>
+              <Link size={14} style={{ marginRight: 5, verticalAlign: 'middle' }} />
+              Google Flow Project ID
+            </h4>
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input
+              type="text"
+              className="drama-input"
+              style={{ flex: 1, fontSize: '0.82rem' }}
+              placeholder="Dán Project ID hoặc link Google Flow..."
+              value={flowProjectId}
+              disabled={flowProjectIdSaving}
+              onChange={(e) => setFlowProjectId(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') void saveFlowProjectId() }}
+            />
+            <button
+              type="button"
+              className="drama-btn-primary"
+              style={{ whiteSpace: 'nowrap', fontSize: '0.82rem', padding: '0 12px' }}
+              disabled={flowProjectIdSaving}
+              onClick={() => void saveFlowProjectId()}
+            >
+              {flowProjectIdSaving ? 'Đang lưu…' : 'Lưu'}
+            </button>
+          </div>
+          <p className="drama-muted" style={{ marginTop: 4 }}>
+            Mỗi dự án phim được gắn riêng một Google Flow Project. Có thể dán toàn bộ link Google Flow — hệ thống sẽ tự bóc tách ID.
+          </p>
         </section>
       </div>
     </Modal>

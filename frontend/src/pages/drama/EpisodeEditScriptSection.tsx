@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react'
-import { Check, ExternalLink, FolderOpen, Loader2, Terminal, Upload } from 'lucide-react'
+import React, { useRef } from 'react'
+import { Loader2, Terminal, Upload } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { dramaApi, type DramaAsset, type DramaEpisode, type DramaFragment } from '../../api/drama'
 import { hasNonLocalizedCues, localizeScriptCues } from '../../lib/dramaCueI18n'
@@ -99,27 +99,6 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
   }) {
     const { t } = useI18n()
     const uploadVideoInputRef = useRef<HTMLInputElement>(null)
-    const [copiedType, setCopiedType] = useState<'project' | 'edit' | null>(null)
-
-    const projectUrl =
-      (selected?.params?.project_url as string) ||
-      ((selected?.params?.generation as any)?.project_url as string) ||
-      ''
-    const editUrl =
-      (selected?.params?.edit_url as string) ||
-      ((selected?.params?.generation as any)?.edit_url as string) ||
-      ''
-
-    const handleCopyUrl = async (url: string, type: 'project' | 'edit') => {
-      if (!url) return
-      try {
-        await navigator.clipboard.writeText(url)
-        setCopiedType(type)
-        setTimeout(() => setCopiedType(null), 2000)
-      } catch {
-        window.prompt('Sao chép liên kết:', url)
-      }
-    }
 
     return (
       <section className="drama-ep-editor">
@@ -409,51 +388,6 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
                   {videoUploading ? 'Đang tải video…' : 'Tải video lên'}
                 </button>
 
-                {projectUrl && (
-                  <button
-                    type="button"
-                    className="drama-ep-btn-ghost"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      border: '1px solid rgba(0, 0, 0, 0.12)',
-                      minWidth: 'auto',
-                      padding: '0 10px',
-                      fontSize: '0.82rem',
-                      color: '#4f46e5',
-                      background: '#fff',
-                    }}
-                    onClick={() => void handleCopyUrl(projectUrl, 'project')}
-                    title={`Sao chép Project URL (Google Flow):\n${projectUrl}`}
-                  >
-                    {copiedType === 'project' ? <Check size={13} color="#16a34a" /> : <FolderOpen size={13} />}
-                    {copiedType === 'project' ? 'Đã chép Project URL' : 'Project URL'}
-                  </button>
-                )}
-
-                {editUrl && (
-                  <button
-                    type="button"
-                    className="drama-ep-btn-ghost"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      border: '1px solid rgba(0, 0, 0, 0.12)',
-                      minWidth: 'auto',
-                      padding: '0 10px',
-                      fontSize: '0.82rem',
-                      color: '#0891b2',
-                      background: '#fff',
-                    }}
-                    onClick={() => void handleCopyUrl(editUrl, 'edit')}
-                    title={`Sao chép Edit URL (Google Flow):\n${editUrl}`}
-                  >
-                    {copiedType === 'edit' ? <Check size={13} color="#16a34a" /> : <ExternalLink size={13} />}
-                    {copiedType === 'edit' ? 'Đã chép Edit URL' : 'Edit URL'}
-                  </button>
-                )}
               </>
             )}
           </div>

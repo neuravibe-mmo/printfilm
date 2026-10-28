@@ -1637,6 +1637,7 @@ async def submit_prepared_fragment_video(
     prepared: FragmentVideoPrepared,
     *,
     project_id: int,
+    flow_project_id: str | None = None,
 ) -> str:
     from app.services.drama.flow_api import submit_flow_video
 
@@ -1650,6 +1651,8 @@ async def submit_prepared_fragment_video(
         prompt=prepared.prompt,
         image_ref=ref_img,
         aspect_ratio=prepared.ratio or "9:16",
+        flow_project_id=flow_project_id or None,
+        db_project_id=project_id,
     )
 
 

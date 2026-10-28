@@ -182,6 +182,20 @@ async def update_project(
         project.content = body.content
     if body.params is not None:
         project.params = body.params
+    if body.flow_project_id is not None:
+        # Đồng bộ cả cột riêng lẫn params JSON
+        project.flow_project_id = body.flow_project_id or None
+        cur_params: dict = dict(project.params or {})
+        if body.flow_project_id:
+            cur_params["flow_project_id"] = body.flow_project_id
+        else:
+            cur_params.pop("flow_project_id", None)
+        project.params = cur_params
+    elif body.params is not None:
+        # Nếu params có chứa flow_project_id thì đồng bộ ngược lại vào cột
+        fid = (project.params or {}).get("flow_project_id")
+        if fid:
+            project.flow_project_id = str(fid)
     await db.commit()
 
     # Khi công tắc kết nối giữa các máy nhân bản thay đổi, các tác vụ video trong bảng phân cảnh vẫn đang xếp hàng sẽ được sắp xếp lại một cách linh hoạt.

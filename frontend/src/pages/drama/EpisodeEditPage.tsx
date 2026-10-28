@@ -112,6 +112,7 @@ function EpisodeEditInner() {
   const [projectParams, setProjectParams] = useState<Record<string, unknown>>({})
   // epParams bộ nhớ đệm thông số tập (khung/định nghĩa được viết ở đây)
   const [episodeParams, setEpisodeParams] = useState<Record<string, unknown>>({})
+  const [projectFlowId, setProjectFlowId] = useState<string | null>(null)
   const [previewVersionId, setPreviewVersionId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
@@ -703,6 +704,7 @@ function EpisodeEditInner() {
         setSubtitleMode(readEffectiveSubtitleMode(episodeParamsRef.current, params))
         setCharacterIntroMode(readEffectiveCharacterIntroMode(episodeParamsRef.current, params))
         setAspectRatio(readEpisodeAspectRatio(episodeParamsRef.current, params))
+        setProjectFlowId(project.flow_project_id || (params.flow_project_id as string) || null)
       })
       .catch(() => {
         /* ignore */
@@ -1030,6 +1032,7 @@ function EpisodeEditInner() {
         aspectRatio={readEpisodeAspectRatio(episodeParams, projectParams)}
         selectedDuration={selectedDuration}
         modelId={modelId}
+        projectFlowId={projectFlowId}
       />
     </div>
   )

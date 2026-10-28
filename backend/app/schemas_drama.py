@@ -19,6 +19,7 @@ class DramaProjectCreate(BaseModel):
     # script=phác thảo quá trình đa dạng; canvas=vải miễn phí
     workflow: str = Field(default="script", description="script | canvas")
     params: dict[str, Any] | None = None
+    flow_project_id: str | None = None
 
 
 class DramaProjectUpdate(BaseModel):
@@ -26,6 +27,7 @@ class DramaProjectUpdate(BaseModel):
     description: str | None = None
     content: dict | list | None = None
     params: dict[str, Any] | None = None
+    flow_project_id: str | None = None
 
 
 class DramaScriptOut(BaseModel):
@@ -117,6 +119,7 @@ class DramaProjectOut(BaseModel):
     description: str | None = None
     content: dict | list | None = None
     params: dict | None = None
+    flow_project_id: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
     script: DramaScriptOut | None = None

@@ -29,6 +29,7 @@ interface EpisodeEditCurlModalProps {
   aspectRatio: string
   duration: number
   modelId: string
+  projectFlowId?: string | null
 }
 
 export function EpisodeEditCurlModal({
@@ -41,6 +42,7 @@ export function EpisodeEditCurlModal({
   aspectRatio,
   duration,
   modelId,
+  projectFlowId,
 }: EpisodeEditCurlModalProps) {
   const { t } = useI18n()
   const [tab, setTab] = useState<'flow' | 'upstream' | 'internal'>('flow')
@@ -67,10 +69,11 @@ export function EpisodeEditCurlModal({
     const refUrl = refImg ? resolveDramaMediaUrl(refImg) : ''
     const escapedPrompt = promptText.replace(/"/g, '\\"').replace(/\n/g, ' ')
 
+    const FLOW_FALLBACK = '746c4f17-5aa9-4cf1-b824-f8d0bd7aa6c4'
     const payloadObj = {
       reference_media_ids: refUrl ? ['media_ref_id_from_upload'] : [],
       prompt: escapedPrompt,
-      project_id: '746c4f17-5aa9-4cf1-b824-f8d0bd7aa6c4',
+      project_id: projectFlowId || FLOW_FALLBACK,
       scene_id: `scene_${(fragmentIndex + 1).toString().padStart(2, '0')}`,
       aspect_ratio: aspectRatio || '9:16',
       duration_sec: duration || 8,
@@ -82,7 +85,7 @@ export function EpisodeEditCurlModal({
       curl += `# Bước 1: Upload ảnh tham chiếu nhân vật / bối cảnh lên Flow API\n`
       curl += `curl -X POST "https://neuravibemmo.dpdns.org/api/flow/upload-image-b64" \\\n`
       curl += `  -H "Content-Type: application/json" \\\n`
-      curl += `  -d '{"image_base64": "data:image/jpeg;base64,...", "project_id": "746c4f17-5aa9-4cf1-b824-f8d0bd7aa6c4", "mime_type": "image/jpeg"}'\n\n`
+      curl += `  -d '{"image_base64": "data:image/jpeg;base64,...", "project_id": "${projectFlowId || FLOW_FALLBACK}", "mime_type": "image/jpeg"}'\n\n`
       curl += `# Bước 2: Gọi API tạo video Google Veo 3.1\n`
     }
 
@@ -91,7 +94,7 @@ export function EpisodeEditCurlModal({
     curl += `  -d '${JSON.stringify(payloadObj, null, 2)}'`
 
     return curl
-  }, [refAssets, promptText, fragmentIndex, aspectRatio, duration])
+  }, [refAssets, promptText, fragmentIndex, aspectRatio, duration, projectFlowId])
 
   // Trích riêng câu lệnh cURL generate-video để gửi vào API extract-prompt-from-curl
   const generateCurlOnly = useMemo(() => {
