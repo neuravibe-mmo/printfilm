@@ -349,7 +349,13 @@ export const enDrama = {
             "autoLinkOn": "Disable auto-play next scene",
             "autoLinkOff": "Enable auto-play next scene",
             "autoLinkOnDesc": "Disable auto-play next scene",
-            "autoLinkOffDesc": "Automatically play next scene after current scene finishes"
+            "autoLinkOffDesc": "Automatically play next scene after current scene finishes",
+            "copyProjectUrl": "Copy Project URL",
+            "copyEditUrl": "Copy Edit URL",
+            "copiedProjectUrl": "Project URL copied!",
+            "copiedEditUrl": "Edit URL copied!",
+            "uploadVideo": "Upload replacement video",
+            "uploadingVideo": "Uploading video…"
         },
         "projectSteps": {
             "outline": "Outline",

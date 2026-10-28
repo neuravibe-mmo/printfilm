@@ -1618,6 +1618,12 @@ class ArkGateway:
                     url=res["video_url"],
                     last_frame_url=res.get("thumbnail_url"),
                     provider_task_id=task_id,
+                    raw_usage={
+                        "media_id": res.get("media_id"),
+                        "project_url": res.get("project_url"),
+                        "edit_url": res.get("edit_url"),
+                        "elapsed": res.get("elapsed"),
+                    },
                 )
             return TaskResult(
                 status="failed",

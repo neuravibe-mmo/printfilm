@@ -1777,6 +1777,12 @@ async def apply_fragment_video_assets(
         "attempts": attempts,
         "attempt_limit": attempt_limit,
     })
+    if task_result and isinstance(task_result.raw_usage, dict):
+        for key in ("project_url", "edit_url", "media_id", "elapsed"):
+            val = task_result.raw_usage.get(key)
+            if val:
+                params[key] = val
+                gen[key] = val
     params["generation"] = gen
     if last_frame_url:
         params["lastFrameUrl"] = last_frame_url

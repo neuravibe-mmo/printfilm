@@ -1,5 +1,5 @@
 /** Chỉnh sửa tập: trình phát video có thanh tiến trình bảng phân cảnh (phát sóng tuần tự phía máy khách) */
-import { Download, Loader2, Maximize, Minimize, MonitorPlay, Pause, Play, Upload, Volume2, VolumeX } from 'lucide-react'
+import { Check, Download, ExternalLink, FolderOpen, Loader2, Maximize, Minimize, MonitorPlay, Pause, Play, Upload, Volume2, VolumeX } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { resolveDramaMediaUrl, type DramaFragment } from '../../api/drama'
@@ -117,6 +117,27 @@ export function DramaFragmentSegmentedVideoPlayer({
   const hasCurrentVideo = Boolean(videoUrl)
   // hasAnyVideo Có video phân cảnh hay không
   const hasAnyVideo = timelineSegments.some((segment) => segment.hasVideo)
+
+  const projectUrl =
+    (playingFragment?.params?.project_url as string) ||
+    ((playingFragment?.params?.generation as any)?.project_url as string) ||
+    ''
+  const editUrl =
+    (playingFragment?.params?.edit_url as string) ||
+    ((playingFragment?.params?.generation as any)?.edit_url as string) ||
+    ''
+  const [copiedType, setCopiedType] = useState<'project' | 'edit' | null>(null)
+
+  const handleCopyLink = useCallback(async (url: string, type: 'project' | 'edit') => {
+    if (!url) return
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedType(type)
+      setTimeout(() => setCopiedType(null), 2000)
+    } catch {
+      window.prompt('Sao chép liên kết:', url)
+    }
+  }, [])
 
   // rateClass Frame Tên lớp CSS
   const ratioClass = `ratio-${aspectRatio.replace(':', 'x')}`
@@ -446,11 +467,44 @@ export function DramaFragmentSegmentedVideoPlayer({
               preload="auto"
             />
             <div className="drama-ep-video-overlay-actions">
+              {projectUrl && (
+                <button
+                  type="button"
+                  aria-label={copiedType === 'project' ? t('drama.player.copiedProjectUrl') : t('drama.player.copyProjectUrl')}
+                  className="drama-ep-video-overlay-btn"
+                  onClick={() => void handleCopyLink(projectUrl, 'project')}
+                >
+                  {copiedType === 'project' ? (
+                    <Check size={16} strokeWidth={2} color="#4ade80" />
+                  ) : (
+                    <FolderOpen size={16} strokeWidth={1.8} />
+                  )}
+                  <span className="drama-ep-video-overlay-tooltip" role="tooltip">
+                    {copiedType === 'project' ? t('drama.player.copiedProjectUrl') : t('drama.player.copyProjectUrl')}
+                  </span>
+                </button>
+              )}
+              {editUrl && (
+                <button
+                  type="button"
+                  aria-label={copiedType === 'edit' ? t('drama.player.copiedEditUrl') : t('drama.player.copyEditUrl')}
+                  className="drama-ep-video-overlay-btn"
+                  onClick={() => void handleCopyLink(editUrl, 'edit')}
+                >
+                  {copiedType === 'edit' ? (
+                    <Check size={16} strokeWidth={2} color="#4ade80" />
+                  ) : (
+                    <ExternalLink size={16} strokeWidth={1.8} />
+                  )}
+                  <span className="drama-ep-video-overlay-tooltip" role="tooltip">
+                    {copiedType === 'edit' ? t('drama.player.copiedEditUrl') : t('drama.player.copyEditUrl')}
+                  </span>
+                </button>
+              )}
               {onUploadVideo && (
                 <button
                   type="button"
-                  aria-label="Tải video khác lên thay thế"
-                  title="Tải lên video khác từ máy tính để thay thế"
+                  aria-label={videoUploading ? t('drama.player.uploadingVideo') : t('drama.player.uploadVideo')}
                   className="drama-ep-video-overlay-btn"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={videoUploading}
@@ -460,6 +514,9 @@ export function DramaFragmentSegmentedVideoPlayer({
                   ) : (
                     <Upload size={16} strokeWidth={1.8} />
                   )}
+                  <span className="drama-ep-video-overlay-tooltip" role="tooltip">
+                    {videoUploading ? t('drama.player.uploadingVideo') : t('drama.player.uploadVideo')}
+                  </span>
                 </button>
               )}
               <button
@@ -473,6 +530,9 @@ export function DramaFragmentSegmentedVideoPlayer({
                 ) : (
                   <Maximize size={16} strokeWidth={1.8} />
                 )}
+                <span className="drama-ep-video-overlay-tooltip" role="tooltip">
+                  {isFullscreen ? t('drama.player.exitFullscreen') : t('drama.player.fullscreen')}
+                </span>
               </button>
               <button
                 type="button"
@@ -481,6 +541,9 @@ export function DramaFragmentSegmentedVideoPlayer({
                 onClick={handleDownloadVideo}
               >
                 <Download size={16} strokeWidth={1.8} />
+                <span className="drama-ep-video-overlay-tooltip" role="tooltip">
+                  {t('drama.player.downloadVideo')}
+                </span>
               </button>
             </div>
           </>

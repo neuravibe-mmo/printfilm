@@ -86,6 +86,9 @@ export function localizeDramaJobMessage(raw: string | null | undefined): string 
   const isZh = locale === 'zh'
 
   const dict: Record<string, { vi: string; en: string }> = {
+    '已入队': { vi: 'Đã vào hàng đợi', en: 'Queued' },
+    'Đã vào hàng': { vi: 'Đã vào hàng đợi', en: 'Queued' },
+    'Đã vào hàng đợi': { vi: 'Đã vào hàng đợi', en: 'Queued' },
     '上游生成中': { vi: 'Máy chủ AI đang tạo', en: 'Generating upstream' },
     '生图中': { vi: 'Đang tạo ảnh', en: 'Generating image' },
     '排队中': { vi: 'Đang xếp hàng', en: 'In queue' },
@@ -101,6 +104,9 @@ export function localizeDramaJobMessage(raw: string | null | undefined): string 
     '分集大纲已就绪，开始生成...': { vi: 'Đề cương phân tập đã sẵn sàng, bắt đầu tạo...', en: 'Episode outline ready, generating...' },
     '分集剧本已完成': { vi: 'Kịch bản phân tập đã hoàn thành', en: 'Episode script completed' },
     '任务已取消': { vi: 'Tác vụ đã bị hủy', en: 'Task cancelled' },
+    '任务已中断，请重新生成': { vi: 'Tác vụ đã bị gián đoạn, vui lòng tạo lại', en: 'Task interrupted, please regenerate' },
+    '生图任务已提交，请稍候': { vi: 'Tác vụ tạo ảnh đã gửi, vui lòng chờ', en: 'Image task submitted, please wait' },
+    '视频生成中，请稍候': { vi: 'Đang tạo video, vui lòng chờ', en: 'Generating video, please wait' },
   }
 
   // Xử lý mẫu regex tiến độ ảnh tham chiếu

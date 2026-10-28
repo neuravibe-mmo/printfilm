@@ -114,14 +114,11 @@ async def _run_flow_generation(
     try:
         ref_ids: list[str] = []
 
-        # Tự động tối ưu hóa prompt qua ChatGPT2API để Google Veo hiểu chính xác bối cảnh & chuyển động
-        final_prompt = prompt or "Beauty Commercial"
-        try:
-            from app.services.drama.prompt_optimizer import optimize_video_prompt
+        # Giữ nguyên nội dung tiếng Việt của phân cảnh, không dịch sang tiếng Anh
+        from app.services.drama.prompt_optimizer import clean_raw_script
 
-            final_prompt = await optimize_video_prompt(prompt)
-        except Exception as opt_err:
-            logger.warning("Lỗi tối ưu prompt qua ChatGPT2API: %s", opt_err)
+        cleaned = clean_raw_script(prompt)
+        final_prompt = cleaned or (prompt or "").strip() or "Phim điện ảnh"
 
         if image_ref:
             mid = await upload_image_to_flow(image_ref, project_id=project_id)
@@ -138,7 +135,7 @@ async def _run_flow_generation(
         }
         logger.info("Bắt đầu gọi Flow API tạo video task=%s ref_ids=%s prompt=%s", task_id, ref_ids, final_prompt[:80])
 
-        async with httpx.AsyncClient(timeout=240.0) as client:
+        async with httpx.AsyncClient(timeout=360.0) as client:
             resp = await client.post(
                 f"{get_flow_base_url()}/generate-video-veo_3_1_r2v_lite_low_priority",
                 json=payload,
@@ -171,13 +168,23 @@ async def _run_flow_generation(
                         "status": "succeeded",
                         "video_url": video_url,
                         "thumbnail_url": data.get("thumbnail_url"),
+                        "media_id": data.get("media_id"),
+                        "project_url": data.get("project_url"),
+                        "edit_url": data.get("edit_url"),
+                        "elapsed": data.get("elapsed"),
                     },
                 )
             else:
                 _save_task_state(task_id, {"status": "failed", "error": str(data)})
     except Exception as e:
         logger.error("Lỗi Flow tạo video task=%s: %s", task_id, e)
-        _save_task_state(task_id, {"status": "failed", "error": str(e)})
+        err_msg = str(e).strip()
+        if not err_msg:
+            if isinstance(e, (httpx.TimeoutException, TimeoutError)):
+                err_msg = "Quá thời gian chờ phản hồi từ máy chủ AI (Timeout sau 6 phút). Máy chủ Google Veo đang bị nghẽn hoặc quá tải."
+            else:
+                err_msg = f"Lỗi kết nối máy chủ AI: {type(e).__name__}"
+        _save_task_state(task_id, {"status": "failed", "error": err_msg})
 
 
 def submit_flow_video(

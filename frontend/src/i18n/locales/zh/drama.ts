@@ -119,6 +119,12 @@ export const zhDrama = {
       autoLinkOff: '开启自动衔接下一片段',
       autoLinkOnDesc: '关闭自动衔接下一片段',
       autoLinkOffDesc: '当前片段播放完后自动播放下一片段',
+      copyProjectUrl: '复制 Project URL',
+      copyEditUrl: '复制 Edit URL',
+      copiedProjectUrl: '已复制 Project URL！',
+      copiedEditUrl: '已复制 Edit URL！',
+      uploadVideo: '上传视频替换',
+      uploadingVideo: '正在上传视频…',
     },
     imageStyles: {
       'wartime-epic-film': '悲壮战争史诗电影',
