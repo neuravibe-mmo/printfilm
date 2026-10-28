@@ -81,6 +81,7 @@ async def upload_image_to_flow(image_ref: str, project_id: str = FLOW_PROJECT_ID
     """Upload ảnh lên Flow API lấy media_id."""
     data_uri = await _to_base64_data_uri(image_ref)
     if not data_uri:
+        logger.warning("Không thể chuyển đổi ảnh sang data URI: %s", str(image_ref)[:100])
         return None
     mime = "image/png" if "image/png" in data_uri else "image/jpeg"
     payload = {
@@ -90,11 +91,16 @@ async def upload_image_to_flow(image_ref: str, project_id: str = FLOW_PROJECT_ID
         "file_name": f"ref_{mime.split('/')[-1]}",
     }
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=45.0) as client:
             resp = await client.post(f"{get_flow_base_url()}/upload-image-b64", json=payload)
             if resp.status_code == 200:
                 media_id = resp.json().get("media_id")
-                logger.info("Upload ảnh Flow thành công media_id=%s", media_id)
+                logger.info(
+                    "Upload ảnh Flow thành công media_id=%s project_id=%s (size=%d bytes)",
+                    media_id,
+                    project_id,
+                    len(data_uri),
+                )
                 return media_id
             logger.error("Upload ảnh Flow thất bại: HTTP %s %s", resp.status_code, resp.text[:200])
     except Exception as e:
@@ -105,7 +111,7 @@ async def upload_image_to_flow(image_ref: str, project_id: str = FLOW_PROJECT_ID
 async def _run_flow_generation(
     task_id: str,
     prompt: str,
-    image_ref: str | None,
+    image_refs: list[str] | str | None = None,
     aspect_ratio: str = "9:16",
     project_id: str = FLOW_PROJECT_ID,
     model_key: str = "abra_r2v_10s",
@@ -121,10 +127,29 @@ async def _run_flow_generation(
         cleaned = clean_raw_script(prompt)
         final_prompt = cleaned or (prompt or "").strip() or "Phim điện ảnh"
 
-        if image_ref:
-            mid = await upload_image_to_flow(image_ref, project_id=project_id)
-            if mid:
-                ref_ids.append(mid)
+        # Chuẩn hoá danh sách ảnh tham chiếu
+        raw_list: list[str] = []
+        if isinstance(image_refs, list):
+            raw_list = [str(r).strip() for r in image_refs if str(r).strip()]
+        elif isinstance(image_refs, str) and image_refs.strip():
+            raw_list = [image_refs.strip()]
+
+        # Google Flow Veo 3.1 R2V khuyến nghị tối đa 3 ảnh tham chiếu
+        refs_to_upload = raw_list[:3]
+        if refs_to_upload:
+            logger.info(
+                "Task=%s bắt đầu upload %d ảnh tham chiếu lên Flow (project_id=%s)...",
+                task_id,
+                len(refs_to_upload),
+                project_id,
+            )
+            for idx, img in enumerate(refs_to_upload):
+                mid = await upload_image_to_flow(img, project_id=project_id)
+                if mid and mid not in ref_ids:
+                    ref_ids.append(mid)
+                    logger.info("Ảnh [%d/%d] upload thành công media_id=%s", idx + 1, len(refs_to_upload), mid)
+                else:
+                    logger.warning("Ảnh [%d/%d] upload không thành công: %s", idx + 1, len(refs_to_upload), img[:80])
 
         payload = {
             "reference_media_ids": ref_ids,
@@ -134,7 +159,12 @@ async def _run_flow_generation(
             "aspect_ratio": aspect_ratio or "9:16",
             "model_key": model_key or "abra_r2v_10s",
         }
-        logger.info("Bắt đầu gọi Flow API tạo video task=%s ref_ids=%s prompt=%s", task_id, ref_ids, final_prompt[:80])
+        logger.info(
+            "Bắt đầu gọi Flow API tạo video task=%s ref_ids=%s prompt=%s",
+            task_id,
+            ref_ids,
+            final_prompt[:80],
+        )
 
         async with httpx.AsyncClient(timeout=360.0) as client:
             resp = await client.post(
@@ -227,18 +257,28 @@ async def _auto_capture_flow_project_id(db_project_id: int, project_url: str) ->
 def submit_flow_video(
     prompt: str,
     image_ref: str | None = None,
+    image_refs: list[str] | str | None = None,
     aspect_ratio: str = "9:16",
     flow_project_id: str | None = None,
     db_project_id: int | None = None,
 ) -> str:
     import uuid
 
+    # Gộp image_ref và image_refs để tương thích ngược
+    combined_refs: list[str] = []
+    if isinstance(image_refs, list):
+        combined_refs.extend([str(r).strip() for r in image_refs if str(r).strip()])
+    elif isinstance(image_refs, str) and image_refs.strip():
+        combined_refs.append(image_refs.strip())
+    if image_ref and str(image_ref).strip() not in combined_refs:
+        combined_refs.append(str(image_ref).strip())
+
     task_id = f"flow-{uuid.uuid4().hex[:12]}"
     asyncio.create_task(
         _run_flow_generation(
             task_id=task_id,
             prompt=prompt,
-            image_ref=image_ref,
+            image_refs=combined_refs,
             aspect_ratio=aspect_ratio,
             project_id=flow_project_id or FLOW_PROJECT_ID,
             db_project_id=db_project_id,

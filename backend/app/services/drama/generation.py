@@ -1586,9 +1586,19 @@ async def prepare_fragment_video_for_submit(
                 ),
             }
         )
+        ref_image_urls: list[str] = []
+        if continuity_url:
+            ref_image_urls.append(continuity_url)
+        for item in catalog.images:
+            if item.url and item.url not in ref_image_urls:
+                ref_image_urls.append(item.url)
+        primary_image_url = ref_image_urls[0] if ref_image_urls else (image_url or None)
+
         return FragmentVideoPrepared(
             submit_mode="seedance_body",
             seedance_body=body,
+            image_url=primary_image_url,
+            reference_image_urls=ref_image_urls or None,
             prompt=prompt,
             duration=duration,
             ratio=ratio,
@@ -1620,9 +1630,11 @@ async def prepare_fragment_video_for_submit(
         )
         image_url = still.local_url or ""
 
+    ref_image_urls_i2v = [image_url] if image_url else None
     return FragmentVideoPrepared(
         submit_mode="i2v",
         image_url=image_url,
+        reference_image_urls=ref_image_urls_i2v,
         prompt=prompt,
         duration=duration,
         ratio=ratio,
@@ -1641,15 +1653,26 @@ async def submit_prepared_fragment_video(
 ) -> str:
     from app.services.drama.flow_api import submit_flow_video
 
-    ref_img = None
+    ref_imgs: list[str] = []
     if prepared.reference_image_urls:
-        ref_img = prepared.reference_image_urls[0]
-    elif prepared.image_url:
-        ref_img = prepared.image_url
+        ref_imgs.extend([u for u in prepared.reference_image_urls if u])
+    if prepared.image_url and prepared.image_url not in ref_imgs:
+        ref_imgs.append(prepared.image_url)
+
+    # Fallback từ seedance_body nếu reference_image_urls và image_url chưa có
+    if not ref_imgs and prepared.seedance_body:
+        c_url = prepared.seedance_body.get("continuity_first_frame_url")
+        if c_url:
+            ref_imgs.append(str(c_url).strip())
+        for r in prepared.seedance_body.get("reference") or []:
+            if isinstance(r, dict) and r.get("type") == "image" and r.get("url"):
+                u = str(r["url"]).strip()
+                if u and u not in ref_imgs:
+                    ref_imgs.append(u)
 
     return submit_flow_video(
         prompt=prepared.prompt,
-        image_ref=ref_img,
+        image_refs=ref_imgs or None,
         aspect_ratio=prepared.ratio or "9:16",
         flow_project_id=flow_project_id or None,
         db_project_id=project_id,
