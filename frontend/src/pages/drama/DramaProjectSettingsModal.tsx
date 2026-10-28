@@ -1,6 +1,8 @@
 /** Phác thảo "Cài đặt dự án": khung/kiểu/phụ đề/giới thiệu nhân vật/kết nối khung cuối cùng (có thể thay đổi toàn cục; trang bảng phân cảnh ở chế độ chỉ đọc) */
-import { useState } from 'react'
-import { Link } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link, ClipboardPaste, RotateCcw, Check, ExternalLink } from 'lucide-react'
+
+export const FLOW_PROJECT_ID_DEFAULT = '746c4f17-5aa9-4cf1-b824-f8d0bd7aa6c4'
 
 import { useI18n } from '../../i18n'
 import Modal from '../../components/ui/Modal'
@@ -103,9 +105,24 @@ export function DramaProjectSettingsModal({
   const characterIntroMode = readEpisodeCharacterIntroMode(projectParams)
   const linkLastFrame = coerceLinkLastFrame(projectParams)
   const [flowProjectId, setFlowProjectId] = useState<string>(
-    project.flow_project_id || String(projectParams.flow_project_id || '') || ''
+    project.flow_project_id || String(projectParams.flow_project_id || '') || FLOW_PROJECT_ID_DEFAULT
   )
   const [flowProjectIdSaving, setFlowProjectIdSaving] = useState(false)
+  const [flowSavedSuccess, setFlowSavedSuccess] = useState(false)
+
+  const flowProjectUrl = flowProjectId?.trim()
+    ? flowProjectId.trim().startsWith('http')
+      ? flowProjectId.trim()
+      : `https://flow.google.com/project/${flowProjectId.trim()}`
+    : `https://flow.google.com/project/${FLOW_PROJECT_ID_DEFAULT}`
+
+  useEffect(() => {
+    if (open) {
+      const cur = project.flow_project_id || String(projectParams.flow_project_id || '')
+      setFlowProjectId(cur || FLOW_PROJECT_ID_DEFAULT)
+      setFlowSavedSuccess(false)
+    }
+  }, [open, project.flow_project_id, projectParams.flow_project_id])
 
   async function patchProjectParams(patch: Record<string, unknown>) {
     setSaving(true)
@@ -129,16 +146,37 @@ export function DramaProjectSettingsModal({
     return trimmed
   }
 
+  async function handlePaste() {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text) {
+        const parsed = parseFlowProjectId(text)
+        setFlowProjectId(parsed)
+        setFlowSavedSuccess(false)
+      }
+    } catch {
+      // ignore clipboard permission error
+    }
+  }
+
+  function handleResetDefault() {
+    setFlowProjectId(FLOW_PROJECT_ID_DEFAULT)
+    setFlowSavedSuccess(false)
+  }
+
   async function saveFlowProjectId() {
     setFlowProjectIdSaving(true)
+    setFlowSavedSuccess(false)
     try {
-      const parsed = parseFlowProjectId(flowProjectId)
+      const parsed = parseFlowProjectId(flowProjectId) || FLOW_PROJECT_ID_DEFAULT
       const updated = await dramaApi.updateProject(projectId, {
-        flow_project_id: parsed || null,
-        params: { ...projectParams, flow_project_id: parsed || undefined },
+        flow_project_id: parsed,
+        params: { ...projectParams, flow_project_id: parsed },
       })
       onProjectChange(updated)
       setFlowProjectId(parsed)
+      setFlowSavedSuccess(true)
+      setTimeout(() => setFlowSavedSuccess(false), 2500)
     } catch (err) {
       onError(err instanceof Error ? err.message : t('drama.projectSettings.saveFailed'))
     } finally {
@@ -274,35 +312,102 @@ export function DramaProjectSettingsModal({
         </section>
 
         <section className="drama-project-settings-section">
-          <div className="drama-project-settings-head">
-            <h4>
-              <Link size={14} style={{ marginRight: 5, verticalAlign: 'middle' }} />
-              Google Flow Project ID
-            </h4>
+          <div
+            className="drama-project-settings-head"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h4>
+                <Link size={14} style={{ marginRight: 6, verticalAlign: 'middle', color: '#10b981' }} />
+                Google Flow Project ID
+              </h4>
+              <a
+                href={flowProjectUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="drama-flow-open-link"
+                title={`Mở trên Google Flow (${flowProjectUrl})`}
+              >
+                <ExternalLink size={13} />
+              </a>
+            </div>
+            {flowProjectId === FLOW_PROJECT_ID_DEFAULT && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  color: '#6b7280',
+                  background: '#f3f4f6',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  fontWeight: 500,
+                }}
+              >
+                Mặc định
+              </span>
+            )}
           </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input
-              type="text"
-              className="drama-input"
-              style={{ flex: 1, fontSize: '0.82rem' }}
-              placeholder="Dán Project ID hoặc link Google Flow..."
-              value={flowProjectId}
-              disabled={flowProjectIdSaving}
-              onChange={(e) => setFlowProjectId(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') void saveFlowProjectId() }}
-            />
+
+          <div className="drama-flow-input-group">
+            <div className="drama-flow-input-wrapper">
+              <input
+                type="text"
+                className="drama-flow-input"
+                placeholder={`Mặc định: ${FLOW_PROJECT_ID_DEFAULT}`}
+                value={flowProjectId}
+                disabled={flowProjectIdSaving}
+                onChange={(e) => {
+                  setFlowProjectId(e.target.value)
+                  setFlowSavedSuccess(false)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void saveFlowProjectId()
+                }}
+              />
+
+              {flowProjectId !== FLOW_PROJECT_ID_DEFAULT && (
+                <button
+                  type="button"
+                  className="drama-flow-icon-btn"
+                  title="Khôi phục ID mặc định"
+                  onClick={handleResetDefault}
+                  disabled={flowProjectIdSaving}
+                >
+                  <RotateCcw size={14} />
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="drama-flow-icon-btn drama-flow-paste-btn"
+                title="Dán từ Clipboard (tự bóc tách link Google Flow)"
+                onClick={() => void handlePaste()}
+                disabled={flowProjectIdSaving}
+              >
+                <ClipboardPaste size={15} />
+              </button>
+            </div>
+
             <button
               type="button"
-              className="drama-btn-primary"
-              style={{ whiteSpace: 'nowrap', fontSize: '0.82rem', padding: '0 12px' }}
+              className={`drama-flow-save-btn ${flowSavedSuccess ? 'is-success' : ''}`}
               disabled={flowProjectIdSaving}
               onClick={() => void saveFlowProjectId()}
             >
-              {flowProjectIdSaving ? 'Đang lưu…' : 'Lưu'}
+              {flowProjectIdSaving ? (
+                'Đang lưu…'
+              ) : flowSavedSuccess ? (
+                <>
+                  <Check size={14} style={{ marginRight: 4 }} />
+                  Đã lưu
+                </>
+              ) : (
+                'Lưu'
+              )}
             </button>
           </div>
-          <p className="drama-muted" style={{ marginTop: 4 }}>
-            Mỗi dự án phim được gắn riêng một Google Flow Project. Có thể dán toàn bộ link Google Flow — hệ thống sẽ tự bóc tách ID.
+
+          <p className="drama-muted" style={{ marginTop: 2 }}>
+            Mỗi dự án phim được gắn riêng một Google Flow Project ID. Bạn có thể dán toàn bộ URL dự án Google Flow (hệ thống tự bóc tách UUID) hoặc bấm icon Dán.
           </p>
         </section>
       </div>

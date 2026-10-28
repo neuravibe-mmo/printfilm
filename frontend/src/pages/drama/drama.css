@@ -1,5 +1,15 @@
 /* Drama module styles ? PRINTFILM tokens (lime #b6ff00, white cards, 14px radius) */
 
+:root {
+  --drama-lime: #b6ff00;
+  --drama-card: #ffffff;
+  --drama-radius: 14px;
+  --drama-ink: var(--pf-ink, #111);
+  --drama-muted: var(--pf-muted, #6b7280);
+  --drama-line: var(--pf-line, #e5e7eb);
+  --drama-bg: var(--pf-bg, #f7f7f5);
+}
+
 .drama-page {
   --drama-lime: #b6ff00;
   --drama-card: #ffffff;
@@ -1268,6 +1278,124 @@
 .drama-project-settings-modal .drama-style-picker-trigger {
   width: 100%;
   justify-content: flex-start;
+}
+
+/* Google Flow Project ID input group */
+.drama-flow-open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: #6b7280;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.drama-flow-open-link:hover {
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.drama-flow-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drama-flow-input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  padding: 0 6px 0 12px;
+  height: 40px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.drama-flow-input-wrapper:focus-within {
+  border-color: #84cc16;
+  box-shadow: 0 0 0 3px rgba(182, 255, 0, 0.28);
+}
+
+.drama-flow-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12.5px;
+  color: #111827;
+  padding: 0;
+  min-width: 0;
+}
+
+.drama-flow-input::placeholder {
+  color: #9ca3af;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.drama-flow-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
+.drama-flow-icon-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.drama-flow-icon-btn:active {
+  background: #e5e7eb;
+}
+
+.drama-flow-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 9px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.drama-flow-save-btn:hover:not(:disabled) {
+  background: #1f2937;
+}
+
+.drama-flow-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.drama-flow-save-btn.is-success {
+  background: #15803d;
+  color: #ffffff;
 }
 
 .fc-gen-opt-btn.is-readonly,
