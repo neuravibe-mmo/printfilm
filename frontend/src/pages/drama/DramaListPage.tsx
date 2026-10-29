@@ -391,29 +391,36 @@ function DramaListInner() {
           <div className="pf-drama-list-title-row">
             <h1>{t('dramaList.title')}</h1>
             <div className="pf-drama-list-actions">
-              <Button variant="ghost" size="sm" to="/drama/assets">
+              <Button
+                variant="ghost"
+                size="sm"
+                to="/drama/assets"
+                disabled={items.length === 0}
+              >
                 <Library size={15} strokeWidth={1.75} aria-hidden />
                 {t('dramaList.assets')}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={canvasBusy}
+                disabled={canvasBusy || items.length === 0}
                 onClick={() => handleTabClick('canvas')}
               >
                 <LayoutGrid size={15} strokeWidth={1.75} aria-hidden />
                 {canvasBusy ? t('dramaList.creating') : t('dramaList.canvas')}
               </Button>
-              <Button
-                variant="lime"
-                size="sm"
-                onClick={() => {
-                  setShowCreate(true)
-                  handleTabClick('ai')
-                }}
-              >
-                {t('dramaList.newProject')}
-              </Button>
+              {!showCreate && (
+                <Button
+                  variant="lime"
+                  size="sm"
+                  onClick={() => {
+                    setShowCreate(true)
+                    handleTabClick('ai')
+                  }}
+                >
+                  {t('dramaList.newProject')}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -575,15 +582,17 @@ function DramaListInner() {
             </div>
             <h2>{t('dramaList.emptyTitle')}</h2>
             <p className="pf-muted">{t('dramaList.emptyDesc')}</p>
-            <Button
-              variant="lime"
-              onClick={() => {
-                setShowCreate(true)
-                handleTabClick('ai')
-              }}
-            >
-              {t('dramaList.newProject')}
-            </Button>
+            {!showCreate && (
+              <Button
+                variant="lime"
+                onClick={() => {
+                  setShowCreate(true)
+                  handleTabClick('ai')
+                }}
+              >
+                {t('dramaList.newProject')}
+              </Button>
+            )}
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="pf-empty-state is-compact">

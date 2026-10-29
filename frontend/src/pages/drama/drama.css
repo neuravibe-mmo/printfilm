@@ -390,24 +390,31 @@
   margin: 0 2px;
 }
 
+.drama-style-modal.pf-modal-panel,
+.pf-modal-panel.drama-style-modal {
+  width: min(1680px, 98vw) !important;
+  max-width: 98vw !important;
+  max-height: min(96vh, 1020px) !important;
+}
+
 .drama-style-modal .pf-modal-body {
   padding-top: 0.5rem;
+  max-height: calc(94vh - 76px);
+  display: flex;
+  flex-direction: column;
 }
 
 .drama-style-modal-hint {
   margin: 0 0 12px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   color: var(--drama-muted);
 }
 
 .drama-style-modal-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  max-height: min(58vh, 480px);
-  overflow: auto;
-  padding-right: 2px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
 }
 
 .drama-style-modal-none {

@@ -115,6 +115,56 @@ export const viDrama = {
       'shanghai-animation': 'Phong cách hoạt hình Thượng Hải',
       'pixel-art': 'Pixel Art',
       'shadow-puppet-illustration': 'Minh họa múa rối bóng',
+
+      // Nhóm 2: Khoa học, Huyền bí & Công nghệ
+      'hard-sci-fi-interstellar': 'Khoa học viễn tưởng không gian sâu',
+      'mystic-cyber-occult': 'Huyền bí công nghệ Cyber Occult',
+      'steampunk-victorian-machinery': 'Steampunk cơ khí Victoria',
+      'biopunk-organic-tech': 'Công nghệ sinh học Biopunk',
+      'quantum-abstract-dimension': 'Không gian lượng tử đa chiều',
+      'holographic-futuristic-ui': 'Giao diện tương lai Hologram',
+      'cosmic-horror-lovecraftian': 'Kinh dị vũ trụ Lovecraftian',
+
+      // Nhóm 3: Thương mại, Thời trang & Triển lãm
+      'high-fashion-editorial': 'Thời trang cao cấp Haute Couture',
+      'luxury-minimalist-gallery': 'Triển lãm nghệ thuật tối giản',
+      'vintage-parisian-couture': 'Thời trang cổ điển Paris',
+      'futuristic-avant-garde': 'Thời trang vị lai Avant-Garde',
+      'commercial-product-cinematic': 'Quảng cáo thương mại điện ảnh',
+      'neon-runway-glow': 'Sàn diễn thời trang ánh sáng Neon',
+      'pop-art-color-block': 'Phong cách Pop Art tương phản khối',
+
+      // Nhóm 4: Đời sống Thực tế & Con người
+      'documentary-natgeo-human': 'Phóng sự nhân văn NatGeo',
+      'warm-family-nostalgia': 'Ký ức gia đình ấm áp',
+      'street-life-candid': 'Khoảnh khắc đường phố chân thực',
+      'cozy-coffee-indie': 'Quán cà phê Indie chiều mưa',
+      'coastal-fishing-village': 'Làng chài ven biển mộc mạc',
+      'workshop-artisan-craft': 'Nghệ nhân xưởng thủ công',
+      'autumn-golden-hour': 'Hoàng hôn mùa thu rực rỡ',
+      'visual-diary-pov': 'Nhật ký thị giác góc nhìn POV',
+      'fly-on-the-wall-doc': 'Tài liệu ẩn mình quan sát tự nhiên',
+      'raw-transparent-portrait': 'Chân dung mộc nguyên bản tả thực',
+      'candid-unscripted-moments': 'Bắt khoảnh khắc tức thì ngẫu hứng',
+
+      // Nhóm 5: Đô thị, Văn hóa & Xã hội
+      'cyber-tokyo-night': 'Đêm đô thị Tokyo lung linh',
+      'traditional-heritage-festive': 'Lễ hội văn hóa truyền thống',
+      'monochrome-noir-city': 'Phim Noir đô thị đen trắng',
+      'subway-metro-commute': 'Chuyến tàu điện ngầm đô thị',
+      'ancient-temple-zen': 'Chùa cổ thanh tịnh thiền định',
+      'brutalist-concrete-architecture': 'Kiến trúc bê tông Brutalism',
+      'carnival-vintage-fair': 'Hội chợ đêm Vintage lung linh',
+      'raw-urban-workforce': 'Hiện thực đô thị lao động đời thường',
+
+      // Nhóm 6: Không gian, Ẩm thực & Thể thao
+      'deep-space-nebula': 'Tinh vân vũ trụ sâu thẳm',
+      'culinary-dark-moody': 'Nhiếp ảnh ẩm thực Dark Moody',
+      'street-food-night-market': 'Chợ đêm ẩm thực đường phố',
+      'extreme-sports-action': 'Thể thao mạo hiểm tốc độ cao',
+      'stadium-epic-championship': 'Sân vận động đêm chung kết',
+      'fine-dining-michelin': 'Ẩm thực cao cấp Michelin',
+      'zen-tea-ceremony': 'Trà đạo thiền tịnh',
     },
     // Generation options
     generationOptions: {

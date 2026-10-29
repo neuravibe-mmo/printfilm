@@ -153,6 +153,56 @@ export const zhDrama = {
       'shanghai-animation': '上美画风',
       'pixel-art': '像素风',
       'shadow-puppet-illustration': '皮影戏插画',
+
+      // Nhóm 2: Khoa học, Huyền bí & Công nghệ
+      'hard-sci-fi-interstellar': '硬核科幻星际深空',
+      'mystic-cyber-occult': '赛博秘术超自然',
+      'steampunk-victorian-machinery': '维多利亚蒸汽朋克机械',
+      'biopunk-organic-tech': '生化朋克有机科技',
+      'quantum-abstract-dimension': '量子多维抽象空间',
+      'holographic-futuristic-ui': '全息未来交互界面',
+      'cosmic-horror-lovecraftian': '洛夫克拉夫特宇宙克苏鲁',
+
+      // Nhóm 3: Thương mại, Thời trang & Triển lãm
+      'high-fashion-editorial': '高端时尚大片封面',
+      'luxury-minimalist-gallery': '极简当代艺术画廊',
+      'vintage-parisian-couture': '复古巴黎高定胶片',
+      'futuristic-avant-garde': '未来前卫先锋时装',
+      'commercial-product-cinematic': '电影级商业静物广告',
+      'neon-runway-glow': '炫彩霓虹T台大秀',
+      'pop-art-color-block': '波普艺术高反差色块',
+
+      // Nhóm 4: Đời sống Thực tế & Con người
+      'documentary-natgeo-human': '国家地理人文纪实',
+      'warm-family-nostalgia': '温馨家庭治愈怀旧',
+      'street-life-candid': '街头抓拍现实主义',
+      'cozy-coffee-indie': '独立咖啡馆慢生活',
+      'coastal-fishing-village': '质朴渔港海风纪实',
+      'workshop-artisan-craft': '传统匠人手作工坊',
+      'autumn-golden-hour': '金秋暖阳浪漫时刻',
+      'visual-diary-pov': 'POV第一人称视觉日记',
+      'fly-on-the-wall-doc': '静默观察墙蝇纪录片',
+      'raw-transparent-portrait': '真实原生人像',
+      'candid-unscripted-moments': '动态即时抓拍瞬间',
+
+      // Nhóm 5: Đô thị, Văn hóa & Xã hội
+      'cyber-tokyo-night': '东京赛博迷幻夜景',
+      'traditional-heritage-festive': '东方传统民俗节庆',
+      'monochrome-noir-city': '黑白胶片黑色电影',
+      'subway-metro-commute': '都市地下铁通勤纪实',
+      'ancient-temple-zen': '古刹青苔禅境沉思',
+      'brutalist-concrete-architecture': '野兽派几何混凝土',
+      'carnival-vintage-fair': '复古游乐园童话夜',
+      'raw-urban-workforce': '市井都会劳动纪实',
+
+      // Nhóm 6: Không gian, Ẩm thực & Thể thao
+      'deep-space-nebula': '深邃太空宇宙星云',
+      'culinary-dark-moody': '暗调高级美食摄影',
+      'street-food-night-market': '烟火人间夜市大排档',
+      'extreme-sports-action': '极限运动高速定格',
+      'stadium-epic-championship': '史诗体育场决战之夜',
+      'fine-dining-michelin': '米其林艺术料理美学',
+      'zen-tea-ceremony': '静心禅意茶道雅集',
     },
     generationOptions: {
       auto: '自动',

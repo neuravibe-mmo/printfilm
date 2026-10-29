@@ -83,7 +83,7 @@ export function DramaImageStyleModal({
         </button>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title={resolvedTitle} size="md" className="drama-style-modal">
+      <Modal open={open} onClose={() => setOpen(false)} title={resolvedTitle} size="xl" className="drama-style-modal">
         {/* 封面即画风参考图，避免用户以为只是缩略预览 */}
         <p className="drama-style-modal-hint">
           {t('drama.styleModal.hint')}
