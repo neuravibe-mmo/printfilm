@@ -3,6 +3,7 @@ import { AudioLines, Trash2, Volume2 } from 'lucide-react'
 import { resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
 import { CharacterVoicePreviewButton } from '../../components/drama/CharacterVoicePreviewButton'
 import { useI18n } from '../../i18n'
+import { formatVoiceLabel } from './CharacterVoiceBindModal'
 
 type Props = {
   asset: DramaAsset
@@ -26,7 +27,7 @@ export function DramaVoiceAssetCard({
   onDelete,
   onError,
 }: Props) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const audioSrc = resolveDramaMediaUrl(asset.url)
   const hasAudio = Boolean(audioSrc)
 
@@ -37,7 +38,7 @@ export function DramaVoiceAssetCard({
           <AudioLines size={18} strokeWidth={1.75} />
         </div>
         <div className="drama-voice-card-title">
-          <h3>{asset.name || t('drama.voiceBind.unnamedVoice')}</h3>
+          <h3>{formatVoiceLabel(asset.name, locale) || t('drama.voiceBind.unnamedVoice')}</h3>
           <span className={`drama-voice-card-status${hasAudio ? ' is-ready' : ' is-pending'}`}>
             {hasAudio ? t('drama.voiceBind.synthesized') : t('drama.voiceBind.notSynthesized')}
           </span>
@@ -71,7 +72,7 @@ export function DramaVoiceAssetCard({
             <>
               <CharacterVoicePreviewButton
                 url={asset.url || ''}
-                label={asset.name || undefined}
+                label={formatVoiceLabel(asset.name, locale) || undefined}
                 variant="button"
                 size="sm"
                 onError={onError}

@@ -10,7 +10,7 @@ import {
   readAssetImageVersions,
   resolveAssetImageVersionUrl,
 } from '../../lib/dramaAssetImageVersions'
-import { readAssetVoiceBinding } from './CharacterVoiceBindModal'
+import { formatVoiceLabel, readAssetVoiceBinding } from './CharacterVoiceBindModal'
 import { DramaImageLightbox } from './DramaImageLightbox'
 
 type Props = {
@@ -53,7 +53,7 @@ export function DramaAssetDetailModal({
   onDelete,
   onError,
 }: Props) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const genLabel = genLabelProp || t('drama.assetDetail.genLabel')
 
   /*
@@ -217,14 +217,13 @@ export function DramaAssetDetailModal({
             {mediaSrc ? (
               <img key={mediaSrc} src={mediaSrc} alt={asset.name || ''} />
             ) : (
-              <div className="drama-asset-placeholder">{asset.type || 'asset'}</div>
+              <div className="drama-asset-placeholder">{t('drama.assetDetail.notGenerated')}</div>
             )}
           </button>
 
           <p className="drama-muted drama-asset-detail-meta">
-            {asset.type}
-            {hasImage ? ' · ' + t('drama.assetDetail.generated') : ' · ' + t('drama.assetDetail.notGenerated')}
-            {isCharacter && voice ? ' · ' + t('drama.assetDetail.voiceBound').replace('{label}', voice.label) : ''}
+            {hasImage ? t('drama.assetDetail.generated') : t('drama.assetDetail.notGenerated')}
+            {isCharacter && voice ? ' · ' + t('drama.assetDetail.voiceBound').replace('{label}', formatVoiceLabel(voice.label, locale)) : ''}
             {mediaSrc ? ' · ' + t('drama.assetDetail.clickToEnlarge') : ''}
           </p>
 

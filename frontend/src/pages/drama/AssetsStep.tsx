@@ -15,6 +15,7 @@ import { getImageStyleId } from './dramaWorkspaceUtils'
 import { DramaImageGenOptionsBar } from './canvas/nodes/DramaImageGenOptionsBar'
 import {
   CharacterVoiceBindModal,
+  formatVoiceLabel,
   readAssetVoiceBinding,
   readVoicePrompt,
 } from './CharacterVoiceBindModal'
@@ -144,6 +145,19 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
       onError('Tài sản chưa có hình ảnh để upload')
       return
     }
+
+    const hasExistingMedia = Boolean(asset.flow_media_id || (asset.params as any)?.flow_media_id)
+    if (hasExistingMedia) {
+      const confirmMsg =
+        locale === 'vi'
+          ? `Tài sản "${asset.name || 'này'}" đã có Flow ID. Bạn có chắc chắn muốn upload lại lên Google Flow không?`
+          : locale === 'en'
+            ? `Asset "${asset.name || 'this'}" already has a Flow ID. Are you sure you want to re-upload it to Google Flow?`
+            : `素材「${asset.name || '此素材'}」已有 Flow ID。确定要重新上传到 Google Flow 吗？`
+      const ok = window.confirm(confirmMsg)
+      if (!ok) return
+    }
+
     setFlowUploadingAssetId(asset.id)
     setFlowUploadErrors((prev) => {
       const copy = { ...prev }
@@ -1262,13 +1276,12 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
                   <img key={mediaSrc} src={mediaSrc} alt={asset.name || ''} />
                 </button>
               ) : (
-                <div className="drama-asset-placeholder">{asset.type || 'asset'}</div>
+                <div className="drama-asset-placeholder">{t('drama.assetDetail.notGenerated')}</div>
               )}
               <h3>{asset.name || t('common.unnamed')}</h3>
-              <p className="drama-asset-card-type">
-                {asset.type}
-                {isCharacter && voice ? ` · ${voice.label}` : ''}
-              </p>
+              {isCharacter && voice ? (
+                <p className="drama-asset-card-type">{formatVoiceLabel(voice.label, locale)}</p>
+              ) : null}
 
               {/* Hiển thị trạng thái Flow & Media ID */}
               <div
@@ -1375,7 +1388,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
                   {voice ? (
                     <CharacterVoicePreviewButton
                       url={voice.url}
-                      label={voice.label}
+                      label={formatVoiceLabel(voice.label, locale)}
                       onError={onError}
                     />
                   ) : (
@@ -1423,7 +1436,10 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
                       color: (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? '#166534' : '#475569',
                     }}
                     disabled={busy || batchBusy || flowUploading || flowUploadingAssetId === asset.id}
-                    onClick={() => void handleUploadSingleAssetToFlow(asset)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handleUploadSingleAssetToFlow(asset)
+                    }}
                     title={
                       (asset.flow_media_id || (asset.params as any)?.flow_media_id)
                         ? 'Upload lại ảnh này lên Google Flow'

@@ -277,11 +277,13 @@ async def _apply_schema_patches() -> None:
 
         # Ensure task_runs.asset_id has ON DELETE SET NULL
         try:
-            await conn.execute(text("""
-                ALTER TABLE task_runs DROP CONSTRAINT IF EXISTS task_runs_asset_id_fkey;
-                ALTER TABLE task_runs ADD CONSTRAINT task_runs_asset_id_fkey
-                    FOREIGN KEY (asset_id) REFERENCES drama_assets(id) ON DELETE SET NULL;
-            """))
+            await conn.execute(text("ALTER TABLE task_runs DROP CONSTRAINT IF EXISTS task_runs_asset_id_fkey"))
+            await conn.execute(
+                text(
+                    "ALTER TABLE task_runs ADD CONSTRAINT task_runs_asset_id_fkey "
+                    "FOREIGN KEY (asset_id) REFERENCES drama_assets(id) ON DELETE SET NULL"
+                )
+            )
         except Exception:
             pass
 

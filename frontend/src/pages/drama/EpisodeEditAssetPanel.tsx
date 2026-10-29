@@ -3,7 +3,7 @@ import { useI18n } from '../../i18n'
 import { Workflow, Loader2, Link2Off, Plus, Mic } from 'lucide-react'
 import { resolveDramaAssetPreviewUrl, type DramaAsset } from '../../api/drama'
 import { CharacterVoicePreviewButton } from '../../components/drama/CharacterVoicePreviewButton'
-import { readAssetVoiceBinding } from './CharacterVoiceBindModal'
+import { formatVoiceLabel, readAssetVoiceBinding } from './CharacterVoiceBindModal'
 import { DRAMA_VOICE_BINDING_ENABLED } from '../../lib/dramaVoiceBinding'
 import {
   ASSET_TABS,
@@ -66,7 +66,7 @@ export function EpisodeEditAssetPanel({
   detectBusy,
   hasLinkedScene,
 }: Props) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const createLabel = (tab: AssetTab | null): string => {
     if (tab === 'scene') return t('drama.mention.newScene')
     if (tab === 'prop') return t('drama.mention.newProp')
@@ -271,7 +271,7 @@ export function EpisodeEditAssetPanel({
                     voice ? (
                       <CharacterVoicePreviewButton
                         url={voice.url}
-                        label={voice.label}
+                        label={formatVoiceLabel(voice.label, locale)}
                         variant="inline"
                         iconOnly
                         className="drama-ep-asset-voice-btn is-bound"

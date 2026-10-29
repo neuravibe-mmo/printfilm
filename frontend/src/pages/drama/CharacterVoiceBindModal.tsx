@@ -2,7 +2,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { dramaApi, resolveDramaMediaUrl, type DramaAsset } from '../../api/drama'
 import Modal from '../../components/ui/Modal'
-import { useI18n } from '../../i18n'
+import { useI18n, getActiveLocale } from '../../i18n'
+
+/**
+ * Chuẩn hóa và bản địa hóa tên / nhãn giọng nói (音色) theo ngôn ngữ người dùng
+ */
+export function formatVoiceLabel(label: string | null | undefined, locale?: string): string {
+  if (!label) return ''
+  const loc = locale || getActiveLocale()
+  const trimmed = label.trim()
+
+  if (trimmed === '未命名音色' || trimmed === '未命名') {
+    if (loc === 'vi') return 'Chưa đặt tên'
+    if (loc === 'en') return 'Unnamed voice'
+    return '未命名音色'
+  }
+  if (trimmed === '旁白音色' || trimmed === '旁白声音' || trimmed === '旁白') {
+    if (loc === 'vi') return 'Giọng lời dẫn'
+    if (loc === 'en') return 'Narrator voice'
+    return '旁白音色'
+  }
+
+  // Nếu nhãn có hậu tố 音色, 的声音, hoặc 语音 (ví dụ: "Trần Minh Khải音色")
+  const suffixMatch = trimmed.match(/^(.*?)(?:音色|的声音|语音)$/)
+  if (suffixMatch && suffixMatch[1].trim()) {
+    const charName = suffixMatch[1].trim()
+    if (loc === 'vi') return `Giọng ${charName}`
+    if (loc === 'en') return `${charName} Voice`
+    return `${charName}音色`
+  }
+
+  return trimmed
+}
 
 export type VoiceBinding = {
   sourceAssetId: number
@@ -107,7 +138,7 @@ export function CharacterVoiceBindModal({
   onBound,
   onError,
 }: Props) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   /*
    * voiceAssets tài sản giọng nói trong dự án
    * đã chọnId âm thanh đã chọn
@@ -352,7 +383,7 @@ export function CharacterVoiceBindModal({
                     onChange={() => setSelectedId(voice.id)}
                   />
                   <span>
-                    {voice.name || `${t('drama.voiceBind.voiceLabel')}#${voice.id}`}
+                    {formatVoiceLabel(voice.name, locale) || `${t('drama.voiceBind.voiceLabel')}#${voice.id}`}
                     <small>{hasAudio ? t('drama.voiceBind.synthesized') : t('drama.voiceBind.notSynthesized')}</small>
                   </span>
                   {hasAudio ? (
