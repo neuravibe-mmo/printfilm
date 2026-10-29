@@ -86,6 +86,10 @@ export const viDrama = {
       tailFrameOn: 'Nối khung cuối',
       tailFrameOff: 'Tạo song song',
       tailFrameHint: 'Khi bật, cảnh sau sẽ tham chiếu khung cuối của cảnh trước, phong cách liên tục hơn.',
+      videoLanguage: 'Ngôn ngữ video',
+      videoLangVietnamese: 'Tiếng Việt',
+      videoLangAuto: 'Tự động',
+      videoLanguageHint: 'Khi chọn Tiếng Việt, thoại trong prompt sẽ tự động được đánh dấu lồng tiếng tiếng Việt.',
     },
     // Image styles
     imageStyles: {

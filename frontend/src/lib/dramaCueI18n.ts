@@ -95,11 +95,19 @@ export function hasNonLocalizedCues(content: string, targetLocale: 'vi' | 'zh' |
 /**
  * Chuyển đổi các thẻ lệnh sản xuất sang ngôn ngữ mục tiêu (mặc định 'vi').
  */
-export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 'en' = 'vi'): string {
+export function localizeScriptCues(
+  content: string,
+  targetLocale: 'vi' | 'zh' | 'en' = 'vi',
+  videoLanguage?: string
+): string {
   if (!content) return content
   let text = content
 
   if (targetLocale === 'vi') {
+    const isViVoice = videoLanguage === 'vi' || text.includes('Lồng tiếng tiếng Việt')
+    const dialogueCue = isViVoice ? '【Thoại · Lồng tiếng tiếng Việt】' : '【Thoại · Chậm rõ · Đồng bộ phụ đề】'
+    const shortDialogueCue = isViVoice ? '【Thoại · Lồng tiếng tiếng Việt】' : '【Thoại · Chậm rõ】'
+
     // BGM / Background Music -> Nhạc nền
     text = text.replace(
       /【(?:BGM|Background Music|Nhạc nền)[：:]\s*(?:贴合剧情氛围的轻量配乐，情绪随画面起伏；音量低于人声|Subtle background music matching the narrative atmosphere[^】]*)】/g,
@@ -128,14 +136,21 @@ export function localizeScriptCues(content: string, targetLocale: 'vi' | 'zh' | 
     // Dialogue
     text = text.replace(
       /【(?:对白·(?:慢速清晰|自然语速)·同步字幕|Dialogue · [^】]*Synced subtitles)】/g,
-      '【Thoại · Chậm rõ · Đồng bộ phụ đề】',
+      dialogueCue,
     )
     text = text.replace(
       /【(?:对白·(?:慢速清晰|自然语速)|Dialogue · Clear[^】]*)】/g,
-      '【Thoại · Chậm rõ】',
+      shortDialogueCue,
     )
-    text = text.replace(/【(?:对白|Dialogue)(?:·|:|\s*)([^】]*)】/g, '【Thoại · $1】')
-    text = text.replace(/【(?:对白|Dialogue)】/g, '【Thoại】')
+    if (isViVoice) {
+      text = text.replace(
+        /【(?:Thoại · Chậm rõ · Đồng bộ phụ đề|Thoại · Chậm rõ|Thoại|Đối thoại|对白|Dialogue)(?:[·:：\s][^】]*)?】/g,
+        '【Thoại · Lồng tiếng tiếng Việt】',
+      )
+    } else {
+      text = text.replace(/【(?:对白|Dialogue)(?:·|:|\s*)([^】]*)】/g, '【Thoại · $1】')
+      text = text.replace(/【(?:对白|Dialogue)】/g, '【Thoại】')
+    }
 
     // Narration
     text = text.replace(

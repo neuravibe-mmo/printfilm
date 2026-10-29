@@ -1033,6 +1033,7 @@ function EpisodeEditInner() {
         selectedDuration={selectedDuration}
         modelId={modelId}
         projectFlowId={projectFlowId}
+        videoLanguage={String(projectParams?.video_language || 'auto')}
       />
     </div>
   )

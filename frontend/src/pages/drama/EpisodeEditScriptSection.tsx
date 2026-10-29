@@ -121,7 +121,8 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
                 style={{ fontSize: '0.8rem', padding: '4px 10px', height: 'auto', whiteSpace: 'nowrap' }}
                 onClick={async () => {
                   if (!selected) return
-                  const localized = localizeScriptCues(selected.content || '', 'vi')
+                  const videoLang = String(projectParams?.video_language || 'auto')
+                  const localized = localizeScriptCues(selected.content || '', 'vi', videoLang)
                   const nextFragments = fragments.map((f, i) =>
                     i === selectedIndex ? { ...f, content: localized } : f,
                   )

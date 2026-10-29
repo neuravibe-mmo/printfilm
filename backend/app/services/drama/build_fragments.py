@@ -483,6 +483,77 @@ def rewrite_dialogue_action_lines(content: str) -> str:
     return "\n".join(out)
 
 
+# Regex matching any existing production dialogue/narration prefix bracket
+_VOICE_PREFIX_RE = re.compile(
+    r"^(【(?:Thoại|Đối thoại|对白|旁白|Lời dẫn|Độc thoại nội tâm|内心独白|Dialogue)[^】]*】)\s*"
+)
+_VI_DIALOGUE_PREFIX = "【Thoại · Lồng tiếng tiếng Việt】"
+
+
+def apply_vietnamese_voice_language(content: str) -> str:
+    """Khi dự án chọn ngôn ngữ video = tiếng Việt, đổi tất cả tiền tố thoại thành
+    【Thoại · Lồng tiếng tiếng Việt】 để Google Veo biết phát âm bằng tiếng Việt.
+    - Các dòng đã có tiền tố 【Thoại...】 hoặc 【对白...】 → thay bằng tiền tố Việt.
+    - Các dòng thoại nhân vật thuần (Nhân vật: lời thoại hoặc @asset:...: lời thoại) chưa có tiền tố → thêm tiền tố.
+    - Các dòng visual/empty shot/bgm không bị thay đổi.
+    """
+    if not content:
+        return content
+    out: list[str] = []
+    for raw in content.replace("\r\n", "\n").split("\n"):
+        line = raw.strip()
+        if not line or line.startswith("@duration:"):
+            out.append(raw)
+            continue
+        # Nếu đã có tiền tố thoại → thay bằng tiền tố tiếng Việt
+        m = _VOICE_PREFIX_RE.match(line)
+        if m:
+            body = line[m.end():].lstrip()
+            out.append(f"{_VI_DIALOGUE_PREFIX} {body}")
+            continue
+        # Dòng visual/cảnh trống/nhạc nền/phụ đề → không đổi
+        if (
+            line.startswith("【画面")
+            or line.startswith("【Hình ảnh")
+            or line.startswith("【空镜")
+            or line.startswith("【Cảnh trống")
+            or line.startswith("【Nhạc nền")
+            or line.startswith("【BGM")
+            or line.startswith("【Phụ đề")
+            or line.startswith("【字幕")
+            or line.startswith("【Đầu phim")
+            or line.startswith("【Giới thiệu")
+            or line.startswith("△")
+        ):
+            out.append(raw)
+            continue
+        # Dòng thoại nhân vật chưa có tiền tố: "@asset:...: lời thoại" hoặc "Nhân vật: lời thoại"
+        if re.match(r"^(@asset:\S+|[^（(:：\n]{1,24}(?:[（(][^）)]*[）)])?)\s*[：:].+", line):
+            out.append(f"{_VI_DIALOGUE_PREFIX} {line}")
+            continue
+        out.append(raw)
+    return "\n".join(out)
+
+
+def remove_vietnamese_voice_language(content: str) -> str:
+    """Khôi phục tiền tố thoại về mặc định 【Thoại · Chậm rõ】 khi chuyển sang Auto."""
+    if not content:
+        return content
+    out: list[str] = []
+    for raw in content.replace("\r\n", "\n").split("\n"):
+        line = raw.strip()
+        if not line:
+            out.append(raw)
+            continue
+        if line.startswith(_VI_DIALOGUE_PREFIX):
+            body = line[len(_VI_DIALOGUE_PREFIX):].lstrip()
+            out.append(f"【Thoại · Chậm rõ】 {body}")
+            continue
+        out.append(raw)
+    return "\n".join(out)
+
+
+
 def _format_narrative_line(line: str, is_vi: bool = False) -> str:
     # Đánh dấu các dòng cảnh là cảnh/tường thuật/đối thoại; cảnh trống phải không có tiền tố lồng tiếng
     trimmed = line.strip()

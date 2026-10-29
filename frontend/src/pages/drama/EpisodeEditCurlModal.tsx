@@ -30,6 +30,7 @@ interface EpisodeEditCurlModalProps {
   duration: number
   modelId: string
   projectFlowId?: string | null
+  videoLanguage?: string
 }
 
 /**
@@ -103,20 +104,62 @@ export function replaceAssetTokensWithSlugs(text: string, assets: DramaAsset[] =
 
 /**
  * Làm sạch kịch bản phân cảnh thô thành prompt chuẩn cho Google Flow (Veo 3.1):
- * - Loại bỏ các khối chú thích kỹ thuật đạo diễn: 【Nhạc nền...】, 【Hình ảnh...】, 【Thoại...】
+ * - Loại bỏ các khối chú thích kỹ thuật đạo diễn: 【Nhạc nền...】, 【Hình ảnh...】, 【Phụ đề...】
  * - Loại bỏ các chỉ thị thời lượng: @duration:3...
+ * - Bảo tồn thẻ 【Thoại · Lồng tiếng tiếng Việt】 khi chọn tiếng Việt để Flow/Veo phát âm tiếng Việt.
  * - Thay thế thẻ @asset:<id> thành @asset:<ID>_<LoaiAsset>_<TênViếtLiềnKhôngDấu>
- * - Giữ nguyên các mô tả bối cảnh, hành động và lời thoại (khớp 100% với backend và Google Flow)
+ * - Giữ nguyên các mô tả bối cảnh, hành động và lời thoại.
  */
-export function cleanFlowScript(text: string, assets: DramaAsset[] = []): string {
+export function cleanFlowScript(text: string, assets: DramaAsset[] = [], videoLanguage?: string): string {
   if (!text) return ''
-  let cleaned = text.replace(/【[^】]*】/g, '').replace(/@duration:\d+/g, '')
-  cleaned = replaceAssetTokensWithSlugs(cleaned, assets)
-  const lines = cleaned
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-  return lines.join('\n')
+  const isVi = videoLanguage === 'vi' || text.includes('Lồng tiếng tiếng Việt')
+  const lines = text.split('\n')
+  const outLines: string[] = []
+
+  for (const raw of lines) {
+    let line = raw.trim()
+    if (!line) continue
+    line = line.replace(/@duration:\d+/g, '').trim()
+    if (!line) continue
+
+    // Bỏ BGM và phụ đề
+    if (
+      line.startsWith('【Nhạc nền') ||
+      line.startsWith('【BGM') ||
+      line.startsWith('【Phụ đề') ||
+      line.startsWith('【字幕')
+    ) {
+      continue
+    }
+
+    // Bỏ thẻ hình ảnh/cảnh trống nhưng giữ lại nội dung mô tả
+    line = line.replace(/^【(?:Hình ảnh|画面|空镜|Cảnh trống)[^】]*】\s*/, '')
+
+    // Xử lý dòng thoại
+    if (isVi) {
+      if (/^【Thoại[·\s]*Lồng tiếng tiếng Việt】/i.test(line)) {
+        line = line.replace(/^【Thoại[·\s]*Lồng tiếng tiếng Việt】\s*/i, '【Thoại · Lồng tiếng tiếng Việt】 ')
+      } else if (/^【(?:Thoại|Đối thoại|对白|Dialogue|Lời dẫn|旁白|Độc thoại nội tâm|内心独白)[^】]*】\s*/i.test(line)) {
+        line = line.replace(
+          /^【(?:Thoại|Đối thoại|对白|Dialogue|Lời dẫn|旁白|Độc thoại nội tâm|内心独白)[^】]*】\s*/i,
+          '【Thoại · Lồng tiếng tiếng Việt】 '
+        )
+      } else if (/^(@asset:\S+|[^\s:：]{1,24})\s*[:：]/.test(line)) {
+        line = `【Thoại · Lồng tiếng tiếng Việt】 ${line}`
+      }
+    } else {
+      // Auto / non-vi: xóa các thẻ đối thoại thông thường nếu không cần
+      line = line.replace(/^【(?:Thoại|Đối thoại|对白|Dialogue)[^】]*】\s*/i, '')
+    }
+
+    // Xóa các thẻ 【...】 phụ khác nhưng bảo tồn 【Thoại · Lồng tiếng tiếng Việt】
+    line = line.replace(/【(?!Thoại · Lồng tiếng tiếng Việt)[^】]*】/g, '').trim()
+    if (line) {
+      outLines.push(line)
+    }
+  }
+
+  return replaceAssetTokensWithSlugs(outLines.join('\n'), assets)
 }
 
 export function EpisodeEditCurlModal({
@@ -130,6 +173,7 @@ export function EpisodeEditCurlModal({
   duration,
   modelId,
   projectFlowId,
+  videoLanguage,
 }: EpisodeEditCurlModalProps) {
   const { t } = useI18n()
   const [tab, setTab] = useState<'flow' | 'upstream' | 'internal'>('flow')
@@ -147,8 +191,8 @@ export function EpisodeEditCurlModal({
 
   const promptText = useMemo(() => {
     const raw = fragment?.content || 'A cinematic sci-fi scene in deep space'
-    return cleanFlowScript(raw, assets) || raw.trim()
-  }, [fragment, assets])
+    return cleanFlowScript(raw, assets, videoLanguage) || raw.trim()
+  }, [fragment, assets, videoLanguage])
 
   // Lệnh cURL gửi trực tiếp sang cổng Flow API (neuravibemmo.dpdns.org)
   const upstreamCurl = useMemo(() => {
@@ -274,8 +318,8 @@ export function EpisodeEditCurlModal({
 
   const activePrompt = useMemo(() => {
     const raw = extractedPromptInfo?.prompt || fragment?.content || ''
-    return cleanFlowScript(raw, assets)
-  }, [extractedPromptInfo?.prompt, fragment?.content, assets])
+    return cleanFlowScript(raw, assets, videoLanguage)
+  }, [extractedPromptInfo?.prompt, fragment?.content, assets, videoLanguage])
 
   if (!open) return null
 

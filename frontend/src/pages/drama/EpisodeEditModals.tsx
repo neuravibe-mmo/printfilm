@@ -41,6 +41,7 @@ export type EpisodeEditModalsProps = {
   selectedDuration: number
   modelId: string
   projectFlowId?: string | null
+  videoLanguage?: string
 }
 
 export const EpisodeEditModals: React.FC<EpisodeEditModalsProps> = React.memo(
@@ -75,6 +76,7 @@ export const EpisodeEditModals: React.FC<EpisodeEditModalsProps> = React.memo(
     selectedDuration,
     modelId,
     projectFlowId,
+    videoLanguage,
   }) {
     const { t } = useI18n()
 
@@ -154,6 +156,7 @@ export const EpisodeEditModals: React.FC<EpisodeEditModalsProps> = React.memo(
           duration={selectedDuration}
           modelId={modelId}
           projectFlowId={projectFlowId}
+          videoLanguage={videoLanguage}
         />
       </>
     )

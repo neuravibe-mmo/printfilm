@@ -82,6 +82,10 @@ export const zhDrama = {
       tailFrameOn: '尾帧衔接',
       tailFrameOff: '并发生成',
       tailFrameHint: '开启后后一镜会参考前一镜尾帧，风格更连贯。',
+      videoLanguage: '视频语言',
+      videoLangVietnamese: '越南语',
+      videoLangAuto: '自动',
+      videoLanguageHint: '选择越南语时，prompt 中的台词行将自动标注越语配音。',
     },
     projectOutput: {
       thisEpisode: '本集',

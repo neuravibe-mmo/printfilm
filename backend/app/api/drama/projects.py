@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import UsageEvent, User
-from app.models_drama import DramaAsset, DramaEpisode, DramaProject, DramaScript
+from app.models_drama import DramaAsset, DramaEpisode, DramaEpisodeFragment, DramaProject, DramaScript
 from app.models_tasks import TaskRun
 from app.schemas_drama import (
     DramaProjectCreate,
@@ -196,6 +196,29 @@ async def update_project(
         fid = (project.params or {}).get("flow_project_id")
         if fid:
             project.flow_project_id = str(fid)
+
+    # Khi người dùng thay đổi ngôn ngữ video (video_language: 'vi' hoặc 'auto'),
+    # sửa trực tiếp các dòng thoại trong tất cả các phân cảnh (fragments) của dự án.
+    if body.params is not None and "video_language" in body.params:
+        target_lang = str(body.params.get("video_language") or "").strip().lower()
+        from app.services.drama.build_fragments import (
+            apply_vietnamese_voice_language,
+            remove_vietnamese_voice_language,
+        )
+        ep_stmt = select(DramaEpisode.id).where(DramaEpisode.project_id == project_id)
+        ep_ids = (await db.execute(ep_stmt)).scalars().all()
+        if ep_ids:
+            frags_stmt = select(DramaEpisodeFragment).where(
+                DramaEpisodeFragment.episode_id.in_(ep_ids)
+            )
+            frags = (await db.execute(frags_stmt)).scalars().all()
+            for frag in frags:
+                if frag.content:
+                    if target_lang == "vi":
+                        frag.content = apply_vietnamese_voice_language(frag.content)
+                    else:
+                        frag.content = remove_vietnamese_voice_language(frag.content)
+
     await db.commit()
 
     # Khi công tắc kết nối giữa các máy nhân bản thay đổi, các tác vụ video trong bảng phân cảnh vẫn đang xếp hàng sẽ được sắp xếp lại một cách linh hoạt.

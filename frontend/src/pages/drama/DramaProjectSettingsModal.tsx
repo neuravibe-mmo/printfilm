@@ -104,6 +104,7 @@ export function DramaProjectSettingsModal({
   const subtitleMode = readEpisodeSubtitleMode(projectParams)
   const characterIntroMode = readEpisodeCharacterIntroMode(projectParams)
   const linkLastFrame = coerceLinkLastFrame(projectParams)
+  const videoLanguage = (projectParams.video_language as string) || 'auto'
   const [flowProjectId, setFlowProjectId] = useState<string>(
     project.flow_project_id || String(projectParams.flow_project_id || '') || FLOW_PROJECT_ID_DEFAULT
   )
@@ -309,6 +310,22 @@ export function DramaProjectSettingsModal({
             onChange={(enabled) => void patchProjectParams({ linkLastFrame: enabled })}
           />
           <p className="drama-muted">{t('drama.projectSettings.tailFrameHint')}</p>
+        </section>
+
+        <section className="drama-project-settings-section">
+          <div className="drama-project-settings-head">
+            <h4>{t('drama.projectSettings.videoLanguage')}</h4>
+          </div>
+          <SettingsChoiceRow
+            value={videoLanguage}
+            disabled={saving}
+            options={[
+              { value: 'vi', label: t('drama.projectSettings.videoLangVietnamese') },
+              { value: 'auto', label: t('drama.projectSettings.videoLangAuto') },
+            ]}
+            onChange={(lang) => void patchProjectParams({ video_language: lang })}
+          />
+          <p className="drama-muted">{t('drama.projectSettings.videoLanguageHint')}</p>
         </section>
 
         <section className="drama-project-settings-section">

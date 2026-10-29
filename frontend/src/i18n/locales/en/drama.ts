@@ -312,7 +312,11 @@ export const enDrama = {
             "tailFrame": "Tail-frame Continuity",
             "tailFrameOn": "Enabled (Sequential)",
             "tailFrameOff": "Disabled (Parallel)",
-            "tailFrameHint": "When enabled, later shots wait for earlier shots to finish to maintain continuity."
+            "tailFrameHint": "When enabled, later shots wait for earlier shots to finish to maintain continuity.",
+            "videoLanguage": "Video Language",
+            "videoLangVietnamese": "Vietnamese",
+            "videoLangAuto": "Auto",
+            "videoLanguageHint": "When Vietnamese is selected, dialogue lines in the prompt will be automatically marked for Vietnamese voiceover."
         },
         "projectOutput": {
             "thisEpisode": "This Episode",
