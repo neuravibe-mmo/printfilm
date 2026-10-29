@@ -15,9 +15,9 @@ export type VideoGenerationOptions = {
 
 export const VIDEO_ASPECT_RATIO_OPTIONS: VideoAspectRatio[] = ['9:16', '16:9', '1:1']
 export const VIDEO_RESOLUTION_OPTIONS: VideoResolution[] = ['480p', '720p', '1080p']
-export const VIDEO_DURATION_PRESETS = [5, 8, 10, 15] as const
+export const VIDEO_DURATION_PRESETS = [4, 5, 8, 10] as const
 export const VIDEO_DURATION_MIN = 4
-export const VIDEO_DURATION_MAX = 30
+export const VIDEO_DURATION_MAX = 10
 
 export const DEFAULT_VIDEO_GENERATION_OPTIONS: VideoGenerationOptions = {
   model_id: '',

@@ -44,6 +44,7 @@ def build_project_params(
     return {
         "aspect_ratio": "9:16",
         "resolution": "720p",
+        "video_language": "vi",
         **(extra or {}),
         "workflow": wf,
         "episode_count": 0 if wf == "canvas" else episode_count,

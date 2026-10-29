@@ -21,6 +21,7 @@ import {
   normalizeAssetTab,
   readFragmentGenerationStatus,
   readFragmentVideoVersions,
+  resolveFragmentDurationSec,
   type AssetScope,
   type AssetTab,
 } from './dramaEpisodeEditUtils'
@@ -161,7 +162,9 @@ function EpisodeEditInner() {
       ? 0
       : selectedIndex
   const selected = fragments[effectiveIndex] || null
-  const selectedDuration = selected?.duration_sec ?? 8
+  const selectedDuration = selected
+    ? resolveFragmentDurationSec(selected.content, selected.duration_sec)
+    : 8
 
   // generateIds Id tập hiện đang được xếp hàng/tạo
   const generatingIds = useMemo(() => {
@@ -514,7 +517,12 @@ function EpisodeEditInner() {
           const st = readFragmentPlanStatus(cur)
           if (st === 'completed') {
             setEpisode(cur)
-            setFragments(cur.fragments || [])
+            setFragments(
+              (cur.fragments || []).map((f) => ({
+                ...f,
+                duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
+              })),
+            )
             setSelectedIndex(0)
             setStatus(
               t('drama.episodeEdit.planAiDone').replace(
@@ -586,7 +594,12 @@ function EpisodeEditInner() {
     setSubtitleMode(readEffectiveSubtitleMode(epParams, projectParamsRef.current))
     setCharacterIntroMode(readEffectiveCharacterIntroMode(epParams, projectParamsRef.current))
     setAspectRatio(readEpisodeAspectRatio(epParams, projectParamsRef.current))
-    setFragments(ep.fragments || [])
+    setFragments(
+      (ep.fragments || []).map((f) => ({
+        ...f,
+        duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
+      })),
+    )
     if ((ep.fragments || []).length === 0) {
       setFragments([
         {
@@ -730,7 +743,7 @@ function EpisodeEditInner() {
       (j) => j.id === videoJobId(frag.id!) || (j.kind === 'video' && j.targetId === frag.id),
     )
     const gen = readFragmentGenerationStatus(frag)
-    const title = `${displayEpisodeName} · ${formatFragLabel(index, frag.duration_sec, t)}`
+    const title = `${displayEpisodeName} · ${formatFragLabel(index, resolveFragmentDurationSec(frag.content, frag.duration_sec), t)}`
     setFailReasonJob({
       id: fromQueue?.id || videoJobId(frag.id),
       kind: 'video',
@@ -1033,7 +1046,7 @@ function EpisodeEditInner() {
         selectedDuration={selectedDuration}
         modelId={modelId}
         projectFlowId={projectFlowId}
-        videoLanguage={String(projectParams?.video_language || 'auto')}
+        videoLanguage={String(projectParams?.video_language || 'vi')}
       />
     </div>
   )

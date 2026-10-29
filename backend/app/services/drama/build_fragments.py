@@ -43,11 +43,11 @@ EMPTY_CAST = {"无", "无出场", "无人物", "-", "—", "无。", "không", "
 
 FRAGMENT_DURATION_MIN = 3
 # Một dòng/khối đơn @duration giới hạn trên (đối thoại, ống kính trống, v.v.; xem FRAGMENT_TOTAL_MAX để biết giới hạn trên cứng của toàn bộ ống kính)
-FRAGMENT_DURATION_MAX = 15
+FRAGMENT_DURATION_MAX = 10
 # Giới hạn trên mềm của một gương đơn: cố gắng lấp đầy nó trước khi tháo dỡ để giảm số lượng gương (căn chỉnh với giới hạn trên cứng)
-FRAGMENT_SOFT_MAX = 15
-# Giới hạn trên cứng đối với tổng thời lượng của một câu chuyện (nhịp chơi ngắn; Seedance vẫn hỗ trợ lâu hơn, nhưng được cố tình thắt chặt ở đây)
-FRAGMENT_TOTAL_MAX = 15
+FRAGMENT_SOFT_MAX = 10
+# Giới hạn trên cứng đối với tổng thời lượng của một câu chuyện (Google Veo 3.1 tạo video tối đa 10s)
+FRAGMENT_TOTAL_MAX = 10
 # Số lượng bảng phân cảnh/ngân sách thời lượng cho toàn bộ tập (mỗi phân đoạn 1-2 shot, toàn tập từ 2-6 shot)
 EPISODE_FRAGMENT_MAX = int(os.getenv("EPISODE_FRAGMENT_MAX", "6"))
 EPISODE_DURATION_BUDGET_SEC = int(os.getenv("EPISODE_DURATION_BUDGET_SEC", "90"))

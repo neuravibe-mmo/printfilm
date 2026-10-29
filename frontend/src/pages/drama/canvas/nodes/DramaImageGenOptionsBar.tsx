@@ -87,9 +87,10 @@ export function DramaImageGenOptionsBar({
       <div className="fc-gen-opts-triggers">
         <button
           type="button"
-          className={`fc-gen-opt-btn${open === 'style' || value.image_style_id ? ' active' : ''}`}
+          className={`fc-gen-opt-btn fc-gen-opt-btn--style${open === 'style' || value.image_style_id ? ' active' : ''}`}
           disabled={disabled}
           onClick={() => setOpen((c) => (c === 'style' ? null : 'style'))}
+          title={styleLabel}
         >
           <Smile size={14} strokeWidth={1.8} />
           <span className="fc-gen-opt-label">{styleLabel}</span>
@@ -97,9 +98,10 @@ export function DramaImageGenOptionsBar({
         </button>
         <button
           type="button"
-          className={`fc-gen-opt-btn${open === 'model' ? ' active' : ''}`}
+          className={`fc-gen-opt-btn fc-gen-opt-btn--model${open === 'model' ? ' active' : ''}`}
           disabled={disabled}
           onClick={() => setOpen((c) => (c === 'model' ? null : 'model'))}
+          title={modelLabel}
         >
           <BarChart3 size={14} strokeWidth={1.8} />
           <span className="fc-gen-opt-label">{modelLabel}</span>
@@ -107,9 +109,10 @@ export function DramaImageGenOptionsBar({
         </button>
         <button
           type="button"
-          className={`fc-gen-opt-btn${open === 'output' ? ' active' : ''}`}
+          className={`fc-gen-opt-btn fc-gen-opt-btn--output${open === 'output' ? ' active' : ''}`}
           disabled={disabled}
           onClick={() => setOpen((c) => (c === 'output' ? null : 'output'))}
+          title={outputLabel}
         >
           <RectangleVertical size={14} strokeWidth={1.8} />
           <span className="fc-gen-opt-label">{outputLabel}</span>

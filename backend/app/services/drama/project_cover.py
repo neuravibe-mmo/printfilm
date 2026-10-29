@@ -23,7 +23,11 @@ def resolve_drama_project_cover(project: DramaProject) -> tuple[str | None, bool
             media = (fragment.cover or "").strip() or (fragment.video or "").strip()
             if media:
                 return media, False
-            if (fragment.content or "").strip():
+            # Chỉ coi là cover_pending nếu phân cảnh thực sự đang trong tiến trình tạo video/ảnh
+            frag_params = fragment.params if isinstance(fragment.params, dict) else {}
+            gen_data = frag_params.get("generation")
+            gen_status = gen_data.get("status") if isinstance(gen_data, dict) else gen_data
+            if gen_status in {"generating", "running", "queued"}:
                 cover_pending = True
 
     for asset in sorted(project.assets or [], key=lambda a: a.id):

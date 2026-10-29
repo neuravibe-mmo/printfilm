@@ -113,6 +113,83 @@ export function sumFragmentContentDuration(content: string): number {
   return total
 }
 
+// Phân bổ lại danh sách thời lượng cũ theo tổng thời lượng mới (targetTotal)
+export function distributeDurations(oldDurations: number[], targetTotal: number): number[] {
+  const k = oldDurations.length
+  if (k === 0) return []
+  if (k === 1) return [Math.max(1, targetTotal)]
+
+  const minPerSeg = targetTotal >= 3 * k ? 3 : 1
+  const oldSum = oldDurations.reduce((a, b) => a + b, 0) || 1
+
+  let allocated = oldDurations.map((d) => Math.max(minPerSeg, Math.round((d / oldSum) * targetTotal)))
+  let currentSum = allocated.reduce((a, b) => a + b, 0)
+
+  let guard = 0
+  while (currentSum < targetTotal && guard < 50) {
+    let bestIdx = 0
+    let maxRatio = -Infinity
+    for (let i = 0; i < k; i++) {
+      const targetRatio = (oldDurations[i] / oldSum) * targetTotal
+      const diff = targetRatio - allocated[i]
+      if (diff > maxRatio) {
+        maxRatio = diff
+        bestIdx = i
+      }
+    }
+    allocated[bestIdx] += 1
+    currentSum += 1
+    guard++
+  }
+
+  while (currentSum > targetTotal && guard < 100) {
+    let bestIdx = -1
+    let maxVal = -1
+    for (let i = 0; i < k; i++) {
+      if (allocated[i] > minPerSeg && allocated[i] > maxVal) {
+        maxVal = allocated[i]
+        bestIdx = i
+      }
+    }
+    if (bestIdx === -1) {
+      for (let i = 0; i < k; i++) {
+        if (allocated[i] > 1 && allocated[i] > maxVal) {
+          maxVal = allocated[i]
+          bestIdx = i
+        }
+      }
+    }
+    if (bestIdx === -1) break
+    allocated[bestIdx] -= 1
+    currentSum -= 1
+    guard++
+  }
+
+  return allocated
+}
+
+// Cập nhật/đồng bộ các thẻ @duration trong content theo targetTotal
+export function syncContentDurations(content: string, targetTotal: number): string {
+  if (!content) return `@duration:${targetTotal}\n`
+  const re = /@duration:(\d+)/g
+  const oldDurations: number[] = []
+  let match: RegExpExecArray | null
+  while ((match = re.exec(content)) !== null) {
+    oldDurations.push(Number(match[1]))
+  }
+
+  if (oldDurations.length === 0) {
+    return `@duration:${targetTotal}\n${content}`
+  }
+
+  const newDurations = distributeDurations(oldDurations, targetTotal)
+  let idx = 0
+  return content.replace(/@duration:(\d+)/g, () => {
+    const val = newDurations[idx++] ?? targetTotal
+    return `@duration:${val}`
+  })
+}
+
 // Phân tích trạng thái tạo bảng phân cảnh (params. Generation được ưu tiên hơn các video hiện có và hỗ trợ tái tạo)
 export function readFragmentGenerationStatus(
   frag: DramaFragment,
@@ -212,9 +289,9 @@ export function resolveFragmentDurationSec(
   durationSec: number | null | undefined,
 ): number {
   const fromTags = sumFragmentContentDuration(content)
-  if (fromTags > 0) return Math.min(15, Math.max(4, fromTags))
+  if (fromTags > 0) return Math.min(30, Math.max(1, fromTags))
   const fallback = durationSec && durationSec > 0 ? durationSec : 8
-  return Math.min(15, Math.max(4, fallback))
+  return Math.min(30, Math.max(1, fallback))
 }
 
 // Định dạng thẻ phân đoạn

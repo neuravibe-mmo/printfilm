@@ -1,8 +1,7 @@
 /** Bên phải phần chỉnh sửa tập: xem trước video phân đoạn + lối vào để mở canvas bảng phân cảnh toàn màn hình */
-import { useState } from 'react'
-import { Download, Loader2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Download, Loader2, Upload } from 'lucide-react'
 import type { DramaFragment } from '../../api/drama'
-import { DramaSubtitleBoard } from '../../components/drama/DramaSubtitleBoard'
 import { DramaFragmentSegmentedVideoPlayer } from '../../components/drama/DramaFragmentSegmentedVideoPlayer'
 import { triggerBlobDownload } from '../../lib/clientDownload'
 import {
@@ -22,7 +21,7 @@ type Props = {
   aspectRatio: string
   episodeId?: number
   episodeName?: string
-  subtitleMode: DramaSubtitleMode
+  subtitleMode?: DramaSubtitleMode
   onOpenStoryboard: () => void
   /** Ghi đè src video nhân bản hiện tại khi xem trước các phiên bản lịch sử */
   previewVideoUrl?: string | null
@@ -51,7 +50,6 @@ export function EpisodeEditSidePane({
   aspectRatio,
   episodeId,
   episodeName,
-  subtitleMode,
   onOpenStoryboard,
   previewVideoUrl = null,
   previewPosterUrl = null,
@@ -62,6 +60,7 @@ export function EpisodeEditSidePane({
   onUploadVideo,
 }: Props) {
   const { t } = useI18n()
+  const uploadVideoInputRef = useRef<HTMLInputElement>(null)
   const resolvedEpisodeName = episodeName || t('drama.episodeEdit.thisEpisode')
   const hasSelection = playingFragmentId !== null
   /*
@@ -74,6 +73,7 @@ export function EpisodeEditSidePane({
   const [composeError, setComposeError] = useState('')
   const composeClips = listEpisodeComposeClips(fragments)
   const missingCount = fragments.length - composeClips.length
+  const hasAnyVideo = composeClips.length > 0 || Boolean(previewVideoUrl)
 
   // Tính năng ghép nối trong trình duyệt đã tạo ra cảnh quay và tải nó thành phim
   async function handleComposeDownload() {
@@ -106,7 +106,14 @@ export function EpisodeEditSidePane({
     <aside className="drama-ep-preview">
       <div className="drama-ep-side-header">
         <div className="drama-ep-side-tabs" role="tablist" aria-label={t('drama.episodeEdit.rightPanel')}>
-          <button type="button" role="tab" aria-selected className="active">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={hasAnyVideo}
+            disabled={!hasAnyVideo}
+            className={hasAnyVideo ? 'active' : 'is-disabled'}
+            title={!hasAnyVideo ? 'Chưa có video để xem trước' : undefined}
+          >
             {t('common.preview')}
           </button>
           <button type="button" role="tab" onClick={onOpenStoryboard}>
@@ -167,17 +174,75 @@ export function EpisodeEditSidePane({
               videoUploading={videoUploading}
               onUploadVideo={onUploadVideo}
             />
-            {!fragments.some((f) => f.video) && (
-              <button type="button" className="drama-ep-open-canvas" onClick={onOpenStoryboard}>
-                {t('drama.episodeEdit.openCanvas')}
+
+            <input
+              ref={uploadVideoInputRef}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,video/x-matroska"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file && onUploadVideo) {
+                  onUploadVideo(file)
+                }
+                if (uploadVideoInputRef.current) {
+                  uploadVideoInputRef.current.value = ''
+                }
+              }}
+            />
+
+            <div
+              className="drama-ep-preview-actions"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                marginTop: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <button
+                type="button"
+                className="drama-ep-preview-upload-btn"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '7px 16px',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  color: '#2563eb',
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: 999,
+                  cursor: videoUploading || !onUploadVideo ? 'default' : 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                disabled={videoUploading || !onUploadVideo}
+                onClick={() => uploadVideoInputRef.current?.click()}
+                title="Tải video lên từ máy tính cho phân cảnh này"
+              >
+                {videoUploading ? (
+                  <Loader2 size={14} className="pf-spin" />
+                ) : (
+                  <Upload size={14} />
+                )}
+                <span>{videoUploading ? 'Đang tải video…' : 'Tải video lên'}</span>
               </button>
-            )}
+
+              {!fragments.some((f) => f.video) && (
+                <button
+                  type="button"
+                  className="drama-ep-open-canvas"
+                  onClick={onOpenStoryboard}
+                  style={{ marginTop: 0 }}
+                >
+                  {t('drama.episodeEdit.openCanvas')}
+                </button>
+              )}
+            </div>
           </div>
-          <DramaSubtitleBoard
-            fragments={fragments}
-            episodeName={resolvedEpisodeName}
-            subtitleMode={subtitleMode}
-          />
         </>
       )}
     </aside>

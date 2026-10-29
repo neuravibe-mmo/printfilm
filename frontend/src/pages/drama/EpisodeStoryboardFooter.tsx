@@ -7,6 +7,7 @@ import {
   formatFragLabel,
   fragmentQueueBadgeLabel,
   readFragmentGenerationStatus,
+  resolveFragmentDurationSec,
 } from './dramaEpisodeEditUtils'
 
 interface EpisodeStoryboardFooterProps {
@@ -119,7 +120,7 @@ export const EpisodeStoryboardFooter: React.FC<EpisodeStoryboardFooterProps> = R
                     )}
                     {badge ? <span className="drama-ep-clip-badge">{badge}</span> : null}
                     <em>
-                      {formatFragLabel(index, frag.duration_sec, t)}
+                      {formatFragLabel(index, resolveFragmentDurationSec(frag.content, frag.duration_sec), t)}
                       <DramaFragmentClipSpec
                         fragmentParams={fragParams}
                         episodeParams={episodeParams}

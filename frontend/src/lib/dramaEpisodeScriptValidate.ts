@@ -157,6 +157,8 @@ export function validateDramaFragmentScript(content: string): DramaScriptIssue[]
   const issues: DramaScriptIssue[] = []
   const durations = extractDurations(content || '')
   const total = sumDuration(content || '')
+  const isVi = getActiveLocale() === 'vi'
+  const isEn = getActiveLocale() === 'en'
 
   const badSegment = durations.find(
     (value) =>
@@ -167,24 +169,40 @@ export function validateDramaFragmentScript(content: string): DramaScriptIssue[]
   if (badSegment != null) {
     issues.push({
       level: 'error',
-      message: `单个 @duration 需在 ${DRAMA_SEGMENT_DURATION_MIN}–${DRAMA_SEGMENT_DURATION_HARD_MAX} 秒之间`,
+      message: isVi
+        ? `Mỗi đoạn @duration cần từ ${DRAMA_SEGMENT_DURATION_MIN}–${DRAMA_SEGMENT_DURATION_HARD_MAX} giây`
+        : isEn
+        ? `Single @duration must be between ${DRAMA_SEGMENT_DURATION_MIN}–${DRAMA_SEGMENT_DURATION_HARD_MAX} seconds`
+        : `单个 @duration 需在 ${DRAMA_SEGMENT_DURATION_MIN}–${DRAMA_SEGMENT_DURATION_HARD_MAX} 秒之间`,
     })
   } else if (durations.some((value) => value > DRAMA_SEGMENT_DURATION_MAX)) {
     issues.push({
       level: 'warn',
-      message: `部分 @duration 超过新分镜建议 ${DRAMA_SEGMENT_DURATION_MAX}s，旧稿可继续生成`,
+      message: isVi
+        ? `Một số đoạn @duration vượt quá khuyến nghị ${DRAMA_SEGMENT_DURATION_MAX}s, bản cũ vẫn có thể tiếp tục tạo`
+        : isEn
+        ? `Some @duration exceed recommended ${DRAMA_SEGMENT_DURATION_MAX}s, legacy scripts can still be generated`
+        : `部分 @duration 超过新分镜建议 ${DRAMA_SEGMENT_DURATION_MAX}s，旧稿可继续生成`,
     })
   }
 
   if (total > DRAMA_SHOT_DURATION_HARD_MAX) {
     issues.push({
       level: 'error',
-      message: `本镜 @duration 合计 ${total}s，超过 Seedance 上限 ${DRAMA_SHOT_DURATION_HARD_MAX}s`,
+      message: isVi
+        ? `Tổng thời lượng @duration của phân cảnh này là ${total}s, vượt quá giới hạn Seedance tối đa ${DRAMA_SHOT_DURATION_HARD_MAX}s`
+        : isEn
+        ? `Total shot @duration is ${total}s, exceeding Seedance maximum limit of ${DRAMA_SHOT_DURATION_HARD_MAX}s`
+        : `本镜 @duration 合计 ${total}s，超过 Seedance 上限 ${DRAMA_SHOT_DURATION_HARD_MAX}s`,
     })
   } else if (total > FRAGMENT_CONTENT_DURATION_MAX) {
     issues.push({
       level: 'warn',
-      message: `本镜 @duration 合计 ${total}s，超过新分镜建议 ${FRAGMENT_CONTENT_DURATION_MAX}s（旧稿可继续生成）`,
+      message: isVi
+        ? `Tổng thời lượng @duration của phân cảnh này là ${total}s, vượt khuyến nghị ${FRAGMENT_CONTENT_DURATION_MAX}s (vẫn có thể tiếp tục tạo)`
+        : isEn
+        ? `Total shot @duration is ${total}s, exceeding recommended ${FRAGMENT_CONTENT_DURATION_MAX}s (can still be generated)`
+        : `本镜 @duration 合计 ${total}s，超过新分镜建议 ${FRAGMENT_CONTENT_DURATION_MAX}s（旧稿可继续生成）`,
     })
   }
 
@@ -197,8 +215,11 @@ export function validateDramaFragmentScript(content: string): DramaScriptIssue[]
     if (VOICE_CUE_PREFIX_RE.test(line) && isVisualDescriptionBody(line)) {
       issues.push({
         level: 'error',
-        message:
-          '检测到「空镜/景别」被标成对白或旁白（会口播并烧字幕）。请改为「【画面·无配音仅环境音】」或「【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】」纯画面行',
+        message: isVi
+          ? 'Phát hiện «Cảnh trống/Cỡ cảnh» bị gắn nhầm thành lời thoại hoặc lời dẫn (sẽ bị đọc và tạo phụ đề). Vui lòng đổi thành dòng thuần hình ảnh «【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】»'
+          : isEn
+          ? 'Detected empty shot/framing marked as dialogue or voiceover (which would be spoken and subtitled). Please change to visual-only cue "[Image · No voiceover, ambient sound only]"'
+          : '检测到「空镜/景别」被标成对白或旁白（会口播并烧字幕）。请改为「【画面·无配音仅环境音】」或「【Hình ảnh · Không lồng tiếng, chỉ có âm thanh môi trường】」纯画面行',
       })
       break
     }
@@ -288,12 +309,20 @@ export function formatDramaGateMessage(
   warnings: DramaScriptIssue[],
   baseMessage: string,
 ): string {
+  const isVi = getActiveLocale() === 'vi'
+  const isEn = getActiveLocale() === 'en'
   const parts = [baseMessage]
   if (blocking.length > 0) {
-    parts.push('', '【须先修复】', ...blocking.map((i) => `· ${i.message}`))
+    const title = isVi ? '【Cần khắc phục trước】' : isEn ? '【Must fix first】' : '【须先修复】'
+    parts.push('', title, ...blocking.map((i) => `· ${i.message}`))
   }
   if (warnings.length > 0) {
-    parts.push('', '【建议处理，仍可继续】', ...warnings.map((i) => `· ${i.message}`))
+    const title = isVi
+      ? '【Khuyến nghị xử lý, vẫn có thể tiếp tục】'
+      : isEn
+      ? '【Recommended to fix, can still proceed】'
+      : '【建议处理，仍可继续】'
+    parts.push('', title, ...warnings.map((i) => `· ${i.message}`))
   }
   return parts.join('\n')
 }

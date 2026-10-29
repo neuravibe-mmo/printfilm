@@ -104,6 +104,60 @@ async def generate_image(
     }
 
 
+@router.post("/generation/image/preview_prompt")
+async def preview_image_prompt(
+    body: DramaImageGenerateRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    from app.services.drama.generation_prompt import build_generation_prompt
+    from app.services.drama.image_styles import get_image_style_label, resolve_image_style_board_url
+
+    project = await get_owned_drama_project(db, body.project_id, user, with_script=True)
+    asset = None
+    if body.asset_id:
+        asset = await db.get(DramaAsset, body.asset_id)
+        if asset and asset.project_id != project.id:
+            asset = None
+
+    prompt = (body.prompt or "").strip()
+    kind = body.asset_type_kind or (asset.type if asset else "character")
+    style_id = (body.image_style_id or "").strip() or str(
+        (project.params or {}).get("image_style_id") or ""
+    ).strip() or None
+
+    board_url = resolve_image_style_board_url(style_id)
+    full_prompt = build_generation_prompt(
+        prompt, asset_type=kind, style_id=style_id, has_style_board=bool(board_url)
+    )
+
+    reference_images = []
+    if board_url:
+        style_label = get_image_style_label(style_id) if style_id else "Phong cách"
+        reference_images.append({
+            "type": "style_board",
+            "label": f"Ảnh tham chiếu phong cách: {style_label} ({style_id})",
+            "url": board_url,
+        })
+    if asset and (asset.url or asset.cover):
+        reference_images.append({
+            "type": "asset_image",
+            "label": f"Ảnh tài sản hiện tại ({asset.name or 'Asset'})",
+            "url": asset.url or asset.cover,
+        })
+
+    target_size = "1024x1792" if (body.aspect_ratio or "9:16").strip() == "9:16" else "1792x1024"
+
+    return {
+        "ok": True,
+        "full_prompt": full_prompt,
+        "style_id": style_id,
+        "model_id": body.model_id or "chatgpt2api",
+        "target_size": target_size,
+        "reference_images": reference_images,
+    }
+
+
 @router.post("/generation/video")
 async def generate_video(
     body: DramaVideoGenerateRequest,

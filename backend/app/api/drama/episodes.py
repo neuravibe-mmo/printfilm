@@ -68,7 +68,10 @@ from app.services.ffmpeg_compose import (
 )
 from app.services import storage as storage_svc
 from app.services.drama.build_fragments import prepare_fragment_content
-from app.services.drama.fragment_content_duration import resolve_seedance_duration_from_content
+from app.services.drama.fragment_content_duration import (
+    resolve_seedance_duration_from_content,
+    sum_fragment_content_duration_seconds,
+)
 from app.services.drama.billing_util import record_seed_assets_llm_usage
 from app.services.drama.jobs import (
     cancel_all_episode_video_jobs,
@@ -102,6 +105,8 @@ def _fragment_out(frag: DramaEpisodeFragment) -> DramaFragmentOut:
         duration_sec=int(frag.duration_sec or 0) or None,
         is_opening=int(frag.sort_order or 0) == 0,
     )
+    actual_sec = sum_fragment_content_duration_seconds(content)
+    eff_duration = actual_sec if actual_sec > 0 else (int(frag.duration_sec or 0) or None)
     return DramaFragmentOut(
         id=frag.id,
         episode_id=frag.episode_id,
@@ -109,7 +114,7 @@ def _fragment_out(frag: DramaEpisodeFragment) -> DramaFragmentOut:
         content=content,
         cover=frag.cover or "",
         video=frag.video or "",
-        duration_sec=frag.duration_sec,
+        duration_sec=eff_duration,
         params=frag.params,
         asset_ids=asset_ids,
     )
@@ -542,7 +547,8 @@ async def save_fragments(
         )
         frag.cover = (item.cover or "")[:1024]
         frag.video = (item.video or "")[:1024]
-        frag.duration_sec = item.duration_sec
+        actual_sec = sum_fragment_content_duration_seconds(frag.content)
+        frag.duration_sec = actual_sec if actual_sec > 0 else (int(item.duration_sec or 0) or None)
         frag.params = item.params
         keep_ids.add(int(frag.id))
 

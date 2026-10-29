@@ -85,17 +85,84 @@ def replace_asset_tokens_with_slugs(text: str, asset_info_map: dict[int, tuple[s
     return re.sub(r"@asset:(\d+)(?:_[a-zA-Z0-9_]+)?", _repl, text)
 
 
-def clean_raw_script(text: str) -> str:
-    """Loại bỏ các thẻ kỹ thuật, thời lượng và chú thích đạo diễn thừa."""
+# Danh sách tiền tố các dòng kỹ thuật / sản xuất cần loại bỏ khỏi prompt video
+_METADATA_LINE_PREFIXES = (
+    "【Nhạc nền",
+    "【BGM",
+    "【Phụ đề",
+    "【字幕",
+    "【Subtitle",
+    "【Đầu phim",
+    "【片头",
+    "【Intro",
+    "【Giới thiệu",
+    "【Giới thiệu bối cảnh",
+    "【Giới thiệu nhân vật",
+    "【Background",
+    "【背景介绍",
+    "【人物介绍",
+    "【Ràng buộc",
+    "【强制约束",
+    "【Constraints",
+)
+
+_VI_VOICE_PREFIX = "【Thoại · Lồng tiếng tiếng Việt】"
+
+
+def clean_raw_script(text: str, is_vi: bool = True) -> str:
+    """Loại bỏ các thẻ kỹ thuật, thời lượng và chú thích đạo diễn thừa.
+    Bảo tồn thẻ 【Thoại · Lồng tiếng tiếng Việt】 để Google Veo phát âm tiếng Việt chuẩn xác.
+    """
     if not text:
         return ""
-    # Xóa các khối kỹ thuật như 【Hình ảnh...】, 【BGM...】
-    cleaned = re.sub(r"【[^】]*】", "", text)
-    # Xóa các chỉ thị thời lượng như @duration:3
-    cleaned = re.sub(r"@duration:\d+", "", cleaned)
-    # Xóa các dòng trống thừa
-    lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
-    return "\n".join(lines)
+
+    out_lines: list[str] = []
+    for raw in text.replace("\r\n", "\n").split("\n"):
+        line = raw.strip()
+        if not line:
+            continue
+
+        # Xóa các chỉ thị thời lượng như @duration:3 hoặc 📹 4s
+        line = re.sub(r"@duration:\d+", "", line).strip()
+        line = re.sub(r"^[📹🎬🎥]\s*\d+\s*s$", "", line).strip()
+        if not line:
+            continue
+
+        # Bỏ các dòng siêu dữ liệu âm nhạc, phụ đề, giới thiệu đầu phim
+        if any(line.startswith(prefix) for prefix in _METADATA_LINE_PREFIXES):
+            continue
+
+        # Bỏ thẻ hình ảnh/cảnh trống nhưng giữ lại nội dung mô tả
+        line = re.sub(r"^【(?:Hình ảnh|画面|空镜|Cảnh trống|Visual|Shot)[^】]*】\s*", "", line, flags=re.IGNORECASE).strip()
+        if not line:
+            continue
+
+        # Xử lý dòng thoại
+        if is_vi:
+            # Nếu đã có tiền tố lồng tiếng tiếng Việt -> chuẩn hoá khoảng trắng
+            if re.match(r"^【Thoại[·\s]*Lồng tiếng tiếng Việt】", line, flags=re.IGNORECASE):
+                body = re.sub(r"^【Thoại[·\s]*Lồng tiếng tiếng Việt】\s*", "", line, flags=re.IGNORECASE).strip()
+                line = f"{_VI_VOICE_PREFIX} {body}"
+            # Nếu là thẻ thoại/lời dẫn thông thường khác -> chuyển thành tiền tố lồng tiếng tiếng Việt
+            elif re.match(r"^【(?:Thoại|Đối thoại|对白|Dialogue|Lời dẫn|旁白|Độc thoại nội tâm|内心独白)[^】]*】", line, flags=re.IGNORECASE):
+                body = re.sub(r"^【(?:Thoại|Đối thoại|对白|Dialogue|Lời dẫn|旁白|Độc thoại nội tâm|内心独白)[^】]*】\s*", "", line, flags=re.IGNORECASE).strip()
+                line = f"{_VI_VOICE_PREFIX} {body}"
+            # Nếu là dòng thoại nhân vật hoặc lời dẫn chưa gắn thẻ (vd: "Lời dẫn (VO): ...", "@asset:14: ...", "An: ...")
+            elif (
+                re.match(r"^(@asset:\S+|(?:Lời dẫn|Người dẫn|Thuyết minh)(?:\s*\([^)]*\))?|[^\s:：]{1,24}(?:\s*\([^)]*\))?)\s*[:：]\s*.+", line, flags=re.IGNORECASE)
+                and not line.startswith("【")
+            ):
+                line = f"{_VI_VOICE_PREFIX} {line}"
+        else:
+            # Non-Vietnamese: bỏ tiền tố thoại
+            line = re.sub(r"^【(?:Thoại|Đối thoại|对白|Dialogue)[^】]*】\s*", "", line, flags=re.IGNORECASE).strip()
+
+        # Xóa các thẻ 【...】 phụ khác nhưng bảo tồn 【Thoại · Lồng tiếng tiếng Việt】
+        line = re.sub(r"【(?!Thoại · Lồng tiếng tiếng Việt)[^】]*】", "", line).strip()
+        if line:
+            out_lines.append(line)
+
+    return "\n".join(out_lines)
 
 
 async def optimize_video_prompt(

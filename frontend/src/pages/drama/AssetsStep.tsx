@@ -1,9 +1,8 @@
 /** Các bước của thư viện nội dung: Tự động khởi tạo khi không có nội dung lần đầu tiên, Tab phân loại + hàng đợi tạo hình ảnh + liên kết tông màu ký tự */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n'
-import { Sparkles, ChevronLeft, Loader2, Mic, UploadCloud, Check, Copy, CheckCheck, AlertCircle, Download } from 'lucide-react'
-import { getAssetTypeSlug, toVietnameseSlug } from './EpisodeEditCurlModal'
-import { dramaApi, resolveDramaAssetPreviewUrl, getDramaApiBase, type DramaAsset, type DramaAssetUsage, type DramaProject } from '../../api/drama'
+import { Sparkles, ChevronLeft, Loader2, Mic, UploadCloud } from 'lucide-react'
+import { dramaApi, type DramaAsset, type DramaAssetUsage, type DramaProject } from '../../api/drama'
 import { api, type BillingPreflight } from '../../api'
 import { useDramaImageGenQueue } from '../../hooks/useDramaImageGenQueue'
 import { enqueueDramaImageGen, resumeDramaImageGensFromAssets } from '../../lib/dramaImageGenQueue'
@@ -13,19 +12,13 @@ import {
 } from '../../lib/dramaGenerationOptions'
 import { getImageStyleId } from './dramaWorkspaceUtils'
 import { DramaImageGenOptionsBar } from './canvas/nodes/DramaImageGenOptionsBar'
-import {
-  CharacterVoiceBindModal,
-  formatVoiceLabel,
-  readAssetVoiceBinding,
-  readVoicePrompt,
-} from './CharacterVoiceBindModal'
-import { CharacterVoicePreviewButton } from '../../components/drama/CharacterVoicePreviewButton'
-import { generateAndBindCharacterVoice } from '../../lib/characterVoiceGenerate'
-import { NarratorVoiceBindModal } from './NarratorVoiceBindModal'
-import { DramaAssetDetailModal } from './DramaAssetDetailModal'
-import { DramaImageLightbox } from './DramaImageLightbox'
-import { GlobalAssetPickerModal, importGlobalAssetToProject } from './GlobalAssetPickerModal'
+import { readAssetVoiceBinding, readVoicePrompt } from './CharacterVoiceBindModal'
+import { importGlobalAssetToProject } from './GlobalAssetPickerModal'
 import { DramaVoiceAssetCard } from './DramaVoiceAssetCard'
+import { DramaVisualAssetCard } from './DramaVisualAssetCard'
+import { DramaAssetDownloadButton } from './DramaAssetDownloadButton'
+import { DramaAssetsModals } from './DramaAssetsModals'
+import type { DramaAssetCurlTab } from './DramaAssetDetailModal'
 import Pagination from '../../components/ui/Pagination'
 import { dialog } from '../../lib/dialog'
 import { handleBillingError, isBillingError } from '../../lib/billingError'
@@ -39,14 +32,16 @@ import {
   dramaAssetImageGenButtonLabel,
   dramaAssetNeedsImageGeneration,
 } from '../../lib/dramaAssetImage'
+import { useDramaAssetFlowUpload } from './hooks/useDramaAssetFlowUpload'
+import { useDramaAssetVoiceActions } from './hooks/useDramaAssetVoiceActions'
+import './assetsStep.css'
 
 type AssetTabKey = 'character' | 'scene' | 'prop' | 'voice'
-
 
 const PAGE_SIZE_DEFAULT = 12
 const PAGE_SIZE_OPTIONS = [12, 24, 36] as const
 
-// Kể lại phần chia sẻ trên StrictMode để tránh việc gieo hạt đồng thời các thư viện trống
+// Tránh việc gieo hạt đồng thời các thư viện trống trên StrictMode
 const seedingProjectIds = new Set<number>()
 
 type AssetsStepProps = {
@@ -55,18 +50,17 @@ type AssetsStepProps = {
   onBack?: () => void
 }
 
-// Chuẩn hóa giao diện trả về dưới dạng mảng nội dung để tránh sự cố không xác định.filter
+// Chuẩn hóa giao diện trả về dưới dạng mảng nội dung để tránh sự cố undefined
 function normalizeAssetList(value: unknown): DramaAsset[] {
   const list = filterDramaLibraryAssets(Array.isArray(value) ? (value as DramaAsset[]) : [])
   return [...list].sort((a, b) => a.id - b.id)
 }
 
-// Xác định xem tài sản chưa được xuất bản hay không (không có ảnh bìa/ảnh chính hợp lệ, việc tải lên hoặc tạo AI sẽ được coi là đã xuất bản)
+// Xác định xem tài sản chưa được xuất bản hay không
 function needsImageGeneration(asset: DramaAsset): boolean {
   return dramaAssetNeedsImageGeneration(asset)
 }
 
-// Hiển thị các bước thư viện nội dung
 export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
   const { t, locale } = useI18n()
   const ASSET_TABS: Array<{ key: AssetTabKey; label: string }> = [
@@ -76,20 +70,8 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     ...(DRAMA_VOICE_BINDING_ENABLED ? [{ key: 'voice' as const, label: t('drama.assetsStep.voice') }] : []),
   ]
 
-  /*
-   * tài sản tài sản dự án
-   * tab danh mục hiện tại
-   * đang tải lần tải đầu tiên
-   * batchBusy Một cú nhấp chuột để vào hàng đợi
-   * genOptions Tùy chọn tạo hình ảnh
-   * voiceAsset Vai trò mở cửa sổ bật lên bằng giọng nói
-   * chi tiếtAsset mở nội dung của hộp thao tác chi tiết
-   * xem trước phóng to hình ảnh hộp đèn
-   * batchVoiceBusy đang tạo âm thanh theo đợt
-   * trang số trang hiện tại
-   * trangKích thước Số mục trên mỗi trang
-   * genQueue hàng đợi tạo biểu đồ toàn cầu
-   */
+  // Trạng thái dự án và tài sản
+  const [project, setProject] = useState<DramaProject | null>(null)
   const [assets, setAssets] = useState<DramaAsset[]>([])
   const [tab, setTab] = useState<AssetTabKey>('character')
   const [loading, setLoading] = useState(true)
@@ -99,347 +81,62 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
   const [genOptions, setGenOptions] = useState<ImageGenerationOptions>(() =>
     defaultOptionsForAssetKind('character'),
   )
-  const [voiceAsset, setVoiceAsset] = useState<DramaAsset | null>(null)
+
+  // Modals & UI overlays
   const [detailAsset, setDetailAsset] = useState<DramaAsset | null>(null)
+  const [detailCurlTab, setDetailCurlTab] = useState<DramaAssetCurlTab>('image')
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
-  const [voiceSynthBusyId, setVoiceSynthBusyId] = useState<number | null>(null)
-  const [voicePromptDrafts, setVoicePromptDrafts] = useState<Record<number, string>>({})
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [project, setProject] = useState<DramaProject | null>(null)
-  const [characterVoiceBusyIds, setCharacterVoiceBusyIds] = useState<Set<number>>(() => new Set())
-  const [batchVoiceBusy, setBatchVoiceBusy] = useState(false)
   const [narratorVoiceOpen, setNarratorVoiceOpen] = useState(false)
+
+  // Global Image Gen Queue
   const genQueue = useDramaImageGenQueue()
 
-  // Google Flow upload states
-  const [flowUploading, setFlowUploading] = useState(false)
-  const [flowUploadProgress, setFlowUploadProgress] = useState<{ current: number; total: number; assetName: string } | null>(null)
-  const [flowUploadingAssetId, setFlowUploadingAssetId] = useState<number | null>(null)
-  const [flowUploadErrors, setFlowUploadErrors] = useState<Record<number, string>>({})
-  const [copiedAssetId, setCopiedAssetId] = useState<number | null>(null)
-  const flowCancelRef = useRef(false)
+  // Google Flow upload hook
+  const {
+    uploadableImageAssets,
+    uploadedFlowCount,
+    flowUploading,
+    flowUploadProgress,
+    flowUploadingAssetId,
+    flowUploadErrors,
+    copiedAssetId,
+    handleCopyMediaId,
+    handleUploadSingleAssetToFlow,
+    handleBatchUploadFlowAssets,
+    handleCancelFlowUpload,
+  } = useDramaAssetFlowUpload({
+    projectId,
+    project,
+    assets,
+    setAssets,
+    locale,
+    onError,
+  })
 
-  // Danh sách các tài sản có hình ảnh để upload
-  const uploadableImageAssets = useMemo(() => {
-    return assets.filter((a) => (a.cover || a.url) && a.type !== 'voice')
-  }, [assets])
+  // Voice actions hook
+  const {
+    voiceAsset,
+    setVoiceAsset,
+    voiceSynthBusyId,
+    voicePromptDrafts,
+    setVoicePromptDrafts,
+    characterVoiceBusyIds,
+    batchVoiceBusy,
+    handleVoiceBound,
+    handleGenerateCharacterVoice,
+    handleAutoGenerateVoices,
+    persistVoicePrompt,
+    handleSynthVoice,
+    handleDeleteVoice,
+  } = useDramaAssetVoiceActions({
+    projectId,
+    setAssets,
+    onError,
+    t,
+  })
 
-  // Số lượng tài sản đã có mã Flow Media ID
-  const uploadedFlowCount = useMemo(() => {
-    return uploadableImageAssets.filter((a) => Boolean(a.flow_media_id || (a.params as any)?.flow_media_id)).length
-  }, [uploadableImageAssets])
-
-  async function handleCopyMediaId(e: React.MouseEvent, assetId: number, mediaId: string) {
-    e.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(mediaId)
-      setCopiedAssetId(assetId)
-      setTimeout(() => setCopiedAssetId((cur) => (cur === assetId ? null : cur)), 2000)
-    } catch {
-      // fallback
-    }
-  }
-
-  async function handleUploadSingleAssetToFlow(asset: DramaAsset) {
-    if (!asset.cover && !asset.url) {
-      onError('Tài sản chưa có hình ảnh để upload')
-      return
-    }
-
-    const hasExistingMedia = Boolean(asset.flow_media_id || (asset.params as any)?.flow_media_id)
-    if (hasExistingMedia) {
-      const confirmMsg =
-        locale === 'vi'
-          ? `Tài sản "${asset.name || 'này'}" đã có Flow ID. Bạn có chắc chắn muốn upload lại lên Google Flow không?`
-          : locale === 'en'
-            ? `Asset "${asset.name || 'this'}" already has a Flow ID. Are you sure you want to re-upload it to Google Flow?`
-            : `素材「${asset.name || '此素材'}」已有 Flow ID。确定要重新上传到 Google Flow 吗？`
-      const ok = window.confirm(confirmMsg)
-      if (!ok) return
-    }
-
-    setFlowUploadingAssetId(asset.id)
-    setFlowUploadErrors((prev) => {
-      const copy = { ...prev }
-      delete copy[asset.id]
-      return copy
-    })
-    try {
-      const flowPid = project?.flow_project_id || undefined
-      const res = await dramaApi.uploadAssetToFlow(asset.id, { flow_project_id: flowPid })
-      if (res.ok && res.media_id) {
-        setAssets((prev) =>
-          (prev ?? []).map((a) =>
-            a.id === asset.id
-              ? { ...a, flow_media_id: res.media_id, params: { ...(a.params || {}), flow_media_id: res.media_id } }
-              : a,
-          ),
-        )
-      }
-    } catch (err: any) {
-      const msg = err.message || 'Lỗi upload ảnh lên Google Flow'
-      onError(msg)
-      setFlowUploadErrors((prev) => ({ ...prev, [asset.id]: msg }))
-    } finally {
-      setFlowUploadingAssetId(null)
-    }
-  }
-
-  async function handleBatchUploadFlowAssets() {
-    if (uploadableImageAssets.length === 0) {
-      onError('Chưa có tài sản nào có hình ảnh để upload lên Google Flow')
-      return
-    }
-
-    const unuploaded = uploadableImageAssets.filter((a) => !a.flow_media_id && !(a.params as any)?.flow_media_id)
-    let targets = unuploaded
-    if (targets.length === 0) {
-      const ok = window.confirm(
-        `Tất cả ${uploadableImageAssets.length} tài sản đã có mã Flow Media ID. Bạn có muốn upload và cập nhật lại toàn bộ không?`,
-      )
-      if (!ok) return
-      targets = uploadableImageAssets
-    }
-
-    flowCancelRef.current = false
-    setFlowUploading(true)
-
-    for (let i = 0; i < targets.length; i++) {
-      if (flowCancelRef.current) break
-      const asset = targets[i]
-      setFlowUploadProgress({
-        current: i + 1,
-        total: targets.length,
-        assetName: asset.name || `Tài sản #${asset.id}`,
-      })
-      setFlowUploadingAssetId(asset.id)
-
-      try {
-        const flowPid = project?.flow_project_id || undefined
-        const res = await dramaApi.uploadAssetToFlow(asset.id, { flow_project_id: flowPid })
-        if (res.ok && res.media_id) {
-          setAssets((prev) =>
-            (prev ?? []).map((a) =>
-              a.id === asset.id
-                ? { ...a, flow_media_id: res.media_id, params: { ...(a.params || {}), flow_media_id: res.media_id } }
-                : a,
-            ),
-          )
-        }
-      } catch (err: any) {
-        const msg = err.message || 'Lỗi upload'
-        setFlowUploadErrors((prev) => ({ ...prev, [asset.id]: msg }))
-      }
-    }
-
-    setFlowUploading(false)
-    setFlowUploadingAssetId(null)
-    setFlowUploadProgress(null)
-  }
-
-  function handleCancelFlowUpload() {
-    flowCancelRef.current = true
-  }
-
-  // Download assets states
-  const [isDownloading, setIsDownloading] = useState(false)
-  const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number; fileName: string } | null>(null)
-  const downloadCancelRef = useRef(false)
-
-  function getAssetDownloadFileName(asset: DramaAsset, mimeType?: string): string {
-    const typeSlug = getAssetTypeSlug(asset.type)
-    const nameSlug = asset.name ? toVietnameseSlug(asset.name) : `Asset${asset.id}`
-    let ext = 'jpg'
-    if (mimeType) {
-      if (mimeType.includes('png')) ext = 'png'
-      else if (mimeType.includes('webp')) ext = 'webp'
-      else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg'
-    } else {
-      const url = asset.cover || asset.url || ''
-      if (url.toLowerCase().endsWith('.png')) ext = 'png'
-      else if (url.toLowerCase().endsWith('.webp')) ext = 'webp'
-    }
-    return `${asset.id}_${typeSlug}_${nameSlug}.${ext}`
-  }
-
-  async function handleDownloadAssetsToFolder() {
-    if (uploadableImageAssets.length === 0) {
-      await dialog.alert({
-        title: 'Thông báo',
-        message: 'Không có tài sản nào có hình ảnh để tải về.',
-      })
-      return
-    }
-
-    const targets = uploadableImageAssets
-    const hasDirectoryPicker = typeof (window as any).showDirectoryPicker === 'function'
-
-    let dirHandle: any = null
-    if (hasDirectoryPicker) {
-      try {
-        dirHandle = await (window as any).showDirectoryPicker({
-          mode: 'readwrite',
-        })
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
-          // Người dùng bấm Cancel / Hủy trong hộp thoại Finder / Explorer
-          return
-        }
-        console.warn('showDirectoryPicker error, will fallback to ZIP:', err)
-      }
-    }
-
-    // Yêu cầu xác thực quyền ghi ngay khi người dùng vừa chọn thư mục
-    if (dirHandle && typeof dirHandle.queryPermission === 'function') {
-      try {
-        const q = await dirHandle.queryPermission({ mode: 'readwrite' })
-        if (q !== 'granted' && typeof dirHandle.requestPermission === 'function') {
-          const req = await dirHandle.requestPermission({ mode: 'readwrite' })
-          if (req !== 'granted') {
-            await dialog.alert({
-              title: 'Cần cấp quyền ghi',
-              message: 'Trình duyệt cần quyền ghi để lưu ảnh vào thư mục bạn chọn. Vui lòng thử lại và chọn Cho phép (Allow).',
-              tone: 'danger',
-            })
-            return
-          }
-        }
-      } catch (permErr) {
-        console.warn('Permission query/request error:', permErr)
-      }
-    }
-
-    downloadCancelRef.current = false
-    setIsDownloading(true)
-    let successCount = 0
-
-    try {
-      if (dirHandle) {
-        for (let i = 0; i < targets.length; i++) {
-          if (downloadCancelRef.current) break
-          const asset = targets[i]
-          let mediaUrl = resolveDramaAssetPreviewUrl(asset)
-          if (!mediaUrl) continue
-
-          if (mediaUrl.startsWith('/')) {
-            const base = getDramaApiBase() || 'http://localhost:8001'
-            mediaUrl = `${base}${mediaUrl}`
-          }
-
-          try {
-            const resp = await fetch(mediaUrl)
-            if (!resp.ok) {
-              console.warn(`[Download] Không thể tải ảnh asset ${asset.id}: HTTP ${resp.status}`)
-              continue
-            }
-            const blob = await resp.blob()
-            const fileName = getAssetDownloadFileName(asset, blob.type)
-
-            setDownloadProgress({
-              current: i + 1,
-              total: targets.length,
-              fileName,
-            })
-
-            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true })
-            const writable = await fileHandle.createWritable()
-            await writable.write(blob)
-            await writable.close()
-            successCount++
-            console.log(`[Download] Đã lưu file: ${fileName} (${blob.size} bytes)`)
-          } catch (fileErr) {
-            console.error(`[Download] Lỗi khi lưu file cho asset #${asset.id} (${asset.name}):`, fileErr)
-          }
-        }
-
-        if (!downloadCancelRef.current) {
-          if (successCount > 0) {
-            await dialog.alert({
-              title: 'Tải thành công',
-              message: `Đã lưu thành công ${successCount}/${targets.length} file tài sản vào thư mục bạn đã chọn trên máy tính.`,
-              tone: 'success',
-            })
-          } else {
-            // Nếu không lưu được file nào qua dirHandle (do sandbox/bảo mật hệ điều hành), fallback sang xuất file ZIP
-            console.warn('[Download] Không lưu được qua DirectoryHandle, tự động xuất file ZIP...')
-            await handleDownloadAsZipFallback(targets)
-          }
-        }
-      } else {
-        // Fallback: nếu trình duyệt không hỗ trợ showDirectoryPicker hoặc không chọn được thư mục
-        await handleDownloadAsZipFallback(targets)
-      }
-    } catch (err: any) {
-      console.error('[Download error]', err)
-      await dialog.alert({
-        title: 'Lỗi tải ảnh',
-        message: err.message || 'Không thể lưu file vào thư mục đã chọn. Vui lòng thử lại.',
-        tone: 'danger',
-      })
-    } finally {
-      setIsDownloading(false)
-      setDownloadProgress(null)
-    }
-  }
-
-  async function handleDownloadAsZipFallback(targets: DramaAsset[]) {
-    const JSZip = (await import('jszip')).default
-    const zip = new JSZip()
-    let zipSuccessCount = 0
-
-    for (let i = 0; i < targets.length; i++) {
-      if (downloadCancelRef.current) break
-      const asset = targets[i]
-      let mediaUrl = resolveDramaAssetPreviewUrl(asset)
-      if (!mediaUrl) continue
-
-      if (mediaUrl.startsWith('/')) {
-        const base = getDramaApiBase() || 'http://localhost:8001'
-        mediaUrl = `${base}${mediaUrl}`
-      }
-
-      try {
-        const resp = await fetch(mediaUrl)
-        if (!resp.ok) continue
-        const blob = await resp.blob()
-        const fileName = getAssetDownloadFileName(asset, blob.type)
-
-        setDownloadProgress({
-          current: i + 1,
-          total: targets.length,
-          fileName,
-        })
-
-        zip.file(fileName, blob)
-        zipSuccessCount++
-      } catch (fetchErr) {
-        console.error(`[Download ZIP] Lỗi tải ảnh asset ${asset.id}:`, fetchErr)
-      }
-    }
-
-    if (!downloadCancelRef.current && zipSuccessCount > 0) {
-      const content = await zip.generateAsync({ type: 'blob' })
-      const zipUrl = URL.createObjectURL(content)
-      const a = document.createElement('a')
-      a.href = zipUrl
-      a.download = `${project?.title || 'assets'}_images.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(zipUrl)
-
-      await dialog.alert({
-        title: 'Đã xuất file ZIP',
-        message: `Đã nén và tải về ${zipSuccessCount} ảnh tài sản dạng file ZIP.`,
-        tone: 'success',
-      })
-    }
-  }
-
-  function handleCancelDownload() {
-    downloadCancelRef.current = true
-  }
-
+  // Khởi tạo và tải tài sản dự án
   useEffect(() => {
     async function enter() {
       setLoading(true)
@@ -456,7 +153,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
         let list = normalizeAssetList(
           await dramaApi.listAssets(projectId, { libraryOnly: true }),
         )
-        // Chỉ lần đầu tiên (thư viện nội dung trống và có tóm tắt tập lệnh), nó sẽ tự động được trích xuất từ tập lệnh; sau đó, bạn cần nhấp vào "Trích xuất lại tài sản" theo cách thủ công
+        // Chỉ lần đầu tiên (thư viện nội dung trống và có tóm tắt tập lệnh), tự động trích xuất từ kịch bản
         if (list.length === 0 && p?.script?.summary && !seedingProjectIds.has(projectId)) {
           seedingProjectIds.add(projectId)
           try {
@@ -476,8 +173,8 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
           const list = normalizeAssetList(await dramaApi.listAssets(projectId, { libraryOnly: true }))
           setAssets(list)
           resumeDramaImageGensFromAssets(projectId, list, (next) => {
-          setAssets((prev) => (prev ?? []).map((a) => (a.id === next.id ? next : a)))
-        })
+            setAssets((prev) => (prev ?? []).map((a) => (a.id === next.id ? next : a)))
+          })
         } catch {
           /* ignore */
         }
@@ -505,7 +202,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     setPage(1)
   }, [pageSize])
 
-  // Ghi lại bìa mới nhất vào thẻ khi xếp hàng xong
+  // Cập nhật lại ảnh bìa mới nhất sau khi hoàn tất tạo ảnh trong hàng đợi
   useEffect(() => {
     const projectJobs = genQueue.filter((j) => j.projectId === projectId)
     const doneIds = new Set(
@@ -535,6 +232,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     if (tab === 'voice') return t === 'voice'
     return t === tab
   })
+
   const busyAssetIds = new Set(
     genQueue
       .filter(
@@ -543,8 +241,10 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
       )
       .map((j) => j.assetId),
   )
-  // Chưa được xuất bản: Không có bìa/url hợp lệ và nó hiện không có trong hàng đợi.
+
+  // Chưa xuất ảnh: không có ảnh bìa/url hợp lệ và không nằm trong hàng đợi
   const pending = filtered.filter((a) => needsImageGeneration(a) && !busyAssetIds.has(a.id))
+
   // Chưa có giọng đọc: là nhân vật, chưa có voice binding, và hiện không trong quá trình tạo
   const pendingVoiceCharacters = filtered.filter(
     (a) =>
@@ -552,6 +252,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
       !readAssetVoiceBinding(a) &&
       !characterVoiceBusyIds.has(a.id),
   )
+
   const queueBusy = busyAssetIds.size > 0
   const pageCount = pageCountOf(filtered.length, pageSize)
   const safePage = Math.min(page, pageCount)
@@ -560,7 +261,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     return filtered.slice(start, start + pageSize)
   }, [filtered, safePage, pageSize])
 
-  // Kiểu màn hình dự án liên tục
+  // Lưu cấu hình phong cách hình ảnh
   async function persistStyle(styleId: string) {
     try {
       await dramaApi.updateScript(projectId, { image_style_id: styleId })
@@ -569,7 +270,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     }
   }
 
-  // Xác minh số dư trước khi tham gia nhóm (chung cho lô/mặt hàng đơn lẻ); trả lại chi tiết kiểm tra trước (bao gồm cả ước tính đơn lẻ) nếu thành công
+  // Xác minh số dư trước khi đưa vào hàng đợi
   async function ensureImageGenBalance(count: number): Promise<BillingPreflight | null> {
     try {
       return await api.billingPreflight({
@@ -602,7 +303,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     onError(view.message || message || t('drama.assetsStep.genImageFailed'))
   }
 
-  // Tham gia hàng đợi tạo hình ảnh toàn cầu (không đẩy nhau)
+  // Thêm một tài sản vào hàng đợi tạo ảnh
   function enqueueOne(asset: DramaAsset, options = genOptions) {
     if (busyAssetIds.has(asset.id)) return
     void (async () => {
@@ -638,7 +339,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     })()
   }
 
-  // Chỉ những nội dung "chưa được xuất bản trong danh mục hiện tại" mới được thêm vào hàng đợi chỉ bằng một cú nhấp chuột (đã có ảnh / bị bỏ qua trong hàng đợi)
+  // Tự động tạo ảnh cho tất cả tài sản chưa có ảnh trong tab hiện tại
   async function batchGenerate() {
     const targets = filtered.filter(
       (a) => needsImageGeneration(a) && !busyAssetIds.has(a.id),
@@ -701,102 +402,6 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     })
   }
 
-  // Làm mới các mục danh sách sau khi âm sắc được liên kết thành công.
-  function handleVoiceBound(updated: DramaAsset) {
-    setAssets((prev) => (prev ?? []).map((a) => (a.id === updated.id ? updated : a)))
-  }
-
-  function handleVoiceCreated(voice: DramaAsset) {
-    setAssets((prev) => {
-      const list = prev ?? []
-      if (list.some((a) => a.id === voice.id)) return list
-      return [...list, voice]
-    })
-  }
-
-  // AI chỉ bằng một cú nhấp chuột sẽ tạo ra âm thanh và liên kết chúng (mỗi nhân vật bận độc lập và không chặn lẫn nhau)
-  async function handleGenerateCharacterVoice(asset: DramaAsset) {
-    if (characterVoiceBusyIds.has(asset.id) || batchVoiceBusy) return
-    setCharacterVoiceBusyIds((prev) => new Set(prev).add(asset.id))
-    try {
-      const { character, voice } = await generateAndBindCharacterVoice(projectId, asset)
-      handleVoiceBound(character)
-      handleVoiceCreated(voice)
-    } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.assetsStep.voiceGenFailed'))
-    } finally {
-      setCharacterVoiceBusyIds((prev) => {
-        const next = new Set(prev)
-        next.delete(asset.id)
-        return next
-      })
-    }
-  }
-
-  // Tự động tạo giọng cho tất cả nhân vật chưa có giọng đọc (bỏ qua những nhân vật đã có)
-  async function handleAutoGenerateVoices() {
-    const targets = filtered.filter(
-      (a) =>
-        (a.type || '').toLowerCase() === 'character' &&
-        !readAssetVoiceBinding(a) &&
-        !characterVoiceBusyIds.has(a.id),
-    )
-
-    if (targets.length === 0) {
-      if (characterVoiceBusyIds.size > 0 || batchVoiceBusy) {
-        onError('Hệ thống đang trong quá trình tạo giọng đọc, vui lòng chờ trong giây lát.')
-      } else {
-        onError('Tất cả nhân vật đã có giọng đọc. Những nhân vật đã có giọng đọc được bỏ qua.')
-      }
-      return
-    }
-
-    const ok = await dialog.confirm({
-      title: 'Tự động tạo giọng đọc',
-      message:
-        `Hệ thống sẽ tự động tạo giọng cho ${targets.length} nhân vật chưa có giọng đọc.\n\n` +
-        `Những nhân vật đã có giọng đọc rồi sẽ được bỏ qua.`,
-      confirmText: 'Bắt đầu tạo',
-      cancelText: 'Hủy',
-      tone: 'success',
-    })
-    if (!ok) return
-
-    setBatchVoiceBusy(true)
-    let failCount = 0
-    const CONCURRENCY = 2
-    let index = 0
-
-    async function worker() {
-      while (index < targets.length) {
-        const asset = targets[index++]
-        if (!asset) break
-        setCharacterVoiceBusyIds((prev) => new Set(prev).add(asset.id))
-        try {
-          const { character, voice } = await generateAndBindCharacterVoice(projectId, asset)
-          handleVoiceBound(character)
-          handleVoiceCreated(voice)
-        } catch {
-          failCount += 1
-        } finally {
-          setCharacterVoiceBusyIds((prev) => {
-            const next = new Set(prev)
-            next.delete(asset.id)
-            return next
-          })
-        }
-      }
-    }
-
-    const workers = Array.from({ length: Math.min(CONCURRENCY, targets.length) }, () => worker())
-    await Promise.all(workers)
-
-    setBatchVoiceBusy(false)
-    if (failCount > 0) {
-      onError(`Có ${failCount} nhân vật tạo giọng thất bại, vui lòng thử lại sau.`)
-    }
-  }
-
   // Nhập từ thư viện tài sản toàn cầu vào dự án hiện tại
   async function handleImportFromLibrary(source: DramaAsset) {
     const dup = assetList.some(
@@ -816,54 +421,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     setAssets((prev) => [...(prev ?? []), created])
   }
 
-  // Lưu mô tả âm sắc vào thông số nội dung
-  async function persistVoicePrompt(asset: DramaAsset, prompt: string) {
-    const nextParams = { ...(asset.params || {}), voicePrompt: prompt.trim() }
-    const updated = await dramaApi.updateAsset(asset.id, { params: nextParams })
-    setAssets((prev) => (prev ?? []).map((a) => (a.id === updated.id ? updated : a)))
-  }
-
-  // Tổng hợp thử nội dung giọng nói theo lời nhắc
-  async function handleSynthVoice(asset: DramaAsset) {
-    const prompt = (voicePromptDrafts[asset.id] ?? readVoicePrompt(asset)).trim()
-    if (!prompt) {
-      onError(t('drama.assetsStep.fillVoiceDesc'))
-      return
-    }
-    setVoiceSynthBusyId(asset.id)
-    try {
-      await persistVoicePrompt(asset, prompt)
-      const result = await dramaApi.generateVoice({
-        project_id: projectId,
-        asset_id: asset.id,
-        voice_prompt: prompt,
-      })
-      setAssets((prev) => (prev ?? []).map((a) => (a.id === asset.id ? result.asset : a)))
-    } catch (err) {
-      onError(err instanceof Error ? err.message : t('drama.assetsStep.synthVoiceFailed'))
-    } finally {
-      setVoiceSynthBusyId(null)
-    }
-  }
-
-  // Xóa nội dung âm thanh
-  async function handleDeleteVoice(asset: DramaAsset) {
-    const ok = await dialog.confirm({
-      title: t('drama.assetsStep.deleteVoiceTitle'),
-      message: t('drama.assetsStep.deleteVoiceMessage').replace('{name}', asset.name || t('common.unnamed')),
-      tone: 'danger',
-      confirmText: t('common.delete'),
-    })
-    if (!ok) return
-    try {
-      await dramaApi.deleteAsset(asset.id)
-      setAssets((prev) => (prev ?? []).filter((a) => a.id !== asset.id))
-    } catch (err) {
-      onError(err instanceof Error ? err.message : t('common.deleteFailed'))
-    }
-  }
-
-  // Xóa tài sản
+  // Xóa tài sản có kiểm tra liên kết phân cảnh
   async function handleDeleteAsset(asset: DramaAsset) {
     if (busyAssetIds.has(asset.id)) {
       onError(t('drama.assetsStep.charGenerating'))
@@ -879,7 +437,6 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
         ? (locale === 'zh' ? '场景' : locale === 'en' ? 'scene' : 'cảnh quay')
         : (locale === 'zh' ? '道具' : locale === 'en' ? 'prop' : 'đạo cụ')
 
-    // Kiểm tra tài sản có đang được liên kết với phân cảnh nào không
     let usage: DramaAssetUsage | null = null
     try {
       usage = await dramaApi.getAssetUsage(asset.id)
@@ -942,7 +499,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
     }
   }
 
-  // Sao chép nút thẻ ("Tạo lại hình ảnh" sẽ được hiển thị khi có hình ảnh)
+  // Nhãn trạng thái cho nút tạo ảnh
   function genButtonLabel(asset: DramaAsset): string {
     const job = genQueue.find(
       (j) =>
@@ -999,92 +556,26 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
 
       <div className="drama-assets-toolbar">
         <div className="drama-asset-tabs">
-          {ASSET_TABS.map((t) => (
+          {ASSET_TABS.map((tabItem) => (
             <button
-              key={t.key}
+              key={tabItem.key}
               type="button"
-              className={tab === t.key ? 'active' : ''}
-              onClick={() => setTab(t.key)}
+              className={tab === tabItem.key ? 'active' : ''}
+              onClick={() => setTab(tabItem.key)}
             >
-              {t.label}
+              {tabItem.label}
             </button>
           ))}
         </div>
         <div className="drama-actions">
-          {/* Nút Download tuần tự từng tài sản về máy tính */}
-          {isDownloading ? (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                background: '#f1f5f9',
-                border: '1px solid #cbd5e1',
-                padding: '4px 12px',
-                borderRadius: 6,
-                fontSize: '0.82rem',
-                color: '#334155',
-              }}
-            >
-              <Loader2 size={15} className="pf-spin" />
-              <span>
-                Đang tải {downloadProgress?.current}/{downloadProgress?.total}
-                {downloadProgress?.fileName ? ` (${downloadProgress.fileName})` : ''}...
-              </span>
-              <button
-                type="button"
-                onClick={handleCancelDownload}
-                style={{
-                  border: 'none',
-                  background: '#ef4444',
-                  color: '#fff',
-                  borderRadius: 4,
-                  padding: '2px 8px',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  marginLeft: 4,
-                }}
-              >
-                Dừng
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="pf-btn"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: '#ffffff',
-                borderColor: '#cbd5e1',
-                color: '#1e293b',
-                fontWeight: 500,
-              }}
-              disabled={flowUploading || isDownloading || uploadableImageAssets.length === 0}
-              onClick={() => void handleDownloadAssetsToFolder()}
-              title={`Mở Finder / File Explorer để chọn thư mục lưu và tải toàn bộ ${uploadableImageAssets.length} file tài sản theo cú pháp <ID>_<LoaiAsset>_<TenVietLienKhongDau>.<ext>`}
-            >
-              <Download size={16} />
-              <span>Download ({uploadableImageAssets.length})</span>
-            </button>
-          )}
+          <DramaAssetDownloadButton
+            assets={assetList}
+            projectTitle={project?.title}
+            disabled={flowUploading}
+          />
 
           {flowUploading ? (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                background: '#e0f2fe',
-                border: '1px solid #7dd3fc',
-                padding: '4px 12px',
-                borderRadius: 6,
-                fontSize: '0.82rem',
-                color: '#0369a1',
-              }}
-            >
+            <div className="drama-assets-flow-progress">
               <Loader2 size={15} className="pf-spin" />
               <span>
                 Đang upload {flowUploadProgress?.current}/{flowUploadProgress?.total}
@@ -1092,18 +583,8 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
               </span>
               <button
                 type="button"
+                className="drama-assets-flow-cancel-btn"
                 onClick={handleCancelFlowUpload}
-                style={{
-                  border: 'none',
-                  background: '#ef4444',
-                  color: '#fff',
-                  borderRadius: 4,
-                  padding: '2px 8px',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  marginLeft: 4,
-                }}
               >
                 Dừng
               </button>
@@ -1111,16 +592,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
           ) : (
             <button
               type="button"
-              className="pf-btn"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: '#0284c7',
-                borderColor: '#0369a1',
-                color: '#ffffff',
-                fontWeight: 500,
-              }}
+              className="pf-btn drama-assets-flow-upload-btn"
               disabled={batchBusy || batchVoiceBusy || uploadableImageAssets.length === 0}
               onClick={() => void handleBatchUploadFlowAssets()}
               title={`Upload tuần tự từng hình ảnh trong danh sách tài sản lên Flow API (${uploadedFlowCount}/${uploadableImageAssets.length} đã có Media ID)`}
@@ -1150,7 +622,10 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
       {!loading && filtered.length > 0 ? (
         <div className="drama-assets-meta-bar">
           <p className="drama-muted drama-assets-page-meta">
-            {t('drama.assetsStep.pageInfo').replace('{page}', String(safePage)).replace('{total_pages}', String(pageCount)).replace('{n}', String(filtered.length))}
+            {t('drama.assetsStep.pageInfo')
+              .replace('{page}', String(safePage))
+              .replace('{total_pages}', String(pageCount))
+              .replace('{n}', String(filtered.length))}
           </p>
 
           <div className="drama-assets-meta-actions">
@@ -1159,7 +634,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
                 type="button"
                 className="pf-btn drama-assets-auto-voice-btn"
                 disabled={batchVoiceBusy || (pendingVoiceCharacters.length === 0 && characterVoiceBusyIds.size === 0)}
-                onClick={() => void handleAutoGenerateVoices()}
+                onClick={() => void handleAutoGenerateVoices(pendingVoiceCharacters)}
                 title={
                   pendingVoiceCharacters.length > 0
                     ? `Tự động tạo giọng cho ${pendingVoiceCharacters.length} nhân vật chưa có giọng đọc`
@@ -1170,7 +645,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
               >
                 {batchVoiceBusy || characterVoiceBusyIds.size > 0 ? (
                   <>
-                    <Loader2 size={15} style={{ animation: 'pf-spin 1s linear infinite' }} />
+                    <Loader2 size={15} className="pf-spin" />
                     <span>Đang tạo giọng ({characterVoiceBusyIds.size})...</span>
                   </>
                 ) : (
@@ -1198,7 +673,7 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
               >
                 {batchBusy || queueBusy ? (
                   <>
-                    <Loader2 size={15} style={{ animation: 'pf-spin 1s linear infinite' }} />
+                    <Loader2 size={15} className="pf-spin" />
                     <span>Đang tạo ảnh ({busyAssetIds.size})...</span>
                   </>
                 ) : (
@@ -1245,231 +720,35 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
             )
           }
 
-          const mediaSrc = resolveDramaAssetPreviewUrl(asset)
-          const voice = readAssetVoiceBinding(asset)
-          const isCharacter = (asset.type || '').toLowerCase() === 'character'
-          const busy = busyAssetIds.has(asset.id)
           return (
-            <article
+            <DramaVisualAssetCard
               key={asset.id}
-              className="drama-asset-card drama-asset-card-clickable"
-              role="button"
-              tabIndex={0}
-              onClick={() => setDetailAsset(asset)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  setDetailAsset(asset)
-                }
+              asset={asset}
+              busy={busyAssetIds.has(asset.id)}
+              batchBusy={batchBusy}
+              batchVoiceBusy={batchVoiceBusy}
+              characterVoiceBusy={characterVoiceBusyIds.has(asset.id)}
+              flowUploading={flowUploading}
+              flowUploadingAssetId={flowUploadingAssetId}
+              flowUploadError={flowUploadErrors[asset.id]}
+              copiedAssetId={copiedAssetId}
+              genButtonLabel={genButtonLabel(asset)}
+              onDetail={(a, tab = 'image') => {
+                setDetailCurlTab(tab)
+                setDetailAsset(a)
               }}
-            >
-              {mediaSrc ? (
-                <button
-                  type="button"
-                  className="drama-asset-thumb-btn"
-                  title={t('common.enlarge')}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setLightbox({ src: mediaSrc, alt: asset.name || t('common.preview') })
-                  }}
-                >
-                  <img key={mediaSrc} src={mediaSrc} alt={asset.name || ''} />
-                </button>
-              ) : (
-                <div className="drama-asset-placeholder">{t('drama.assetDetail.notGenerated')}</div>
-              )}
-              <h3>{asset.name || t('common.unnamed')}</h3>
-              {isCharacter && voice ? (
-                <p className="drama-asset-card-type">{formatVoiceLabel(voice.label, locale)}</p>
-              ) : null}
-
-              {/* Hiển thị trạng thái Flow & Media ID */}
-              <div
-                className="drama-asset-flow-panel"
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
-                style={{ margin: '4px 0 6px 0', minHeight: 24 }}
-              >
-                {flowUploadingAssetId === asset.id ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      fontSize: '0.73rem',
-                      color: '#0284c7',
-                      background: '#f0f9ff',
-                      border: '1px solid #bae6fd',
-                      borderRadius: 4,
-                      padding: '3px 6px',
-                    }}
-                  >
-                    <Loader2 size={12} className="pf-spin" />
-                    <span>Đang upload Flow...</span>
-                  </div>
-                ) : (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 4,
-                      fontSize: '0.73rem',
-                      color: '#15803d',
-                      background: '#f0fdf4',
-                      border: '1px solid #bbf7d0',
-                      borderRadius: 4,
-                      padding: '2px 6px',
-                    }}
-                    title={`Google Flow Media ID: ${asset.flow_media_id || (asset.params as any)?.flow_media_id}`}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
-                      <Check size={12} color="#16a34a" />
-                      <span style={{ fontWeight: 600 }}>Flow ID:</span>
-                      <span
-                        style={{
-                          fontFamily: 'monospace',
-                          fontSize: '0.7rem',
-                          maxWidth: 82,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {asset.flow_media_id || (asset.params as any)?.flow_media_id}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        padding: '1px 2px',
-                        cursor: 'pointer',
-                        color: copiedAssetId === asset.id ? '#15803d' : '#16a34a',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                      title="Sao chép Media ID"
-                      onClick={(e) => void handleCopyMediaId(e, asset.id, String(asset.flow_media_id || (asset.params as any)?.flow_media_id))}
-                    >
-                      {copiedAssetId === asset.id ? <CheckCheck size={12} /> : <Copy size={11} />}
-                    </button>
-                  </div>
-                ) : flowUploadErrors[asset.id] ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      fontSize: '0.72rem',
-                      color: '#b91c1c',
-                      background: '#fef2f2',
-                      border: '1px solid #fecaca',
-                      borderRadius: 4,
-                      padding: '2px 6px',
-                    }}
-                    title={flowUploadErrors[asset.id]}
-                  >
-                    <AlertCircle size={12} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      Lỗi upload
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-
-              {DRAMA_VOICE_BINDING_ENABLED && isCharacter ? (
-                <div
-                  className="drama-asset-card-voice"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-                >
-                  {voice ? (
-                    <CharacterVoicePreviewButton
-                      url={voice.url}
-                      label={formatVoiceLabel(voice.label, locale)}
-                      onError={onError}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      className="pf-btn pf-btn-sm pf-btn-ghost drama-asset-card-btn-voice"
-                      disabled={
-                        batchBusy ||
-                        batchVoiceBusy ||
-                        characterVoiceBusyIds.has(asset.id)
-                      }
-                      onClick={() => void handleGenerateCharacterVoice(asset)}
-                    >
-                      {characterVoiceBusyIds.has(asset.id)
-                        ? t('drama.assetsStep.generating')
-                        : `🎙️ ${t('drama.assetsStep.genVoice')}`}
-                    </button>
-                  )}
-                </div>
-              ) : null}
-
-              <div
-                className="drama-asset-card-actions"
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
-              >
-                <button
-                  type="button"
-                  className="pf-btn pf-btn-sm drama-asset-card-btn-gen"
-                  disabled={busy || batchBusy}
-                  onClick={() => enqueueOne(asset)}
-                >
-                  {genButtonLabel(asset)}
-                </button>
-                {mediaSrc ? (
-                  <button
-                    type="button"
-                    className="pf-btn pf-btn-sm"
-                    style={{
-                      padding: '0 8px',
-                      height: 28,
-                      fontSize: '0.75rem',
-                      background: (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? '#f0fdf4' : '#f8fafc',
-                      borderColor: (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? '#86efac' : '#cbd5e1',
-                      color: (asset.flow_media_id || (asset.params as any)?.flow_media_id) ? '#166534' : '#475569',
-                    }}
-                    disabled={busy || batchBusy || flowUploading || flowUploadingAssetId === asset.id}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      void handleUploadSingleAssetToFlow(asset)
-                    }}
-                    title={
-                      (asset.flow_media_id || (asset.params as any)?.flow_media_id)
-                        ? 'Upload lại ảnh này lên Google Flow'
-                        : 'Upload ảnh này lên Google Flow'
-                    }
-                  >
-                    {flowUploadingAssetId === asset.id ? (
-                      <Loader2 size={12} className="pf-spin" />
-                    ) : (
-                      <UploadCloud size={12} />
-                    )}
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  className="pf-btn pf-btn-sm drama-btn-danger-text drama-asset-card-btn-delete"
-                  disabled={busy || batchBusy || batchVoiceBusy || flowUploadingAssetId === asset.id}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    void handleDeleteAsset(asset)
-                  }}
-                  title={t('common.delete')}
-                >
-                  {t('common.delete')}
-                </button>
-              </div>
-            </article>
+              onLightbox={(data) => setLightbox(data)}
+              onGenerate={(a) => enqueueOne(a)}
+              onGenerateVoice={(a) => void handleGenerateCharacterVoice(a)}
+              onUploadFlow={(a) => void handleUploadSingleAssetToFlow(a)}
+              onCopyMediaId={(e, id, mid) => void handleCopyMediaId(e, id, mid)}
+              onDelete={(a) => void handleDeleteAsset(a)}
+              onError={onError}
+            />
           )
         })}
       </div>
+
       {!loading && filtered.length === 0 ? <p className="drama-muted">{t('drama.assetsStep.noAssets')}</p> : null}
 
       {!loading && filtered.length > 0 ? (
@@ -1489,67 +768,41 @@ export function AssetsStep({ projectId, onError, onBack }: AssetsStepProps) {
         />
       ) : null}
 
-      {detailAsset && (detailAsset.type || '').toLowerCase() !== 'voice' ? (
-        <DramaAssetDetailModal
-          asset={detailAsset}
-          open
-          busy={busyAssetIds.has(detailAsset.id)}
-          genLabel={genButtonLabel(detailAsset)}
-          onClose={() => setDetailAsset(null)}
-          onUpdated={(updated) => {
-            setAssets((prev) => (prev ?? []).map((a) => (a.id === updated.id ? updated : a)))
-            setDetailAsset(updated)
-          }}
-          onGenerate={(a) => enqueueOne(a)}
-          onBindVoice={DRAMA_VOICE_BINDING_ENABLED ? (a) => setVoiceAsset(a) : undefined}
-          onDelete={(a) => {
-            setDetailAsset(null)
-            void handleDeleteAsset(a)
-          }}
-          onError={onError}
-        />
-      ) : null}
-
-      {lightbox ? (
-        <DramaImageLightbox
-          src={lightbox.src}
-          alt={lightbox.alt}
-          onClose={() => setLightbox(null)}
-        />
-      ) : null}
-
-      {DRAMA_VOICE_BINDING_ENABLED && voiceAsset ? (
-        <CharacterVoiceBindModal
-          asset={voiceAsset}
-          projectId={projectId}
-          open
-          onClose={() => setVoiceAsset(null)}
-          onBound={(updated) => {
-            handleVoiceBound(updated)
-            setDetailAsset((prev) => (prev?.id === updated.id ? updated : prev))
-          }}
-          onError={onError}
-        />
-      ) : null}
-
-      {DRAMA_VOICE_BINDING_ENABLED && project ? (
-        <NarratorVoiceBindModal
-          project={project}
-          open={narratorVoiceOpen}
-          onClose={() => setNarratorVoiceOpen(false)}
-          onUpdated={(p) => setProject(p)}
-          onError={onError}
-        />
-      ) : null}
-
-      <GlobalAssetPickerModal
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
+      <DramaAssetsModals
         projectId={projectId}
-        defaultTab={tab === 'voice' ? 'voice' : tab}
-        title={t('drama.assetsStep.importFromLib')}
-        confirmLabel={t('drama.assetsStep.importToProject')}
-        onPick={handleImportFromLibrary}
+        project={project}
+        detailAsset={detailAsset}
+        detailCurlTab={detailCurlTab}
+        genOptions={genOptions}
+        busyAssetIds={busyAssetIds}
+        genButtonLabel={genButtonLabel}
+        onCloseDetail={() => setDetailAsset(null)}
+        onAssetUpdated={(updated) => {
+          setAssets((prev) => (prev ?? []).map((a) => (a.id === updated.id ? updated : a)))
+          setDetailAsset(updated)
+        }}
+        onGenerateImage={(a) => enqueueOne(a)}
+        onBindVoice={DRAMA_VOICE_BINDING_ENABLED ? (a) => setVoiceAsset(a) : undefined}
+        onDeleteAsset={(a) => {
+          setDetailAsset(null)
+          void handleDeleteAsset(a)
+        }}
+        lightbox={lightbox}
+        onCloseLightbox={() => setLightbox(null)}
+        voiceAsset={voiceAsset}
+        onCloseVoiceModal={() => setVoiceAsset(null)}
+        onVoiceBound={(updated) => {
+          handleVoiceBound(updated)
+          setDetailAsset((prev) => (prev?.id === updated.id ? updated : prev))
+        }}
+        narratorVoiceOpen={narratorVoiceOpen}
+        onCloseNarratorModal={() => setNarratorVoiceOpen(false)}
+        onProjectUpdated={(p) => setProject(p)}
+        pickerOpen={pickerOpen}
+        onClosePicker={() => setPickerOpen(false)}
+        currentTab={tab}
+        onImportFromLibrary={handleImportFromLibrary}
+        onError={onError}
       />
     </div>
   )

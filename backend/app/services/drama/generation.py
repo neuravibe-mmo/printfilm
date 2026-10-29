@@ -1491,8 +1491,9 @@ async def prepare_fragment_video_for_submit(
         duration_sec=int(fragment.duration_sec or 0) or None,
         is_opening=int(fragment.sort_order or 0) == 0,
     ).strip() or "短剧分镜"
-    # Nếu dự án chọn ngôn ngữ video = Tiếng Việt, đổi tiền tố thoại → 【Thoại · Lồng tiếng tiếng Việt】
-    if str((project.params or {}).get("video_language") or "").strip() == "vi":
+    # Nếu dự án chọn ngôn ngữ video = Tiếng Việt (mặc định 'vi'), đổi tiền tố thoại → 【Thoại · Lồng tiếng tiếng Việt】
+    video_lang = str((project.params or {}).get("video_language") or "vi").strip().lower()
+    if video_lang != "auto":
         prompt = apply_vietnamese_voice_language(prompt)
     duration = int(fragment.duration_sec or 8)
     duration = max(settings.seedance_duration_min, min(duration, settings.seedance_duration_max))

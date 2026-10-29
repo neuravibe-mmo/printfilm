@@ -7,7 +7,45 @@ ai_movie 扩展：prop/material 增加静物/空镜前缀（manju 无此前缀�
 
 from __future__ import annotations
 
+import re
+
 from app.services.drama.image_styles import STYLE_BOARD_PROMPT_HINT, resolve_image_style_prompt
+
+_CHINESE_CHAR_PATTERN = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]+")
+_CHINESE_PUNCT_MAP = {
+    "：": ": ",
+    "；": "; ",
+    "，": ", ",
+    "、": ", ",
+    "。": ". ",
+    "！": "! ",
+    "？": "? ",
+    "（": " (",
+    "）": ") ",
+    "“": '"',
+    "”": '"',
+    "‘": "'",
+    "’": "'",
+}
+
+
+def strip_chinese_text(text: str) -> str:
+    """Loại bỏ hoàn toàn các ký tự tiếng Trung và chuẩn hóa dấu câu trong chuỗi prompt."""
+    if not text:
+        return ""
+    res = text
+    for ch_p, en_p in _CHINESE_PUNCT_MAP.items():
+        res = res.replace(ch_p, en_p)
+    res = _CHINESE_CHAR_PATTERN.sub(" ", res)
+    res = re.sub(r"[,\s]*,[,\s]*", ", ", res)
+    res = re.sub(r"\.\s*,\s*", ". ", res)
+    res = re.sub(r",\s*\.\s*", ". ", res)
+    res = re.sub(r"\.\s*\.", ". ", res)
+    res = re.sub(r"\s+", " ", res)
+    res = re.sub(r"([(\[{])\s*[,.]\s*", r"\1 ", res)
+    res = re.sub(r"\s*[,.]\s*([)\]}])", r" \1", res)
+    res = re.sub(r"^\s*[,.]\s*", "", res)
+    return res.strip()
 
 # CHARACTER_PROMPT_PREFIX Yêu cầu bố cục bảng tạo hình nhân vật
 CHARACTER_PROMPT_PREFIX = (
@@ -75,13 +113,13 @@ def append_style_prompt(
     style_prompt = resolve_image_style_prompt(style_id)
     if not style_prompt:
         return prompt
-    board_hint = f"。{STYLE_BOARD_PROMPT_HINT}" if has_style_board else ""
+    board_hint = f". {STYLE_BOARD_PROMPT_HINT}" if has_style_board else ""
     if structure_locked:
         return (
-            f"{prompt}。Tham khảo chất liệu ngoại quan và phong cách: {style_prompt}{board_hint}"
+            f"{prompt}. Tham khảo chất liệu ngoại quan và phong cách: {style_prompt}{board_hint}"
             " (Phải tuân theo bố cục bảng tạo hình nền trắng ở trên, cấm đổi thành bối cảnh phức tạp hay thay thế nền trắng)"
         )
-    return f"{prompt}。Yêu cầu phong cách hình ảnh: {style_prompt}{board_hint}"
+    return f"{prompt}. Yêu cầu phong cách hình ảnh: {style_prompt}{board_hint}"
 
 
 # Tập hợp các từ nhắc Seedream hoàn chỉnh theo loại nội dung và ID kiểu
@@ -106,6 +144,7 @@ def build_generation_prompt(
         structure_locked = True
     elif kind in {"material", "none"}:
         prompt = f"{MATERIAL_PROMPT_PREFIX}{trimmed}"
-    return append_style_prompt(
+    raw_prompt = append_style_prompt(
         prompt, style_id, structure_locked=structure_locked, has_style_board=has_style_board
     )
+    return strip_chinese_text(raw_prompt)

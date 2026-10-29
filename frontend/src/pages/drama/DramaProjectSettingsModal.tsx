@@ -104,7 +104,7 @@ export function DramaProjectSettingsModal({
   const subtitleMode = readEpisodeSubtitleMode(projectParams)
   const characterIntroMode = readEpisodeCharacterIntroMode(projectParams)
   const linkLastFrame = coerceLinkLastFrame(projectParams)
-  const videoLanguage = (projectParams.video_language as string) || 'auto'
+  const videoLanguage = (projectParams.video_language as string) || 'vi'
   const [flowProjectId, setFlowProjectId] = useState<string>(
     project.flow_project_id || String(projectParams.flow_project_id || '') || FLOW_PROJECT_ID_DEFAULT
   )

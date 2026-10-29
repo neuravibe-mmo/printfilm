@@ -1,5 +1,5 @@
 import { dramaApi, type DramaEpisode, type DramaFragment } from '../../../api/drama'
-import { resolveFragmentDurationSec } from '../dramaEpisodeEditUtils'
+import { resolveFragmentDurationSec, syncContentDurations } from '../dramaEpisodeEditUtils'
 import { useI18n } from '../../../i18n'
 
 export type UseEpisodeFragmentCrudParams = {
@@ -38,7 +38,14 @@ export function useEpisodeFragmentCrud({
   // Cập nhật bảng phân cảnh hiện tại
   function updateSelected(patch: Partial<DramaFragment>) {
     setFragments((prev) =>
-      prev.map((f, i) => (i === selectedIndex ? { ...f, ...patch } : f)),
+      prev.map((f, i) => {
+        if (i !== selectedIndex) return f
+        const updated = { ...f, ...patch }
+        return {
+          ...updated,
+          duration_sec: resolveFragmentDurationSec(updated.content, updated.duration_sec),
+        }
+      }),
     )
   }
 
@@ -101,20 +108,25 @@ export function useEpisodeFragmentCrud({
             f.params && typeof f.params === 'object' && !Array.isArray(f.params)
               ? (f.params as Record<string, unknown>)
               : {}
+          const targetDuration = f.duration_sec && f.duration_sec > 0 ? f.duration_sec : 8
+          const syncedContent = syncContentDurations(f.content || '', targetDuration)
           return {
             id: typeof f.id === 'number' && f.id > 0 ? f.id : undefined,
             sort_order: i,
-            content: f.content,
+            content: syncedContent,
             cover: f.cover,
             video: f.video,
-            duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
+            duration_sec: targetDuration,
             params: { ...prevParams, user_edited: true },
             asset_ids: f.asset_ids || [],
           }
         }),
       )
       setEpisode(ep)
-      setFragments(ep.fragments || [])
+      setFragments((ep.fragments || []).map((f) => ({
+        ...f,
+        duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
+      })))
       setStatus(t('drama.episodeEdit.saved'))
       setEditing(false)
       return ep

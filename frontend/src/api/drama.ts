@@ -583,6 +583,33 @@ export const dramaApi = {
       body: JSON.stringify(body),
     }),
 
+  previewImagePrompt: (body: {
+    project_id: number
+    asset_id?: number
+    prompt: string
+    name?: string
+    asset_type_kind?: string
+    image_style_id?: string
+    model_id?: string
+    aspect_ratio?: string
+    resolution?: string
+  }) =>
+    request<{
+      ok: boolean
+      full_prompt: string
+      style_id?: string
+      model_id?: string
+      target_size?: string
+      reference_images?: Array<{
+        type: string
+        label: string
+        url: string
+      }>
+    }>('/api/drama/generation/image/preview_prompt', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   generateVideo: (body: {
     project_id: number
     asset_id: number

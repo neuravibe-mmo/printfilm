@@ -15,7 +15,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-width: 148px;
+  max-width: 220px;
   height: 30px;
   padding: 0 10px;
   border: none;
@@ -24,6 +24,10 @@
   color: #475569;
   font-size: 12px;
   cursor: pointer;
+}
+
+.fc-gen-opt-btn--style {
+  max-width: 340px;
 }
 
 .fc-gen-opt-btn:hover:not(:disabled) {
@@ -221,6 +225,10 @@
 
 .drama-assets-gen-opts .fc-gen-opts {
   margin-top: 0;
+}
+
+.drama-assets-gen-opts .fc-gen-opt-btn--style {
+  max-width: 360px;
 }
 
 .fc-gen-skill-opts {

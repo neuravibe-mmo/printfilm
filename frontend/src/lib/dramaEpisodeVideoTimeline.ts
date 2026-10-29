@@ -26,9 +26,9 @@ function sumFragmentContentDuration(content: string): number {
 // Phân tích thời lượng của storyboard trên dòng thời gian (giây)
 function resolveEpisodeFragmentTimelineDuration(fragment: DramaFragment): number {
   const fromTags = sumFragmentContentDuration(fragment.content)
-  if (fromTags > 0) return Math.min(15, Math.max(4, fromTags))
+  if (fromTags > 0) return Math.min(10, Math.max(4, fromTags))
   const fallback = fragment.duration_sec && fragment.duration_sec > 0 ? fragment.duration_sec : 8
-  return Math.min(15, Math.max(4, fallback))
+  return Math.min(10, Math.max(4, fallback))
 }
 
 // Xây dựng các phân đoạn dòng thời gian dựa trên tất cả các cảnh quay của tập

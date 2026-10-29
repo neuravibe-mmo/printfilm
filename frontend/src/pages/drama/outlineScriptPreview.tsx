@@ -42,9 +42,9 @@ const SCENE_DURATION_MIN = 4
 const SCENE_DURATION_MAX = 120
 /** Căn chỉnh với giới hạn trên của kẹp/đóng gói độ dài dòng build_fragments phụ trợ */
 const LINE_DURATION_MIN = 3
-const LINE_DURATION_MAX = 15
-const FRAGMENT_SOFT_MAX = 15
-const FRAGMENT_TOTAL_MAX = 15
+const LINE_DURATION_MAX = 10
+const FRAGMENT_SOFT_MAX = 10
+const FRAGMENT_TOTAL_MAX = 10
 
 // Màu sắc ổn định của tên nhân vật
 export function speakerColor(name: string): string {

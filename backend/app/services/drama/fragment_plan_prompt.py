@@ -14,7 +14,7 @@ Chỉ xuất ra DUY NHẤT một đối tượng JSON hợp lệ (không kèm ma
 {
   "fragments": [
     {
-      "duration_sec": 12,
+      "duration_sec": 10,
       "scene_name": "Tên địa điểm hoặc chuỗi rỗng",
       "character_names": ["Tên nhân vật xuất hiện trong cảnh này"],
       "prop_names": ["Tên đạo cụ xuất hiện trong cảnh này"],
@@ -30,7 +30,7 @@ Chỉ xuất ra DUY NHẤT một đối tượng JSON hợp lệ (không kèm ma
 
 ## Phân cảnh mở màn (Bắt buộc cho fragments[0])
 Phân cảnh đầu tiên của mỗi tập (fragments[0]) luôn là cảnh mở màn, đặt `"is_opening": true`, dùng để giới thiệu phim, số tập và bối cảnh câu chuyện:
-1. duration_sec gợi ý từ 5–10 giây.
+1. duration_sec gợi ý từ 5–10 giây (tối đa 10s).
 2. lines cần thể hiện rõ (ưu tiên diễn đạt bằng hình ảnh, hạn chế lời thoại trong cảnh mở màn):
    - Thông tin số tập và tiêu đề: Ghi rõ "Tập N" + Tiêu đề tập (giữ nguyên tiêu đề người dùng cung cấp).
    - Giới thiệu bối cảnh: 1–3 câu giới thiệu thế giới quan, thời đại, bầu không khí hoặc tiền truyện người xem cần biết trước khi vào phim.
@@ -43,14 +43,14 @@ Phân cảnh đầu tiên của mỗi tập (fragments[0]) luôn là cảnh mở
 2. Nhóm nhân vật chính trong cảnh thay đổi rõ rệt.
 3. Chuyển đoạn cảm xúc / nhịp phim (Dẫn dắt → Mâu thuẫn → Cao trào → Lắng đọng).
 4. Nhiệm vụ kể chuyện khác nhau (Mở màn ≠ Cảnh đối thoại ≠ Cảnh toàn phong cảnh).
-5. Thời lượng tích lũy của cảnh sẽ vượt quá 15 giây (Giới hạn cứng là 15 giây/cảnh).
+5. Thời lượng tích lũy của cảnh sẽ vượt quá 10 giây (Giới hạn cứng là 10 giây/cảnh).
 
 ## Các quy tắc cứng (BẮT BUỘC TUÂN THỦ)
-1. Thời lượng mỗi phân cảnh (duration_sec) phải từ 4 đến 15 giây, ưu tiên 5–15 giây; mỗi phân cảnh phải trọn vẹn một hành động/tình huống và có thể đứng độc lập thành 1 video clip.
+1. Thời lượng mỗi phân cảnh (duration_sec) phải từ 4 đến 10 giây, ưu tiên 5–10 giây (tuyệt đối không vượt quá 10s); mỗi phân cảnh phải trọn vẹn một hành động/tình huống và có thể đứng độc lập thành 1 video clip.
 2. Nhịp độ và số lượng phân cảnh: **Toàn tập phim CHỈ ĐƯỢC XUẤT TỪ 2 ĐẾN 6 PHÂN CẢNH (SHOT) TỔNG CỘNG** (tuyệt đối không được vượt quá 6 phân cảnh trong mảng fragments).
-   - MỖI PHẦN TỬ trong mảng fragments[] là 1 SHOT QUAY ĐƠN (video clip từ 5–15 giây cho mô hình AI video). CẤM băm nhỏ vụn vặt từng câu nói thành 1 shot.
+   - MỖI PHẦN TỬ trong mảng fragments[] là 1 SHOT QUAY ĐƠN (video clip từ 4–10 giây cho mô hình AI video). CẤM băm nhỏ vụn vặt từng câu nói thành 1 shot.
    - Với kịch bản có các phân đoạn lớn: Mỗi phân đoạn kịch bản chỉ chọn lọc 1–2 khoảnh khắc cao trào đắt giá nhất để tạo thành 1–2 shot (tổng toàn tập từ 2 đến 6 shot).
-   - Lược bỏ toàn bộ các câu thoại phụ/hành động rườm rà. Mỗi shot chỉ gồm 1 mô tả hình ảnh cao trào + 1 câu thoại đắt giá nhất để thời lượng vừa vặn từ 5–15 giây.
+   - Lược bỏ toàn bộ các câu thoại phụ/hành động rườm rà. Mỗi shot chỉ gồm 1 mô tả hình ảnh cao trào + 1 câu thoại đắt giá nhất để thời lượng vừa vặn từ 4–10 giây.
 3. lines chỉ viết: Hình ảnh góc máy, hành động, lời thoại, lời dẫn; giữ nguyên tên thật của nhân vật.
    - Mô tả góc máy / hình ảnh thuần túy bắt buộc phải bắt đầu bằng: "Cảnh trống: ...", "Toàn cảnh: ...", "Trung cảnh: ...", "Cận cảnh: ...", "Đặc tả: ...", v.v. CẤM viết mô tả hình ảnh thành lời dẫn hoặc "Tên nhân vật: Lời thoại".
    - Chỉ những nội dung thực sự phát ra tiếng nói mới ghi dạng "Tên nhân vật: Lời thoại" hoặc "Lời dẫn (VO): ...".
@@ -164,11 +164,11 @@ def build_fragment_plan_user_prompt(
         [
             "",
             "【QUY TẮC CỨNG VỀ SỐ LƯỢNG PHÂN CẢNH ｜ BẮT BUỘC TUÂN THỦ】",
-            "- MỖI PHẦN TỬ TRONG MẢNG fragments[] LÀ 1 SHOT QUAY VIDEO ĐƠN (5–15 giây cho 1 video AI).",
+            "- MỖI PHẦN TỬ TRONG MẢNG fragments[] LÀ 1 SHOT QUAY VIDEO ĐƠN (4–10 giây cho 1 video AI, tối đa 10s).",
             f"- TOÀN TẬP PHIM CHỈ ĐƯỢC XUẤT TỪ 2 ĐẾN 6 PHÂN CẢNH (SHOT) TỔNG CỘNG TRONG MẢNG fragments (tuyệt đối không quá {EPISODE_FRAGMENT_MAX} shot).",
             "- Mỗi phân đoạn kịch bản lớn chỉ chọn lọc 1–2 khoảnh khắc cao trào nhất để tạo thành 1–2 shot.",
             "- Lược bỏ triệt để các câu thoại dài dòng và hành động rườm rà; mỗi shot chỉ giữ 1 mô tả góc máy/hành động và tối đa 1 câu thoại then chốt.",
-            "- Thời lượng mỗi shot từ 8–15 giây.",
+            "- Thời lượng mỗi shot từ 4–10 giây (tuyệt đối không vượt quá 10 giây).",
             "- Mỗi phân cảnh tối đa 3 nhân vật xuất hiện, 2 đạo cụ; không ghi toàn bộ danh sách nhân vật vào character_names.",
             "- NGÔN NGỮ BẮT BUỘC: Giữ nguyên 100% tiếng Việt tự nhiên của kịch bản, giữ đúng tên nhân vật, cấm dịch sang tiếng Trung hay tiếng Anh!",
             "",

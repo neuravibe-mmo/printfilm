@@ -75,13 +75,21 @@ async def log_requests(request: Request, call_next):
         logger.info(msg)
     return response
 
+class CORSStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, HEAD, OPTIONS"
+        return response
+
+
 static_dir = Path(__file__).resolve().parent.parent / "static"
 static_dir.mkdir(parents=True, exist_ok=True)
 (static_dir / "templates").mkdir(exist_ok=True)
 (static_dir / "mock").mkdir(exist_ok=True)
 (static_dir / "generated").mkdir(exist_ok=True)
 (static_dir / "site").mkdir(exist_ok=True)
-app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+app.mount("/static", CORSStaticFiles(directory=str(static_dir)), name="static")
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(templates.router, prefix="/api")

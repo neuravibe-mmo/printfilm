@@ -5,6 +5,7 @@ import asyncio
 import base64
 import json
 import logging
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -139,18 +140,23 @@ async def _run_flow_generation(
         # Giữ nguyên nội dung tiếng Việt của phân cảnh, không dịch sang tiếng Anh
         from app.services.drama.prompt_optimizer import clean_raw_script, replace_asset_tokens_with_slugs
 
-        cleaned = clean_raw_script(prompt)
-        final_prompt = cleaned or (prompt or "").strip() or "Phim điện ảnh"
-
         # Tự động thay thế @asset:<id> thành @asset:<TênViếtLiềnKhôngDấu> và nạp danh sách tài sản dự án
         project_assets = []
+        is_vi = True
         if db_project_id:
             try:
                 from app.database import AsyncSessionLocal
-                from app.models_drama import DramaAsset
+                from app.models_drama import DramaAsset, DramaProject
                 from sqlalchemy import select
 
                 async with AsyncSessionLocal() as session:
+                    proj_res = await session.execute(
+                        select(DramaProject.params).where(DramaProject.id == db_project_id)
+                    )
+                    proj_params = proj_res.scalar_one_or_none()
+                    if isinstance(proj_params, dict):
+                        is_vi = str(proj_params.get("video_language") or "vi").strip().lower() != "auto"
+
                     res = await session.execute(
                         select(
                             DramaAsset.id,
@@ -161,14 +167,18 @@ async def _run_flow_generation(
                             DramaAsset.flow_media_id,
                         ).where(DramaAsset.project_id == db_project_id)
                     )
-                    rows = res.fetchall()
-                    asset_map = {row[0]: (row[1], row[2]) for row in rows if row[1]}
-                    if asset_map and re.search(r"@asset:\d+", final_prompt):
-                        final_prompt = replace_asset_tokens_with_slugs(final_prompt, asset_map)
-                        logger.info("Đã chuyển đổi thẻ @asset sang tên slug cho task=%s", task_id)
-                    project_assets = rows
+                    project_assets = res.fetchall()
             except Exception as e:
-                logger.warning("Không thể load asset map để chuyển đổi slug cho project %s: %s", db_project_id, e)
+                logger.warning("Không thể load project info cho task %s: %s", task_id, e)
+
+        cleaned = clean_raw_script(prompt, is_vi=is_vi)
+        final_prompt = cleaned or (prompt or "").strip() or "Phim điện ảnh"
+
+        if project_assets:
+            asset_map = {row[0]: (row[1], row[2]) for row in project_assets if row[1]}
+            if asset_map and re.search(r"@asset:\d+", final_prompt):
+                final_prompt = replace_asset_tokens_with_slugs(final_prompt, asset_map)
+                logger.info("Đã chuyển đổi thẻ @asset sang tên slug cho task=%s", task_id)
 
         # Chuẩn hoá danh sách ảnh tham chiếu
         raw_list: list[str] = []
@@ -289,7 +299,6 @@ async def _run_flow_generation(
 
 async def _auto_capture_flow_project_id(db_project_id: int, project_url: str) -> None:
     """Bóc tách flow_project_id từ project_url và lưu vào drama_projects nếu chưa có."""
-    import re
     # Google Flow project URL dạng: https://flow.google.com/project/<uuid>/...
     m = re.search(r"/project/([0-9a-f-]{32,})", project_url)
     if not m:

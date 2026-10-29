@@ -104,7 +104,7 @@ export function localizeScriptCues(
   let text = content
 
   if (targetLocale === 'vi') {
-    const isViVoice = videoLanguage === 'vi' || text.includes('Lồng tiếng tiếng Việt')
+    const isViVoice = videoLanguage ? videoLanguage !== 'auto' : true
     const dialogueCue = isViVoice ? '【Thoại · Lồng tiếng tiếng Việt】' : '【Thoại · Chậm rõ · Đồng bộ phụ đề】'
     const shortDialogueCue = isViVoice ? '【Thoại · Lồng tiếng tiếng Việt】' : '【Thoại · Chậm rõ】'
 

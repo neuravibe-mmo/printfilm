@@ -453,9 +453,8 @@ export function DramaFragmentSegmentedVideoPlayer({
       )}
       <div
         ref={screenRef}
-        className={`drama-ep-player drama-ep-segmented-screen ${ratioClass}${
-          !hasCurrentVideo ? ' is-empty' : ''
-        }${isFullscreen ? ' is-fullscreen' : ''}`}
+        className={`drama-ep-player drama-ep-segmented-screen ${ratioClass}${!hasCurrentVideo ? ' is-empty' : ''
+          }${isFullscreen ? ' is-fullscreen' : ''}`}
       >
         {hasCurrentVideo ? (
           <>
@@ -556,7 +555,7 @@ export function DramaFragmentSegmentedVideoPlayer({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => onUploadVideo && !videoUploading && fileInputRef.current?.click()}
-            style={{ cursor: onUploadVideo && !videoUploading ? 'pointer' : 'default', padding: '24px 16px' }}
+            style={{ cursor: onUploadVideo && !videoUploading ? 'pointer' : 'default', padding: '16px 12px' }}
             title={onUploadVideo ? 'Bấm hoặc kéo thả file video (MP4/MOV) vào đây để tải lên' : undefined}
           >
             {videoUploading ? (
@@ -627,9 +626,8 @@ export function DramaFragmentSegmentedVideoPlayer({
             {timelineSegments.map((segment, index) => (
               <div
                 key={segment.fragmentId}
-                className={`drama-ep-video-track-seg${
-                  index < timelineSegments.length - 1 ? ' has-divider' : ''
-                }`}
+                className={`drama-ep-video-track-seg${index < timelineSegments.length - 1 ? ' has-divider' : ''
+                  }`}
                 style={{ flex: segment.durationSec }}
               >
                 <div

@@ -1266,11 +1266,19 @@ async def _replace_episode_fragments(
             frag.sort_order = i
 
     base = len(protected)
+    video_lang = "vi"
+    if hasattr(episode, "project") and episode.project and isinstance(episode.project.params, dict):
+        video_lang = str(episode.project.params.get("video_language") or "vi").strip().lower()
+
     for i, frag in enumerate(planned):
+        frag_content = str(frag.get("content") or "")
+        if video_lang != "auto":
+            from app.services.drama.build_fragments import apply_vietnamese_voice_language
+            frag_content = apply_vietnamese_voice_language(frag_content)
         row = DramaEpisodeFragment(
             episode_id=episode.id,
             sort_order=base + i,
-            content=str(frag.get("content") or ""),
+            content=frag_content,
             duration_sec=int(frag.get("duration_sec") or 8),
             params={
                 "sceneName": frag.get("scene_name"),

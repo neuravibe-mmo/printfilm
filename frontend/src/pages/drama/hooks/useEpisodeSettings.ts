@@ -103,7 +103,14 @@ export function useEpisodeSettings({
       try {
         const ep = await dramaApi.getEpisode(eid)
         setEpisode(ep)
-        if (Array.isArray(ep.fragments)) setFragments(ep.fragments)
+        if (Array.isArray(ep.fragments)) {
+          setFragments(
+            ep.fragments.map((f) => ({
+              ...f,
+              duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
+            })),
+          )
+        }
       } catch {
         /* ignore refresh errors */
       }
@@ -228,7 +235,12 @@ export function useEpisodeSettings({
           }),
         )
         setEpisode(ep)
-        setFragments(ep.fragments || nextFragments)
+        setFragments(
+          (ep.fragments || nextFragments).map((f) => ({
+            ...f,
+            duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
+          })),
+        )
       }
       setStatus(
         mode === 'model'
@@ -294,7 +306,12 @@ export function useEpisodeSettings({
           }),
         )
         setEpisode(ep)
-        setFragments(ep.fragments || nextFragments)
+        setFragments(
+          (ep.fragments || nextFragments).map((f) => ({
+            ...f,
+            duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
+          })),
+        )
       }
       setStatus(
         mode === 'model'

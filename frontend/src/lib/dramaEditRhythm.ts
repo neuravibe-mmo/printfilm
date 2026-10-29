@@ -59,13 +59,13 @@ export const DRAMA_EDIT_RHYTHM_PRESETS: DramaEditRhythmPreset[] = [
 ]
 
 const SEGMENT_MIN = 3
-const SEGMENT_MAX = 15
+const SEGMENT_MAX = 10
 
-// Gán giây cho N đoạn theo công thức nhịp độ (kẹp 3–15, tổng gần bằng targetTotal)
+// Gán giây cho N đoạn theo công thức nhịp độ (kẹp 3–10, tổng gần bằng targetTotal)
 export function suggestRhythmDurations(
   segmentCount: number,
   rhythmId: DramaEditRhythmId,
-  targetTotal = 15,
+  targetTotal = 10,
 ): number[] {
   const count = Math.max(1, Math.floor(segmentCount))
   const preset =
@@ -79,7 +79,7 @@ export function suggestRhythmDurations(
   const clamped = raw.map((v) => Math.max(SEGMENT_MIN, Math.min(SEGMENT_MAX, Math.round(v))))
   // Tinh chỉnh tổng: nếu quá ngắn thì thêm từ đoạn tối đa; nếu nó quá dài, hãy trừ nó khỏi đoạn lớn nhất.
   let total = clamped.reduce((a, b) => a + b, 0)
-  const goal = Math.max(SEGMENT_MIN * count, Math.min(15, Math.round(targetTotal)))
+  const goal = Math.max(SEGMENT_MIN * count, Math.min(10, Math.round(targetTotal)))
   let guard = 0
   while (total < goal && guard < 40) {
     const idx = clamped.indexOf(Math.max(...clamped))
@@ -108,8 +108,8 @@ export function suggestEpisodeFragmentDurations(
   perFragmentTarget = 10,
 ): number[] {
   const count = Math.max(1, Math.floor(fragmentCount))
-  const total = Math.min(15 * count, Math.max(4 * count, perFragmentTarget * count))
+  const total = Math.min(10 * count, Math.max(4 * count, perFragmentTarget * count))
   return suggestRhythmDurations(count, rhythmId, total).map((sec) =>
-    Math.max(4, Math.min(15, sec)),
+    Math.max(4, Math.min(10, sec)),
   )
 }

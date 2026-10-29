@@ -112,39 +112,51 @@ export function replaceAssetTokensWithSlugs(text: string, assets: DramaAsset[] =
  */
 export function cleanFlowScript(text: string, assets: DramaAsset[] = [], videoLanguage?: string): string {
   if (!text) return ''
-  const isVi = videoLanguage === 'vi' || text.includes('Lồng tiếng tiếng Việt')
+  const isVi = videoLanguage ? videoLanguage !== 'auto' : true
   const lines = text.split('\n')
   const outLines: string[] = []
 
   for (const raw of lines) {
     let line = raw.trim()
     if (!line) continue
-    line = line.replace(/@duration:\d+/g, '').trim()
+    line = line.replace(/@duration:\d+/g, '').replace(/^[📹🎬🎥]\s*\d+\s*s$/i, '').trim()
     if (!line) continue
 
-    // Bỏ BGM và phụ đề
+    // Bỏ BGM, phụ đề và các dòng giới thiệu tiêu đề đầu phim
     if (
       line.startsWith('【Nhạc nền') ||
       line.startsWith('【BGM') ||
       line.startsWith('【Phụ đề') ||
-      line.startsWith('【字幕')
+      line.startsWith('【字幕') ||
+      line.startsWith('【Subtitle') ||
+      line.startsWith('【Đầu phim') ||
+      line.startsWith('【片头') ||
+      line.startsWith('【Intro') ||
+      line.startsWith('【Giới thiệu') ||
+      line.startsWith('【Background') ||
+      line.startsWith('【背景介绍') ||
+      line.startsWith('【人物介绍')
     ) {
       continue
     }
 
     // Bỏ thẻ hình ảnh/cảnh trống nhưng giữ lại nội dung mô tả
-    line = line.replace(/^【(?:Hình ảnh|画面|空镜|Cảnh trống)[^】]*】\s*/, '')
+    line = line.replace(/^【(?:Hình ảnh|画面|空镜|Cảnh trống|Visual|Shot)[^】]*】\s*/i, '')
+    if (!line) continue
 
     // Xử lý dòng thoại
     if (isVi) {
       if (/^【Thoại[·\s]*Lồng tiếng tiếng Việt】/i.test(line)) {
         line = line.replace(/^【Thoại[·\s]*Lồng tiếng tiếng Việt】\s*/i, '【Thoại · Lồng tiếng tiếng Việt】 ')
-      } else if (/^【(?:Thoại|Đối thoại|对白|Dialogue|Lời dẫn|旁白|Độc thoại nội tâm|内心独白)[^】]*】\s*/i.test(line)) {
+      } else if (/^【(?:Thoại|Đối thoại|对白|Dialogue|Lời dẫn|旁白|Độc thoại nội tâm|内心独白)[^】]*】/i.test(line)) {
         line = line.replace(
           /^【(?:Thoại|Đối thoại|对白|Dialogue|Lời dẫn|旁白|Độc thoại nội tâm|内心独白)[^】]*】\s*/i,
           '【Thoại · Lồng tiếng tiếng Việt】 '
         )
-      } else if (/^(@asset:\S+|[^\s:：]{1,24})\s*[:：]/.test(line)) {
+      } else if (
+        /^(@asset:\S+|(?:Lời dẫn|Người dẫn|Thuyết minh)(?:\s*\([^)]*\))?|[^\s:：]{1,24}(?:\s*\([^)]*\))?)\s*[:：]/.test(line) &&
+        !line.startsWith('【')
+      ) {
         line = `【Thoại · Lồng tiếng tiếng Việt】 ${line}`
       }
     } else {

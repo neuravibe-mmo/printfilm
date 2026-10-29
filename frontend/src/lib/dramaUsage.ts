@@ -31,12 +31,17 @@ export function formatDramaChargeYuan(yuan: number | undefined | null, locale?: 
   return formatCredits(yuan, locale)
 }
 
-/** Danh sách/bản sao ngắn của bàn làm việc: chi phí · hình ảnh thô · video thô · cuộc gọi */
-export function formatDramaUsageBrief(usage?: DramaProjectUsageStats | null, locale?: string): string {
+/** Danh sách/bản sao ngắn của bàn làm việc: hình ảnh · video · cuộc gọi (không hiển thị chi phí xu) */
+export function formatDramaUsageBrief(
+  usage?: DramaProjectUsageStats | null,
+  locale?: string,
+  options?: { includeCharge?: boolean },
+): string {
   const loc = locale || getActiveLocale()
   const u = usage || EMPTY_DRAMA_USAGE
   const calls = u.calls > 0 ? (loc === 'vi' ? ` · ${u.calls} lượt gọi` : loc === 'en' ? ` · ${u.calls} calls` : ` · 调用 ${u.calls}`) : ''
   const imgLabel = loc === 'vi' ? 'Sinh ảnh' : loc === 'en' ? 'Images' : '生图'
   const videoLabel = loc === 'vi' ? 'Sinh video' : loc === 'en' ? 'Videos' : '生视频'
-  return `${formatDramaChargeYuan(u.charge_yuan, loc)} · ${imgLabel} ${u.image_gens} · ${videoLabel} ${u.video_gens}${calls}`
+  const charge = options?.includeCharge ? `${formatDramaChargeYuan(u.charge_yuan, loc)} · ` : ''
+  return `${charge}${imgLabel} ${u.image_gens} · ${videoLabel} ${u.video_gens}${calls}`
 }

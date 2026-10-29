@@ -1,5 +1,5 @@
-import React, { useRef } from 'react'
-import { Loader2, Terminal, Upload } from 'lucide-react'
+import React from 'react'
+import { ChevronDown, Terminal } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { dramaApi, type DramaAsset, type DramaEpisode, type DramaFragment } from '../../api/drama'
 import { hasNonLocalizedCues, localizeScriptCues } from '../../lib/dramaCueI18n'
@@ -12,6 +12,8 @@ import {
 import {
   extractAssetIds,
   formatFragLabel,
+  sumFragmentContentDuration,
+  syncContentDurations,
   type FragmentRefStripItem,
   type FragmentVideoVersion,
 } from './dramaEpisodeEditUtils'
@@ -94,11 +96,22 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
     onSetStatus,
     onSeedFromScript,
     onPlanFragmentsWithLlm,
-    videoUploading = false,
-    onUploadVideo,
   }) {
     const { t } = useI18n()
-    const uploadVideoInputRef = useRef<HTMLInputElement>(null)
+    const [showVideoMenu, setShowVideoMenu] = React.useState(false)
+    const videoMenuRef = React.useRef<HTMLDivElement>(null)
+
+    React.useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (videoMenuRef.current && !videoMenuRef.current.contains(e.target as Node)) {
+          setShowVideoMenu(false)
+        }
+      }
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }, [])
 
     return (
       <section className="drama-ep-editor">
@@ -121,7 +134,7 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
                 style={{ fontSize: '0.8rem', padding: '4px 10px', height: 'auto', whiteSpace: 'nowrap' }}
                 onClick={async () => {
                   if (!selected) return
-                  const videoLang = String(projectParams?.video_language || 'auto')
+                  const videoLang = String(projectParams?.video_language || 'vi')
                   const localized = localizeScriptCues(selected.content || '', 'vi', videoLang)
                   const nextFragments = fragments.map((f, i) =>
                     i === selectedIndex ? { ...f, content: localized } : f,
@@ -143,13 +156,28 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
               {t('drama.episodeEdit.duration')}
               <input
                 type="number"
-                min={4}
-                max={15}
-                value={selectedDuration}
+                min={3}
+                max={10}
+                value={selectedDuration || ''}
                 disabled={!editing && !selected}
-                onChange={(e) =>
-                  onUpdateSelected({ duration_sec: Number(e.target.value) || 8 })
-                }
+                onChange={(e) => {
+                  const num = Number(e.target.value) || 0
+                  const clamped = num > 0 ? Math.min(15, num) : 0
+                  const curContent = selected?.content || ''
+                  const nextContent = clamped > 0 ? syncContentDurations(curContent, clamped) : curContent
+                  onUpdateSelected({
+                    duration_sec: clamped,
+                    ...(clamped > 0 ? { content: nextContent } : {}),
+                  })
+                }}
+                onBlur={() => {
+                  if (!selectedDuration || selectedDuration < 3) {
+                    const fallback = 8
+                    const curContent = selected?.content || ''
+                    const nextContent = syncContentDurations(curContent, fallback)
+                    onUpdateSelected({ duration_sec: fallback, content: nextContent })
+                  }
+                }}
               />
               s
             </label>
@@ -223,9 +251,11 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
               const keptExtra = (selected?.asset_ids || []).filter(
                 (id) => !prevContentIdSet.has(id) || fromContent.includes(id),
               )
+              const contentDuration = sumFragmentContentDuration(nextContent)
               onUpdateSelected({
                 content: nextContent,
                 asset_ids: Array.from(new Set([...keptExtra, ...fromContent])),
+                ...(contentDuration > 0 ? { duration_sec: contentDuration } : {}),
               })
               if (removed.length > 0) {
                 onSetStatus(t('drama.episodeEdit.unlinkNoName'))
@@ -303,92 +333,62 @@ export const EpisodeEditScriptSection: React.FC<EpisodeEditScriptSectionProps> =
                 >
                   {t('common.edit')}
                 </button>
-                <button
-                  type="button"
-                  className="drama-ep-btn-dark"
-                  disabled={selectedGenerateLocked || !selected}
-                  title={
-                    continuityBlockedReason ||
-                    continuityQueueHint ||
-                    (selectedIsGenerating ? t('drama.episodeEdit.generating') : undefined)
-                  }
-                  onClick={() => void onGenerateSelected()}
-                >
-                  {selectedIsGenerating
-                    ? t('drama.episodeEdit.generating')
-                    : busy
-                      ? t('drama.episodeEdit.processing')
-                      : continuityQueueHint
-                        ? t('drama.episodeEdit.queued')
-                        : continuityBlockedReason
-                          ? t('drama.episodeEdit.waiting')
-                          : selectedHasVideo
-                            ? t('drama.episodeEdit.regenConfirm')
-                            : t('drama.episodeEdit.genConfirm')}
-                </button>
-                <button
-                  type="button"
-                  className="drama-ep-btn-ghost"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    border: '1px solid rgba(0, 0, 0, 0.12)',
-                    minWidth: 'auto',
-                    padding: '0 12px',
-                    fontSize: '0.82rem',
-                    color: '#334155',
-                    background: '#fff',
-                  }}
-                  disabled={!selected}
-                  onClick={onShowCurlModal}
-                  title="Lấy Prompt, Ảnh tham chiếu & cURL để tạo video ngoài (Google Flow, Runway...)"
-                >
-                  <Terminal size={13} />
-                  cURL / Flow
-                </button>
+                <div ref={videoMenuRef} className="drama-ep-video-split-wrap">
+                  <button
+                    type="button"
+                    className="drama-ep-btn-dark drama-ep-video-split-main"
+                    disabled={selectedGenerateLocked || !selected}
+                    title={
+                      continuityBlockedReason ||
+                      continuityQueueHint ||
+                      (selectedIsGenerating ? t('drama.episodeEdit.generating') : undefined)
+                    }
+                    onClick={() => void onGenerateSelected()}
+                  >
+                    {selectedIsGenerating
+                      ? t('drama.episodeEdit.generating')
+                      : busy
+                        ? t('drama.episodeEdit.processing')
+                        : continuityQueueHint
+                          ? t('drama.episodeEdit.queued')
+                          : continuityBlockedReason
+                            ? t('drama.episodeEdit.waiting')
+                            : selectedHasVideo
+                              ? t('drama.episodeEdit.regenConfirm')
+                              : t('drama.episodeEdit.genConfirm')}
+                  </button>
+                  <button
+                    type="button"
+                    className="drama-ep-btn-dark drama-ep-video-split-arrow"
+                    disabled={!selected}
+                    onClick={() => setShowVideoMenu((prev) => !prev)}
+                    title="Tùy chọn tạo video"
+                    aria-expanded={showVideoMenu}
+                  >
+                    <ChevronDown size={14} />
+                  </button>
 
-                <input
-                  ref={uploadVideoInputRef}
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime,video/x-matroska"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file && onUploadVideo) {
-                      onUploadVideo(file)
-                    }
-                    if (uploadVideoInputRef.current) {
-                      uploadVideoInputRef.current.value = ''
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="drama-ep-btn-ghost"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    border: '1px solid rgba(0, 0, 0, 0.12)',
-                    minWidth: 'auto',
-                    padding: '0 12px',
-                    fontSize: '0.82rem',
-                    color: '#2563eb',
-                    background: '#fff',
-                  }}
-                  disabled={!selected || videoUploading || selectedIsGenerating}
-                  onClick={() => uploadVideoInputRef.current?.click()}
-                  title="Tải lên video từ máy tính (tạo từ Google Flow, Runway, Sora...)"
-                >
-                  {videoUploading ? (
-                    <Loader2 size={13} className="drama-ep-detect-spin" />
-                  ) : (
-                    <Upload size={13} />
+                  {showVideoMenu && (
+                    <div className="drama-ep-video-dropdown-menu">
+                      <button
+                        type="button"
+                        className="drama-ep-video-menu-item"
+                        onClick={() => {
+                          setShowVideoMenu(false)
+                          onShowCurlModal()
+                        }}
+                      >
+                        <Terminal size={15} className="drama-ep-video-menu-icon" />
+                        <div className="drama-ep-video-menu-content">
+                          <div className="drama-ep-video-menu-title">Lệnh cURL / Flow</div>
+                          <div className="drama-ep-video-menu-desc">
+                            Xem cURL tạo video, Prompt & dữ liệu Google Flow
+                          </div>
+                        </div>
+                      </button>
+                    </div>
                   )}
-                  {videoUploading ? 'Đang tải video…' : 'Tải video lên'}
-                </button>
-
+                </div>
               </>
             )}
           </div>

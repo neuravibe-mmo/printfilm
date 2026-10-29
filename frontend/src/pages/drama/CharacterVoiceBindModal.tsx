@@ -57,10 +57,17 @@ function readVoiceSpeaker(asset: DramaAsset): string {
   return typeof params.speaker === 'string' ? params.speaker.trim() : ''
 }
 
-// Đọc mô tả giọng nói của nội dung giọng nói
+// Đọc mô tả giọng nói của nội dung giọng nói (hoặc từ voiceAudio đã gán vào nhân vật)
 export function readVoicePrompt(asset: DramaAsset): string {
   const params = (asset.params || {}) as Record<string, unknown>
-  return typeof params.voicePrompt === 'string' ? params.voicePrompt.trim() : ''
+  if (typeof params.voicePrompt === 'string' && params.voicePrompt.trim()) {
+    return params.voicePrompt.trim()
+  }
+  const voiceAudio = params.voiceAudio as Record<string, unknown> | undefined
+  if (voiceAudio && typeof voiceAudio.voicePrompt === 'string' && voiceAudio.voicePrompt.trim()) {
+    return voiceAudio.voicePrompt.trim()
+  }
+  return ''
 }
 
 // Đọc âm thanh ràng buộc từ thông số nội dung nhân vật

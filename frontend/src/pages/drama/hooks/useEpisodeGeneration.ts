@@ -424,7 +424,12 @@ export function useEpisodeGeneration({
           const nextParams = (ep.params as Record<string, unknown>) || {}
           setEpisodeParams(nextParams)
           episodeParamsRef.current = nextParams
-          setFragments(ep.fragments || [])
+          setFragments(
+            (ep.fragments || []).map((f) => ({
+              ...f,
+              duration_sec: resolveFragmentDurationSec(f.content, f.duration_sec),
+            })),
+          )
           setSelectedIndex(0)
           setEditing(false)
           const mode = String(ep.params?.fragment_plan_mode || 'llm')
