@@ -90,7 +90,7 @@ function DramaListInner() {
    * showCreate Có nên mở rộng bảng điều khiển mới hay không
    */
   const [storyText, setStoryText] = useState('')
-  const [episodeCount, setEpisodeCount] = useState(12)
+  const [episodeCount, setEpisodeCount] = useState(1)
   const [imageStyleId, setImageStyleId] = useState<ImageStyleId | ''>('')
   const [items, setItems] = useState<DramaProjectListItem[]>([])
   const [loading, setLoading] = useState(true)

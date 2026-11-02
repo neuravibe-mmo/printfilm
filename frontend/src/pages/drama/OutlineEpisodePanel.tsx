@@ -456,7 +456,7 @@ export function OutlineEpisodePanel({
               lineHeight: 1.6,
             }}
           >
-            AI đang phân tích ý tưởng, thiết lập các tuyến nhân vật và chia mạch truyện cho {episodeCount || 12} tập. Quá trình có thể mất khoảng vài chục giây, vui lòng chờ đợi...
+            AI đang phân tích ý tưởng, thiết lập các tuyến nhân vật và chia mạch truyện cho {episodeCount || 1} tập. Quá trình có thể mất khoảng vài chục giây, vui lòng chờ đợi...
           </p>
 
           <div

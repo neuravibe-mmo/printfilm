@@ -536,7 +536,7 @@ def resolve_episode_target(
             continue
         if value >= 1:
             return value
-    return 12
+    return 1
 
 
 def merge_episode_bodies(
@@ -908,7 +908,7 @@ async def run_episode_script_batch(
     creative: str = "",
 ) -> list[dict[str, Any]]:
     # Tạo lô văn bản tiếp theo theo số tập bị thiếu (mặc định là từng tập); các bộ trống thủ công sẽ không tham gia viết lại tự động
-    target = int(total or summary.get("episodeCount") or 12)
+    target = int(total or summary.get("episodeCount") or 1)
     missing = auto_missing_episode_numbers(existing, target)
     if not missing:
         return []
