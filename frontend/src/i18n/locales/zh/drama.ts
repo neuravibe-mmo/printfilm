@@ -153,6 +153,7 @@ export const zhDrama = {
       'shanghai-animation': '上美画风',
       'pixel-art': '像素风',
       'shadow-puppet-illustration': '皮影戏插画',
+      'comedy-humorous-film': '幽默搞笑喜剧视频',
 
       // Nhóm 2: Khoa học, Huyền bí & Công nghệ
       'hard-sci-fi-interstellar': '硬核科幻星际深空',
@@ -184,6 +185,7 @@ export const zhDrama = {
       'fly-on-the-wall-doc': '静默观察墙蝇纪录片',
       'raw-transparent-portrait': '真实原生人像',
       'candid-unscripted-moments': '动态即时抓拍瞬间',
+      'vietnamese-daily-life': '越南河内写实市井烟火',
 
       // Nhóm 5: Đô thị, Văn hóa & Xã hội
       'cyber-tokyo-night': '东京赛博迷幻夜景',

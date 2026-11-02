@@ -373,6 +373,10 @@
   cursor: not-allowed;
 }
 
+.drama-agent-opt-trigger svg {
+  flex-shrink: 0;
+}
+
 .drama-agent-opt-trigger svg.is-open {
   transform: rotate(180deg);
 }
@@ -381,6 +385,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.drama-agent-opt-trigger--style {
+  min-width: 220px;
+  max-width: 480px;
+  justify-content: space-between;
+}
+
+.drama-agent-opt-trigger--style .drama-agent-opt-label {
+  flex: 1;
+  text-align: left;
 }
 
 .drama-agent-opt-divider {
@@ -4536,6 +4551,11 @@
   .drama-agent-ai-footer {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .drama-agent-opt-trigger--style {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .drama-agent-generate-btn {

@@ -232,6 +232,7 @@ export const enDrama = {
             "shanghai-animation": "Classic Shanghai Animation",
             "pixel-art": "Pixel Art",
             "shadow-puppet-illustration": "Shadow Puppet Illustration",
+            "comedy-humorous-film": "Humorous Comedy Video",
 
             "hard-sci-fi-interstellar": "Hard Sci-Fi Interstellar",
             "mystic-cyber-occult": "Mystic Cyber Occult",
@@ -260,6 +261,7 @@ export const enDrama = {
             "fly-on-the-wall-doc": "Fly-on-the-Wall Documentary",
             "raw-transparent-portrait": "Raw & Transparent Portraiture",
             "candid-unscripted-moments": "Candid & Unscripted Moments",
+            "vietnamese-daily-life": "Hanoi Authentic Daily Life",
 
             "cyber-tokyo-night": "Cyber Tokyo Nightlife",
             "traditional-heritage-festive": "Traditional Heritage Festive",

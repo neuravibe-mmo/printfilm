@@ -72,14 +72,14 @@ export function DramaImageStyleModal({
       ) : (
         <button
           type="button"
-          className={`drama-agent-opt-trigger${active ? ' is-active' : ''}`}
+          className={`drama-agent-opt-trigger drama-agent-opt-trigger--style${active ? ' is-active' : ''}`}
           disabled={disabled}
           aria-expanded={open}
           onClick={() => setOpen(true)}
         >
           <BookOpen size={15} strokeWidth={1.8} />
           <span className="drama-agent-opt-label">{triggerLabel}</span>
-          <ChevronDown size={13} strokeWidth={2} />
+          <ChevronDown size={13} strokeWidth={2} className={open ? 'is-open' : undefined} />
         </button>
       )}
 

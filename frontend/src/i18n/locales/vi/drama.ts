@@ -115,6 +115,7 @@ export const viDrama = {
       'shanghai-animation': 'Phong cách hoạt hình Thượng Hải',
       'pixel-art': 'Pixel Art',
       'shadow-puppet-illustration': 'Minh họa múa rối bóng',
+      'comedy-humorous-film': 'Video hài hước dí dỏm',
 
       // Nhóm 2: Khoa học, Huyền bí & Công nghệ
       'hard-sci-fi-interstellar': 'Khoa học viễn tưởng không gian sâu',
@@ -146,6 +147,7 @@ export const viDrama = {
       'fly-on-the-wall-doc': 'Tài liệu ẩn mình quan sát tự nhiên',
       'raw-transparent-portrait': 'Chân dung mộc nguyên bản tả thực',
       'candid-unscripted-moments': 'Bắt khoảnh khắc tức thì ngẫu hứng',
+      'vietnamese-daily-life': 'Hiện thực đời thường Hà Nội',
 
       // Nhóm 5: Đô thị, Văn hóa & Xã hội
       'cyber-tokyo-night': 'Đêm đô thị Tokyo lung linh',

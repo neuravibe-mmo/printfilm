@@ -43,6 +43,7 @@ IMAGE_STYLE_IDS = (
     "shanghai-animation",
     "pixel-art",
     "shadow-puppet-illustration",
+    "comedy-humorous-film",
     # Nhóm 2: Khoa học, Huyền bí & Công nghệ
     "hard-sci-fi-interstellar",
     "mystic-cyber-occult",
@@ -71,6 +72,7 @@ IMAGE_STYLE_IDS = (
     "fly-on-the-wall-doc",
     "raw-transparent-portrait",
     "candid-unscripted-moments",
+    "vietnamese-daily-life",
     # Nhóm 5: Đô thị, Văn hóa & Xã hội
     "cyber-tokyo-night",
     "traditional-heritage-festive",
@@ -158,6 +160,9 @@ IMAGE_STYLE_PROMPTS: dict[str, str] = {
     "shadow-puppet-illustration": (
         "Phong cách tranh minh họa múa rối bóng dân gian, đường nét bóng cắt, hoa văn chạm rỗng, ngược sáng ấm áp, tính trang trí nghệ thuật dân gian, hiệu ứng bóng đổ xếp lớp."
     ),
+    "comedy-humorous-film": (
+        "Phong cách video hài hước dí dỏm, màu sắc tươi sáng rực rỡ, ánh sáng ấm áp tự nhiên, biểu cảm gương mặt nhân vật sống động hài hước và duyên dáng, góc máy linh hoạt bắt trọn tình huống vui nhộn, không khí hóm hỉnh tràn đầy năng lượng tích cực, chất lượng hình ảnh điện ảnh sitcom sắc nét. Comedy film style, bright vibrant colors, warm natural lighting, expressive humorous facial reactions, playful dynamic staging, upbeat comedic timing, cinematic sitcom atmosphere."
+    ),
     "hard-sci-fi-interstellar": (
         "Phong cách khoa học viễn tưởng không gian sâu, trạm vũ trụ hiện thực và phi thuyền module phức tạp, ánh sáng lạnh của sao băng và tinh vân xa xôi, kính buồng lái phản chiếu vũ trụ, vật liệu composite và hợp kim mờ, hạt phim IMAX 70mm, cảm giác đơn độc hùng vĩ. Hard sci-fi interstellar realism, realistic space station and modular spacecraft, cold starlight, IMAX 70mm film grain, deep space cinematic lighting."
     ),
@@ -233,6 +238,9 @@ IMAGE_STYLE_PROMPTS: dict[str, str] = {
     "candid-unscripted-moments": (
         "Phong cách Bắt khoảnh khắc tức thì ngẫu hứng, tốc độ chụp cực nhanh bắt trọn chuyển động trong tích tắc, tiếng cười bộc phát hoặc ánh nhìn lơ đãng, độ mờ nhòe chuyển động (motion blur) tự nhiên gia tăng cảm giác sống động, nhịp sống chân thực tức thì. Candid unscripted moment capture, high-speed shutter catching fleeting instantaneous emotion, spontaneous burst of laughter, subtle natural motion blur, authentic kinetic energy."
     ),
+    "vietnamese-daily-life": (
+        "Phong cách điện ảnh hiện thực đời thường Hà Nội, phố cổ rêu phong, ngõ nhỏ tường vàng ẩm rêu, ban công hoa giấy và dây điện chằng chịt đặc trưng, ánh nắng sớm xuyên qua tán cây xà cừ cổ thụ hoặc chiều muộn bảng lảng khói bếp, quán trà đá vỉa hè ghế nhựa, xe máy Cub cổ điển, gánh hàng rong hoa quả, con người với nụ cười mộc mạc và trang phục thường nhật tự nhiên, tông màu phim ấm áp hoài niệm, hạt film 35mm giàu cảm xúc mộc mạc và chân thật. Authentic Hanoi Vietnamese daily life realism, ancient mossy yellow-walled alleys, weathered French-colonial balconies, tangled overhead wires, morning sunlight through leafy trees, sidewalk iced tea plastic chairs, vintage motorbikes, candid street vendors, nostalgic warm 35mm film tones, genuine cinematic realism."
+    ),
     "cyber-tokyo-night": (
         "Phong cách đêm đô thị Tokyo lung linh, biển hiệu đèn lồng đỏ truyền thống hòa quyện dải LED neon khổng lồ Shinjuku đêm mưa, vũng nước phản chiếu đa sắc, nhịp sống sầm uất đa tầng lớp, chiều sâu điện ảnh ngoạn mục. Cyber Tokyo nightlife, traditional lanterns blending with towering neon billboards, rain-slicked asphalt reflections, dense urban depth, cinematic atmospheric haze."
     ),
@@ -304,6 +312,7 @@ IMAGE_STYLE_LABELS: dict[str, str] = {
     "shanghai-animation": "Phong cách hoạt hình Thượng Hải",
     "pixel-art": "Pixel Art",
     "shadow-puppet-illustration": "Minh họa múa rối bóng",
+    "comedy-humorous-film": "Video hài hước dí dỏm",
     "hard-sci-fi-interstellar": "Khoa học viễn tưởng không gian sâu",
     "mystic-cyber-occult": "Huyền bí công nghệ Cyber Occult",
     "steampunk-victorian-machinery": "Steampunk cơ khí Victoria",
@@ -329,6 +338,7 @@ IMAGE_STYLE_LABELS: dict[str, str] = {
     "fly-on-the-wall-doc": "Tài liệu ẩn mình quan sát tự nhiên",
     "raw-transparent-portrait": "Chân dung mộc nguyên bản tả thực",
     "candid-unscripted-moments": "Bắt khoảnh khắc tức thì ngẫu hứng",
+    "vietnamese-daily-life": "Hiện thực đời thường Hà Nội",
     "cyber-tokyo-night": "Đêm đô thị Tokyo lung linh",
     "traditional-heritage-festive": "Lễ hội văn hóa truyền thống",
     "monochrome-noir-city": "Phim Noir đô thị đen trắng",

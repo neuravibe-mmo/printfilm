@@ -27,6 +27,7 @@ export const IMAGE_STYLE_IDS = [
   'shanghai-animation',
   'pixel-art',
   'shadow-puppet-illustration',
+  'comedy-humorous-film',
 
   // Nhóm 2: Khoa học, Huyền bí & Công nghệ
   'hard-sci-fi-interstellar',
@@ -58,6 +59,7 @@ export const IMAGE_STYLE_IDS = [
   'fly-on-the-wall-doc',
   'raw-transparent-portrait',
   'candid-unscripted-moments',
+  'vietnamese-daily-life',
 
   // Nhóm 5: Đô thị, Văn hóa & Xã hội
   'cyber-tokyo-night',
@@ -135,6 +137,7 @@ export const IMAGE_STYLE_OPTIONS: Array<ImageStyleOption> = [
   { id: 'shanghai-animation', label: 'Phong cách hoạt hình Thượng Hải', categoryId: 'cinema_period_anime' },
   { id: 'pixel-art', label: 'Pixel Art', categoryId: 'cinema_period_anime' },
   { id: 'shadow-puppet-illustration', label: 'Minh họa múa rối bóng', categoryId: 'cinema_period_anime' },
+  { id: 'comedy-humorous-film', label: 'Video hài hước dí dỏm', categoryId: 'cinema_period_anime' },
 
   // Nhóm 2: Khoa học, Huyền bí & Công nghệ
   { id: 'hard-sci-fi-interstellar', label: 'Khoa học viễn tưởng không gian sâu', categoryId: 'scifi_mystic_tech' },
@@ -166,6 +169,7 @@ export const IMAGE_STYLE_OPTIONS: Array<ImageStyleOption> = [
   { id: 'fly-on-the-wall-doc', label: 'Tài liệu ẩn mình quan sát tự nhiên', categoryId: 'human_real_life' },
   { id: 'raw-transparent-portrait', label: 'Chân dung mộc nguyên bản tả thực', categoryId: 'human_real_life' },
   { id: 'candid-unscripted-moments', label: 'Bắt khoảnh khắc tức thì ngẫu hứng', categoryId: 'human_real_life' },
+  { id: 'vietnamese-daily-life', label: 'Hiện thực đời thường Hà Nội', categoryId: 'human_real_life' },
 
   // Nhóm 5: Đô thị, Văn hóa & Xã hội
   { id: 'cyber-tokyo-night', label: 'Đêm đô thị Tokyo lung linh', categoryId: 'urban_culture' },
