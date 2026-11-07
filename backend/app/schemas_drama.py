@@ -353,3 +353,16 @@ class DramaDetectAssetsResponse(BaseModel):
     detected_names: list[str] = Field(default_factory=list)
     created_assets: list[DramaAssetOut] = Field(default_factory=list)
 
+
+class DramaMatchImageStyleRequest(BaseModel):
+    content: str
+    project_id: int | None = None
+
+
+class DramaMatchImageStyleResponse(BaseModel):
+    ok: bool = True
+    style_id: str | None = None
+    style_label: str | None = None
+    reason: str = ""
+
+

@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import logging
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -120,8 +121,9 @@ async def generate_chatgpt_image(
     remote_url = img_item.get("url") or data.get("url")
 
     stamp = int(time.time())
+    token = uuid.uuid4().hex[:8]
     dest_dir = storage.project_dir(project_id or 0)
-    dest_path = dest_dir / f"img_{(shot_no or 0):03d}_{stamp}.jpg"
+    dest_path = dest_dir / f"img_{(shot_no or 0):03d}_{stamp}_{token}.jpg"
 
     if b64_str:
         img_bytes = base64.b64decode(b64_str)

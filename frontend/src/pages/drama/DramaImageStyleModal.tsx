@@ -19,6 +19,9 @@ type Props = {
   title?: string
   /** Kích hoạt sao chép khi không được chọn */
   emptyLabel?: string
+  /** Nội dung ý tưởng/câu chuyện người dùng đã nhập để AI tự động phân tích và chọn phong cách */
+  content?: string
+  projectId?: number
 }
 
 // Trình kích hoạt thư viện kiểu kết xuất và kiểu hình ảnh Modal
@@ -30,6 +33,8 @@ export function DramaImageStyleModal({
   fieldLabel,
   title,
   emptyLabel,
+  content,
+  projectId,
 }: Props) {
   const { t, locale } = useI18n()
   const [open, setOpen] = useState(false)
@@ -88,7 +93,13 @@ export function DramaImageStyleModal({
         <p className="drama-style-modal-hint">
           {t('drama.styleModal.hint')}
         </p>
-        <DramaImageStyleCardGrid value={value} onChange={select} noneLabel={t('drama.styleModal.none')} />
+        <DramaImageStyleCardGrid
+          value={value}
+          onChange={select}
+          noneLabel={t('drama.styleModal.none')}
+          content={content}
+          projectId={projectId}
+        />
       </Modal>
     </>
   )

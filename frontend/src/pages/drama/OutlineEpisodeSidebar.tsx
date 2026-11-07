@@ -21,6 +21,7 @@ export type OutlineEpisodeSidebarProps = {
   summaryReady: boolean
   canAdd: boolean
   adding: boolean
+  isAssetsSeeding?: boolean
   episodeShotStats: Record<number, { fragmentCount: number; totalSec: number }>
   episodeCovers: Record<number, string>
   menuEpNumber: number | null
@@ -44,6 +45,7 @@ export const OutlineEpisodeSidebar: React.FC<OutlineEpisodeSidebarProps> = React
     summaryReady,
     canAdd,
     adding,
+    isAssetsSeeding = false,
     episodeShotStats,
     episodeCovers,
     menuEpNumber,
@@ -71,7 +73,8 @@ export const OutlineEpisodeSidebar: React.FC<OutlineEpisodeSidebarProps> = React
             <button
               type="button"
               className="drama-outline-add-btn"
-              disabled={!canAdd}
+              disabled={!canAdd || isAssetsSeeding}
+              title={isAssetsSeeding ? 'Đang trích xuất tài nguyên, vui lòng chờ' : undefined}
               onClick={onAddEpisode}
             >
               <Plus size={14} strokeWidth={2.5} />

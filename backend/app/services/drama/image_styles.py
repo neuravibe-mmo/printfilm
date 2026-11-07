@@ -44,6 +44,7 @@ IMAGE_STYLE_IDS = (
     "pixel-art",
     "shadow-puppet-illustration",
     "comedy-humorous-film",
+    "vietnamese-dark-poetic-cinema",
     # Nhóm 2: Khoa học, Huyền bí & Công nghệ
     "hard-sci-fi-interstellar",
     "mystic-cyber-occult",
@@ -162,6 +163,9 @@ IMAGE_STYLE_PROMPTS: dict[str, str] = {
     ),
     "comedy-humorous-film": (
         "Phong cách video hài hước dí dỏm, màu sắc tươi sáng rực rỡ, ánh sáng ấm áp tự nhiên, biểu cảm gương mặt nhân vật sống động hài hước và duyên dáng, góc máy linh hoạt bắt trọn tình huống vui nhộn, không khí hóm hỉnh tràn đầy năng lượng tích cực, chất lượng hình ảnh điện ảnh sitcom sắc nét. Comedy film style, bright vibrant colors, warm natural lighting, expressive humorous facial reactions, playful dynamic staging, upbeat comedic timing, cinematic sitcom atmosphere."
+    ),
+    "vietnamese-dark-poetic-cinema": (
+        "Phong cách điện ảnh Việt Nam mang đậm chất thơ u tối, tông màu lạnh trầm buồn, sương mù bảng lảng giăng mắc bờ sông buổi sớm, ánh sáng tự nhiên khuếch tán mờ ảo, cảm giác tĩnh lặng cô đơn và hoài niệm sâu lắng, hạt phim 35mm mịn, độ tương phản dịu êm, thẩm mỹ điện ảnh hiện thực u uất. Vietnamese dark poetic cinema, melancholic moody atmosphere, dense morning mist over calm riverbank, desaturated cool muted cyan and teal tones, soft diffuse atmospheric lighting, 35mm film texture, quiet introspection, somber cinematic realism."
     ),
     "hard-sci-fi-interstellar": (
         "Phong cách khoa học viễn tưởng không gian sâu, trạm vũ trụ hiện thực và phi thuyền module phức tạp, ánh sáng lạnh của sao băng và tinh vân xa xôi, kính buồng lái phản chiếu vũ trụ, vật liệu composite và hợp kim mờ, hạt phim IMAX 70mm, cảm giác đơn độc hùng vĩ. Hard sci-fi interstellar realism, realistic space station and modular spacecraft, cold starlight, IMAX 70mm film grain, deep space cinematic lighting."
@@ -313,6 +317,7 @@ IMAGE_STYLE_LABELS: dict[str, str] = {
     "pixel-art": "Pixel Art",
     "shadow-puppet-illustration": "Minh họa múa rối bóng",
     "comedy-humorous-film": "Video hài hước dí dỏm",
+    "vietnamese-dark-poetic-cinema": "Điện ảnh Việt Nam mang đậm chất thơ u tối",
     "hard-sci-fi-interstellar": "Khoa học viễn tưởng không gian sâu",
     "mystic-cyber-occult": "Huyền bí công nghệ Cyber Occult",
     "steampunk-victorian-machinery": "Steampunk cơ khí Victoria",
@@ -466,3 +471,79 @@ def append_style_board_url(
         out.append(board)
         return out
     return out[:cap]
+
+
+async def match_image_style_with_ai(content: str) -> tuple[str | None, str | None, str]:
+    """Phân tích nội dung ý tưởng/câu chuyện và sử dụng AI để chọn ra phong cách hình ảnh phù hợp nhất."""
+    raw_content = (content or "").strip()
+    if not raw_content or len(raw_content) < 3:
+        return None, None, "Nội dung quá ngắn để xác định phong cách hình ảnh phù hợp."
+
+    from app.services.drama.llm import drama_chat_json
+
+    catalog_lines = []
+    for sid in IMAGE_STYLE_IDS:
+        label = IMAGE_STYLE_LABELS.get(sid, sid)
+        prompt_desc = IMAGE_STYLE_PROMPTS.get(sid, "")
+        catalog_lines.append(f"- ID: {sid} | Tên: {label} | Đặc trưng mỹ thuật: {prompt_desc}")
+
+    catalog_text = "\n".join(catalog_lines)
+
+    system_prompt = (
+        "Bạn là chuyên gia thẩm mỹ điện ảnh và đạo diễn hình ảnh của PRINTFILM.\n"
+        "Nhiệm vụ của bạn là đọc kỹ nội dung ý tưởng/câu chuyện do người dùng cung cấp, "
+        "phân tích thể loại, tông màu cảm xúc, bối cảnh, thời đại và không khí tổng thể, "
+        "sau đó chọn ra MỘT phong cách hình ảnh phù hợp nhất từ danh sách có sẵn.\n\n"
+        "Quy tắc bắt buộc:\n"
+        "1. style_id PHẢI là một ID chính xác nằm trong danh sách được cung cấp. Tuyệt đối không tự tạo ID mới.\n"
+        "2. Nếu nội dung vô nghĩa, spam, hoặc hoàn toàn không thể tìm thấy bất kỳ phong cách nào tương thích, "
+        "hãy đặt style_id là null và giải thích lý do ngắn gọn.\n"
+        "3. Nếu tìm thấy phong cách phù hợp, trả về style_id, tên style_label và một câu giải thích súc tích (1-2 câu tiếng Việt) "
+        "vì sao phong cách này phù hợp nhất với câu chuyện.\n\n"
+        "Bắt buộc xuất ra đối tượng JSON chuẩn (không dùng markdown code fence):\n"
+        "{\n"
+        '  "style_id": "chuỗi_id hoặc null",\n'
+        '  "style_label": "tên_phong_cách hoặc null",\n'
+        '  "reason": "giải thích ngắn gọn lý do chọn hoặc lý do không tìm thấy"\n'
+        "}"
+    )
+
+    user_prompt = (
+        f"Nội dung ý tưởng/câu chuyện của người dùng:\n"
+        f'"""\n{raw_content}\n"""\n\n'
+        f"Danh sách các phong cách hình ảnh có sẵn:\n"
+        f"{catalog_text}\n\n"
+        "Hãy chọn ra MỘT phong cách phù hợp nhất và trả về đối tượng JSON."
+    )
+
+    try:
+        data = await drama_chat_json(system_prompt, user_prompt, temperature=0.3)
+    except Exception as exc:
+        logger.warning("match_image_style_with_ai lỗi gọi LLM: %s", exc)
+        return None, None, f"Không thể kết nối dịch vụ AI: {exc}"
+
+    if not isinstance(data, dict):
+        return None, None, "AI không trả về kết quả hợp lệ."
+
+    raw_id = data.get("style_id")
+    reason = str(data.get("reason") or "").strip()
+
+    if not raw_id or str(raw_id).lower() in ("null", "none"):
+        return None, None, reason or "Không tìm thấy phong cách phù hợp với nội dung này."
+
+    chosen_id = str(raw_id).strip()
+    if chosen_id not in IMAGE_STYLE_IDS:
+        # Kiểm tra xem AI có trả về nhầm tên thay vì ID không
+        matched_by_label = None
+        for sid, lbl in IMAGE_STYLE_LABELS.items():
+            if chosen_id.lower() == lbl.lower() or chosen_id.lower() == sid.lower():
+                matched_by_label = sid
+                break
+        if matched_by_label:
+            chosen_id = matched_by_label
+        else:
+            return None, None, reason or "Không tìm thấy phong cách phù hợp với nội dung này."
+
+    label = get_image_style_label(chosen_id)
+    return chosen_id, label, reason or f"Phong cách phù hợp nhất với thể loại và bối cảnh câu chuyện."
+

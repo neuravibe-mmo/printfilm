@@ -1,5 +1,5 @@
 import React from 'react'
-import { Check, RefreshCw } from 'lucide-react'
+import { Check, Loader2, RefreshCw } from 'lucide-react'
 import type { DramaEpisodeBody } from '../../api/drama'
 import { episodeBodyCharLen, isSubstantialEpisodeCreative } from './dramaWorkspaceUtils'
 import { useI18n } from '../../i18n'
@@ -18,6 +18,7 @@ export type OutlineEpisodeHeaderProps = {
   selectedGenerating: boolean
   generatingMode: string | null
   confirming: boolean
+  isAssetsSeeding?: boolean
   onTitleDraftChange: (v: string) => void
   onGenerateBrief: () => void
   onGenerateFull: () => void
@@ -39,6 +40,7 @@ export const OutlineEpisodeHeader: React.FC<OutlineEpisodeHeaderProps> = React.m
     selectedGenerating,
     generatingMode,
     confirming,
+    isAssetsSeeding = false,
     onTitleDraftChange,
     onGenerateBrief,
     onGenerateFull,
@@ -107,10 +109,19 @@ export const OutlineEpisodeHeader: React.FC<OutlineEpisodeHeaderProps> = React.m
           <button
             type="button"
             className="drama-btn-ghost"
-            disabled={busy || !bodyReady}
+            disabled={busy || !bodyReady || isAssetsSeeding}
             onClick={onConfirmEnter}
           >
-            {confirming ? t('drama.outlinePanel.entering') : t('drama.outlinePanel.enterShot')}
+            {isAssetsSeeding ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <Loader2 size={13} className="pf-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                Đang trích xuất tài nguyên...
+              </span>
+            ) : confirming ? (
+              t('drama.outlinePanel.entering')
+            ) : (
+              t('drama.outlinePanel.enterShot')
+            )}
           </button>
         </div>
       </header>

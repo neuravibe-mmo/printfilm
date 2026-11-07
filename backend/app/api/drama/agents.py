@@ -16,6 +16,8 @@ from app.schemas_drama import (
     DramaAddEpisodeRequest,
     DramaChatRequest,
     DramaEpisodeScriptRequest,
+    DramaMatchImageStyleRequest,
+    DramaMatchImageStyleResponse,
     DramaRouteRequest,
     DramaScriptOut,
     DramaScriptSummaryRequest,
@@ -473,3 +475,60 @@ async def ai_chat(
     except ValueError as exc:
         raise HTTPException(status_code=402, detail=str(exc)) from exc
     return {"reply": reply, "task_id": task.id}
+
+
+@router.post("/ai/match_style", response_model=DramaMatchImageStyleResponse)
+@router.post("/ai/match-style", response_model=DramaMatchImageStyleResponse)
+async def match_image_style(
+    body: DramaMatchImageStyleRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> DramaMatchImageStyleResponse:
+    """Tự động phân tích nội dung câu chuyện bằng AI và chọn phong cách hình ảnh phù hợp nhất."""
+    content = (body.content or "").strip()
+    if not content:
+        return DramaMatchImageStyleResponse(
+            ok=False,
+            style_id=None,
+            style_label=None,
+            reason="Vui lòng nhập nội dung câu chuyện trước để AI tự động chọn phong cách.",
+        )
+
+    logger.info("Tự động chọn phong cách hình ảnh user_id=%s content_len=%s", user.id, len(content))
+
+    async def _do_match() -> dict:
+        from app.services.drama.image_styles import match_image_style_with_ai
+
+        sid, label, reason = await match_image_style_with_ai(content)
+        return {"style_id": sid, "style_label": label, "reason": reason}
+
+    try:
+        task, res = await run_billed_ephemeral(
+            db,
+            user,
+            domain="drama",
+            task_type="agent_chat",
+            executor=_do_match,
+            payload={"content_len": len(content)},
+            drama_project_id=body.project_id,
+            commit=True,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=402, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error("Lỗi khi AI phân tích phong cách: %s", exc)
+        return DramaMatchImageStyleResponse(
+            ok=False,
+            style_id=None,
+            style_label=None,
+            reason=f"Lỗi khi AI phân tích: {exc}",
+        )
+
+    matched_id = res.get("style_id")
+    return DramaMatchImageStyleResponse(
+        ok=bool(matched_id),
+        style_id=matched_id,
+        style_label=res.get("style_label"),
+        reason=res.get("reason") or "",
+    )
+

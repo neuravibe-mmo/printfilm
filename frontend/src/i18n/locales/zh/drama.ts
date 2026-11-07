@@ -154,6 +154,7 @@ export const zhDrama = {
       'pixel-art': '像素风',
       'shadow-puppet-illustration': '皮影戏插画',
       'comedy-humorous-film': '幽默搞笑喜剧视频',
+      'vietnamese-dark-poetic-cinema': '越南阴郁诗意电影',
 
       // Nhóm 2: Khoa học, Huyền bí & Công nghệ
       'hard-sci-fi-interstellar': '硬核科幻星际深空',

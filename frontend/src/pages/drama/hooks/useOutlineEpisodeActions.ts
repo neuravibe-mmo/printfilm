@@ -25,6 +25,7 @@ export type UseOutlineEpisodeActionsParams = {
   sectionDraft: string
   titleDraft: string
   canAdd: boolean
+  isAssetsSeeding?: boolean
   creativeCardRef: React.RefObject<HTMLElement | null>
   summaryCardRef: React.RefObject<HTMLElement | null>
   bodyCardRef: React.RefObject<HTMLElement | null>
@@ -50,6 +51,7 @@ export function useOutlineEpisodeActions({
   sectionDraft,
   titleDraft,
   canAdd,
+  isAssetsSeeding = false,
   creativeCardRef,
   summaryCardRef,
   bodyCardRef,
@@ -114,7 +116,7 @@ export function useOutlineEpisodeActions({
   }
 
   async function handleAddEpisode() {
-    if (!canAdd) return
+    if (!canAdd || isAssetsSeeding) return
     setAdding(true)
     setLocalError('')
     try {
@@ -275,6 +277,7 @@ export function useOutlineEpisodeActions({
   }
 
   function handleGenerate(mode: 'summary' | 'body' | 'full' | 'brief' | 'creative') {
+    if (isAssetsSeeding) return
     if (mode === 'creative' && selected?.creative?.trim()) {
       setRegenCreativeConfirmOpen(true)
       return
@@ -287,7 +290,7 @@ export function useOutlineEpisodeActions({
   }
 
   async function handleConfirmEnter() {
-    if (!selected?.episodeNumber) return
+    if (isAssetsSeeding || !selected?.episodeNumber) return
     if (!isSubstantialEpisodeBody(selected.body)) {
       setLocalError(t('drama.outlinePanel.bodyMinCharsEnter').replace('{n}', String(MIN_EPISODE_BODY_CHARS)))
       return
@@ -317,7 +320,7 @@ export function useOutlineEpisodeActions({
   }
 
   async function startEnterWithSkills(skillIds: number[]) {
-    if (!selected?.episodeNumber) return
+    if (isAssetsSeeding || !selected?.episodeNumber) return
     setEnterSkillOpen(false)
     setConfirming(true)
     setLocalError('')

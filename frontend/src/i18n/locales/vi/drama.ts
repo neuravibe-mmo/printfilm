@@ -116,6 +116,7 @@ export const viDrama = {
       'pixel-art': 'Pixel Art',
       'shadow-puppet-illustration': 'Minh họa múa rối bóng',
       'comedy-humorous-film': 'Video hài hước dí dỏm',
+      'vietnamese-dark-poetic-cinema': 'Điện ảnh Việt Nam mang đậm chất thơ u tối',
 
       // Nhóm 2: Khoa học, Huyền bí & Công nghệ
       'hard-sci-fi-interstellar': 'Khoa học viễn tưởng không gian sâu',
