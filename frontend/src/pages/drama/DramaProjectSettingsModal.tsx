@@ -252,6 +252,8 @@ export function DramaProjectSettingsModal({
             value={styleId}
             disabled={saving}
             onChange={(id) => void handleStyleChange(id)}
+            content={script?.source || (script?.summary && typeof script.summary === 'object' ? String((script.summary as any).synopsis || '') : '') || project?.title || ''}
+            projectId={projectId}
           />
         </section>
 

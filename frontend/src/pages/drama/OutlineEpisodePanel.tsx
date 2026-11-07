@@ -39,6 +39,7 @@ import { useI18n } from '../../i18n'
 
 type OutlineEpisodePanelProps = {
   projectId: number
+  project?: DramaProject | null
   script: DramaScript | null
   episodeCount: number
   summaryReady: boolean
@@ -54,6 +55,7 @@ type OutlineEpisodePanelProps = {
 
 export function OutlineEpisodePanel({
   projectId,
+  project,
   script,
   episodeCount,
   summaryReady,
@@ -174,9 +176,12 @@ export function OutlineEpisodePanel({
     }
   }, [projectId, script?.id, script?.episode_content])
 
+  const isAssetsSeeding = String(project?.params?.assets_seed_status || '') === 'generating'
+
   const canAdd =
     summaryReady &&
     !episodeGenerating &&
+    !isAssetsSeeding &&
     directoryEpisodes.length < 120
 
   const {
@@ -210,6 +215,7 @@ export function OutlineEpisodePanel({
     sectionDraft,
     titleDraft,
     canAdd,
+    isAssetsSeeding,
     creativeCardRef,
     summaryCardRef,
     bodyCardRef,
@@ -258,8 +264,8 @@ export function OutlineEpisodePanel({
     selected.episodeNumber > batchCurrentEpisodeNumber
 
   const anyEpisodeGenerating = Boolean(generatingMode)
-  const busy = selectedGenerating || confirming || saving || adding
-  const generateBusy = episodeGenerating || anyEpisodeGenerating || confirming || saving || adding
+  const busy = selectedGenerating || confirming || saving || adding || isAssetsSeeding
+  const generateBusy = episodeGenerating || anyEpisodeGenerating || confirming || saving || adding || isAssetsSeeding
   const bodyReady = Boolean(selected && selected.body && selected.body.trim().length >= MIN_EPISODE_BODY_CHARS)
 
   function toggleSection(k: SectionKey) {
@@ -331,6 +337,7 @@ export function OutlineEpisodePanel({
       summaryReady={summaryReady}
       canAdd={canAdd && !adding}
       adding={adding}
+      isAssetsSeeding={isAssetsSeeding}
       episodeShotStats={episodeShotStats}
       episodeCovers={episodeCovers}
       menuEpNumber={menuEpNumber}
@@ -377,11 +384,34 @@ export function OutlineEpisodePanel({
         selectedGenerating={selectedGenerating}
         generatingMode={generatingMode}
         confirming={confirming}
+        isAssetsSeeding={isAssetsSeeding}
         onTitleDraftChange={setTitleDraft}
         onGenerateBrief={() => void handleGenerate('brief')}
         onGenerateFull={() => handleGenerate('full')}
         onConfirmEnter={() => void handleConfirmEnter()}
       />
+
+      {isAssetsSeeding ? (
+        <div
+          className="drama-outline-notice is-loading"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '12px 16px',
+            background: '#f0f9ff',
+            border: '1px solid #bae6fd',
+            color: '#0369a1',
+            borderRadius: 10,
+            marginBottom: 16,
+            fontSize: '0.875rem',
+            fontWeight: 500,
+          }}
+        >
+          <Loader2 size={16} className="pf-spin" style={{ flexShrink: 0, animation: 'spin 1s linear infinite' }} />
+          <span>Hệ thống đang trích xuất tài nguyên từ kịch bản, các thao tác tạm thời bị khóa để đảm bảo đồng bộ dữ liệu. Vui lòng chờ trong giây lát...</span>
+        </div>
+      ) : null}
 
       {localError ? <BillingErrorNotice message={localError} className="drama-error" /> : null}
       {localNotice ? <p className="drama-outline-notice">{localNotice}</p> : null}

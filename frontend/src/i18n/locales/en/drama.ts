@@ -233,6 +233,7 @@ export const enDrama = {
             "pixel-art": "Pixel Art",
             "shadow-puppet-illustration": "Shadow Puppet Illustration",
             "comedy-humorous-film": "Humorous Comedy Video",
+            "vietnamese-dark-poetic-cinema": "Vietnamese Dark Poetic Cinema",
 
             "hard-sci-fi-interstellar": "Hard Sci-Fi Interstellar",
             "mystic-cyber-occult": "Mystic Cyber Occult",

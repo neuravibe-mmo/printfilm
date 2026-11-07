@@ -548,7 +548,12 @@ function DramaListInner() {
               ) : null}
               <div className="drama-agent-ai-footer">
                 <div className="drama-agent-ai-options">
-                  <DramaImageStyleModal value={imageStyleId} onChange={setImageStyleId} disabled={busy} />
+                  <DramaImageStyleModal
+                    value={imageStyleId}
+                    onChange={setImageStyleId}
+                    disabled={busy}
+                    content={storyText}
+                  />
                   <span className="drama-agent-opt-divider" aria-hidden />
                   <DramaEpisodeCountPopover value={episodeCount} onChange={setEpisodeCount} disabled={busy} />
                 </div>

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -449,6 +449,19 @@ async def delete_asset(
     return {"ok": True}
 
 
+def _assets_seed_generating_is_stale(params: dict) -> bool:
+    started_raw = params.get("assets_seed_generating_at")
+    if not started_raw:
+        return True
+    try:
+        started = datetime.fromisoformat(str(started_raw).replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - started > timedelta(minutes=15)
+
+
 @router.post("/assets/seed_from_script", response_model=SeedAssetsFromScriptOut)
 async def seed_assets(
     project_id: int,
@@ -467,7 +480,7 @@ async def seed_assets(
         )
     ).scalar_one()
     params = dict(locked.params or {}) if isinstance(locked.params, dict) else {}
-    if str(params.get("assets_seed_status") or "") == "generating":
+    if str(params.get("assets_seed_status") or "") == "generating" and not _assets_seed_generating_is_stale(params):
         existing = list(
             (await db.execute(select(DramaAsset).where(DramaAsset.project_id == locked.id)))
             .scalars()

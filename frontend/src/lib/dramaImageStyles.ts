@@ -28,6 +28,7 @@ export const IMAGE_STYLE_IDS = [
   'pixel-art',
   'shadow-puppet-illustration',
   'comedy-humorous-film',
+  'vietnamese-dark-poetic-cinema',
 
   // Nhóm 2: Khoa học, Huyền bí & Công nghệ
   'hard-sci-fi-interstellar',
@@ -138,6 +139,7 @@ export const IMAGE_STYLE_OPTIONS: Array<ImageStyleOption> = [
   { id: 'pixel-art', label: 'Pixel Art', categoryId: 'cinema_period_anime' },
   { id: 'shadow-puppet-illustration', label: 'Minh họa múa rối bóng', categoryId: 'cinema_period_anime' },
   { id: 'comedy-humorous-film', label: 'Video hài hước dí dỏm', categoryId: 'cinema_period_anime' },
+  { id: 'vietnamese-dark-poetic-cinema', label: 'Điện ảnh Việt Nam mang đậm chất thơ u tối', categoryId: 'cinema_period_anime' },
 
   // Nhóm 2: Khoa học, Huyền bí & Công nghệ
   { id: 'hard-sci-fi-interstellar', label: 'Khoa học viễn tưởng không gian sâu', categoryId: 'scifi_mystic_tech' },

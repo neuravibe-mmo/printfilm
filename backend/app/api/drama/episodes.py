@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 import time
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy import select
@@ -294,6 +294,19 @@ async def seed_episodes(
     return [_episode_out(episode) for episode in episodes]
 
 
+def _assets_seed_generating_is_stale(params: dict) -> bool:
+    started_raw = params.get("assets_seed_generating_at")
+    if not started_raw:
+        return True
+    try:
+        started = datetime.fromisoformat(str(started_raw).replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=UTC)
+    return datetime.now(UTC) - started > timedelta(minutes=15)
+
+
 @router.post("/episodes/confirm_from_script", response_model=DramaConfirmEpisodeOut)
 async def confirm_episode_from_script(
     body: DramaConfirmEpisodeRequest,
@@ -315,7 +328,7 @@ async def confirm_episode_from_script(
         )
     ).scalar_one()
     params = dict(locked.params or {}) if isinstance(locked.params, dict) else {}
-    if str(params.get("assets_seed_status") or "") == "generating":
+    if str(params.get("assets_seed_status") or "") == "generating" and not _assets_seed_generating_is_stale(params):
         raise HTTPException(status_code=409, detail="资产抽取进行中，请稍后再确认")
 
     params["assets_seed_status"] = "generating"

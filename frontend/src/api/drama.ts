@@ -340,6 +340,16 @@ export const dramaApi = {
       method: 'POST',
       body: JSON.stringify({ message, project_id }),
     }),
+  matchImageStyle: (content: string, projectId?: number) =>
+    request<{
+      ok: boolean
+      style_id: string | null
+      style_label: string | null
+      reason: string
+    }>('/api/drama/ai/match-style', {
+      method: 'POST',
+      body: JSON.stringify({ content, project_id: projectId }),
+    }),
 
   listAssets: async (projectId?: number, options?: { libraryOnly?: boolean }) => {
     const params = new URLSearchParams()

@@ -69,6 +69,30 @@ export function OutlineStep({
         project.params?.episode_count,
     ) || 0
   const imageStyleId = getImageStyleId(script, project)
+  const isAssetsSeeding = String(project.params?.assets_seed_status || '') === 'generating'
+
+  // Khi tác vụ trích xuất tài nguyên đang chạy nền, thăm dò trạng thái liên tục cho đến khi hoàn thành
+  useEffect(() => {
+    if (!isAssetsSeeding) return
+    let cancelled = false
+    const timer = setInterval(async () => {
+      try {
+        const p = await dramaApi.getProject(projectId)
+        if (cancelled) return
+        onProjectChange(p)
+        if (String(p.params?.assets_seed_status || '') !== 'generating') {
+          // Trích xuất hoàn thành: Xóa thông báo lỗi/chờ trước đó
+          onError('')
+        }
+      } catch {
+        // Bỏ qua lỗi mạng khi đang thăm dò định kỳ
+      }
+    }, 2000)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [projectId, isAssetsSeeding, onProjectChange, onError])
 
   function openSourceModal() {
     setSourceEditing(false)
@@ -335,6 +359,9 @@ export function OutlineStep({
             emptyLabel={t('drama.outline.noStyle')}
             value={(imageStyleId as ImageStyleId | '') || ''}
             onChange={(id) => void handleStyleChange(id)}
+            content={script?.source || (summary && typeof summary === 'object' ? String(summary.synopsis || summary.oneLineStory || '') : '') || ''}
+            projectId={project.id}
+            disabled={isAssetsSeeding || episodeGenerating}
           />
           <span className="drama-outline-toolbar-meta">
             {episodeCount ? `${t('drama.outline.totalEpisodes')} ${episodeCount} ${t('drama.outline.eps')}` : t('drama.outline.epsPending')}
@@ -547,6 +574,7 @@ export function OutlineStep({
 
       <OutlineEpisodePanel
         projectId={projectId}
+        project={project}
         script={script}
         episodeCount={episodeCount}
         summaryReady={summaryStatus === 'completed' || Boolean(summary)}
