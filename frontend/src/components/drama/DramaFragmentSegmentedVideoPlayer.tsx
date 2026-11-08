@@ -1,8 +1,9 @@
 /** Chỉnh sửa tập: trình phát video có thanh tiến trình bảng phân cảnh (phát sóng tuần tự phía máy khách) */
-import { Check, Download, ExternalLink, FolderOpen, Loader2, Maximize, Minimize, MonitorPlay, Pause, Play, Upload, Volume2, VolumeX } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Check, Download, ExternalLink, FolderOpen, Layers, Loader2, Maximize, Minimize, MonitorPlay, Pause, Play, Upload, Volume2, VolumeX } from 'lucide-react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { resolveDramaMediaUrl, type DramaFragment } from '../../api/drama'
+import { readFragmentVideoVersions } from '../../pages/drama/dramaEpisodeEditUtils'
 import {
   buildEpisodeVideoTimelineSegments,
   formatVideoTimelineClock,
@@ -15,6 +16,13 @@ import {
   type DramaEpisodeVideoTimelineSegment,
 } from '../../lib/dramaEpisodeVideoTimeline'
 
+export type DramaFragmentSegmentedVideoPlayerRef = {
+  togglePlay: () => void
+  play: () => void
+  pause: () => void
+  replayFromBeginning: () => void
+}
+
 type Props = {
   fragments: DramaFragment[]
   playingFragmentId: number | null
@@ -25,19 +33,33 @@ type Props = {
   overridePosterUrl?: string | null
   videoUploading?: boolean
   onUploadVideo?: (file: File) => void
+  previewVersionId?: string | null
+  onPreviewVersion?: (versionId: string | null) => void
+  onActivateVersion?: (versionId: string) => void
+  onPlayingStateChange?: (isPlaying: boolean) => void
 }
 
 // Kết xuất trình phát video với thanh tiến trình phân đoạn bảng phân cảnh
-export function DramaFragmentSegmentedVideoPlayer({
-  fragments,
-  playingFragmentId,
-  onPlayingFragmentChange,
-  aspectRatio,
-  overrideVideoUrl = null,
-  overridePosterUrl = null,
-  videoUploading = false,
-  onUploadVideo,
-}: Props) {
+export const DramaFragmentSegmentedVideoPlayer = forwardRef<
+  DramaFragmentSegmentedVideoPlayerRef,
+  Props
+>(function DramaFragmentSegmentedVideoPlayer(
+  {
+    fragments,
+    playingFragmentId,
+    onPlayingFragmentChange,
+    aspectRatio,
+    overrideVideoUrl = null,
+    overridePosterUrl = null,
+    videoUploading = false,
+    onUploadVideo,
+    previewVersionId = null,
+    onPreviewVersion,
+    onActivateVersion,
+    onPlayingStateChange,
+  },
+  ref,
+) {
   const { t } = useI18n()
   // tham chiếu phần tử video videoRef
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -97,6 +119,16 @@ export function DramaFragmentSegmentedVideoPlayer({
     [fragments, playingFragmentId],
   )
 
+  const currentVersions = useMemo(
+    () => readFragmentVideoVersions(playingFragment),
+    [playingFragment],
+  )
+  const currentFragIndex = useMemo(
+    () => fragments.findIndex((fragment) => fragment.id === playingFragmentId),
+    [fragments, playingFragmentId],
+  )
+  const totalFragVersions = (playingFragment?.video ? 1 : 0) + currentVersions.length
+
   // playSegment Khoảng thời gian trên dòng thời gian của bảng phân cảnh phát lại hiện tại
   const playingSegment = useMemo(
     () => timelineSegments.find((segment) => segment.fragmentId === playingFragmentId) ?? null,
@@ -142,22 +174,6 @@ export function DramaFragmentSegmentedVideoPlayer({
   // rateClass Frame Tên lớp CSS
   const ratioClass = `ratio-${aspectRatio.replace(':', 'x')}`
 
-  // Chuyển phát hoặc tạm dừng
-  const handleTogglePlay = useCallback(() => {
-    const video = videoRef.current
-
-    if (!video || !hasCurrentVideo) {
-      return
-    }
-
-    if (video.paused) {
-      void video.play().catch(() => undefined)
-      return
-    }
-
-    video.pause()
-  }, [hasCurrentVideo])
-
   // Chuyển đến vị trí dòng thời gian toàn cầu
   const seekToGlobalTime = useCallback(
     (globalTimeSec: number) => {
@@ -190,6 +206,80 @@ export function DramaFragmentSegmentedVideoPlayer({
     },
     [hasCurrentVideo, isPlaying, onPlayingFragmentChange, timelineSegments],
   )
+
+  // Chuyển phát hoặc tạm dừng
+  const handleTogglePlay = useCallback(() => {
+    const video = videoRef.current
+
+    // Nếu đã phát đến cuối toàn bộ tập phim, tua về đầu và phát lại
+    if (totalDuration > 0 && globalCurrentTime >= totalDuration - 0.2) {
+      seekToGlobalTime(0)
+      const firstPlayable = timelineSegments.find((s) => s.hasVideo)
+      if (firstPlayable && firstPlayable.fragmentId !== playingFragmentIdRef.current) {
+        shouldResumePlayRef.current = true
+        onPlayingFragmentChange(firstPlayable.fragmentId)
+        return
+      }
+      if (video && hasCurrentVideo) {
+        video.currentTime = 0
+        void video.play().catch(() => undefined)
+        return
+      }
+    }
+
+    // Nếu phân cảnh hiện tại chưa có video nhưng tập phim có video ở phân cảnh khác
+    if (!hasCurrentVideo) {
+      const firstPlayable = timelineSegments.find((s) => s.hasVideo)
+      if (firstPlayable) {
+        shouldResumePlayRef.current = true
+        onPlayingFragmentChange(firstPlayable.fragmentId)
+      }
+      return
+    }
+
+    if (!video) {
+      return
+    }
+
+    if (video.paused) {
+      void video.play().catch(() => undefined)
+      return
+    }
+
+    video.pause()
+  }, [globalCurrentTime, hasCurrentVideo, onPlayingFragmentChange, seekToGlobalTime, timelineSegments, totalDuration])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      togglePlay: handleTogglePlay,
+      play: () => {
+        const video = videoRef.current
+        if (video && video.paused) {
+          handleTogglePlay()
+        }
+      },
+      pause: () => {
+        const video = videoRef.current
+        if (video && !video.paused) {
+          video.pause()
+        }
+      },
+      replayFromBeginning: () => {
+        seekToGlobalTime(0)
+        const firstPlayable = timelineSegments.find((s) => s.hasVideo)
+        if (firstPlayable) {
+          shouldResumePlayRef.current = true
+          onPlayingFragmentChange(firstPlayable.fragmentId)
+        }
+      },
+    }),
+    [handleTogglePlay, onPlayingFragmentChange, seekToGlobalTime, timelineSegments],
+  )
+
+  useEffect(() => {
+    onPlayingStateChange?.(isPlaying)
+  }, [isPlaying, onPlayingStateChange])
 
   // Chuyển tới tiến trình phát lại dựa trên vị trí nhấp chuột
   const seekByClientX = useCallback(
@@ -623,21 +713,45 @@ export function DramaFragmentSegmentedVideoPlayer({
               isSeekingRef.current = false
             }}
           >
-            {timelineSegments.map((segment, index) => (
-              <div
-                key={segment.fragmentId}
-                className={`drama-ep-video-track-seg${index < timelineSegments.length - 1 ? ' has-divider' : ''
-                  }`}
-                style={{ flex: segment.durationSec }}
-              >
+            {timelineSegments.map((segment, index) => {
+              const isCurrentPlaying = segment.fragmentId === playingFragmentId
+              const segFrag = fragments.find((f) => f.id === segment.fragmentId)
+              const segVersions = readFragmentVideoVersions(segFrag)
+              const segTotalVersions = (segFrag?.video ? 1 : 0) + segVersions.length
+              const hasMultipleVersions = segTotalVersions > 1
+
+              return (
                 <div
-                  className="drama-ep-video-track-fill"
-                  style={{
-                    width: `${resolveEpisodeTimelineSegmentFillRatio(segment, globalCurrentTime) * 100}%`,
+                  key={segment.fragmentId}
+                  className={`drama-ep-video-track-seg${
+                    index < timelineSegments.length - 1 ? ' has-divider' : ''
+                  }${isCurrentPlaying ? ' is-active' : ''}${
+                    hasMultipleVersions ? ' has-versions' : ''
+                  }`}
+                  style={{ flex: segment.durationSec }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onPlayingFragmentChange(segment.fragmentId)
                   }}
-                />
-              </div>
-            ))}
+                  title={`Phân cảnh ${(index + 1).toString().padStart(2, '0')} (${segment.durationSec}s)${
+                    hasMultipleVersions ? ` · ${segTotalVersions} video` : ''
+                  }`}
+                >
+                  <div
+                    className="drama-ep-video-track-fill"
+                    style={{
+                      width: `${resolveEpisodeTimelineSegmentFillRatio(segment, globalCurrentTime) * 100}%`,
+                    }}
+                  />
+                  {hasMultipleVersions && (
+                    <span
+                      className="drama-ep-track-versions-indicator"
+                      title={`${segTotalVersions} phiên bản video`}
+                    />
+                  )}
+                </div>
+              )
+            })}
 
             <div className="drama-ep-video-playhead" style={{ left: `${playheadLeft}%` }} />
           </div>
@@ -685,7 +799,84 @@ export function DramaFragmentSegmentedVideoPlayer({
             )}
           </button>
         </div>
+
+        {/* Danh sách các video (phiên bản khác) của phân cảnh hiện tại khi có từ 2 video trở lên */}
+        {totalFragVersions > 1 && (
+          <div className="drama-ep-player-versions-wrap">
+            <div className="drama-ep-player-versions-header">
+              <span className="drama-ep-player-versions-title">
+                <Layers size={13} className="drama-ep-player-versions-icon" />
+                <span>
+                  Video Phân cảnh {String(currentFragIndex + 1).padStart(2, '0')}
+                </span>
+                <span className="drama-ep-player-versions-tag">
+                  {totalFragVersions} video
+                </span>
+              </span>
+
+              {previewVersionId && onActivateVersion && (
+                <button
+                  type="button"
+                  className="drama-ep-player-activate-btn"
+                  onClick={() => onActivateVersion(previewVersionId)}
+                  title="Chọn phiên bản đang xem trước làm video chính của phân cảnh này"
+                >
+                  <Check size={12} strokeWidth={2.2} />
+                  <span>Chọn làm video chính</span>
+                </button>
+              )}
+            </div>
+
+            <div className="drama-ep-player-versions-list">
+              {/* Bản video chính (Hiện tại) */}
+              {playingFragment?.video && (
+                <button
+                  type="button"
+                  className={`drama-ep-player-version-item${!previewVersionId ? ' is-active' : ''}`}
+                  onClick={() => onPreviewVersion?.(null)}
+                  title="Video chính hiện tại (Bấm để xem)"
+                >
+                  <div className="drama-ep-player-version-media">
+                    {playingFragment.cover ? (
+                      <img src={resolveDramaMediaUrl(playingFragment.cover)} alt="" />
+                    ) : (
+                      <video src={resolveDramaMediaUrl(playingFragment.video)} muted />
+                    )}
+                    <span className="drama-ep-player-version-label is-main">
+                      {!previewVersionId ? 'Đang chọn' : 'Bản chính'}
+                    </span>
+                  </div>
+                </button>
+              )}
+
+              {/* Các phiên bản tải lên khác */}
+              {currentVersions.map((ver, idx) => {
+                const cover = ver.cover ? resolveDramaMediaUrl(ver.cover) : ''
+                const video = resolveDramaMediaUrl(ver.video)
+                const versionNo = currentVersions.length - idx
+                const isSelected = previewVersionId === ver.id
+
+                return (
+                  <button
+                    key={ver.id}
+                    type="button"
+                    className={`drama-ep-player-version-item${isSelected ? ' is-active is-preview' : ''}`}
+                    onClick={() => onPreviewVersion?.(ver.id)}
+                    title={`Phiên bản v${versionNo}${ver.source ? ` (${ver.source})` : ''} - Bấm để xem`}
+                  >
+                    <div className="drama-ep-player-version-media">
+                      {cover ? <img src={cover} alt="" /> : <video src={video} muted />}
+                      <span className="drama-ep-player-version-label">
+                        {isSelected ? `Đang xem v${versionNo}` : `v${versionNo}`}
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
-}
+})

@@ -7,6 +7,7 @@ import {
   formatFragLabel,
   fragmentQueueBadgeLabel,
   readFragmentGenerationStatus,
+  readFragmentVideoVersions,
   resolveFragmentDurationSec,
 } from './dramaEpisodeEditUtils'
 
@@ -119,6 +120,14 @@ export const EpisodeStoryboardFooter: React.FC<EpisodeStoryboardFooterProps> = R
                       </span>
                     )}
                     {badge ? <span className="drama-ep-clip-badge">{badge}</span> : null}
+                    {((frag.video ? 1 : 0) + readFragmentVideoVersions(frag).length) > 1 ? (
+                      <span
+                        className="drama-ep-clip-versions-badge"
+                        title={`${(frag.video ? 1 : 0) + readFragmentVideoVersions(frag).length} phiên bản video`}
+                      >
+                        {(frag.video ? 1 : 0) + readFragmentVideoVersions(frag).length} video
+                      </span>
+                    ) : null}
                     <em>
                       {formatFragLabel(index, resolveFragmentDurationSec(frag.content, frag.duration_sec), t)}
                       <DramaFragmentClipSpec

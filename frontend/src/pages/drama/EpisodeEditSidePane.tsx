@@ -1,8 +1,11 @@
 /** Bên phải phần chỉnh sửa tập: xem trước video phân đoạn + lối vào để mở canvas bảng phân cảnh toàn màn hình */
 import { useRef, useState } from 'react'
-import { Download, Loader2, Upload } from 'lucide-react'
+import { Download, Loader2, Pause, Play, Upload } from 'lucide-react'
 import type { DramaFragment } from '../../api/drama'
-import { DramaFragmentSegmentedVideoPlayer } from '../../components/drama/DramaFragmentSegmentedVideoPlayer'
+import {
+  DramaFragmentSegmentedVideoPlayer,
+  type DramaFragmentSegmentedVideoPlayerRef,
+} from '../../components/drama/DramaFragmentSegmentedVideoPlayer'
 import { triggerBlobDownload } from '../../lib/clientDownload'
 import {
   composeEpisodeVideoClient,
@@ -31,6 +34,9 @@ type Props = {
   onActivatePreview?: () => void
   videoUploading?: boolean
   onUploadVideo?: (file: File) => void
+  previewVersionId?: string | null
+  onPreviewVersion?: (versionId: string | null) => void
+  onActivateVersion?: (versionId: string) => void
 }
 
 /** Chuyển tiến trình tổng hợp thành bản sao nút */
@@ -58,8 +64,13 @@ export function EpisodeEditSidePane({
   onActivatePreview,
   videoUploading = false,
   onUploadVideo,
+  previewVersionId = null,
+  onPreviewVersion,
+  onActivateVersion,
 }: Props) {
   const { t } = useI18n()
+  const playerRef = useRef<DramaFragmentSegmentedVideoPlayerRef>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
   const uploadVideoInputRef = useRef<HTMLInputElement>(null)
   const resolvedEpisodeName = episodeName || t('drama.episodeEdit.thisEpisode')
   const hasSelection = playingFragmentId !== null
@@ -111,9 +122,24 @@ export function EpisodeEditSidePane({
             role="tab"
             aria-selected={hasAnyVideo}
             disabled={!hasAnyVideo}
-            className={hasAnyVideo ? 'active' : 'is-disabled'}
-            title={!hasAnyVideo ? 'Chưa có video để xem trước' : undefined}
+            className={`${hasAnyVideo ? 'active' : 'is-disabled'}${isPlaying ? ' is-playing' : ''}`}
+            title={
+              !hasAnyVideo
+                ? 'Chưa có video để xem trước'
+                : isPlaying
+                  ? 'Tạm dừng xem trước video'
+                  : 'Bấm để phát video xem trước tập phim'
+            }
+            onClick={() => {
+              if (!hasAnyVideo) return
+              playerRef.current?.togglePlay()
+            }}
           >
+            {isPlaying ? (
+              <Pause size={11} fill="currentColor" style={{ marginRight: 4, verticalAlign: -1 }} />
+            ) : (
+              <Play size={11} fill="currentColor" style={{ marginRight: 4, verticalAlign: -1 }} />
+            )}
             {t('common.preview')}
           </button>
           <button type="button" role="tab" onClick={onOpenStoryboard}>
@@ -165,6 +191,7 @@ export function EpisodeEditSidePane({
         <>
           <div className="drama-ep-preview-inner">
             <DramaFragmentSegmentedVideoPlayer
+              ref={playerRef}
               fragments={fragments}
               playingFragmentId={playingFragmentId}
               onPlayingFragmentChange={onPlayingFragmentChange}
@@ -173,6 +200,10 @@ export function EpisodeEditSidePane({
               overridePosterUrl={previewPosterUrl}
               videoUploading={videoUploading}
               onUploadVideo={onUploadVideo}
+              previewVersionId={previewVersionId}
+              onPreviewVersion={onPreviewVersion}
+              onActivateVersion={onActivateVersion}
+              onPlayingStateChange={setIsPlaying}
             />
 
             <input

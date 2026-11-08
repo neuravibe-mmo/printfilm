@@ -775,6 +775,7 @@ function EpisodeEditInner() {
     const index = fragments.findIndex((f) => f.id === fragmentId)
     if (index >= 0) {
       setSelectedIndex(index)
+      setPreviewVersionId(null)
     }
   }
 
@@ -996,6 +997,9 @@ function EpisodeEditInner() {
             }
             videoUploading={videoUploading}
             onUploadVideo={handleUploadFragmentVideo}
+            previewVersionId={previewVersionId}
+            onPreviewVersion={setPreviewVersionId}
+            onActivateVersion={(versionId) => void activateVideoVersion(versionId)}
           />
         </div>
       </div>
