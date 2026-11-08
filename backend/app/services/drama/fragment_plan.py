@@ -407,7 +407,7 @@ def normalize_llm_fragment_items(
             continue
 
         llm_target = _clamp_duration(int(item.get("duration_sec") or 0))
-        target_dur = min(FRAGMENT_TOTAL_MAX, max(FRAGMENT_DURATION_MIN, llm_target if llm_target > 0 else 10))
+        target_dur = min(FRAGMENT_TOTAL_MAX, max(FRAGMENT_DURATION_MIN, llm_target if llm_target > 0 else FRAGMENT_TOTAL_MAX))
         block_sum = sum(d for d, _ in timed_blocks)
         if block_sum > target_dur:
             timed_blocks = _rescale_timed_blocks(timed_blocks, target_dur)
