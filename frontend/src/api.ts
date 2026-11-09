@@ -2,7 +2,18 @@ import { throwApiError } from './lib/apiError'
 
 function defaultApiBase() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
-    const { protocol, hostname } = window.location
+    const { protocol, hostname, port } = window.location
+    const isLocalLan =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.endsWith('.local')
+    // Khi truy cập qua tunnel (ngrok, etc.) hoặc domain công khai không phải LAN trực tiếp,
+    // sử dụng relative URL (chuỗi rỗng) để request đi qua proxy cùng host/port với frontend
+    if (!isLocalLan || protocol === 'https:' || !port) {
+      return ''
+    }
     // Same host as Vite; API listens on 8001 for LAN + local
     return `${protocol}//${hostname}:8001`
   }

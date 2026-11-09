@@ -2,7 +2,16 @@
 
 function defaultApiBase() {
   if (typeof window !== 'undefined' && window.location?.hostname) {
-    const { protocol, hostname } = window.location
+    const { protocol, hostname, port } = window.location
+    const isLocalLan =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.endsWith('.local')
+    if (!isLocalLan || protocol === 'https:' || !port) {
+      return ''
+    }
     return `${protocol}//${hostname}:8001`
   }
   return 'http://127.0.0.1:8001'
